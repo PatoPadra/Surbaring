@@ -1,0 +1,307 @@
+/**
+ * Mundo — capa de datos del terreno real de Bariloche.
+ *
+ * Carga el DEM generado por tools/build-dem.mjs y ofrece las consultas que
+ * necesitan la física, la vegetación, la fauna y el clima:
+ *   altura, normal, pendiente, agua, cauce, humedad, bioma.
+ *
+ * Sistema de coordenadas: +X Este, +Z Sur, +Y arriba (metros reales sobre el
+ * nivel del mar). El origen cae en el centro del mundo (lat -41.10, lon -71.52).
+ */
+
+import * as THREE from 'three';
+
+export const MPD_LAT = 111320;
+
+export class Mundo {
+  constructor() {
+    this.meta = null;
+    this.N = 0;
+    this.tamano = 0;
+    this.mitad = 0;
+    this.metrosPorTexel = 0;
+    /** @type {Float32Array} altura en metros, N*N */
+    this.altura = null;
+    /** @type {Uint8Array} 255 = superficie de lago */
+    this.agua = null;
+    /** @type {Uint8Array} intensidad de cauce 0..255 */
+    this.cauce = null;
+    /** @type {Float32Array} pendiente en radianes */
+    this.pendiente = null;
+    /** @type {Float32Array} humedad relativa 0..1 (gradiente oeste-este + cercanía al agua) */
+    this.humedad = null;
+    this.alturaMin = 0;
+    this.alturaMax = 0;
+    this.mpdLon = 0;
+
+    // Texturas para los shaders
+    this.texAltura = null;
+    this.texNormal = null;
+    this.texCobertura = null; // R: agua, G: cauce, B: humedad, A: pendiente
+  }
+
+  async cargar(rutaBase = 'data/dem/', alProgresar = () => {}) {
+    alProgresar(0.02, 'Leyendo el relieve del Nahuel Huapi…');
+    this.meta = await (await fetch(rutaBase + 'meta.json')).json();
+
+    const N = this.N = this.meta.resolucion;
+    this.tamano = this.meta.tamanoM;
+    this.mitad = this.tamano / 2;
+    this.metrosPorTexel = this.meta.metrosPorTexel;
+    this.alturaMin = this.meta.elevacionMin;
+    this.alturaMax = this.meta.elevacionMax;
+    this.mpdLon = 111320 * Math.cos(this.meta.centro.lat * Math.PI / 180);
+
+    // ── Alturas: binario crudo de 16 bits, precisión completa para la física
+    alProgresar(0.06, 'Cargando el modelo de elevación…');
+    const bufAltura = await (await fetch(rutaBase + 'alturas.r16')).arrayBuffer();
+    const crudo = new Uint16Array(bufAltura);
+    if (crudo.length !== N * N) {
+      throw new Error(`alturas.r16 mide ${crudo.length}, se esperaban ${N * N}`);
+    }
+    const escala = this.meta.alturaMaxCodificada / 65535;
+    this.altura = new Float32Array(N * N);
+    for (let k = 0; k < N * N; k++) this.altura[k] = crudo[k] * escala;
+
+    // ── Máscaras de agua y cauces desde los PNG
+    alProgresar(0.14, 'Trazando lagos y arroyos…');
+    const [pxAlturas, pxRios] = await Promise.all([
+      leerPNG(rutaBase + 'alturas.png'),
+      leerPNG(rutaBase + 'rios.png'),
+    ]);
+    this.agua = new Uint8Array(N * N);
+    this.cauce = new Uint8Array(N * N);
+    for (let k = 0; k < N * N; k++) {
+      this.agua[k] = pxAlturas[k * 4 + 2];      // canal B
+      this.cauce[k] = pxRios[k * 4];            // gris en R
+    }
+
+    alProgresar(0.2, 'Calculando pendientes…');
+    this._calcularPendiente();
+    alProgresar(0.26, 'Modelando el gradiente de humedad…');
+    this._calcularHumedad();
+    alProgresar(0.32, 'Subiendo el terreno a la placa de video…');
+    this._construirTexturas();
+    alProgresar(0.36, 'Terreno listo.');
+    return this;
+  }
+
+  // ── Consultas ─────────────────────────────────────────────────────────────
+
+  /** Índice de texel a partir de coordenadas de mundo, sin interpolar. */
+  indiceDe(x, z) {
+    const i = Math.round((x / this.tamano + 0.5) * (this.N - 1));
+    const j = Math.round((z / this.tamano + 0.5) * (this.N - 1));
+    if (i < 0 || i >= this.N || j < 0 || j >= this.N) return -1;
+    return j * this.N + i;
+  }
+
+  /** Altura del terreno en metros, con interpolación bilineal. */
+  alturaEn(x, z) {
+    const N = this.N;
+    const fx = (x / this.tamano + 0.5) * (N - 1);
+    const fz = (z / this.tamano + 0.5) * (N - 1);
+    if (fx < 0 || fz < 0 || fx > N - 1 || fz > N - 1) return this.alturaMin;
+    const i0 = Math.floor(fx), j0 = Math.floor(fz);
+    const i1 = Math.min(N - 1, i0 + 1), j1 = Math.min(N - 1, j0 + 1);
+    const sx = fx - i0, sz = fz - j0;
+    const a = this.altura[j0 * N + i0], b = this.altura[j0 * N + i1];
+    const c = this.altura[j1 * N + i0], d = this.altura[j1 * N + i1];
+    return (a * (1 - sx) + b * sx) * (1 - sz) + (c * (1 - sx) + d * sx) * sz;
+  }
+
+  /** Normal del terreno por diferencias centradas. */
+  normalEn(x, z, salida = new THREE.Vector3()) {
+    const e = this.metrosPorTexel;
+    const hL = this.alturaEn(x - e, z), hR = this.alturaEn(x + e, z);
+    const hD = this.alturaEn(x, z - e), hU = this.alturaEn(x, z + e);
+    return salida.set(hL - hR, 2 * e, hD - hU).normalize();
+  }
+
+  /** Pendiente en radianes (0 = llano, PI/2 = pared). */
+  pendienteEn(x, z) {
+    const k = this.indiceDe(x, z);
+    return k < 0 ? 0 : this.pendiente[k];
+  }
+
+  /** ¿Hay superficie de lago acá? */
+  esAgua(x, z) {
+    const k = this.indiceDe(x, z);
+    return k >= 0 && this.agua[k] > 127;
+  }
+
+  /** Intensidad de cauce 0..1. */
+  cauceEn(x, z) {
+    const k = this.indiceDe(x, z);
+    return k < 0 ? 0 : this.cauce[k] / 255;
+  }
+
+  /** Humedad relativa 0..1: 1 = selva valdiviana, 0 = estepa. */
+  humedadEn(x, z) {
+    const k = this.indiceDe(x, z);
+    return k < 0 ? 0.5 : this.humedad[k];
+  }
+
+  /** Cota del lago que cubre este punto, o null. */
+  cotaLagoEn(x, z) {
+    if (!this.esAgua(x, z)) return null;
+    const h = this.alturaEn(x, z);
+    let mejor = null, mejorD = Infinity;
+    for (const l of this.meta.lagos) {
+      const d = Math.abs(l.cota - h);
+      if (d < mejorD) { mejorD = d; mejor = l; }
+    }
+    return mejorD < 12 ? mejor.cota : h;
+  }
+
+  /** Conversión a coordenadas geográficas reales, para la interfaz educativa. */
+  aLatLon(x, z) {
+    return {
+      lat: this.meta.centro.lat - z / MPD_LAT,
+      lon: this.meta.centro.lon + x / this.mpdLon,
+    };
+  }
+
+  aMundo(lat, lon) {
+    return {
+      x: (lon - this.meta.centro.lon) * this.mpdLon,
+      z: (this.meta.centro.lat - lat) * MPD_LAT,
+    };
+  }
+
+  dentro(x, z) {
+    return x >= -this.mitad && x <= this.mitad && z >= -this.mitad && z <= this.mitad;
+  }
+
+  // ── Precálculos ───────────────────────────────────────────────────────────
+
+  _calcularPendiente() {
+    const { N, altura, metrosPorTexel: e } = this;
+    this.pendiente = new Float32Array(N * N);
+    for (let j = 0; j < N; j++) {
+      const jm = j > 0 ? j - 1 : 0, jp = j < N - 1 ? j + 1 : N - 1;
+      for (let i = 0; i < N; i++) {
+        const im = i > 0 ? i - 1 : 0, ip = i < N - 1 ? i + 1 : N - 1;
+        const dx = (altura[j * N + ip] - altura[j * N + im]) / ((ip - im) * e);
+        const dz = (altura[jp * N + i] - altura[jm * N + i]) / ((jp - jm) * e);
+        this.pendiente[j * N + i] = Math.atan(Math.hypot(dx, dz));
+      }
+    }
+  }
+
+  /**
+   * Humedad: la sombra de lluvia andina es el hecho ecológico que manda en
+   * Bariloche. Cae de ~3500 mm/año en el oeste a ~600 mm en el este a lo largo
+   * de apenas 60 km. Se modela como gradiente longitudinal, más un aporte
+   * orográfico por altura y otro por cercanía al agua.
+   */
+  _calcularHumedad() {
+    const { N, altura, agua } = this;
+    this.humedad = new Float32Array(N * N);
+
+    // Distancia al agua por barrido de dos pasadas (aproximación chamfer)
+    const dist = new Float32Array(N * N).fill(1e9);
+    for (let k = 0; k < N * N; k++) if (agua[k] > 127) dist[k] = 0;
+    const paso = this.metrosPorTexel, diag = paso * 1.41421356;
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const k = j * N + i;
+      let d = dist[k];
+      if (i > 0) d = Math.min(d, dist[k - 1] + paso);
+      if (j > 0) d = Math.min(d, dist[k - N] + paso);
+      if (i > 0 && j > 0) d = Math.min(d, dist[k - N - 1] + diag);
+      if (i < N - 1 && j > 0) d = Math.min(d, dist[k - N + 1] + diag);
+      dist[k] = d;
+    }
+    for (let j = N - 1; j >= 0; j--) for (let i = N - 1; i >= 0; i--) {
+      const k = j * N + i;
+      let d = dist[k];
+      if (i < N - 1) d = Math.min(d, dist[k + 1] + paso);
+      if (j < N - 1) d = Math.min(d, dist[k + N] + paso);
+      if (i < N - 1 && j < N - 1) d = Math.min(d, dist[k + N + 1] + diag);
+      if (i > 0 && j < N - 1) d = Math.min(d, dist[k + N - 1] + diag);
+      dist[k] = d;
+    }
+    this.distanciaAgua = dist;
+
+    for (let j = 0; j < N; j++) {
+      for (let i = 0; i < N; i++) {
+        const k = j * N + i;
+        // Gradiente oeste (i=0, húmedo) -> este (i=N-1, seco), no lineal:
+        // la caída fuerte ocurre al este de la primera cadena.
+        const u = i / (N - 1);
+        let h = Math.pow(1 - u, 1.35);
+        // Aporte orográfico: más alto intercepta más precipitación
+        h += Math.min(0.22, Math.max(0, (altura[k] - 900) / 1600) * 0.22);
+        // Cercanía al agua: mallines y bosque ribereño
+        h += 0.18 * Math.exp(-dist[k] / 260);
+        this.humedad[k] = Math.max(0, Math.min(1, h));
+      }
+    }
+  }
+
+  _construirTexturas() {
+    const N = this.N;
+
+    // Altura como float de un canal: el shader la lee con filtrado lineal.
+    this.texAltura = new THREE.DataTexture(this.altura, N, N, THREE.RedFormat, THREE.FloatType);
+    this.texAltura.magFilter = THREE.LinearFilter;
+    this.texAltura.minFilter = THREE.LinearFilter;
+    this.texAltura.wrapS = this.texAltura.wrapT = THREE.ClampToEdgeWrapping;
+    this.texAltura.generateMipmaps = false;
+    this.texAltura.needsUpdate = true;
+
+    // Normales precalculadas en alta precisión (mejor que derivarlas en el shader)
+    const nrm = new Uint8Array(N * N * 4);
+    const e = this.metrosPorTexel;
+    for (let j = 0; j < N; j++) {
+      const jm = j > 0 ? j - 1 : 0, jp = j < N - 1 ? j + 1 : N - 1;
+      for (let i = 0; i < N; i++) {
+        const im = i > 0 ? i - 1 : 0, ip = i < N - 1 ? i + 1 : N - 1;
+        const k = j * N + i;
+        const dx = (this.altura[j * N + im] - this.altura[j * N + ip]);
+        const dz = (this.altura[jm * N + i] - this.altura[jp * N + i]);
+        const ex = (ip - im) * e, ez = (jp - jm) * e;
+        let nx = dx / ex, ny = 2, nz = dz / ez;
+        const inv = 1 / Math.hypot(nx, ny, nz);
+        nx *= inv; ny *= inv; nz *= inv;
+        nrm[k * 4] = Math.round((nx * 0.5 + 0.5) * 255);
+        nrm[k * 4 + 1] = Math.round((ny * 0.5 + 0.5) * 255);
+        nrm[k * 4 + 2] = Math.round((nz * 0.5 + 0.5) * 255);
+        nrm[k * 4 + 3] = 255;
+      }
+    }
+    this.texNormal = new THREE.DataTexture(nrm, N, N, THREE.RGBAFormat, THREE.UnsignedByteType);
+    this.texNormal.magFilter = THREE.LinearFilter;
+    this.texNormal.minFilter = THREE.LinearMipmapLinearFilter;
+    this.texNormal.generateMipmaps = true;
+    this.texNormal.anisotropy = 4;
+    this.texNormal.needsUpdate = true;
+
+    // Cobertura: R agua, G cauce, B humedad, A pendiente normalizada
+    const cob = new Uint8Array(N * N * 4);
+    for (let k = 0; k < N * N; k++) {
+      cob[k * 4] = this.agua[k];
+      cob[k * 4 + 1] = this.cauce[k];
+      cob[k * 4 + 2] = Math.round(this.humedad[k] * 255);
+      cob[k * 4 + 3] = Math.round(Math.min(1, this.pendiente[k] / (Math.PI / 2)) * 255);
+    }
+    this.texCobertura = new THREE.DataTexture(cob, N, N, THREE.RGBAFormat, THREE.UnsignedByteType);
+    this.texCobertura.magFilter = THREE.LinearFilter;
+    this.texCobertura.minFilter = THREE.LinearMipmapLinearFilter;
+    this.texCobertura.generateMipmaps = true;
+    this.texCobertura.anisotropy = 4;
+    this.texCobertura.needsUpdate = true;
+  }
+}
+
+/** Decodifica un PNG a Uint8ClampedArray RGBA usando el decodificador del navegador. */
+async function leerPNG(url) {
+  const blob = await (await fetch(url)).blob();
+  const bmp = await createImageBitmap(blob);
+  const lienzo = new OffscreenCanvas(bmp.width, bmp.height);
+  const ctx = lienzo.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(bmp, 0, 0);
+  const datos = ctx.getImageData(0, 0, bmp.width, bmp.height).data;
+  bmp.close();
+  return datos;
+}

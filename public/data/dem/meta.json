@@ -1,0 +1,340 @@
+{
+  "generado": "2026-08-18T16:24:34.271Z",
+  "fuente": "Terrarium DEM (Mapzen / AWS Open Data): SRTM, NASADEM y datos nacionales",
+  "atribucion": "https://github.com/tilezen/joerd/blob/master/docs/attribution.md",
+  "proyeccion": "equirectangular local centrada",
+  "centro": {
+    "lat": -41.1,
+    "lon": -71.52
+  },
+  "bbox": {
+    "latSur": -41.39435860582106,
+    "latNorte": -40.80564139417894,
+    "lonOeste": -71.91062222080876,
+    "lonEste": -71.12937777919123
+  },
+  "tamanoM": 65536,
+  "resolucion": 2048,
+  "metrosPorTexel": 32,
+  "alturaMaxCodificada": 4096,
+  "elevacionMin": 297.3,
+  "elevacionMax": 3437.38,
+  "lagos": [
+    {
+      "id": "nahuel_huapi",
+      "nombre": "Lago Nahuel Huapi",
+      "cota": 769,
+      "areaKm2": 353.938,
+      "lat": -40.9958,
+      "lon": -71.4639,
+      "identificado": true
+    },
+    {
+      "id": "mascardi",
+      "nombre": "Lago Mascardi",
+      "cota": 807,
+      "areaKm2": 16.806,
+      "lat": -41.3279,
+      "lon": -71.533,
+      "identificado": true
+    },
+    {
+      "id": "gutierrez",
+      "nombre": "Lago Gutiérrez",
+      "cota": 808,
+      "areaKm2": 9.832,
+      "lat": -41.2077,
+      "lon": -71.4194,
+      "identificado": true
+    },
+    {
+      "id": "moreno_este",
+      "nombre": "Lago Moreno Este",
+      "cota": 769,
+      "areaKm2": 2.587,
+      "lat": -41.0941,
+      "lon": -71.4881,
+      "identificado": true
+    },
+    {
+      "id": "cuerpo_4",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 807,
+      "areaKm2": 2.154,
+      "lat": -41.2677,
+      "lon": -71.6298,
+      "identificado": false
+    },
+    {
+      "id": "escondido",
+      "nombre": "Lago Escondido",
+      "cota": 769,
+      "areaKm2": 1.611,
+      "lat": -41.1041,
+      "lon": -71.6354,
+      "identificado": true
+    },
+    {
+      "id": "los_moscos",
+      "nombre": "Laguna Los Moscos",
+      "cota": 769.1,
+      "areaKm2": 1.512,
+      "lat": -41.1323,
+      "lon": -71.6614,
+      "identificado": true
+    },
+    {
+      "id": "guillelmo",
+      "nombre": "Lago Guillelmo",
+      "cota": 835,
+      "areaKm2": 1.367,
+      "lat": -41.3807,
+      "lon": -71.4961,
+      "identificado": true
+    },
+    {
+      "id": "cuerpo_8",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 801.1,
+      "areaKm2": 1.184,
+      "lat": -40.8475,
+      "lon": -71.783,
+      "identificado": false
+    },
+    {
+      "id": "moreno_oeste",
+      "nombre": "Lago Moreno Oeste",
+      "cota": 769,
+      "areaKm2": 1.091,
+      "lat": -41.0812,
+      "lon": -71.597,
+      "identificado": true
+    },
+    {
+      "id": "cuerpo_10",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 807.2,
+      "areaKm2": 0.468,
+      "lat": -41.3059,
+      "lon": -71.5819,
+      "identificado": false
+    },
+    {
+      "id": "el_trebol",
+      "nombre": "Lago El Trébol",
+      "cota": 769.1,
+      "areaKm2": 0.385,
+      "lat": -41.0649,
+      "lon": -71.5567,
+      "identificado": true
+    },
+    {
+      "id": "hess",
+      "nombre": "Lago Hess",
+      "cota": 762.2,
+      "areaKm2": 0.361,
+      "lat": -41.3719,
+      "lon": -71.7752,
+      "identificado": true
+    },
+    {
+      "id": "cuerpo_13",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 769.1,
+      "areaKm2": 0.346,
+      "lat": -41.063,
+      "lon": -71.5405,
+      "identificado": false
+    },
+    {
+      "id": "roca",
+      "nombre": "Lago Roca",
+      "cota": 760,
+      "areaKm2": 0.328,
+      "lat": -41.3556,
+      "lon": -71.7351,
+      "identificado": true
+    },
+    {
+      "id": "cuerpo_15",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 769.1,
+      "areaKm2": 0.316,
+      "lat": -41.0202,
+      "lon": -71.7919,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_16",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 807.4,
+      "areaKm2": 0.202,
+      "lat": -41.2849,
+      "lon": -71.6044,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_17",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 768.8,
+      "areaKm2": 0.188,
+      "lat": -41.1431,
+      "lon": -71.684,
+      "identificado": false
+    },
+    {
+      "id": "fonck",
+      "nombre": "Lago Fonck",
+      "cota": 804,
+      "areaKm2": 0.184,
+      "lat": -41.3463,
+      "lon": -71.6224,
+      "identificado": true
+    },
+    {
+      "id": "cuerpo_19",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 769.3,
+      "areaKm2": 0.174,
+      "lat": -41.0613,
+      "lon": -71.4813,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_20",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 1162.9,
+      "areaKm2": 0.129,
+      "lat": -41.3107,
+      "lon": -71.6983,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_21",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 807.7,
+      "areaKm2": 0.108,
+      "lat": -41.2904,
+      "lon": -71.5959,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_22",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 779.4,
+      "areaKm2": 0.096,
+      "lat": -41.0685,
+      "lon": -71.8011,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_23",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 771,
+      "areaKm2": 0.075,
+      "lat": -41.3343,
+      "lon": -71.7576,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_24",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 767.5,
+      "areaKm2": 0.074,
+      "lat": -41.129,
+      "lon": -71.3344,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_25",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 767.9,
+      "areaKm2": 0.07,
+      "lat": -41.0709,
+      "lon": -71.4591,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_26",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 780,
+      "areaKm2": 0.069,
+      "lat": -41.0654,
+      "lon": -71.8017,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_27",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 767.5,
+      "areaKm2": 0.066,
+      "lat": -41.1165,
+      "lon": -71.3825,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_28",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 1163.4,
+      "areaKm2": 0.066,
+      "lat": -41.3054,
+      "lon": -71.6846,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_29",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 776.9,
+      "areaKm2": 0.06,
+      "lat": -41.3063,
+      "lon": -71.7976,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_30",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 768.6,
+      "areaKm2": 0.059,
+      "lat": -41.0167,
+      "lon": -71.7509,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_31",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 768.9,
+      "areaKm2": 0.058,
+      "lat": -41.0647,
+      "lon": -71.5773,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_32",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 777.4,
+      "areaKm2": 0.053,
+      "lat": -41.3083,
+      "lon": -71.7887,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_33",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 770,
+      "areaKm2": 0.041,
+      "lat": -40.9747,
+      "lon": -71.575,
+      "identificado": false
+    },
+    {
+      "id": "cuerpo_34",
+      "nombre": "Cuerpo de agua sin identificar",
+      "cota": 770.1,
+      "areaKm2": 0.041,
+      "lat": -41.0729,
+      "lon": -71.4568,
+      "identificado": false
+    }
+  ],
+  "umbralRio": 700
+}

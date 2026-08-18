@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SurviBar — Supervivencia en el Nahuel Huapi</title>
+<style>
+  :root {
+    --tinta: #e8e4dc;
+    --tinta-tenue: #a49e93;
+    --fondo: #0d100f;
+    --acento: #6fae7c;
+    --peligro: #c8503f;
+    --agua: #4a8fb5;
+    --sombra: rgba(6, 9, 8, 0.82);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: var(--fondo); }
+  body {
+    font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+    color: var(--tinta);
+    -webkit-font-smoothing: antialiased;
+  }
+  #lienzo { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
+  body.jugando #lienzo { cursor: none; }
+
+  /* ── Pantalla de carga ─────────────────────────────────────────────── */
+  #carga {
+    position: fixed; inset: 0; z-index: 100;
+    background:
+      radial-gradient(ellipse 120% 80% at 50% 110%, #1b2a2b 0%, transparent 60%),
+      linear-gradient(175deg, #070b0d 0%, #101715 55%, #0a0d0c 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1.6rem; transition: opacity .9s ease;
+  }
+  #carga.oculto { opacity: 0; pointer-events: none; }
+  #carga h1 {
+    font-size: clamp(2.6rem, 7vw, 5rem); font-weight: 200; letter-spacing: .22em;
+    text-transform: uppercase; text-indent: .22em;
+    background: linear-gradient(180deg, #f2efe8 0%, #8fa79a 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  #carga .sub {
+    font-size: .82rem; letter-spacing: .42em; text-transform: uppercase;
+    color: var(--tinta-tenue); text-indent: .42em;
+  }
+  #barra { width: min(420px, 74vw); height: 2px; background: rgba(255,255,255,.11); overflow: hidden; }
+  #barra i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--acento), #d8cfa8); transition: width .35s ease; }
+  #estado { font-size: .78rem; color: var(--tinta-tenue); letter-spacing: .08em; min-height: 1.2em; }
+  #carga .pie { position: absolute; bottom: 1.6rem; font-size: .66rem; color: #5d6660; letter-spacing: .1em; text-align: center; padding: 0 1rem; }
+
+  /* ── HUD ────────────────────────────────────────────────────────────── */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; opacity: 0; transition: opacity .6s ease; }
+  #hud.visible { opacity: 1; }
+
+  .panel {
+    position: absolute; background: var(--sombra);
+    border: 1px solid rgba(255,255,255,.07);
+    backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+    border-radius: 3px; padding: .62rem .8rem;
+    font-size: .74rem; letter-spacing: .03em; line-height: 1.55;
+  }
+  #geo { top: 1rem; left: 1rem; min-width: 205px; font-variant-numeric: tabular-nums; }
+  #geo .fila { display: flex; justify-content: space-between; gap: 1.2rem; }
+  #geo .et { color: var(--tinta-tenue); }
+  #geo .lugar { color: var(--acento); font-size: .82rem; margin-bottom: .3rem; letter-spacing: .06em; }
+
+  #reloj { top: 1rem; right: 1rem; text-align: right; font-variant-numeric: tabular-nums; min-width: 168px; }
+  #reloj .hora { font-size: 1.5rem; font-weight: 200; letter-spacing: .06em; line-height: 1.15; }
+  #reloj .fecha { color: var(--tinta-tenue); font-size: .72rem; }
+  #reloj .estacion { color: var(--acento); font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; margin-top: .2rem; }
+
+  #vitales { bottom: 1rem; left: 1rem; width: 216px; }
+  .vital { margin-bottom: .42rem; }
+  .vital:last-child { margin-bottom: 0; }
+  .vital .cab { display: flex; justify-content: space-between; font-size: .66rem; color: var(--tinta-tenue); margin-bottom: .18rem; letter-spacing: .09em; text-transform: uppercase; }
+  .vital .pista { height: 3px; background: rgba(255,255,255,.09); border-radius: 2px; overflow: hidden; }
+  .vital .pista i { display: block; height: 100%; border-radius: 2px; transition: width .3s ease, background .5s ease; }
+
+  #brujula {
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: min(440px, 52vw); height: 30px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+    overflow: hidden;
+  }
+  #brujula .cinta { position: absolute; top: 0; height: 100%; display: flex; align-items: center; font-size: .68rem; letter-spacing: .12em; }
+  #brujula .marca { position: absolute; text-align: center; transform: translateX(-50%); color: var(--tinta-tenue); }
+  #brujula .marca.card { color: var(--tinta); font-weight: 600; font-size: .78rem; }
+  #brujula .aguja { position: absolute; top: 0; left: 50%; width: 1px; height: 11px; background: var(--acento); transform: translateX(-50%); }
+
+  #mira { position: absolute; top: 50%; left: 50%; width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; border-radius: 50%; background: rgba(255,255,255,.62); box-shadow: 0 0 3px rgba(0,0,0,.9); }
+
+  #ayuda { bottom: 1rem; right: 1rem; color: var(--tinta-tenue); font-size: .68rem; line-height: 1.85; text-align: right; }
+  #ayuda b { color: var(--tinta); font-weight: 500; }
+
+  #diag { position: fixed; top: 4.8rem; right: 1rem; font-family: ui-monospace, 'Cascadia Code', monospace; font-size: .64rem; color: #7d8a80; text-align: right; z-index: 11; pointer-events: none; line-height: 1.5; display: none; }
+  #diag.visible { display: block; }
+
+  #aviso {
+    position: fixed; top: 22%; left: 50%; transform: translateX(-50%);
+    z-index: 12; text-align: center; pointer-events: none;
+    opacity: 0; transition: opacity .5s ease;
+  }
+  #aviso.visible { opacity: 1; }
+  #aviso .t { font-size: 1.1rem; letter-spacing: .18em; text-transform: uppercase; color: var(--tinta); text-shadow: 0 2px 12px #000; }
+  #aviso .d { font-size: .78rem; color: var(--tinta-tenue); margin-top: .3rem; text-shadow: 0 2px 8px #000; }
+</style>
+</head>
+<body>
+  <canvas id="lienzo"></canvas>
+
+  <div id="hud">
+    <div id="brujula"><div class="cinta"></div><div class="aguja"></div></div>
+    <div id="mira"></div>
+    <div class="panel" id="geo"></div>
+    <div class="panel" id="reloj"></div>
+    <div class="panel" id="vitales"></div>
+    <div class="panel" id="ayuda">
+      <b>WASD</b> moverse · <b>Shift</b> correr<br>
+      <b>Espacio</b> saltar · <b>Ctrl</b> agacharse<br>
+      <b>F</b> cámara · <b>T</b> acelerar tiempo<br>
+      <b>F3</b> diagnóstico
+    </div>
+  </div>
+
+  <div id="diag"></div>
+  <div id="aviso"><div class="t"></div><div class="d"></div></div>
+
+  <div id="carga">
+    <div class="sub">Parque Nacional Nahuel Huapi</div>
+    <h1>SurviBar</h1>
+    <div id="barra"><i></i></div>
+    <div id="estado">Iniciando…</div>
+    <div class="pie">
+      Relieve real derivado del modelo de elevación Terrarium (SRTM · NASADEM).<br>
+      Juego educativo sin fines comerciales.
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
