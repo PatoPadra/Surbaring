@@ -124,6 +124,10 @@ avistándola en su hábitat real y se completa identificándola de cerca.
 - Vegetación instanciada por aptitud ecológica (5700 plantas, 26 especies),
   con follaje en tarjetas recortadas por alfa sobre un atlas de hojas dibujado
   proceduralmente: hoja oval para los Nothofagus, acícula para las coníferas
+- Nivel de detalle con impostores horneados: más allá de 120 m cada árbol pasa
+  a ser una cartelera cilíndrica de dos triángulos. La vegetación baja de
+  1.935.700 a 45.262 triángulos, 43 veces menos, y el cuadro completo de
+  11,8 M a 2,4 M
 - Sotobosque de 11 400 elementos: coirón, pastizal húmedo, helechos, michay,
   piedras sueltas y troncos caídos, cada uno con su regla ecológica. El
   sembrado se reparte entre cuadros con presupuesto de 5 ms, así cruzar una
@@ -135,12 +139,12 @@ avistándola en su hábitat real y se completa identificándola de cerca.
 
 ### Roto o a medio hacer
 
-1. **Falta LOD e impostores.** Los árboles lejanos se dibujan con la misma
-   malla que los cercanos. Son ~12 M de triángulos por cuadro, casi todos
-   vegetación multiplicada por las 4 cascadas de sombra.
-2. **El follaje no tiene variación de brillo por cara.** Las tarjetas se
+1. **El follaje no tiene variación de brillo por cara.** Las tarjetas se
    iluminan con la normal de la copa, que da volumen pero aplana el detalle
    interno; falta oclusión propia dentro de la copa.
+2. **Las carteleras se hornean desde un solo ángulo.** Al rodear un árbol
+   lejano, su imagen no cambia de perfil. Se resolvería con un atlas de varias
+   vistas, interpolando entre las dos más cercanas al ángulo de cámara.
 3. El códice todavía no consume `geografia.json` ni `historia.json`: los datos
    están, la interfaz que los muestra no.
 4. No hay todavía: inventario, crafteo, construcción, audio, ni eventos

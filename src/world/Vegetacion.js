@@ -13,18 +13,41 @@ import * as THREE from 'three';
 
 const TAM_CELDA = 96;         // metros por celda de siembra
 const RADIO_CELDAS = 13;      // celdas alrededor del jugador
-const MAX_POR_ESPECIE = 9000;
+const MAX_POR_ESPECIE = 1200;   // malla completa: sólo los árboles cercanos
+const MAX_IMPOSTORES = 12000;   // carteleras: todo lo demás
+/**
+ * Distancia a la que un árbol pasa de malla completa a cartelera.
+ *
+ * A 120 m un coihue ocupa unos 40 píxeles de alto: la diferencia entre 450
+ * triángulos y dos deja de notarse, pero el ahorro es de dos órdenes de
+ * magnitud, sobre todo porque las carteleras además no proyectan sombra y cada
+ * sombra cuesta cuatro dibujos con las cuatro cascadas.
+ */
+const DIST_IMPOSTOR = 120;
+
+/** Rotación nula, para las carteleras que se orientan solas. */
+const IDENTIDAD = new THREE.Quaternion();
 
 export class Vegetacion {
   /**
    * @param {import('./Mundo.js').Mundo} mundo
    * @param {{especies: Array, biomas: Array}} flora
    */
-  constructor(mundo, flora) {
+  constructor(mundo, flora, render) {
     this.mundo = mundo;
     this.flora = flora;
+    this.render = render;
     this.grupo = new THREE.Group();
     this.grupo.name = 'vegetacion';
+
+    // Uniformes compartidos por todas las carteleras
+    this.uniformesImpostor = {
+      uColorSol: { value: new THREE.Color(1, 1, 1) },
+      uIntensidadSol: { value: 2.0 },
+      uAmbiente: { value: new THREE.Color(0.35, 0.40, 0.45) },
+      uNiebla: { value: new THREE.Color(0.6, 0.7, 0.8) },
+      uDensidadNiebla: { value: 0.00005 },
+    };
 
     // Sólo las especies leñosas se dibujan como instancias; las hierbas van al
     // manto de pasto y las trepadoras y hongos quedan como objetos de recolección.
@@ -85,7 +108,49 @@ export class Vegetacion {
     malla.geometry.setAttribute('iTinte', colores);
 
     this.grupo.add(malla);
-    return { esp, malla, colores, n: 0 };
+
+    const impostor = this.render ? this._crearImpostor(esp, geo, mat.map) : null;
+    return { esp, malla, colores, n: 0, impostor };
+  }
+
+  /** Cartelera de una especie: se hornea la malla y se instancia un cuadrilátero. */
+  _crearImpostor(esp, geo, mapaFollaje) {
+    const horneado = hornearImpostor(this.render, geo, mapaFollaje);
+
+    // Cuadrilátero con el pivote en la base, igual que el árbol
+    const plano = new THREE.PlaneGeometry(1, 1);
+    plano.translate(0, 0.5, 0);
+
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        ...this.uniformesImpostor,
+        uMapa: { value: horneado.textura },
+        uAncho: { value: horneado.ancho },
+        uAlto: { value: horneado.alto },
+        uEstacion: { value: 0 },
+        uColorOtono: { value: new THREE.Color(esp.colorHojaOtono || esp.colorHojaVerano || '#8a4a1e') },
+        uPerenne: { value: esp.perenne !== false ? 1 : 0 },
+        uCotaNieve: { value: 1750 },
+      },
+      vertexShader: VERT_IMPOSTOR,
+      fragmentShader: FRAG_IMPOSTOR,
+      side: THREE.DoubleSide,
+    });
+
+    const malla = new THREE.InstancedMesh(plano, mat, MAX_IMPOSTORES);
+    malla.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    // Las carteleras no proyectan sombra: son planas y la sombra las delataría.
+    malla.castShadow = false;
+    malla.receiveShadow = false;
+    malla.frustumCulled = false;
+    malla.count = 0;
+    malla.name = esp.id + '_impostor';
+
+    const colores = new THREE.InstancedBufferAttribute(new Float32Array(MAX_IMPOSTORES * 3), 3);
+    malla.geometry.setAttribute('iTinte', colores);
+
+    this.grupo.add(malla);
+    return { malla, colores, n: 0, horneado };
   }
 
   /** Aptitud de una especie en un punto: 0 = no crece, 1 = óptimo. */
@@ -118,6 +183,23 @@ export class Vegetacion {
     this.uniformes.uCotaNieve.value = estado.cotaNieve ?? 1750;
     this.uniformes.uNieve.value = estado.nieve > 0.05 ? 1 : 0;
 
+    // Las carteleras no pasan por el sistema de luces de three: hay que
+    // pasarles el sol, el ambiente y la niebla a mano para que no se despeguen
+    // del resto de la escena al atardecer o con mal tiempo.
+    if (this.cielo) {
+      this.uniformesImpostor.uColorSol.value.copy(this.cielo.luzSolColor ?? this.cielo.luzSol.color);
+      this.uniformesImpostor.uIntensidadSol.value = this.cielo.intensidadSolar ?? 2.0;
+      const d = this.cielo.factorDia ?? 1;
+      this.uniformesImpostor.uAmbiente.value.setRGB(
+        0.18 + 0.34 * d, 0.21 + 0.36 * d, 0.26 + 0.34 * d
+      );
+    }
+    for (const lote of this.lotes) {
+      if (!lote.impostor) continue;
+      lote.impostor.malla.material.uniforms.uEstacion.value = estado.estacionContinua ?? 0;
+      lote.impostor.malla.material.uniforms.uCotaNieve.value = estado.cotaNieve ?? 1750;
+    }
+
     const cx = Math.floor(posicion.x / TAM_CELDA);
     const cz = Math.floor(posicion.z / TAM_CELDA);
     if (cx === this._celdaActual.x && cz === this._celdaActual.z) return;
@@ -127,7 +209,14 @@ export class Vegetacion {
 
   _sembrar(cx, cz) {
     const m = this.mundo;
-    for (const lote of this.lotes) lote.n = 0;
+    for (const lote of this.lotes) {
+      lote.n = 0;
+      if (lote.impostor) lote.impostor.n = 0;
+    }
+
+    // Centro del sembrado: el reparto entre malla y cartelera se mide desde acá
+    const centroX = (cx + 0.5) * TAM_CELDA;
+    const centroZ = (cz + 0.5) * TAM_CELDA;
 
     const color = new THREE.Color();
     let total = 0;
@@ -177,11 +266,17 @@ export class Vegetacion {
           if (elegido < 0) continue;
 
           const lote = this.lotes[elegido];
-          if (lote.n >= MAX_POR_ESPECIE) continue;
 
           // Claros del bosque: ruido de baja frecuencia abre huecos naturales
           const claro = ruidoValor(x * 0.0042, z * 0.0042);
           if (claro < 0.24) continue;
+
+          // Nivel de detalle: cerca la malla completa, lejos la cartelera.
+          const dist = Math.hypot(x - centroX, z - centroZ);
+          const usaImpostor = lote.impostor && dist > DIST_IMPOSTOR;
+          const destino = usaImpostor ? lote.impostor : lote;
+          const tope = usaImpostor ? MAX_IMPOSTORES : MAX_POR_ESPECIE;
+          if (destino.n >= tope) continue;
 
           const esp = lote.esp;
           const alturaObj = esp.alturaMinM + azar() * (esp.alturaMaxM - esp.alturaMinM);
@@ -197,33 +292,189 @@ export class Vegetacion {
 
           this._pos.set(x, altitud - 0.15, z);
           this._esc.set(escala * (0.86 + azar() * 0.3), escala, escala * (0.86 + azar() * 0.3));
-          this._matriz.compose(this._pos, this._cua, this._esc);
-          lote.malla.setMatrixAt(lote.n, this._matriz);
+          // La cartelera no lleva la rotación aleatoria: se orienta sola hacia
+          // la cámara en el shader. Sólo le importan la posición y la escala.
+          this._matriz.compose(this._pos, usaImpostor ? IDENTIDAD : this._cua, this._esc);
+          destino.malla.setMatrixAt(destino.n, this._matriz);
 
           // Tinte: verdes más oscuros en umbría, más claros al sol
           const v = 0.82 + azar() * 0.36;
           color.setRGB(v * (0.92 + azar() * 0.16), v, v * (0.88 + azar() * 0.2));
-          lote.colores.setXYZ(lote.n, color.r, color.g, color.b);
+          destino.colores.setXYZ(destino.n, color.r, color.g, color.b);
 
-          lote.n++;
+          destino.n++;
           total++;
         }
       }
     }
 
+    let cercanos = 0, lejanos = 0;
     for (const lote of this.lotes) {
       lote.malla.count = lote.n;
       lote.malla.instanceMatrix.needsUpdate = true;
       lote.colores.needsUpdate = true;
       lote.malla.computeBoundingSphere();
+      cercanos += lote.n;
+      if (lote.impostor) {
+        lote.impostor.malla.count = lote.impostor.n;
+        lote.impostor.malla.instanceMatrix.needsUpdate = true;
+        lote.impostor.colores.needsUpdate = true;
+        lote.impostor.malla.computeBoundingSphere();
+        lejanos += lote.impostor.n;
+      }
     }
     this.totalInstancias = total;
+    this.mallasCompletas = cercanos;
+    this.impostores = lejanos;
   }
 
   dispose() {
     for (const l of this.lotes) { l.malla.geometry.dispose(); l.malla.material.dispose(); }
   }
 }
+
+// ── Impostores ──────────────────────────────────────────────────────────────
+
+/**
+ * Hornea una especie a una textura: se dibuja el árbol una sola vez de costado,
+ * con luz neutra, y esa imagen se usa después como cartelera.
+ *
+ * El bakeo usa un material propio, sin la inyección de viento, porque aquella
+ * lee instanceMatrix y acá se dibuja una malla suelta.
+ */
+function hornearImpostor(render, geometria, mapaFollaje, resolucion = 256) {
+  const geo = geometria.clone();
+  geo.computeBoundingBox();
+  const caja = geo.boundingBox;
+  const ancho = Math.max(caja.max.x - caja.min.x, caja.max.z - caja.min.z);
+  const alto = caja.max.y - caja.min.y;
+  const centroY = (caja.max.y + caja.min.y) / 2;
+
+  const mat = new THREE.MeshStandardMaterial({
+    map: mapaFollaje,
+    vertexColors: true,
+    alphaTest: 0.28,
+    side: THREE.DoubleSide,
+    roughness: 0.88,
+    metalness: 0,
+  });
+  const malla = new THREE.Mesh(geo, mat);
+
+  const escena = new THREE.Scene();
+  escena.add(malla);
+  // Luz neutra y pareja: la iluminación real la aplica el shader de la
+  // cartelera. Si se horneara con el sol del momento, todos los árboles
+  // lejanos quedarían congelados a esa hora del día.
+  const sol = new THREE.DirectionalLight(0xffffff, 2.1);
+  sol.position.set(0.6, 0.8, 1.0);
+  escena.add(sol);
+  escena.add(new THREE.AmbientLight(0xffffff, 1.05));
+
+  // Proporción del cartel: se mantiene el aspecto real del árbol
+  const aspecto = ancho / alto;
+  const anchoTex = Math.max(64, Math.round(resolucion * Math.min(1.4, Math.max(0.35, aspecto))));
+  const objetivo = new THREE.WebGLRenderTarget(anchoTex, resolucion, {
+    minFilter: THREE.LinearMipmapLinearFilter,
+    magFilter: THREE.LinearFilter,
+    format: THREE.RGBAFormat,
+    generateMipmaps: true,
+    colorSpace: THREE.SRGBColorSpace,
+  });
+
+  const camara = new THREE.OrthographicCamera(
+    -ancho / 2, ancho / 2, alto / 2, -alto / 2, 0.1, ancho * 6 + alto * 6
+  );
+  camara.position.set(0, centroY, ancho * 2 + alto * 2);
+  camara.lookAt(0, centroY, 0);
+
+  const objetivoPrevio = render.getRenderTarget();
+  const colorPrevio = new THREE.Color();
+  render.getClearColor(colorPrevio);
+  const alfaPrevia = render.getClearAlpha();
+
+  render.setRenderTarget(objetivo);
+  render.setClearColor(0x000000, 0);
+  render.clear();
+  render.render(escena, camara);
+
+  render.setRenderTarget(objetivoPrevio);
+  render.setClearColor(colorPrevio, alfaPrevia);
+
+  geo.dispose();
+  mat.dispose();
+
+  return { textura: objetivo.texture, ancho, alto, objetivo };
+}
+
+const VERT_IMPOSTOR = /* glsl */`
+attribute vec3 iTinte;
+uniform float uAncho;
+uniform float uAlto;
+varying vec2 vUv;
+varying vec3 vTinte;
+varying float vDist;
+
+void main() {
+  vUv = uv;
+  vTinte = iTinte;
+
+  // Centro y escala de la instancia
+  vec3 centro = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  float escX = length(instanceMatrix[0].xyz);
+  float escY = length(instanceMatrix[1].xyz);
+
+  // Cartelera cilíndrica: gira sólo alrededor del eje vertical. Si girara
+  // libremente, al mirar hacia arriba los árboles lejanos se acostarían.
+  vec3 derecha = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
+  derecha.y = 0.0;
+  derecha = normalize(derecha);
+
+  vec3 mundo = centro
+    + derecha * (position.x * uAncho * escX)
+    + vec3(0.0, 1.0, 0.0) * (position.y * uAlto * escY);
+
+  vec4 vista = viewMatrix * vec4(mundo, 1.0);
+  vDist = -vista.z;
+  gl_Position = projectionMatrix * vista;
+}
+`;
+
+const FRAG_IMPOSTOR = /* glsl */`
+uniform sampler2D uMapa;
+uniform vec3 uColorSol;
+uniform float uIntensidadSol;
+uniform vec3 uAmbiente;
+uniform vec3 uNiebla;
+uniform float uDensidadNiebla;
+uniform vec3 uColorOtono;
+uniform float uEstacion;
+uniform float uPerenne;
+uniform float uCotaNieve;
+varying vec2 vUv;
+varying vec3 vTinte;
+varying float vDist;
+
+void main() {
+  vec4 texel = texture2D(uMapa, vUv);
+  if (texel.a < 0.32) discard;
+
+  vec3 color = texel.rgb * vTinte;
+
+  // Otoño: los caducifolios viran igual que en la malla completa, así la
+  // transición entre cartelera y árbol real no salta de color.
+  float otonal = clamp(1.0 - abs(uEstacion - 1.0), 0.0, 1.0) * (1.0 - uPerenne);
+  color = mix(color, uColorOtono, otonal * 0.82);
+  float invernal = clamp(1.0 - abs(uEstacion - 2.0), 0.0, 1.0) * (1.0 - uPerenne);
+  color = mix(color, vec3(0.32, 0.26, 0.20), invernal * 0.62);
+
+  color *= uAmbiente + uColorSol * uIntensidadSol * 0.42;
+
+  float f = 1.0 - exp(-uDensidadNiebla * uDensidadNiebla * vDist * vDist);
+  color = mix(color, uNiebla, clamp(f, 0.0, 1.0));
+
+  gl_FragColor = vec4(color, 1.0);
+}
+`;
 
 // ── Textura de follaje ──────────────────────────────────────────────────────
 

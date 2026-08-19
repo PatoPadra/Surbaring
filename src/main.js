@@ -116,7 +116,9 @@ async function iniciar() {
   jugador.giro = Math.PI * 0.92;
 
   progreso(0.76, 'Plantando el bosque andino-patagónico…');
-  const vegetacion = new Vegetacion(mundo, flora);
+  const vegetacion = new Vegetacion(mundo, flora, render);
+  // Las carteleras se iluminan a mano: necesitan ver el cielo.
+  vegetacion.cielo = cielo;
   escena.add(vegetacion.grupo);
   for (const lote of vegetacion.lotes) conCSM(csm, lote.malla.material);
 
@@ -231,6 +233,8 @@ async function iniciar() {
 
     // ── Agua y vegetación
     agua.actualizar(tiempo.segundosTotales, camara, est, escena);
+    vegetacion.uniformesImpostor.uNiebla.value.copy(escena.fog.color);
+    vegetacion.uniformesImpostor.uDensidadNiebla.value = escena.fog.density;
     vegetacion.actualizar(jugador.posicion, tiempo.segundosTotales, est);
     sotobosque.actualizar(jugador.posicion, tiempo.segundosTotales, est);
     bichos.actualizar(dt, jugador, est, tiempo.segundosTotales);
@@ -248,7 +252,7 @@ async function iniciar() {
       elDiag.innerHTML =
         `${fps.toFixed(0)} fps<br>` +
         `${terreno.nodosDibujados} nodos de terreno<br>` +
-        `${vegetacion.totalInstancias}+${sotobosque.total} plantas · ${bichos.vivos.length} animales<br>` +
+        `${vegetacion.mallasCompletas}m+${vegetacion.impostores}i+${sotobosque.total} plantas · ${bichos.vivos.length} animales<br>` +
         `${inf.render.calls} llamadas · ${(inf.render.triangles / 1000).toFixed(0)}k tri<br>` +
         `sol ${(cielo.alturaSol * 180 / Math.PI).toFixed(1)}°`;
     }
