@@ -223,20 +223,39 @@ export class Mundo {
     }
     this.distanciaAgua = dist;
 
+    // Calibración contra precipitación real medida a lo largo del gradiente.
+    // En escala logarítmica la caída es casi recta, así que se interpola ahí:
+    //   Puerto Blest ~4000 mm | Llao Llao ~1500 | Bariloche ~800 | Dina Huapi ~500
+    this.precipitacion = new Float32Array(N * N);
+    const U_BLEST = 0.1157;        // posición relativa de Puerto Blest en el mundo
+    const LOG_BLEST = Math.log10(4000);
+    const CAIDA_POR_U = 1.07;      // décadas de precipitación por ancho del mundo
+
     for (let j = 0; j < N; j++) {
       for (let i = 0; i < N; i++) {
         const k = j * N + i;
-        // Gradiente oeste (i=0, húmedo) -> este (i=N-1, seco), no lineal:
-        // la caída fuerte ocurre al este de la primera cadena.
-        const u = i / (N - 1);
-        let h = Math.pow(1 - u, 1.35);
-        // Aporte orográfico: más alto intercepta más precipitación
-        h += Math.min(0.22, Math.max(0, (altura[k] - 900) / 1600) * 0.22);
-        // Cercanía al agua: mallines y bosque ribereño
-        h += 0.18 * Math.exp(-dist[k] / 260);
+        const u = i / (N - 1);     // 0 = oeste húmedo, 1 = este seco
+
+        let logMm = LOG_BLEST - CAIDA_POR_U * (u - U_BLEST);
+        // Efecto orográfico: las laderas altas interceptan más precipitación
+        logMm += Math.min(0.13, Math.max(0, (altura[k] - 900) / 1600) * 0.13);
+        logMm = Math.max(2.55, Math.min(3.75, logMm));
+        this.precipitacion[k] = Math.pow(10, logMm);
+
+        // De precipitación a humedad relativa 0..1 para la vegetación
+        let h = (logMm - 2.55) / 1.05;
+        // Mallines y bosque ribereño: la cercanía al agua sostiene vegetación
+        // más exigente de la que le correspondería por lluvia.
+        h += 0.14 * Math.exp(-dist[k] / 240);
         this.humedad[k] = Math.max(0, Math.min(1, h));
       }
     }
+  }
+
+  /** Precipitación media anual estimada en milímetros, para el códice. */
+  precipitacionEn(x, z) {
+    const k = this.indiceDe(x, z);
+    return k < 0 ? 0 : this.precipitacion[k];
   }
 
   _construirTexturas() {

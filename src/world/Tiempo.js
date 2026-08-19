@@ -109,8 +109,9 @@ export class Tiempo {
     const fraccionAnio = (diaDelAnio / 365.25) % 1;
     const estacionContinua = ((fraccionAnio * 4) + 3.35) % 4;
 
-    // Temperatura del momento: la mínima antes del amanecer, la máxima a media tarde
-    const horaDecimal = this.fecha.getUTCHours() + this.fecha.getUTCMinutes() / 60;
+    // Temperatura del momento: la mínima antes del amanecer, la máxima a media
+    // tarde. Va en hora local, no UTC: el ciclo sigue al sol de Bariloche.
+    const horaDecimal = this.horaDecimalLocal;
     const cicloDiario = -Math.cos((horaDecimal - 4.5) / 24 * Math.PI * 2);
     const anomalia = (this._ruidoLento(this._semillaA, 4.5) - 0.5) * 7.5;
     const temperatura = (c.max + c.min) / 2 + (c.max - c.min) / 2 * cicloDiario + anomalia;
@@ -150,6 +151,7 @@ export class Tiempo {
       nombreEstacion: estacion.nombre,
       estacionContinua,
       mes,
+      horaDecimal,
       temperatura,
       tempMax: c.max,
       tempMin: c.min,
@@ -174,15 +176,30 @@ export class Tiempo {
     setTimeout(() => { this._cenizaObjetivo = 0; }, 90000);
   }
 
+  /**
+   * El reloj interno corre en UTC porque la posición solar se calcula con él,
+   * pero al jugador hay que mostrarle la hora de Bariloche: UTC-3.
+   */
+  get fechaLocal() {
+    return new Date(this.fecha.getTime() - 3 * 3600 * 1000);
+  }
+
+  get horaDecimalLocal() {
+    const f = this.fechaLocal;
+    return f.getUTCHours() + f.getUTCMinutes() / 60;
+  }
+
   get textoHora() {
-    const h = String(this.fecha.getUTCHours()).padStart(2, '0');
-    const m = String(this.fecha.getUTCMinutes()).padStart(2, '0');
+    const f = this.fechaLocal;
+    const h = String(f.getUTCHours()).padStart(2, '0');
+    const m = String(f.getUTCMinutes()).padStart(2, '0');
     return `${h}:${m}`;
   }
 
   get textoFecha() {
     const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
       'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-    return `${this.fecha.getUTCDate()} de ${MESES[this.fecha.getUTCMonth()]} de ${this.fecha.getUTCFullYear()}`;
+    const f = this.fechaLocal;
+    return `${f.getUTCDate()} de ${MESES[f.getUTCMonth()]} de ${f.getUTCFullYear()}`;
   }
 }

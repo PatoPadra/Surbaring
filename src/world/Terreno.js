@@ -260,6 +260,21 @@ export class Terreno {
           for (int i = 0; i < 5; i++) { v += a * ruido(p); p *= 2.03; a *= 0.5; }
           return v;
         }
+
+        /**
+         * Ruido proyectado sobre los tres planos y mezclado según la normal.
+         * Proyectar sólo sobre XZ estira la textura en las laderas empinadas
+         * hasta convertirla en franjas: en una pared vertical, un metro de
+         * pared ocupa cero metros de planta.
+         */
+        float fbmTri(vec3 p, vec3 n, float escala) {
+          vec3 w = abs(n);
+          w = pow(w, vec3(4.0));
+          w /= max(w.x + w.y + w.z, 1e-4);
+          return fbm(p.yz * escala) * w.x
+               + fbm(p.xz * escala) * w.y
+               + fbm(p.xy * escala) * w.z;
+        }
       ` + shader.fragmentShader;
 
       shader.fragmentShader = shader.fragmentShader.replace(
@@ -290,23 +305,56 @@ export class Terreno {
         bosqueHum = mix(bosqueHum, vec3(0.402, 0.170, 0.072), otonal * 0.62);
         bosqueSeco = mix(bosqueSeco, vec3(0.520, 0.262, 0.086), otonal * 0.70);
 
-        float detalle = fbm(vMundo.xz * 0.045);
-        float grano   = fbm(vMundo.xz * 0.42);
+        // ── Detalle multiescala ─────────────────────────────────────────────
+        // Un solo octava daba una superficie de arcilla lisa. Hacen falta tres
+        // escalas: el manchón de vegetación, la mata suelta y el grano del
+        // suelo. Las frecuencias altas se desvanecen con la distancia, porque
+        // más allá de unos metros no se resuelven y sólo producen hormigueo.
+        float distVista = length(vViewPosition);
+        float cercania = 1.0 - smoothstep(30.0, 420.0, distVista);
+        float muyCerca = 1.0 - smoothstep(4.0, 45.0, distVista);
 
-        // Mezcla vegetal según el gradiente de lluvia oeste-este
+        float macro = fbmTri(vMundo, nrm, 0.021);      // manchones de ~48 m
+        float meso  = fbmTri(vMundo, nrm, 0.28);       // matas de ~3,5 m
+        float micro = fbmTri(vMundo, nrm, 2.6);        // grano de ~0,4 m
+        float grano = fbmTri(vMundo, nrm, 0.42);
+
+        float detalle = macro;
+        detalle = mix(detalle, mix(detalle, meso, 0.55), cercania);
+        detalle = mix(detalle, mix(detalle, micro, 0.42), muyCerca);
+
+        // ── Mezcla vegetal según el gradiente de lluvia oeste-este ──────────
         vec3 vegetacion = mix(estepa, bosqueSeco, smoothstep(0.22, 0.48, humedad));
         vegetacion = mix(vegetacion, bosqueHum, smoothstep(0.45, 0.78, humedad));
-        vegetacion = mix(vegetacion, vegetacion * 0.82, detalle * 0.5);
+
+        // Parches: pastizal claro contra mata oscura. Una pradera nunca es de
+        // un solo color, y esto es lo que rompe el aspecto de plastilina.
+        vec3 pastoClaro = vegetacion * 1.38 + vec3(0.055, 0.062, 0.024);
+        vec3 mataOscura = vegetacion * 0.52;
+        vegetacion = mix(mataOscura, pastoClaro, smoothstep(0.28, 0.74, detalle));
+        // Tierra desnuda asomando entre las matas
+        vegetacion = mix(vegetacion, suelo * 1.15, smoothstep(0.72, 0.94, 1.0 - detalle) * 0.55);
 
         // Por encima de la línea de bosque no hay árboles: matorral y roca desnuda
         float sobreBosque = smoothstep(uLineaBosque - 160.0, uLineaBosque + 190.0, alt);
-        vec3 tierra = mix(vegetacion, pedregal, sobreBosque);
+        vec3 tierra = mix(vegetacion, mix(pedregal * 0.82, pedregal * 1.16, grano), sobreBosque);
 
-        // La pendiente descubre la roca madre
-        float roca = smoothstep(0.34, 0.68, pend + detalle * 0.14);
-        vec3 colorRoca = mix(rocaBase, rocaOscura, grano * 0.8);
+        // ── Roca madre ──────────────────────────────────────────────────────
+        // El granito asoma antes de lo que sugiere la pendiente pura, y lo hace
+        // en vetas irregulares, no en una franja pareja.
+        float roca = smoothstep(0.26, 0.58, pend + (detalle - 0.5) * 0.30);
+        vec3 colorRoca = mix(rocaOscura, rocaBase, grano);
+        colorRoca = mix(colorRoca, colorRoca * (0.72 + 0.56 * micro), muyCerca);
+        // Vetas y estratos del batolito
+        float veta = fbmTri(vMundo + vec3(0.0, alt * 0.12, 0.0), nrm, 0.09);
+        colorRoca *= 0.84 + 0.32 * veta;
         tierra = mix(tierra, colorRoca, roca);
+
         tierra = mix(tierra, suelo, smoothstep(0.30, 0.06, pend) * (1.0 - sobreBosque) * 0.22);
+
+        // Oclusión de contacto: las hondonadas reciben menos cielo
+        float hondonada = smoothstep(0.62, 0.18, macro);
+        tierra *= 1.0 - hondonada * 0.16;
 
         // Nieve: se acumula por altura, no en paredes, y algo más en las hondonadas
         float nieveAlt = smoothstep(uNieveCota - uNieveSuavidad, uNieveCota + uNieveSuavidad, alt);
@@ -339,9 +387,26 @@ export class Terreno {
         // acá rompe el enlace del programa.
         float faceDirection = gl_FrontFacing ? 1.0 : -1.0;
         vec3 normal = normalize(texture2D(uTexNormal, vMundo.xz / uTamanoMundo + 0.5).xyz * 2.0 - 1.0);
-        float ex = fbm(vMundo.xz * 0.9 + 3.1) - fbm(vMundo.xz * 0.9 - 3.1);
-        float ez = fbm(vMundo.xz * 0.9 + 7.7) - fbm(vMundo.xz * 0.9 - 7.7);
-        normal = normalize(normal + vec3(ex, 0.0, ez) * 0.34);
+
+        // Relieve fino en dos escalas, atenuado con la distancia para que no
+        // hormiguee. El DEM tiene 32 m por texel: todo lo que pasa por debajo
+        // de esa escala tiene que nacer acá.
+        float dv = length(vViewPosition);
+        float f1 = 1.0 - smoothstep(20.0, 300.0, dv);
+        float f2 = 1.0 - smoothstep(3.0, 40.0, dv);
+
+        vec3 d1 = vec3(0.9, 0.0, 0.0), d3 = vec3(0.0, 0.0, 0.9);
+        vec2 e1 = vec2(
+          fbmTri(vMundo + d1, normal, 0.55) - fbmTri(vMundo - d1, normal, 0.55),
+          fbmTri(vMundo + d3, normal, 0.55) - fbmTri(vMundo - d3, normal, 0.55)
+        );
+        vec3 d2 = vec3(0.14, 0.0, 0.0), d4 = vec3(0.0, 0.0, 0.14);
+        vec2 e2 = vec2(
+          fbmTri(vMundo + d2, normal, 3.4) - fbmTri(vMundo - d2, normal, 3.4),
+          fbmTri(vMundo + d4, normal, 3.4) - fbmTri(vMundo - d4, normal, 3.4)
+        );
+        normal = normalize(normal + vec3(e1.x, 0.0, e1.y) * 0.62 * f1
+                                  + vec3(e2.x, 0.0, e2.y) * 0.85 * f2);
         vec3 nonPerturbedNormal = normal;
         `
       );

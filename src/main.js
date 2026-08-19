@@ -90,6 +90,14 @@ async function iniciar() {
   csm.fade = true;
   conCSM(csm, terreno.material);
 
+  // Sesgo de sombra por cascada. Sin esto, el follaje se auto-sombrea y el
+  // bosque entero sale negro: cada cascada cubre un área distinta, así que el
+  // texel de su mapa mide distinto y el sesgo tiene que acompañar.
+  csm.lights.forEach((luz, i) => {
+    luz.shadow.normalBias = 0.22 * Math.pow(2, i);
+    luz.shadow.bias = -0.0004;
+  });
+
   escena.fog = new THREE.FogExp2(0x9ab4c8, 0.000055);
 
   // ── Tiempo y estaciones ───────────────────────────────────────────────────
@@ -218,7 +226,6 @@ async function iniciar() {
     // ── Agua y vegetación
     agua.actualizar(tiempo.segundosTotales, camara, est, escena);
     vegetacion.actualizar(jugador.posicion, tiempo.segundosTotales, est);
-    est.horaDecimal = tiempo.fecha.getUTCHours() + tiempo.fecha.getUTCMinutes() / 60;
     bichos.actualizar(dt, jugador, est, tiempo.segundosTotales);
 
     // El domo del cielo acompaña a la cámara

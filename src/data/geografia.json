@@ -1,0 +1,793 @@
+{
+  "gradientePrecipitacion": {
+    "descripcion": "El cordón andino norpatagónico funciona como una barrera frente a los vientos húmedos del oeste que llegan desde el Pacífico. Al ascender la ladera occidental, esas masas de aire se enfrían, condensan y descargan la mayor parte de su humedad sobre la frontera con Chile, donde caen más de 3.500 mm anuales. Una vez cruzada la divisoria, el aire desciende ya seco y se calienta por compresión, generando la llamada sombra de lluvia. El resultado es uno de los gradientes pluviométricos más abruptos del planeta: en apenas 60 km en sentido oeste-este la precipitación cae de unos 4.000 mm a menos de 600 mm. Ese gradiente ordena toda la vegetación regional, desde la selva valdiviana perennifolia de Puerto Blest hasta la estepa patagónica de coirones y neneos al este de Dina Huapi. El bosque de coihue y ciprés de la cordillera ocupa la franja intermedia, y el ecotono bosque-estepa se ubica aproximadamente sobre la isoyeta de 600-800 mm. Para el habitante y el caminante, esto significa que la disponibilidad de leña, agua superficial y refugio cambia radicalmente según en qué punto del gradiente uno se encuentre.",
+    "puntos": [
+      { "lugar": "Puerto Blest", "lat": -41.03, "lon": -71.82, "mmAnuales": 4000, "vegetacion": "selva valdiviana" },
+      { "lugar": "Paso Puyehue / límite internacional", "lat": -40.72, "lon": -71.93, "mmAnuales": 3500, "vegetacion": "bosque húmedo de coihue y alerce" },
+      { "lugar": "Puerto Pañuelo / Llao Llao", "lat": -41.05, "lon": -71.53, "mmAnuales": 1500, "vegetacion": "bosque de coihue, arrayán y ciprés" },
+      { "lugar": "Colonia Suiza", "lat": -41.1, "lon": -71.48, "mmAnuales": 1300, "vegetacion": "bosque mixto de coihue y ciprés" },
+      { "lugar": "Bariloche centro", "lat": -41.135, "lon": -71.31, "mmAnuales": 800, "vegetacion": "bosque abierto de ciprés y matorral" },
+      { "lugar": "Aeropuerto de Bariloche", "lat": -41.15, "lon": -71.16, "mmAnuales": 600, "vegetacion": "ecotono bosque-estepa" },
+      { "lugar": "Dina Huapi", "lat": -41.06, "lon": -71.15, "mmAnuales": 500, "vegetacion": "estepa patagónica de coirón" },
+      { "lugar": "Confluencia Limay-Traful", "lat": -40.7, "lon": -70.93, "mmAnuales": 400, "vegetacion": "estepa arbustiva" }
+    ]
+  },
+  "geologia": {
+    "descripcion": "La región del Nahuel Huapi es producto de la orogenia andina, desencadenada por la subducción de la placa de Nazca bajo la placa Sudamericana desde el Jurásico. El núcleo rocoso de las altas cumbres es el Batolito Norpatagónico, un enorme cuerpo de rocas plutónicas (granodioritas, tonalitas y granitos) emplazado principalmente entre el Cretácico y el Paleógeno. Sobre ese basamento se apoyan secuencias volcánicas y volcaniclásticas mesozoicas y cenozoicas, y hacia el oeste se levanta el arco activo de la Zona Volcánica Sur, con centros como Puyehue-Cordón Caulle, Osorno y Calbuco. Durante el Cuaternario, sucesivas glaciaciones cubrieron la cordillera con casquistes de hielo que excavaron profundos valles en artesa, pulieron rocas aborregadas y depositaron cordones morénicos frontales y laterales. Al retirarse el hielo, esas artesas represadas por morrenas se llenaron de agua y dieron origen a los grandes lagos digitados de la región, entre ellos el Nahuel Huapi, con sobreexcavación glaciaria que explica sus profundidades superiores a los 400 metros. Las laderas conservan circos, aristas y horns como el Tronador, además de abundante till y depósitos de derrubio. La caída reiterada de cenizas y lapilli desde los volcanes chilenos cubrió la superficie con mantos piroclásticos que dieron origen a andisoles: suelos jóvenes, livianos, muy porosos, ricos en alófano, con alta retención de agua y fuerte fijación de fósforo. Estos suelos son fértiles pero frágiles: una vez perdida la cobertura vegetal por incendio o sobrepastoreo, erosionan rápidamente por acción del viento y del agua.",
+    "unidades": [
+      {
+        "id": "granito_batolito",
+        "nombre": "Granodiorita del Batolito Norpatagónico",
+        "descripcion": "Roca plutónica de grano medio a grueso, gris clara, compuesta por cuarzo, plagioclasa, feldespato potásico, biotita y anfíbol. Constituye el esqueleto de las altas cumbres del oeste del parque y aflora en paredes pulidas por el hielo. Es dura, resistente a la meteorización y aporta bloques angulosos a los conos de talud.",
+        "colorRoca": "#8a8378",
+        "rugosidad": 0.8,
+        "altitudMinM": 700,
+        "altitudMaxM": 3500,
+        "recurso": "piedra",
+        "dureza": 4,
+        "edadMa": "120-80"
+      },
+      {
+        "id": "volcanitas_mesozoicas",
+        "nombre": "Volcanitas y volcaniclásticas mesozoicas",
+        "descripcion": "Sucesiones de lavas andesíticas, tobas y brechas asociadas al arco volcánico jurásico-cretácico. Afloran en cerros del sector central del parque y suelen presentar colores rojizos y violáceos por alteración. Son más blandas y fracturadas que el batolito, por lo que generan laderas inestables y frecuentes desprendimientos.",
+        "colorRoca": "#7a5a4a",
+        "rugosidad": 0.7,
+        "altitudMinM": 800,
+        "altitudMaxM": 2400,
+        "recurso": "piedra",
+        "dureza": 3,
+        "edadMa": "180-90"
+      },
+      {
+        "id": "lavas_cuaternarias",
+        "nombre": "Lavas y piroclastitas cuaternarias",
+        "descripcion": "Coladas basálticas y andesíticas junto con depósitos de flujo piroclástico vinculados al vulcanismo reciente de la Zona Volcánica Sur. Forman mesetas y conos escoriáceos oscuros, con superficies ásperas y vesiculares. Su meteorización aporta materiales que enriquecen los suelos volcánicos.",
+        "colorRoca": "#4a4540",
+        "rugosidad": 0.9,
+        "altitudMinM": 700,
+        "altitudMaxM": 2200,
+        "recurso": "piedra",
+        "dureza": 3,
+        "edadMa": "2.6-0"
+      },
+      {
+        "id": "morrena_glaciar",
+        "nombre": "Depósitos morénicos (till glaciario)",
+        "descripcion": "Sedimentos sin selección depositados por los glaciares pleistocenos, con bloques erráticos inmersos en una matriz limo-arenosa. Forman los cordones que cierran los grandes lagos y las lomadas onduladas del área de Bariloche y Colonia Suiza. Son fáciles de excavar pero poco estables en cortes verticales.",
+        "colorRoca": "#9c8f7c",
+        "rugosidad": 0.5,
+        "altitudMinM": 700,
+        "altitudMaxM": 1600,
+        "recurso": "grava",
+        "dureza": 2,
+        "edadMa": "1-0.01"
+      },
+      {
+        "id": "ceniza_andisol",
+        "nombre": "Mantos de ceniza volcánica y andisoles",
+        "descripcion": "Cobertura de tefra holocena de espesor variable, transformada en suelos oscuros, livianos y muy porosos. Retienen mucha agua, son fáciles de trabajar y sostienen el bosque andino-patagónico. Al perder cobertura vegetal se vuelven extremadamente vulnerables a la erosión eólica e hídrica.",
+        "colorRoca": "#5a5148",
+        "rugosidad": 0.2,
+        "altitudMinM": 700,
+        "altitudMaxM": 1800,
+        "recurso": "tierra",
+        "dureza": 1,
+        "edadMa": "0.01-0"
+      },
+      {
+        "id": "aluvial_fluvial",
+        "nombre": "Depósitos aluviales y fluvioglaciarios",
+        "descripcion": "Gravas, arenas y limos acumulados en valles de ríos y en llanuras de lavado frente a las morrenas. Ocupan los fondos de valle del Limay, Manso y Ñirihuau y forman terrazas escalonadas. Constituyen los principales acuíferos superficiales de la región.",
+        "colorRoca": "#b0a48c",
+        "rugosidad": 0.3,
+        "altitudMinM": 700,
+        "altitudMaxM": 1200,
+        "recurso": "arena",
+        "dureza": 1,
+        "edadMa": "0.1-0"
+      }
+    ],
+    "volcanes": [
+      {
+        "nombre": "Tronador",
+        "latitud": -41.1567,
+        "longitud": -71.8853,
+        "alturaM": 3478,
+        "activo": false,
+        "ultimaErupcion": null,
+        "descripcion": "Estratovolcán extinto ubicado sobre el límite argentino-chileno, es la máxima altura del Parque Nacional Nahuel Huapi. Su edificio, construido durante el Pleistoceno, hoy está profundamente erosionado y coronado por un casquete de hielo con varios glaciares de descarga. Presenta tres cumbres principales: Argentina, Internacional (la más alta) y Chilena. Su nombre proviene del estruendo que producen los desprendimientos periódicos de hielo y roca desde sus paredes colgantes."
+      },
+      {
+        "nombre": "Puyehue-Cordón Caulle",
+        "latitud": -40.59,
+        "longitud": -72.117,
+        "alturaM": 2236,
+        "activo": true,
+        "ultimaErupcion": "2011-2012",
+        "descripcion": "Complejo volcánico chileno situado a unos 100 km al noroeste de Bariloche, responsable de las caídas de ceniza más significativas sobre la región. Su erupción de junio de 2011 desde el Cordón Caulle generó una columna de más de 10 km y depositó varios centímetros de ceniza y pómez sobre Villa La Angostura y Bariloche. El evento afectó durante meses el transporte aéreo, la ganadería y el turismo en toda la Patagonia norte. Es el centro eruptivo con mayor probabilidad de volver a impactar sobre el área del parque."
+      },
+      {
+        "nombre": "Osorno",
+        "latitud": -41.1,
+        "longitud": -72.493,
+        "alturaM": 2652,
+        "activo": true,
+        "ultimaErupcion": "1869",
+        "descripcion": "Estratovolcán chileno de perfil cónico casi perfecto, cubierto por un glaciar sumital y visible desde algunos miradores del oeste del parque. Pertenece a la Zona Volcánica Sur y su historial eruptivo es predominantemente efusivo, con coladas basáltico-andesíticas. Aunque activo, su distancia y la orientación de los vientos hacen que su influencia en cenizas sobre Bariloche sea menor que la del Puyehue."
+      },
+      {
+        "nombre": "Calbuco",
+        "latitud": -41.326,
+        "longitud": -72.614,
+        "alturaM": 2003,
+        "activo": true,
+        "ultimaErupcion": "2015",
+        "descripcion": "Estratovolcán chileno de comportamiento explosivo, ubicado al oeste del Nahuel Huapi. Su erupción de abril de 2015 fue repentina, sin señales precursoras claras, y produjo columnas de más de 15 km. La pluma de ceniza cruzó la cordillera y alcanzó localidades del sur de Neuquén y Río Negro. Está considerado uno de los volcanes de mayor riesgo del sur de Chile."
+      },
+      {
+        "nombre": "Lanín",
+        "latitud": -39.638,
+        "longitud": -71.5,
+        "alturaM": 3776,
+        "activo": false,
+        "ultimaErupcion": null,
+        "descripcion": "Estratovolcán fronterizo situado al norte del Nahuel Huapi, dentro del Parque Nacional Lanín. Su cono simétrico está cubierto de hielo permanente y domina el paisaje del norte neuquino. No registra erupciones históricas, aunque presenta actividad holocena, por lo que se lo considera potencialmente activo pero sin eventos documentados."
+      }
+    ],
+    "glaciares": [
+      {
+        "nombre": "Ventisquero Negro",
+        "latitud": -41.19,
+        "longitud": -71.8,
+        "descripcion": "Glaciar de descarga del Tronador cuya superficie está cubierta por una gruesa capa de detritos rocosos que le da su característico color oscuro. Su frente termina en una laguna proglacial formada por el retroceso reciente del hielo, sobre la que flotan témpanos desprendidos. En 2009 el desborde parcial de esa laguna generó una crecida súbita del río Manso que arrasó el puente de acceso. Es uno de los glaciares más accesibles y visitados de la Patagonia argentina.",
+        "retroceso": "retroceso frontal marcado desde mediados del siglo XX, con formación de la laguna proglacial y pérdida de varios cientos de metros de frente entre 1980 y 2020",
+        "tipo": "glaciar de descarga cubierto por detritos"
+      },
+      {
+        "nombre": "Glaciar Castaño Overo",
+        "latitud": -41.15,
+        "longitud": -71.83,
+        "descripcion": "Glaciar colgante ubicado en la ladera argentina del Tronador, célebre por los desprendimientos de bloques de hielo que caen desde su frente hacia el valle. El estruendo de esos derrumbes es el origen del nombre del cerro. Cuenta con registros de balance de masa relativamente extensos para la región. Ha mostrado adelgazamiento y retroceso sostenidos en las últimas décadas.",
+        "retroceso": "adelgazamiento y retroceso continuos documentados desde la década de 1950",
+        "tipo": "glaciar colgante"
+      },
+      {
+        "nombre": "Glaciar Río Manso",
+        "latitud": -41.17,
+        "longitud": -71.87,
+        "descripcion": "Glaciar de descarga del casquete del Tronador que da origen al río Manso Superior. Desciende por un valle profundo y su frente alimenta directamente el sistema hídrico que drena hacia el Pacífico. Presenta abundante cobertura detrítica en su sector inferior. Su retroceso ha dejado expuestas extensas superficies de roca pulida y morrenas recientes.",
+        "retroceso": "retroceso sostenido durante el siglo XX y XXI",
+        "tipo": "glaciar de descarga"
+      },
+      {
+        "nombre": "Glaciar Alerce",
+        "latitud": -41.16,
+        "longitud": -71.86,
+        "descripcion": "Glaciar de circo y valle situado en la vertiente noreste del Tronador, con acceso desde el refugio Otto Meiling. Presenta grietas y seracs bien desarrollados y es utilizado como ruta de aproximación a las cumbres. Su cuenca de acumulación forma parte del casquete de hielo sumital del cerro. Ha perdido superficie y espesor de manera consistente con la tendencia regional.",
+        "retroceso": "pérdida de superficie y espesor documentada en las últimas décadas",
+        "tipo": "glaciar de circo y valle"
+      },
+      {
+        "nombre": "Glaciar Frías",
+        "latitud": -41.13,
+        "longitud": -71.85,
+        "descripcion": "Glaciar del sector norte del Tronador que alimenta el río Frías, cuyas aguas cargadas de harina glaciaria dan al lago Frías su intenso color turquesa lechoso. Es un glaciar de valle con un frente que ha retrocedido notablemente respecto de sus posiciones morénicas históricas. Su cuenca drena hacia el Nahuel Huapi a través del lago Frías.",
+        "retroceso": "retroceso de varios kilómetros respecto de las morrenas de la Pequeña Edad de Hielo",
+        "tipo": "glaciar de valle"
+      }
+    ]
+  },
+  "hidrologia": {
+    "descripcion": "El Parque Nacional Nahuel Huapi está atravesado por la divisoria continental de aguas, que separa las cuencas que drenan al Atlántico de las que lo hacen al Pacífico. A diferencia de lo que ocurre más al norte, aquí la divisoria no coincide con la línea de las altas cumbres: la erosión glaciaria abrió pasos bajos y capturó cabeceras, de modo que varios cuerpos de agua situados al este del eje cordillerano desaguan hacia el oeste. El Nahuel Huapi, el Gutiérrez y el Traful pertenecen a la vertiente atlántica a través del sistema Limay-Negro. En cambio, el Frías, el Mascardi, el Guillelmo, el Steffen y el Hess drenan al Pacífico por el río Manso y el Puelo. Esta particularidad convierte a la zona en un mosaico hidrográfico donde cuencas opuestas se tocan a pocos kilómetros de distancia, y explica que el agua de un mismo valle pueda terminar en océanos distintos.",
+    "lagos": [
+      {
+        "id": "nahuel_huapi",
+        "nombre": "Lago Nahuel Huapi",
+        "latitud": -41.05,
+        "longitud": -71.5,
+        "cotaM": 764,
+        "profundidadMaxM": 464,
+        "superficieKm2": 557,
+        "cuenca": "atlántica",
+        "descripcion": "Es el cuerpo de agua central del parque y uno de los lagos más profundos de Sudamérica. Su forma digitada, con largos brazos que penetran en la cordillera, refleja la excavación de valles glaciarios luego inundados. Sus aguas son ultraoligotróficas, frías y de gran transparencia, con temperaturas superficiales que rara vez superan los 17 °C en verano. Alberga la isla Victoria y desagua por el río Limay hacia el Atlántico.",
+        "colorAgua": "#1c5a7a",
+        "transparenciaM": 15,
+        "brazos": ["Blest", "Rincón", "Tristeza", "Última Esperanza", "Machete", "Campanario", "Huemul"]
+      },
+      {
+        "id": "gutierrez",
+        "nombre": "Lago Gutiérrez",
+        "latitud": -41.18,
+        "longitud": -71.4,
+        "cotaM": 800,
+        "profundidadMaxM": 111,
+        "superficieKm2": 16.4,
+        "cuenca": "atlántica",
+        "descripcion": "Lago alargado encajonado entre el cordón del Catedral y el cerro Ventana, muy próximo a la ciudad de Bariloche. Ocupa una artesa glaciaria cerrada por morrenas en su extremo norte. Desagua por el arroyo Gutiérrez hacia el Nahuel Huapi. Sus costas rocosas y sus aguas frías lo hacen popular para deportes náuticos y buceo.",
+        "colorAgua": "#1f6b8c",
+        "transparenciaM": 12,
+        "brazos": []
+      },
+      {
+        "id": "moreno_este",
+        "nombre": "Lago Moreno Este",
+        "latitud": -41.09,
+        "longitud": -71.5,
+        "cotaM": 758,
+        "profundidadMaxM": 90,
+        "superficieKm2": 6.5,
+        "cuenca": "atlántica",
+        "descripcion": "Sector oriental del sistema del lago Moreno, separado del occidental por el estrecho de Puente Moreno. Está rodeado por bosques de coihue y ciprés y por barrios residenciales del oeste de Bariloche. Sus aguas son templadas en comparación con las del Nahuel Huapi, lo que lo hace apto para el baño en verano. Conecta con el Nahuel Huapi a través de un corto arroyo.",
+        "colorAgua": "#2a7a99",
+        "transparenciaM": 10,
+        "brazos": []
+      },
+      {
+        "id": "moreno_oeste",
+        "nombre": "Lago Moreno Oeste",
+        "latitud": -41.08,
+        "longitud": -71.56,
+        "cotaM": 758,
+        "profundidadMaxM": 100,
+        "superficieKm2": 10.5,
+        "cuenca": "atlántica",
+        "descripcion": "Brazo occidental del sistema Moreno, más encajonado y de aguas más frías que el sector este. Recibe el aporte del arroyo Goye y de vertientes de las laderas del cerro López. Está bordeado por bosque denso y por sectores de la Colonia Suiza. Forma parte del circuito clásico que rodea el Llao Llao.",
+        "colorAgua": "#22708f",
+        "transparenciaM": 12,
+        "brazos": []
+      },
+      {
+        "id": "mascardi",
+        "nombre": "Lago Mascardi",
+        "latitud": -41.32,
+        "longitud": -71.55,
+        "cotaM": 800,
+        "profundidadMaxM": 218,
+        "superficieKm2": 39,
+        "cuenca": "pacífica",
+        "descripcion": "Lago de forma ramificada ubicado sobre la ruta al Tronador, con dos brazos principales: Tronador y Catedral. Recibe aguas glaciarias que le dan tonalidades turquesas muy marcadas en su brazo occidental. Desagua por el río Manso hacia el Pacífico. Su entorno concentra campings, senderos y el acceso a la cascada Los Alerces.",
+        "colorAgua": "#2f8fa3",
+        "transparenciaM": 10,
+        "brazos": ["Tronador", "Catedral"]
+      },
+      {
+        "id": "guillelmo",
+        "nombre": "Lago Guillelmo",
+        "latitud": -41.4,
+        "longitud": -71.47,
+        "cotaM": 810,
+        "profundidadMaxM": null,
+        "superficieKm2": 6.5,
+        "cuenca": "pacífica",
+        "descripcion": "Lago alargado situado al sur del Mascardi, junto a la ruta nacional 40, en una zona de transición hacia el bosque de lenga y ciprés. Está rodeado por laderas empinadas y presenta escasa infraestructura. Sus aguas desaguan al sistema del río Manso. Es un sitio tranquilo, con buena pesca deportiva y presencia de bosque de arrayán en algunas costas.",
+        "colorAgua": "#256b85",
+        "transparenciaM": 8,
+        "brazos": []
+      },
+      {
+        "id": "steffen",
+        "nombre": "Lago Steffen",
+        "latitud": -41.5,
+        "longitud": -71.55,
+        "cotaM": 550,
+        "profundidadMaxM": null,
+        "superficieKm2": 8,
+        "cuenca": "pacífica",
+        "descripcion": "Lago del extremo sur del parque, atravesado por el río Manso en su recorrido hacia el oeste. Presenta playas de arena volcánica oscura y aguas relativamente templadas. Está rodeado por bosque húmedo con abundante caña colihue. Es punto de partida para excursiones de rafting y pesca en el Manso.",
+        "colorAgua": "#2b7d94",
+        "transparenciaM": 8,
+        "brazos": []
+      },
+      {
+        "id": "fonck",
+        "nombre": "Lago Fonck",
+        "latitud": -41.55,
+        "longitud": -71.6,
+        "cotaM": 550,
+        "profundidadMaxM": null,
+        "superficieKm2": 6,
+        "cuenca": "pacífica",
+        "descripcion": "Lago del sur del parque conectado con el Steffen a través del río Manso, en una zona de acceso limitado. Su entorno es de bosque valdiviano de transición, húmedo y cerrado. Prácticamente carece de desarrollo turístico. Forma parte del corredor de lagos que el Manso atraviesa antes de entrar en Chile.",
+        "colorAgua": "#28758c",
+        "transparenciaM": 8,
+        "brazos": []
+      },
+      {
+        "id": "escondido",
+        "nombre": "Lago Escondido",
+        "latitud": -40.83,
+        "longitud": -71.63,
+        "cotaM": 850,
+        "profundidadMaxM": null,
+        "superficieKm2": 0.6,
+        "cuenca": "pacífica",
+        "descripcion": "Pequeño lago de montaña ubicado sobre el Camino de los Siete Lagos, rodeado por bosque denso que lo mantiene casi oculto desde la ruta. Su aspecto oscuro y quieto se debe a la sombra permanente de las laderas circundantes. Es un mirador clásico del recorrido entre Villa La Angostura y San Martín de los Andes. Su cuenca drena hacia el sistema del Pacífico.",
+        "colorAgua": "#1d5f6b",
+        "transparenciaM": 6,
+        "brazos": []
+      },
+      {
+        "id": "espejo",
+        "nombre": "Lago Espejo",
+        "latitud": -40.66,
+        "longitud": -71.71,
+        "cotaM": 895,
+        "profundidadMaxM": null,
+        "superficieKm2": 25,
+        "cuenca": "pacífica",
+        "descripcion": "Lago de aguas notablemente calmas cuya superficie refleja los cerros circundantes, de donde proviene su nombre. Presenta dos cuerpos conectados, el Espejo y el Espejo Chico, con playas de arena y grava. Está bordeado por bosque de coihue y por sectores de arrayanes. Es una de las paradas más fotografiadas del Camino de los Siete Lagos.",
+        "colorAgua": "#2a7fa0",
+        "transparenciaM": 12,
+        "brazos": ["Espejo Chico"]
+      },
+      {
+        "id": "correntoso",
+        "nombre": "Lago Correntoso",
+        "latitud": -40.72,
+        "longitud": -71.63,
+        "cotaM": 775,
+        "profundidadMaxM": null,
+        "superficieKm2": 21,
+        "cuenca": "atlántica",
+        "descripcion": "Lago vecino a Villa La Angostura, conectado con el Nahuel Huapi por el río Correntoso, uno de los ríos más cortos del mundo, de apenas unos 200 metros. Ese tramo es célebre entre pescadores por sus truchas de gran porte. El lago presenta varios brazos y costas boscosas de coihue y ciprés. Sus aguas son frías y de alta transparencia.",
+        "colorAgua": "#1f6f92",
+        "transparenciaM": 14,
+        "brazos": ["Norte", "Este"]
+      },
+      {
+        "id": "traful",
+        "nombre": "Lago Traful",
+        "latitud": -40.68,
+        "longitud": -71.4,
+        "cotaM": 730,
+        "profundidadMaxM": 340,
+        "superficieKm2": 78,
+        "cuenca": "atlántica",
+        "descripcion": "Lago largo y angosto encajonado entre paredes rocosas, en el norte del parque, célebre por su Bosque Sumergido de cipreses visible bajo el agua. Es uno de los destinos de pesca deportiva más reputados de la Patagonia, con salmónidos de gran tamaño. Desagua por el río Traful, afluente del Limay. Su entorno marca la transición del bosque a la estepa.",
+        "colorAgua": "#1a6285",
+        "transparenciaM": 16,
+        "brazos": []
+      },
+      {
+        "id": "el_trebol",
+        "nombre": "Laguna El Trébol",
+        "latitud": -41.07,
+        "longitud": -71.49,
+        "cotaM": 758,
+        "profundidadMaxM": 10,
+        "superficieKm2": 0.35,
+        "cuenca": "atlántica",
+        "descripcion": "Pequeña laguna somera situada en la península de Llao Llao, entre los lagos Moreno y Nahuel Huapi. Al ser poco profunda, se calienta rápidamente en verano y es de las pocas aguas templadas de la zona. Está rodeada de juncales y bosque bajo, con abundante avifauna. Es un sitio clásico de estudios limnológicos por su contraste con los grandes lagos profundos.",
+        "colorAgua": "#3f8f7a",
+        "transparenciaM": 4,
+        "brazos": []
+      },
+      {
+        "id": "hess",
+        "nombre": "Lago Hess",
+        "latitud": -41.43,
+        "longitud": -71.68,
+        "cotaM": 780,
+        "profundidadMaxM": null,
+        "superficieKm2": 2.5,
+        "cuenca": "pacífica",
+        "descripcion": "Lago pequeño del sur del parque, en el valle del río Manso, con acceso desde el camino al Tronador. Su entorno de bosque húmedo alberga senderos hacia la cascada Los Alerces y el lago Roca. Recibe aguas de deshielo del cordón del Tronador. Es un área de camping agreste y baja afluencia.",
+        "colorAgua": "#2d7f92",
+        "transparenciaM": 9,
+        "brazos": []
+      },
+      {
+        "id": "roca",
+        "nombre": "Lago Roca",
+        "latitud": -41.45,
+        "longitud": -71.7,
+        "cotaM": 780,
+        "profundidadMaxM": null,
+        "superficieKm2": 1.5,
+        "cuenca": "pacífica",
+        "descripcion": "Lago menor contiguo al Hess, conectado a él por un corto tramo fluvial, en el sector sur del parque. Está rodeado por bosque denso de coihue con sotobosque de caña colihue. Se accede por un sendero corto desde el camping de lago Hess. Sus aguas drenan al río Manso hacia el Pacífico.",
+        "colorAgua": "#2a7a8e",
+        "transparenciaM": 9,
+        "brazos": []
+      },
+      {
+        "id": "frias",
+        "nombre": "Lago Frías",
+        "latitud": -41.12,
+        "longitud": -71.82,
+        "cotaM": 800,
+        "profundidadMaxM": null,
+        "superficieKm2": 5,
+        "cuenca": "pacífica",
+        "descripcion": "Lago de color turquesa lechoso debido a la harina glaciaria que aporta el río Frías desde los glaciares del Tronador. Está encerrado entre laderas empinadas y muy húmedas, en una de las zonas de mayor precipitación del parque. Forma parte del cruce lacustre internacional hacia Chile. Su entorno es de selva valdiviana con alerces y helechos.",
+        "colorAgua": "#4aa5b0",
+        "transparenciaM": 3,
+        "brazos": []
+      },
+      {
+        "id": "villarino",
+        "nombre": "Lago Villarino",
+        "latitud": -40.61,
+        "longitud": -71.6,
+        "cotaM": 830,
+        "profundidadMaxM": null,
+        "superficieKm2": 7,
+        "cuenca": "pacífica",
+        "descripcion": "Lago del norte del parque, sobre el Camino de los Siete Lagos, contiguo al lago Falkner. Presenta playas de arena volcánica y aguas transparentes. Está rodeado por bosque de coihue y ciprés. Es un punto habitual de acampe y pesca deportiva.",
+        "colorAgua": "#2578a0",
+        "transparenciaM": 12,
+        "brazos": []
+      }
+    ],
+    "rios": [
+      {
+        "id": "limay",
+        "nombre": "Río Limay",
+        "nacimiento": "Lago Nahuel Huapi",
+        "desembocadura": "Confluencia con el río Neuquén, donde forma el río Negro",
+        "caudalM3s": 650,
+        "cuenca": "atlántica",
+        "descripcion": "Es el desagüe natural del Nahuel Huapi y el principal colector de la vertiente atlántica de la región. Su curso superior, de aguas cristalinas y verdosas, es uno de los tramos de pesca con mosca más famosos del país. Aguas abajo está regulado por embalses que abastecen buena parte de la energía hidroeléctrica argentina."
+      },
+      {
+        "id": "manso",
+        "nombre": "Río Manso",
+        "nacimiento": "Glaciar Río Manso, en el cerro Tronador",
+        "desembocadura": "Río Puelo, en Chile, y luego el océano Pacífico",
+        "caudalM3s": 100,
+        "cuenca": "pacífica",
+        "descripcion": "Nace de los hielos del Tronador y atraviesa los lagos Mascardi, Hess, Steffen y Fonck antes de cruzar a Chile. En su tramo inferior desarrolla rápidos que lo convirtieron en el principal río de rafting de la región. Su régimen es nivo-glacial, con máximos en primavera por deshielo."
+      },
+      {
+        "id": "traful_rio",
+        "nombre": "Río Traful",
+        "nacimiento": "Lago Traful",
+        "desembocadura": "Río Limay, en la zona de Confluencia",
+        "caudalM3s": 50,
+        "cuenca": "atlántica",
+        "descripcion": "Desagua el lago Traful a través de un valle encajonado en el ecotono bosque-estepa. Sus aguas frías y transparentes lo hacen célebre entre pescadores de salmónidos. En su recorrido atraviesa paisajes de barrancas rojizas y bosques de ciprés."
+      },
+      {
+        "id": "nirihuau",
+        "nombre": "Río Ñirihuau",
+        "nacimiento": "Cordón del Ñirihuau, al este de Bariloche",
+        "desembocadura": "Río Limay",
+        "caudalM3s": 10,
+        "cuenca": "atlántica",
+        "descripcion": "Río de régimen pluvionival que drena el sector estepario al este de la ciudad. Presenta crecidas rápidas y violentas tras lluvias intensas o deshielos súbitos, con alta carga de sedimentos. Su cuenca es una de las más erosionadas de la región por sobrepastoreo."
+      },
+      {
+        "id": "frias_rio",
+        "nombre": "Río Frías",
+        "nacimiento": "Glaciar Frías, en el cerro Tronador",
+        "desembocadura": "Lago Frías",
+        "caudalM3s": null,
+        "cuenca": "pacífica",
+        "descripcion": "Curso corto y torrentoso que transporta harina glaciaria desde el Tronador hasta el lago Frías, al que da su color lechoso. Atraviesa uno de los sectores más lluviosos del parque, con selva valdiviana cerrada. Su caudal varía fuertemente entre el día y la noche durante el verano por el ritmo de fusión del hielo."
+      },
+      {
+        "id": "correntoso_rio",
+        "nombre": "Río Correntoso",
+        "nacimiento": "Lago Correntoso",
+        "desembocadura": "Lago Nahuel Huapi",
+        "caudalM3s": null,
+        "cuenca": "atlántica",
+        "descripcion": "Con unos 200 metros de longitud, es considerado uno de los ríos más cortos del mundo. Une el lago Correntoso con el Nahuel Huapi salvando un desnivel de unos 10 metros. Su corriente rápida concentra truchas de gran porte y es un sitio de pesca legendario."
+      },
+      {
+        "id": "gutierrez_arroyo",
+        "nombre": "Arroyo Gutiérrez",
+        "nacimiento": "Lago Gutiérrez",
+        "desembocadura": "Lago Nahuel Huapi",
+        "caudalM3s": null,
+        "cuenca": "atlántica",
+        "descripcion": "Corto curso que conecta el lago Gutiérrez con el Nahuel Huapi atravesando la zona sur de Bariloche. Su valle está parcialmente urbanizado y recibe presión por desarrollo inmobiliario. Mantiene poblaciones de peces nativos como la perca criolla."
+      }
+    ]
+  },
+  "cerros": [
+    {
+      "id": "tronador",
+      "nombre": "Cerro Tronador",
+      "latitud": -41.1567,
+      "longitud": -71.8853,
+      "alturaM": 3478,
+      "descripcion": "Es la máxima altura del Parque Nacional Nahuel Huapi y un estratovolcán extinto profundamente erosionado. Su casquete de hielo alimenta varios glaciares y sus paredes generan derrumbes frecuentes. Tiene tres cumbres: Argentina (3.410 m aproximadamente), Internacional (3.478 m) y Chilena (3.320 m aproximadamente).",
+      "prominente": true,
+      "origenNombre": "Por el estruendo similar a truenos que producen los desprendimientos de hielo y roca desde sus glaciares colgantes."
+    },
+    {
+      "id": "catedral",
+      "nombre": "Cerro Catedral",
+      "latitud": -41.217,
+      "longitud": -71.495,
+      "alturaM": 2388,
+      "descripcion": "Cordón de agujas graníticas que dan al conjunto el aspecto de las torres de una catedral gótica. Alberga el centro de esquí más grande de Sudamérica y una densa red de senderos y refugios de montaña. Su cumbre principal es el Catedral Sur, mientras que la base de las pistas está a unos 1.030 m.",
+      "prominente": true,
+      "origenNombre": "Por la semejanza de sus agujas rocosas con las torres y pináculos de una catedral."
+    },
+    {
+      "id": "lopez",
+      "nombre": "Cerro López",
+      "latitud": -41.113,
+      "longitud": -71.55,
+      "alturaM": 2076,
+      "descripcion": "Cerro granítico ubicado sobre la margen sur del lago Moreno, con paredes muy apreciadas para la escalada. En su ladera se encuentra el refugio López, punto clave de la travesía de refugios de Bariloche. Ofrece vistas panorámicas del Nahuel Huapi y del Tronador.",
+      "prominente": true,
+      "origenNombre": "Por el poblador y baqueano de apellido López que se instaló en la zona a fines del siglo XIX."
+    },
+    {
+      "id": "bella_vista",
+      "nombre": "Cerro Bella Vista",
+      "latitud": -41.09,
+      "longitud": -71.6,
+      "alturaM": 1900,
+      "descripcion": "Cerro del cordón que separa el lago Moreno del brazo Tristeza, con laderas de bosque de lenga y sectores rocosos en altura. Es una ascensión clásica de dificultad media desde Colonia Suiza. Su cumbre ofrece una vista amplia sobre los brazos del Nahuel Huapi.",
+      "prominente": false,
+      "origenNombre": "Por la amplitud del panorama que se domina desde su cumbre."
+    },
+    {
+      "id": "otto",
+      "nombre": "Cerro Otto",
+      "latitud": -41.15,
+      "longitud": -71.37,
+      "alturaM": 1405,
+      "descripcion": "Cerro inmediato a la ciudad de Bariloche, accesible por teleférico, camino vehicular y senderos. Su cumbre alberga una confitería giratoria y antenas de comunicación. Es el mirador urbano por excelencia sobre el Nahuel Huapi y el valle del Ñireco.",
+      "prominente": false,
+      "origenNombre": "En honor a Otto Goedecke, poblador alemán de los primeros tiempos de la colonia."
+    },
+    {
+      "id": "campanario",
+      "nombre": "Cerro Campanario",
+      "latitud": -41.105,
+      "longitud": -71.47,
+      "alturaM": 1050,
+      "descripcion": "Pequeño cerro sobre la avenida Bustillo, ascendido por una aerosilla de pocos minutos. Desde su cumbre se domina el istmo de la península Llao Llao, el lago Moreno y el Nahuel Huapi. Es considerado uno de los miradores panorámicos más completos de la región.",
+      "prominente": false,
+      "origenNombre": "Por su silueta destacada y aislada, comparable a un campanario."
+    },
+    {
+      "id": "ventana",
+      "nombre": "Cerro Ventana",
+      "latitud": -41.2,
+      "longitud": -71.37,
+      "alturaM": 1960,
+      "descripcion": "Cerro situado al este del lago Gutiérrez, con una perforación natural en la roca que le da nombre. Sus laderas presentan bosque de lenga y extensas zonas de roca desnuda. Es una ascensión frecuente desde el valle del Ñireco o desde Villa Los Coihues.",
+      "prominente": false,
+      "origenNombre": "Por el arco o ventana natural abierto en su cresta rocosa."
+    },
+    {
+      "id": "goye",
+      "nombre": "Cerro Goye",
+      "latitud": -41.08,
+      "longitud": -71.55,
+      "alturaM": 1715,
+      "descripcion": "Cerro del cordón que separa Colonia Suiza del brazo Tristeza, cubierto de bosque de coihue y lenga. Su ascenso es relativamente corto y de dificultad moderada. Ofrece vistas cercanas del López y del sistema del lago Moreno.",
+      "prominente": false,
+      "origenNombre": "Por la familia de colonos suizos Goye, pioneros en Colonia Suiza."
+    },
+    {
+      "id": "negro",
+      "nombre": "Cerro Negro",
+      "latitud": -41.06,
+      "longitud": -71.6,
+      "alturaM": 1650,
+      "descripcion": "Cerro del sector noroeste del área de Bariloche, de laderas oscuras y bosque denso. Es utilizado como cumbre de entrenamiento y como acceso a travesías hacia el brazo Tristeza. Su nombre alude al color oscuro de sus rocas y de su vegetación cerrada.",
+      "prominente": false,
+      "origenNombre": "Por la tonalidad oscura de su roca y de su cobertura boscosa vista desde el lago."
+    },
+    {
+      "id": "challhuaco",
+      "nombre": "Cerro Challhuaco",
+      "latitud": -41.25,
+      "longitud": -71.3,
+      "alturaM": 1930,
+      "descripcion": "Cerro del valle homónimo, al sur de Bariloche, dentro de un área protegida de bosque de lenga bien conservado. Su cumbre es un mirador sobre el cordón del Catedral y la estepa oriental. El valle de Challhuaco es una de las zonas de nieve más estables cerca de la ciudad.",
+      "prominente": false,
+      "origenNombre": "Del mapudungun, asociado a challwa, que significa pez, por el arroyo del valle."
+    },
+    {
+      "id": "colorado",
+      "nombre": "Cerro Colorado",
+      "latitud": -41.17,
+      "longitud": -71.33,
+      "alturaM": 1200,
+      "descripcion": "Cerro de baja altura ubicado en el borde sur de la ciudad de Bariloche, de laderas rojizas por la alteración de sus rocas volcánicas. Está cubierto por matorral y bosque abierto de ciprés. Es un objetivo de caminata corta muy accesible desde la zona urbana.",
+      "prominente": false,
+      "origenNombre": "Por el color rojizo de sus rocas volcánicas alteradas."
+    },
+    {
+      "id": "falkner",
+      "nombre": "Cerro Falkner",
+      "latitud": -40.55,
+      "longitud": -71.55,
+      "alturaM": 2350,
+      "descripcion": "Cerro volcánico del norte del área, cercano al lago Falkner sobre el Camino de los Siete Lagos. Presenta un perfil escarpado y campos de nieve estacionales. Es una de las cumbres más notorias del sector norte del corredor lacustre.",
+      "prominente": true,
+      "origenNombre": "En honor al jesuita y explorador Thomas Falkner, cronista de la Patagonia del siglo XVIII."
+    },
+    {
+      "id": "bayo",
+      "nombre": "Cerro Bayo",
+      "latitud": -40.73,
+      "longitud": -71.6,
+      "alturaM": 1782,
+      "descripcion": "Cerro que domina Villa La Angostura y alberga un centro de esquí con vistas directas sobre el Nahuel Huapi. Su nombre alude al color amarillento de sus laderas cuando la vegetación se seca. En verano funciona como mirador y área de senderismo.",
+      "prominente": false,
+      "origenNombre": "Por el color bayo, amarillento pardo, de sus laderas."
+    },
+    {
+      "id": "capilla",
+      "nombre": "Cerro Capilla",
+      "latitud": -41.06,
+      "longitud": -71.68,
+      "alturaM": 1900,
+      "descripcion": "Cerro del sector oeste del parque, próximo al brazo Tristeza y a la zona de mayor precipitación. Sus laderas sostienen bosque húmedo denso y neveros persistentes. Su silueta recortada le valió la comparación con una capilla.",
+      "prominente": false,
+      "origenNombre": "Por la forma de su cumbre, semejante a la de una capilla."
+    },
+    {
+      "id": "catedral_norte",
+      "nombre": "Punta Nevada (Catedral Norte)",
+      "latitud": -41.2,
+      "longitud": -71.48,
+      "alturaM": 2100,
+      "descripcion": "Cumbre secundaria del cordón del Catedral, en su sector norte, sobre la que se desarrolla parte del área esquiable. Combina roca granítica expuesta y amplios circos que retienen nieve hasta bien entrada la primavera. Es una referencia habitual para el fuera de pista.",
+      "prominente": false,
+      "origenNombre": "Por la persistencia de la nieve en su sector cumbrero."
+    },
+    {
+      "id": "piltriquitron",
+      "nombre": "Cerro Piltriquitrón",
+      "latitud": -41.98,
+      "longitud": -71.48,
+      "alturaM": 2260,
+      "descripcion": "Cerro emblemático de El Bolsón, al sur del área del Nahuel Huapi, con un fuerte desnivel sobre el valle del río Azul. Su cumbre rocosa es un mirador sobre la comarca andina. Es un clásico de la región, aunque queda fuera de los límites del parque.",
+      "prominente": true,
+      "origenNombre": "Del mapudungun, interpretado habitualmente como colgado de las nubes."
+    }
+  ],
+  "fenomenos": [
+    {
+      "id": "viento_blanco",
+      "nombre": "Viento blanco",
+      "descripcion": "Combinación de viento fuerte y nieve suelta en suspensión que reduce la visibilidad prácticamente a cero. No requiere que esté nevando: basta con que el viento levante la nieve ya depositada. Es el fenómeno más letal de la alta montaña patagónica, porque anula toda referencia visual y provoca desorientación incluso en terreno conocido. La sensación térmica se desploma muy por debajo de la temperatura real.",
+      "estaciones": ["invierno", "primavera"],
+      "peligrosidad": 5,
+      "efectoJugador": "Pérdida total de visibilidad y de orientación, caída acelerada de la temperatura corporal y riesgo alto de hipotermia y congelamiento si no se refugia de inmediato.",
+      "frecuenciaRelativa": 0.12,
+      "senalesPrevias": "Aumento sostenido del viento del oeste, plumas de nieve arrastradas desde las cumbres, cielo que se blanquea y caída brusca de la presión."
+    },
+    {
+      "id": "ceniza_volcanica",
+      "nombre": "Caída de ceniza volcánica",
+      "descripcion": "Depósito de partículas piroclásticas transportadas por el viento desde los volcanes chilenos de la Zona Volcánica Sur. La ceniza es abrasiva, se infiltra en motores y filtros, contamina el agua superficial y daña las vías respiratorias. En eventos mayores puede acumular varios centímetros y colapsar techos o quemar pasturas. Sus efectos persisten durante años por la resuspensión con cada viento fuerte.",
+      "estaciones": ["verano", "otoño", "invierno", "primavera"],
+      "peligrosidad": 4,
+      "efectoJugador": "Daña la salud respiratoria, contamina el agua recolectada, reduce la visibilidad y desgasta herramientas y equipos con partes móviles.",
+      "frecuenciaRelativa": 0.04,
+      "senalesPrevias": "Nube gris parda avanzando desde el oeste, olor a azufre, cielo amarillento y capa fina de polvo sobre las superficies."
+    },
+    {
+      "id": "incendio_forestal",
+      "nombre": "Incendio forestal",
+      "descripcion": "Fuego de vegetación que se propaga con rapidez en los bosques y matorrales durante la temporada seca. La combinación de combustible acumulado, baja humedad y vientos fuertes del oeste puede transformar un foco pequeño en un incendio de copas incontrolable. Las cañas colihue secas y los renovales de ciprés son combustibles particularmente peligrosos. La mayoría de los focos tiene origen humano.",
+      "estaciones": ["verano", "otoño"],
+      "peligrosidad": 5,
+      "efectoJugador": "Destruye estructuras y recursos, bloquea rutas de escape, genera humo que asfixia y obliga a evacuar cuenca abajo o hacia el agua.",
+      "frecuenciaRelativa": 0.08,
+      "senalesPrevias": "Columna de humo en el horizonte, olor a quemado, cenizas livianas cayendo del cielo, luz solar de tono anaranjado y fauna desplazándose en masa."
+    },
+    {
+      "id": "nevada_intensa",
+      "nombre": "Nevada intensa",
+      "descripcion": "Precipitación sólida abundante asociada al paso de frentes fríos del Pacífico. En cotas altas puede acumular más de un metro en pocas horas, mientras que en la ciudad las nevadas son más esporádicas. Aísla valles, corta caminos e interrumpe el suministro eléctrico. Deja el terreno cargado y aumenta el riesgo de avalanchas en los días siguientes.",
+      "estaciones": ["invierno", "primavera"],
+      "peligrosidad": 3,
+      "efectoJugador": "Ralentiza gravemente el desplazamiento, oculta senderos y referencias, aumenta el consumo calórico y puede sepultar refugios y depósitos.",
+      "frecuenciaRelativa": 0.18,
+      "senalesPrevias": "Caída de presión, cielo plomizo uniforme, viento que rota al noroeste y luego al oeste, y ascenso de la temperatura previo a la precipitación."
+    },
+    {
+      "id": "tormenta_electrica",
+      "nombre": "Tormenta eléctrica",
+      "descripcion": "Fenómeno convectivo poco frecuente en la región pero de alto impacto cuando ocurre, típico de tardes cálidas de verano. Se desarrolla sobre las laderas orientales calentadas por el sol y descarga rayos, ráfagas y lluvia intensa. Los rayos son una de las causas naturales de ignición de incendios forestales. En cumbres y filos expuestos el riesgo de impacto directo es elevado.",
+      "estaciones": ["verano"],
+      "peligrosidad": 4,
+      "efectoJugador": "Riesgo de electrocución en zonas altas o expuestas, obliga a descender de filos y a alejarse de árboles aislados y objetos metálicos.",
+      "frecuenciaRelativa": 0.05,
+      "senalesPrevias": "Cúmulos de gran desarrollo vertical durante la tarde, calor bochornoso inusual, primeros truenos lejanos y ráfagas frías descendentes."
+    },
+    {
+      "id": "niebla_valle",
+      "nombre": "Niebla de valle",
+      "descripcion": "Banco de niebla que se forma en fondos de valle y sobre los lagos por enfriamiento nocturno y acumulación de aire frío. Es habitual en las mañanas de otoño e invierno con cielo despejado y viento calmo. Puede persistir todo el día bajo una inversión térmica marcada. Dificulta la navegación lacustre y la orientación en terreno abierto.",
+      "estaciones": ["otoño", "invierno"],
+      "peligrosidad": 2,
+      "efectoJugador": "Reduce la visibilidad a pocos metros, dificulta la orientación y el rastreo, y aumenta la humedad del equipo y la sensación de frío.",
+      "frecuenciaRelativa": 0.15,
+      "senalesPrevias": "Noche despejada y sin viento, fuerte descenso térmico al amanecer, vapor visible sobre la superficie de lagos y ríos."
+    },
+    {
+      "id": "crecida_deshielo",
+      "nombre": "Crecida por deshielo",
+      "descripcion": "Aumento marcado del caudal de arroyos y ríos por la fusión acelerada de la nieve acumulada en altura. Alcanza sus picos entre octubre y diciembre, y se agrava cuando coincide con lluvias cálidas sobre el manto nival. Los cursos glaciarios muestran además un ciclo diario, con caudales máximos por la tarde. Las crecidas arrastran troncos y sedimentos y vuelven intransitables los vados.",
+      "estaciones": ["primavera"],
+      "peligrosidad": 4,
+      "efectoJugador": "Los vados se vuelven impasables, hay riesgo de arrastre y de hipotermia por inmersión, y pueden perderse campamentos instalados en terrazas bajas.",
+      "frecuenciaRelativa": 0.1,
+      "senalesPrevias": "Días cálidos consecutivos tras nevadas abundantes, agua turbia y ruidosa, ascenso del nivel a media tarde y arrastre de ramas."
+    },
+    {
+      "id": "avalancha",
+      "nombre": "Avalancha de nieve",
+      "descripcion": "Desprendimiento de masas de nieve por laderas de pendiente pronunciada, típicamente entre 30 y 45 grados. Se desencadena por sobrecarga tras nevadas intensas, por transporte de nieve por el viento o por el calentamiento primaveral. Los cordones del Catedral, López y Tronador presentan corredores de avalancha bien definidos. Es la principal causa de accidentes graves en la montaña invernal de la región.",
+      "estaciones": ["invierno", "primavera"],
+      "peligrosidad": 5,
+      "efectoJugador": "Riesgo de sepultamiento y trauma; obliga a evitar corredores y laderas cargadas y a moverse de a uno en terreno expuesto.",
+      "frecuenciaRelativa": 0.06,
+      "senalesPrevias": "Nevada reciente de más de 30 cm, cornisas y placas de viento, sonidos huecos o whumpf al pisar, y desprendimientos espontáneos recientes en laderas vecinas."
+    },
+    {
+      "id": "sequia_estival",
+      "nombre": "Sequía estival",
+      "descripcion": "Período prolongado de escasas precipitaciones entre diciembre y marzo, propio del régimen mediterráneo de la región donde la lluvia se concentra en invierno. Los arroyos menores se secan, baja el nivel de mallines y lagunas y la vegetación acumula combustible fino seco. Se intensifica en años con fase cálida del ENSO o con la Oscilación Antártica en fase positiva. Es el telón de fondo de las grandes temporadas de incendios.",
+      "estaciones": ["verano"],
+      "peligrosidad": 3,
+      "efectoJugador": "Escasea el agua potable accesible, obliga a caminar más para abastecerse y eleva de forma drástica el riesgo de incendio en toda la zona.",
+      "frecuenciaRelativa": 0.2,
+      "senalesPrevias": "Semanas sin lluvia, arroyos con caudal decreciente, pastizales amarillentos y suelo agrietado en mallines."
+    },
+    {
+      "id": "granizo",
+      "nombre": "Granizo",
+      "descripcion": "Precipitación de hielo asociada a celdas convectivas o al pasaje de frentes fríos vigorosos. En la región suele ser de piedra pequeña pero muy abundante, y puede blanquear el suelo en minutos. Daña cultivos, huertas y coberturas plásticas. Suele ir acompañado de un descenso brusco de temperatura y ráfagas fuertes.",
+      "estaciones": ["primavera", "verano", "otoño"],
+      "peligrosidad": 2,
+      "efectoJugador": "Golpea y daña cultivos y estructuras livianas, obliga a buscar techo y puede provocar lesiones menores en terreno abierto.",
+      "frecuenciaRelativa": 0.07,
+      "senalesPrevias": "Nube oscura de base baja con tonos verdosos, viento racheado repentino y caída abrupta de la temperatura."
+    },
+    {
+      "id": "inversion_termica",
+      "nombre": "Inversión térmica",
+      "descripcion": "Situación en la que el aire frío queda atrapado en el fondo del valle bajo una capa de aire más cálido en altura. Es frecuente en noches despejadas y calmas de invierno en el valle de Bariloche y en las cuencas cerradas. Genera heladas intensas abajo mientras las laderas medias permanecen varios grados más templadas. Concentra el humo de calefacción y contamina el aire de la ciudad.",
+      "estaciones": ["otoño", "invierno"],
+      "peligrosidad": 2,
+      "efectoJugador": "Frío extremo y heladas severas en el fondo de valle; conviene acampar en la ladera media, donde la temperatura es sensiblemente mayor.",
+      "frecuenciaRelativa": 0.16,
+      "senalesPrevias": "Cielo despejado, viento nulo al atardecer, humo que no se dispersa y se estratifica en capas horizontales sobre el valle."
+    },
+    {
+      "id": "lluvia_orografica",
+      "nombre": "Lluvia orográfica",
+      "descripcion": "Precipitación generada por el ascenso forzado de aire húmedo del Pacífico sobre la barrera andina. Sostiene los 3.000 a 4.000 mm anuales del sector occidental del parque y puede prolongarse durante días sin interrupción. Empapa el terreno, satura los suelos volcánicos y dispara deslizamientos en laderas empinadas. Su intensidad decrece bruscamente hacia el este por efecto de la sombra de lluvia.",
+      "estaciones": ["otoño", "invierno", "primavera"],
+      "peligrosidad": 3,
+      "efectoJugador": "Empapa el equipo y la leña, dificulta encender fuego, favorece la hipotermia por humedad y vuelve resbaladizos los senderos.",
+      "frecuenciaRelativa": 0.22,
+      "senalesPrevias": "Nubosidad estancada sobre las cumbres del oeste, viento persistente del noroeste y descenso sostenido de la presión atmosférica."
+    },
+    {
+      "id": "viento_zonda_este",
+      "nombre": "Viento seco de sotavento (efecto föhn)",
+      "descripcion": "Viento que desciende de la cordillera ya sin humedad y se calienta por compresión adiabática. Produce ascensos rápidos de temperatura y desplomes de la humedad relativa al este del cordón. Es un potenciador crítico del comportamiento del fuego. Puede soplar durante días con ráfagas superiores a los 80 km/h.",
+      "estaciones": ["primavera", "verano"],
+      "peligrosidad": 4,
+      "efectoJugador": "Deshidrata rápido, dificulta mantener fuego controlado, derriba estructuras livianas y agota físicamente por su persistencia.",
+      "frecuenciaRelativa": 0.14,
+      "senalesPrevias": "Nubes lenticulares y pared de nubes sobre la cordillera, cielo limpio al este, aumento súbito de temperatura y caída de la humedad relativa."
+    },
+    {
+      "id": "helada_tardia",
+      "nombre": "Helada tardía",
+      "descripcion": "Descenso de la temperatura por debajo de cero fuera del período invernal, posible en cualquier mes del año en la región. Afecta especialmente a huertas y frutales que ya brotaron en primavera. Se produce en noches despejadas y calmas, potenciada por la inversión térmica en fondos de valle. Es uno de los principales limitantes de la agricultura local.",
+      "estaciones": ["primavera", "verano", "otoño"],
+      "peligrosidad": 2,
+      "efectoJugador": "Arruina cultivos brotados y plantines, congela reservas de agua y exige protección nocturna de la huerta.",
+      "frecuenciaRelativa": 0.13,
+      "senalesPrevias": "Tarde despejada con aire seco, ausencia total de viento al anochecer y escarcha temprana sobre superficies expuestas."
+    }
+  ]
+}

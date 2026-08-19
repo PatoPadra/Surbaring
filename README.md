@@ -93,6 +93,12 @@ CONICET, SAREM, IUCN, SMN).
   6 invasoras.
 - **`src/data/fauna.json`** — 61 especies con estado UICN real, medidas, dieta,
   hábito de actividad y rol ecológico. 9 invasoras, 8 amenazadas.
+- **`src/data/geografia.json`** — gradiente de precipitación en 8 puntos,
+  6 unidades litológicas, 5 volcanes, 5 glaciares, 17 lagos, 7 ríos, 16 cerros
+  y 14 fenómenos naturales.
+- **`src/data/historia.json`** — 6 eras, 32 eventos, 12 personajes,
+  16 entradas de mitología, 30 topónimos en mapuzugun, 47 tecnologías
+  encadenadas en un árbol de saberes y 20 sitios históricos.
 
 Durante la investigación se detectó que tres especies pedidas **no habitan la
 región** (el sapo rococó es del litoral; la lagartija de Magallanes y el
@@ -123,23 +129,37 @@ avistándola en su hábitat real y se completa identificándola de cerca.
 
 ### Roto o a medio hacer
 
-1. **El cielo sale anaranjado con el sol alto.** La dispersión de Rayleigh
-   atenúa el azul de más y el término de Mie arrastra el tinte cálido. Debería
-   ser azul profundo al mediodía. Es el defecto visual más visible.
-2. **El terreno se ve de un beige uniforme.** El mezclado por altura, pendiente
-   y humedad funciona, pero el modelo de humedad da valores demasiado bajos
-   (0,30 donde debería haber bosque de coihue), así que gana la paleta de estepa
-   en casi todo el mapa.
-3. **Los árboles son geometría muy facetada.** Son icosaedros y conos sin
-   texturas de hoja ni impostores a distancia. Falta trabajo de arte.
-4. **8 M de triángulos por cuadro**, casi todos vegetación multiplicada por las
-   4 cascadas de sombra. Necesita LOD e impostores.
-5. **La hora del HUD está en UTC**, no en hora local (UTC−3).
-6. `src/data/historia.json` y `src/data/geografia.json` **no existen todavía**:
-   los agentes de investigación de historia y geografía fallaron y hay que
-   relanzarlos. El códice y el árbol tecnológico dependen de ellos.
-7. No hay todavía: inventario, crafteo, construcción, audio, ni eventos
+1. **El suelo se lee como dunas lisas, no como terreno.** Es el defecto visual
+   principal y es estructural: el DEM tiene 32 m por texel, y visto desde 1,70 m
+   de altura no hay ningún accidente por debajo de esa escala. El sombreado ya
+   suma detalle multiescala con proyección triplanar, pero la geometría sigue
+   siendo suave. La solución real es desplazamiento procedural de vértices a
+   escala de metros, replicado en `Mundo.alturaEn()` para que la física no se
+   desincronice.
+2. **Los árboles son icosaedros y conos facetados**, sin textura de hoja ni
+   impostores a distancia. Necesitan trabajo de arte, no de código.
+3. **8,5 M de triángulos por cuadro**, casi todos vegetación multiplicada por
+   las 4 cascadas de sombra. Falta LOD e impostores.
+4. El códice todavía no consume `geografia.json` ni `historia.json`: los datos
+   están, la interfaz que los muestra no.
+5. No hay todavía: inventario, crafteo, construcción, audio, ni eventos
    naturales (incendio, ceniza, viento blanco) más allá de los parámetros.
+
+### Corregido en la segunda pasada
+
+- El cielo salía negro y después anaranjado con el sol alto: la profundidad
+  óptica mezclaba kilómetros con metros y daba `exp(-33)`. Ahora usa la forma
+  de albedo por `(1 - transmitancia)`, que satura hacia el blanco en el
+  horizonte en vez de dispararse.
+- El bosque salía negro por acné de sombra: el follaje se auto-sombreaba. Se
+  corrigió con sesgo de sombra escalado por cascada, más un término de
+  translucidez foliar.
+- El modelo de humedad estaba calibrado a ojo y daba estepa en casi todo el
+  mapa. Ahora interpola precipitación real en escala logarítmica y reproduce
+  el gradiente medido: 4082 / 1602 / 800 / 499 mm contra los 4000 / 1500 /
+  800 / 500 reales de Puerto Blest, Llao Llao, Bariloche y Dina Huapi.
+- El reloj mostraba UTC en vez de hora local, y el ciclo diario de temperatura
+  y los hábitos de actividad de la fauna corrían tres horas corridos.
 
 ### Lecciones que quedaron en el código
 
@@ -153,6 +173,14 @@ se repitan:
 - **No declarar `geometryNormal` al sustituir `<normal_fragment_begin>`**: lo
   declara después `<lights_fragment_begin>` y el programa no enlaza.
 - **Una luz direccional de más desborda `CSM_cascades[]`** en el shader.
+- **No apoyarse en `vWorldPosition` de three**: sólo existe según qué chunks
+  estén activos, y CSM lo declara en el vértice pero no en el fragmento. La
+  vegetación usa su propio varying `vAlturaMundo`.
+
+Los tres primeros comparten un patrón: **un shader que no enlaza no lanza una
+excepción**, sólo deja un aviso `useProgram: program not valid` en la consola y
+el objeto se dibuja negro o no se dibuja. Ante cualquier cosa que salga negra,
+lo primero es interceptar `gl.linkProgram` y leer `getShaderInfoLog`.
 
 ---
 

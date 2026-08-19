@@ -38,7 +38,6 @@ export function instalarCapturas(S) {
     jugador.actualizar(1 / 60, ENTRADA_NULA);
 
     const est = tiempo.estado();
-    est.horaDecimal = tiempo.fecha.getUTCHours() + tiempo.fecha.getUTCMinutes() / 60;
 
     cielo.actualizar(tiempo.fecha, mundo.meta.centro.lat, mundo.meta.centro.lon, tiempo.segundosTotales);
     cielo.configurarAtmosfera({ nubes: est.nubosidad, turbiedad: est.turbiedad, ceniza: est.ceniza });

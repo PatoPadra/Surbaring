@@ -458,6 +458,11 @@ function inyectarViento(mat, uniformes, esp) {
       uniform float uFuerzaViento;
       varying vec3 vTinte;
       varying float vAlturaLocal;
+      // Varying propio: apoyarse en vWorldPosition de three es frágil, porque
+      // sólo existe según qué chunks estén activos y CSM lo declara únicamente
+      // en el vértice, no en el fragmento.
+      varying float vAlturaMundo;
+      varying float vFlexion;      // 1 = hoja, 0 = tronco
     ` + shader.vertexShader;
 
     shader.vertexShader = shader.vertexShader.replace(
@@ -466,6 +471,7 @@ function inyectarViento(mat, uniformes, esp) {
       #include <begin_vertex>
       vTinte = iTinte;
       vAlturaLocal = position.y;
+      vFlexion = aFlexion;
 
       // Balanceo: dos armónicos desfasados por la posición del árbol, para que
       // el bosque no se mueva como un solo bloque.
@@ -483,6 +489,8 @@ function inyectarViento(mat, uniformes, esp) {
       transformed.z += uViento.y * balanceo;
       // Aleteo fino de la hoja, perpendicular a la ráfaga
       transformed.y += sin(t * 3.7 + position.x * 2.1) * amplitud * palanca * 0.16;
+
+      vAlturaMundo = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).y;
       `
     );
 
@@ -493,13 +501,17 @@ function inyectarViento(mat, uniformes, esp) {
       uniform float uCotaNieve;
       varying vec3 vTinte;
       varying float vAlturaLocal;
+      varying float vAlturaMundo;
+      varying float vFlexion;
     ` + shader.fragmentShader;
 
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <color_fragment>',
       `
       #include <color_fragment>
-      diffuseColor.rgb *= vTinte;
+      // Los hex de la base de datos describen la hoja en sombra, no bajo el sol
+      // patagónico de mediodía: sin este realce el bosque se ve apagado.
+      diffuseColor.rgb *= vTinte * 1.45;
 
       // Otoño: los Nothofagus caducifolios viran a rojo y naranja. Es el
       // espectáculo que llena de gente los cerros en abril.
@@ -511,21 +523,23 @@ function inyectarViento(mat, uniformes, esp) {
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.32, 0.26, 0.20), invernal * 0.62);
 
       // Nieve acumulada sobre el follaje alto
-      float nieveAqui = smoothstep(uCotaNieve - 120.0, uCotaNieve + 120.0, vWorldPosition.y);
+      float nieveAqui = smoothstep(uCotaNieve - 120.0, uCotaNieve + 120.0, vAlturaMundo);
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.88, 0.91, 0.94),
                              nieveAqui * smoothstep(0.4, 2.5, vAlturaLocal) * 0.72);
       `
     );
 
-    // vWorldPosition sólo existe si hay niebla o sombras; lo garantizamos
-    if (!shader.vertexShader.includes('vWorldPosition')) {
-      shader.vertexShader = 'varying vec3 vWorldPosition;\n' + shader.vertexShader;
-      shader.vertexShader = shader.vertexShader.replace(
-        '#include <fog_vertex>',
-        '#include <fog_vertex>\n vWorldPosition = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;'
-      );
-      shader.fragmentShader = 'varying vec3 vWorldPosition;\n' + shader.fragmentShader;
-    }
+    // Translucidez foliar. La lámina de la hoja deja pasar luz, así que el
+    // envés iluminado por detrás no queda negro. Es lo que hace que un bosque
+    // real se vea verde y no como una silueta recortada.
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <lights_fragment_end>',
+      `
+      #include <lights_fragment_end>
+      reflectedLight.indirectDiffuse += diffuseColor.rgb * vec3(0.19, 0.26, 0.16) * vFlexion;
+      `
+    );
+
   };
 
 }

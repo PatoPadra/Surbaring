@@ -257,16 +257,23 @@ void main() {
   float solR = caminoOptico(sol.y, 8400.0);
   float solM = caminoOptico(sol.y, 1250.0);
 
-  // Extinción a lo largo del camino de la vista más el del sol
-  vec3 tau = BETA_R * rayleigh * (sR + solR)
-           + BETA_M * uMieCoef * (sM + solM) * uTurbiedad;
-  vec3 atenuacion = exp(-tau);
+  vec3 betaR = BETA_R * rayleigh;
+  vec3 betaM = BETA_M * uMieCoef * uTurbiedad;
 
-  vec3 dispersion = (BETA_R * rayleigh * faseR * sR
-                   + BETA_M * uMieCoef * faseM * sM * uTurbiedad) * atenuacion;
+  // Lo que le llega al punto donde se dispersa, tras cruzar la atmósfera desde
+  // el sol. Acá nace el rojo del atardecer: con el sol bajo, el camino es tan
+  // largo que el azul se extingue por completo y sólo pasa el rojo.
+  vec3 luzIncidente = exp(-(betaR * solR + betaM * solM));
+
+  // Dispersión acumulada a lo largo de la vista. Se usa la forma de albedo por
+  // (1 - transmitancia): satura hacia el blanco en el horizonte en vez de
+  // dispararse al infinito, que es lo que rompía la versión anterior.
+  vec3 tauVista = betaR * sR + betaM * sM;
+  vec3 albedo = (betaR * faseR + betaM * faseM) / max(betaR + betaM, vec3(1e-9));
+  vec3 dispersion = albedo * (1.0 - exp(-tauVista)) * luzIncidente;
 
   float diurno = smoothstep(-0.14, 0.10, sol.y);
-  vec3 color = dispersion * 46.0 * uIntensidad * mix(0.05, 1.0, diurno);
+  vec3 color = dispersion * 26.0 * uIntensidad * mix(0.04, 1.0, diurno);
 
   // ── Cielo nocturno ────────────────────────────────────────────────────────
   float noche = 1.0 - diurno;
