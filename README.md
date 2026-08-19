@@ -130,9 +130,10 @@ avistándola en su hábitat real y se completa identificándola de cerca.
   11,8 M a 2,4 M. Cada especie se hornea desde 8 azimuts en un atlas de 4 × 2,
   y el shader interpola entre las dos vistas vecinas, así el árbol lejano
   cambia de perfil al rodearlo (26 MB de atlas en total)
-- Sotobosque de 11 400 elementos: coirón, pastizal húmedo, helechos, michay,
-  piedras sueltas y troncos caídos, cada uno con su regla ecológica. El
-  sembrado se reparte entre cuadros con presupuesto de 5 ms, así cruzar una
+- Sotobosque de 13 700 elementos en dos escalones: coirón, pastizal húmedo,
+  helechos, michay, piedras sueltas y troncos caídos hasta 64 m, y champas más
+  grandes y ralas en el anillo de 64 a 192 m. Cada tipo con su regla ecológica.
+  El sembrado se reparte entre cuadros con presupuesto de 5 ms, así cruzar una
   celda no produce un tirón
 - Fauna con máquina de estados, animación por partes y filtro de hábitat
 - Ciclo día/noche con posición solar astronómica para latitud −41,13
@@ -151,9 +152,8 @@ avistándola en su hábitat real y se completa identificándola de cerca.
    están, la interfaz que los muestra no.
 4. No hay todavía: inventario, crafteo, construcción, audio, ni eventos
    naturales (incendio, ceniza, viento blanco) más allá de los parámetros.
-5. El sotobosque llega hasta 64 m del jugador (112 m para piedras y troncos).
-   Más allá el suelo queda desnudo: hace falta una capa de impostores o una
-   textura de detalle que tome el relevo.
+5. El sotobosque llega hasta 192 m. Más allá el suelo queda desnudo, aunque a
+   esa distancia la niebla aérea ya disimula bastante el corte.
 
 #### Sobre la suavidad del terreno
 

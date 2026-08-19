@@ -6,6 +6,8 @@
  * navegador esté componiendo cuadros.
  */
 
+import * as THREE from 'three';
+
 const ENTRADA_NULA = {
   ratonDX: 0, ratonDY: 0, sensibilidad: 1,
   adelante: 0, lateral: 0, saltar: false, correr: false, agachar: false,
@@ -19,6 +21,21 @@ export function instalarCapturas(S) {
    */
   window.capturar = async function capturar(nombre, o = {}) {
     const { jugador, mundo, tiempo, cielo, terreno, agua, vegetacion, fauna, camara, csm, compositor, render, escena } = S;
+
+    // El panel del navegador puede estar oculto, y entonces innerWidth da 0 y
+    // el lienzo queda en 0x0: la captura sale vacía y las mediciones de tiempo
+    // no significan nada. La captura fija su propio tamaño siempre.
+    const ancho = o.ancho ?? 1280, alto = o.alto ?? 720;
+    const canvas = render.domElement;
+    if (canvas.width !== ancho || canvas.height !== alto) {
+      render.setPixelRatio(1);
+      render.setSize(ancho, alto, false);
+      compositor.setPixelRatio(1);
+      compositor.setSize(ancho, alto);
+      camara.aspect = ancho / alto;
+      camara.updateProjectionMatrix();
+      csm.updateFrustums();
+    }
 
     if (o.fecha) tiempo.fecha = new Date(o.fecha);
 
@@ -73,11 +90,50 @@ export function instalarCapturas(S) {
     csm.update();
     cielo.malla.position.copy(camara.position);
 
+    // Cómo se leen los píxeles, y por qué así:
+    //
+    // Leer el lienzo con toDataURL no sirve si el panel del navegador está
+    // oculto: el framebuffer por defecto no se compone y salen desgarros
+    // horizontales. Y los objetivos del compositor son multimuestreados, así
+    // que readRenderTargetPixels devuelve cero sobre ellos sin resolver antes.
+    //
+    // Se dibuja entonces a un objetivo propio de una sola muestra. El precio es
+    // que la captura no lleva bloom ni antialias del compositor; a cambio es
+    // una ruta que no depende de que haya nada en pantalla.
+    if (!window.__objetivoCaptura || window.__objetivoCaptura.width !== ancho) {
+      window.__objetivoCaptura?.dispose();
+      window.__objetivoCaptura = new THREE.WebGLRenderTarget(ancho, alto, {
+        format: THREE.RGBAFormat,
+        type: THREE.UnsignedByteType,
+        colorSpace: THREE.SRGBColorSpace,
+        samples: 0,
+      });
+    }
+    const objetivo = window.__objetivoCaptura;
+
     render.info.autoReset = false;
     render.info.reset();
-    compositor.render();
+    const previo = render.getRenderTarget();
+    render.setRenderTarget(objetivo);
+    render.clear();
+    render.render(escena, camara);
+    render.setRenderTarget(previo);
 
-    const datos = render.domElement.toDataURL('image/png');
+    const pixeles = new Uint8Array(ancho * alto * 4);
+    render.readRenderTargetPixels(objetivo, 0, 0, ancho, alto, pixeles);
+
+    // El origen de OpenGL está abajo: hay que dar vuelta las filas
+    const lienzo2d = document.createElement('canvas');
+    lienzo2d.width = ancho; lienzo2d.height = alto;
+    const ctx = lienzo2d.getContext('2d');
+    const imagen = ctx.createImageData(ancho, alto);
+    for (let y = 0; y < alto; y++) {
+      const origen = (alto - 1 - y) * ancho * 4;
+      imagen.data.set(pixeles.subarray(origen, origen + ancho * 4), y * ancho * 4);
+    }
+    ctx.putImageData(imagen, 0, 0);
+
+    const datos = lienzo2d.toDataURL('image/png');
     const resp = await fetch('/api/captura', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

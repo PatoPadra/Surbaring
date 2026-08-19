@@ -19,6 +19,7 @@ import * as THREE from 'three';
 const TAM_CELDA = 16;          // metros por celda de siembra
 const RADIO_CERCA = 4;         // celdas para pasto y helechos (64 m)
 const RADIO_LEJOS = 7;         // celdas para piedras y troncos (112 m)
+const RADIO_HORIZONTE = 12;    // celdas para el pastizal grueso (192 m)
 const MAX_INSTANCIAS = 30000;
 
 export class Sotobosque {
@@ -55,6 +56,29 @@ export class Sotobosque {
         geo: () => matoja(0.32, 18, 0.044, 0.30),
         color: 0x4e7a34, colorAlt: 0x355e26,
         radio: RADIO_CERCA, porCelda: 300, flexible: true,
+        apto: (alt, hum, pend) => alt < 1500 && pend < 34 && hum > 0.42
+          ? (hum - 0.35) * 1.7 * (1 - pend / 50) : 0,
+      },
+      // ── Segundo escalón: el anillo entre 64 y 192 m ────────────────────
+      // Más allá del radio cercano el suelo quedaba pelado y se veía un borde
+      // de pasto siguiendo al jugador. Acá van champas más grandes y mucho más
+      // ralas: a esa distancia una mata ocupa pocos píxeles y lo que importa es
+      // que el suelo tenga textura, no que cada hoja sea correcta.
+      {
+        id: 'coiron_lejos',
+        nombre: 'Coirón (lejano)',
+        geo: () => matoja(0.52, 7, 0.085, 0.95),
+        color: 0x9a8c52, colorAlt: 0x6f7a3e,
+        radio: RADIO_HORIZONTE, radioMin: RADIO_CERCA, porCelda: 34, flexible: true,
+        apto: (alt, hum, pend) => alt < 1750 && pend < 38
+          ? (1.25 - hum) * (1 - pend / 55) : 0,
+      },
+      {
+        id: 'pasto_lejos',
+        nombre: 'Pastizal húmedo (lejano)',
+        geo: () => matoja(0.42, 8, 0.078, 0.88),
+        color: 0x4e7a34, colorAlt: 0x355e26,
+        radio: RADIO_HORIZONTE, radioMin: RADIO_CERCA, porCelda: 30, flexible: true,
         apto: (alt, hum, pend) => alt < 1500 && pend < 34 && hum > 0.42
           ? (hum - 0.35) * 1.7 * (1 - pend / 50) : 0,
       },
@@ -119,9 +143,9 @@ export class Sotobosque {
     });
     this._inyectar(mat, tipo);
 
-    const capacidad = Math.min(MAX_INSTANCIAS, Math.round(
-      tipo.porCelda * Math.pow(tipo.radio * 2 + 1, 2) * 1.4
-    ) + 64);
+    const Rmin = tipo.radioMin ?? 0;
+    const celdas = Math.PI * (Math.pow(tipo.radio + 0.5, 2) - Math.pow(Math.max(0, Rmin - 0.5), 2));
+    const capacidad = Math.min(MAX_INSTANCIAS, Math.round(tipo.porCelda * celdas * 1.25) + 64);
     const malla = new THREE.InstancedMesh(geo, mat, capacidad);
     malla.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     // Deliberado: la cubierta de suelo no proyecta sombra, sólo la recibe.
@@ -235,9 +259,11 @@ export class Sotobosque {
       for (const lote of this.lotes) {
         lote.nParcial = 0;
         const R = lote.tipo.radio;
+        const Rmin = lote.tipo.radioMin ?? 0;
         for (let dz = -R; dz <= R; dz++) {
           for (let dx = -R; dx <= R; dx++) {
-            if (Math.hypot(dx, dz) > R + 0.5) continue;
+            const d = Math.hypot(dx, dz);
+            if (d > R + 0.5 || d < Rmin - 0.5) continue;
             this._cola.push({ lote, dx, dz });
           }
         }
@@ -273,9 +299,11 @@ export class Sotobosque {
     for (const lote of this.lotes) {
       lote.nParcial = 0;
       const R = lote.tipo.radio;
+      const Rmin = lote.tipo.radioMin ?? 0;
       for (let dz = -R; dz <= R; dz++) {
         for (let dx = -R; dx <= R; dx++) {
-          if (Math.hypot(dx, dz) > R + 0.5) continue;
+          const d = Math.hypot(dx, dz);
+          if (d > R + 0.5 || d < Rmin - 0.5) continue;
           this._sembrarCelda(lote, dx, dz, cx, cz);
         }
       }
@@ -294,12 +322,18 @@ export class Sotobosque {
     const color = new THREE.Color();
     const { tipo } = lote;
     const R = tipo.radio;
+    const Rmin = tipo.radioMin ?? 0;
     const distCeldas = Math.hypot(dx, dz);
     const gx = cx + dx, gz = cz + dz;
 
     // La densidad se apaga hacia el borde del sembrado. Si terminara de golpe
-    // se veria una circunferencia de pasto siguiendo al jugador.
-    const desvanece = 1 - Math.pow(Math.min(1, distCeldas / (R + 0.5)), 2.2);
+    // se veria una circunferencia de pasto siguiendo al jugador. En los tipos
+    // que ocupan un anillo, el desvanecimiento se mide sobre el anillo: entran
+    // creciendo por el borde interno y se apagan hacia el externo.
+    const t = (distCeldas - Rmin) / Math.max(0.5, R + 0.5 - Rmin);
+    const desvanece = Rmin > 0
+      ? Math.min(1, Math.max(0, t) * 3.2) * (1 - Math.pow(Math.min(1, Math.max(0, t)), 2.6))
+      : 1 - Math.pow(Math.min(1, distCeldas / (R + 0.5)), 2.2);
 
     // Semilla determinista: la misma celda produce siempre lo mismo, asi el
     // sotobosque no baila cuando el jugador va y vuelve.
