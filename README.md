@@ -121,7 +121,9 @@ avistándola en su hábitat real y se completa identificándola de cerca.
   pendientes de más de 48°, flotación y daño por caída
 - Lagos con Fresnel, absorción de Beer-Lambert por profundidad real y espuma
   de orilla, sobre grilla radial centrada en la cámara
-- Vegetación instanciada por aptitud ecológica (5700 plantas, 26 especies)
+- Vegetación instanciada por aptitud ecológica (5700 plantas, 26 especies),
+  con follaje en tarjetas recortadas por alfa sobre un atlas de hojas dibujado
+  proceduralmente: hoja oval para los Nothofagus, acícula para las coníferas
 - Sotobosque de 11 400 elementos: coirón, pastizal húmedo, helechos, michay,
   piedras sueltas y troncos caídos, cada uno con su regla ecológica. El
   sembrado se reparte entre cuadros con presupuesto de 5 ms, así cruzar una
@@ -133,11 +135,12 @@ avistándola en su hábitat real y se completa identificándola de cerca.
 
 ### Roto o a medio hacer
 
-1. **Los árboles son icosaedros y conos facetados**, sin textura de hoja ni
-   impostores a distancia. Es el defecto visual más visible que queda, y
-   necesita trabajo de arte, no de código.
-2. **13 M de triángulos por cuadro**, casi todos vegetación multiplicada por
-   las 4 cascadas de sombra. Falta LOD e impostores.
+1. **Falta LOD e impostores.** Los árboles lejanos se dibujan con la misma
+   malla que los cercanos. Son ~12 M de triángulos por cuadro, casi todos
+   vegetación multiplicada por las 4 cascadas de sombra.
+2. **El follaje no tiene variación de brillo por cara.** Las tarjetas se
+   iluminan con la normal de la copa, que da volumen pero aplana el detalle
+   interno; falta oclusión propia dentro de la copa.
 3. El códice todavía no consume `geografia.json` ni `historia.json`: los datos
    están, la interfaz que los muestra no.
 4. No hay todavía: inventario, crafteo, construcción, audio, ni eventos

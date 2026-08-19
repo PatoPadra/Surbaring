@@ -58,12 +58,17 @@ export class Vegetacion {
 
   _crearLote(esp) {
     const geo = construirPlanta(esp);
+    const claseHoja = clasificar(esp) === 'columnar' ? 'aguja' : 'lamina';
     const mat = new THREE.MeshStandardMaterial({
       vertexColors: true,
+      map: atlasFollaje(claseHoja),
       roughness: 0.88,
       metalness: 0.0,
       side: THREE.DoubleSide,
-      alphaTest: 0.42,
+      // Recorte por alfa: sin ordenar por profundidad y sin coste de mezcla.
+      // El umbral es bajo a propósito, porque el mipmapping va comiendo el alfa
+      // de los bordes y con un umbral alto las hojas se evaporan a distancia.
+      alphaTest: 0.28,
     });
     inyectarViento(mat, this.uniformes, esp);
 
@@ -220,6 +225,187 @@ export class Vegetacion {
   }
 }
 
+// ── Textura de follaje ──────────────────────────────────────────────────────
+
+/**
+ * Atlas de follaje dibujado a mano alzada en un lienzo.
+ *
+ * Los racimos de icosaedros sólidos daban esa silueta de goma de mascar que
+ * delata a un prototipo. Un árbol real no tiene contorno liso: tiene miles de
+ * huecos por donde pasa el cielo. Se resuelve con tarjetas recortadas por alfa,
+ * que además salen más baratas que los sólidos que reemplazan.
+ *
+ * La esquina inferior derecha queda opaca a propósito: los troncos y las ramas
+ * apuntan sus UV ahí y así comparten material con las hojas, que es lo que
+ * permite dibujar el árbol entero en una sola instancia.
+ */
+const _atlasCache = new Map();
+
+export function atlasFollaje(clase) {
+  if (_atlasCache.has(clase)) return _atlasCache.get(clase);
+
+  const N = 512;
+  const lienzo = document.createElement('canvas');
+  lienzo.width = lienzo.height = N;
+  const c = lienzo.getContext('2d');
+  c.clearRect(0, 0, N, N);
+
+  const azar = (a, b) => a + Math.random() * (b - a);
+
+  if (clase === 'aguja') {
+    // Conífera: ramillas con acículas a ambos lados del raquis
+    for (let r = 0; r < 54; r++) {
+      const x0 = azar(0.05, 0.95) * N, y0 = azar(0.05, 0.95) * N;
+      const ang = azar(0, Math.PI * 2);
+      const largo = azar(0.10, 0.22) * N;
+      // Claro a proposito: el tinte de la especie lo aporta el color por
+      // vertice, y si el atlas tambien viniera oscuro se multiplicarian entre
+      // si y el bosque quedaria negro.
+      const verde = Math.floor(azar(190, 250));
+      c.strokeStyle = `rgba(${Math.floor(verde * 0.72)},${verde},${Math.floor(verde * 0.70)},1)`;
+      c.lineWidth = azar(1.6, 2.8);
+      c.beginPath();
+      c.moveTo(x0, y0);
+      c.lineTo(x0 + Math.cos(ang) * largo, y0 + Math.sin(ang) * largo);
+      c.stroke();
+      const nAgujas = Math.floor(largo / 5);
+      for (let i = 0; i < nAgujas; i++) {
+        const t = i / nAgujas;
+        const px = x0 + Math.cos(ang) * largo * t;
+        const py = y0 + Math.sin(ang) * largo * t;
+        const lAg = azar(3.5, 7.5) * (1 - t * 0.35);
+        for (const lado of [-1, 1]) {
+          const a2 = ang + lado * azar(0.7, 1.25);
+          c.lineWidth = azar(1.0, 1.9);
+          c.beginPath();
+          c.moveTo(px, py);
+          c.lineTo(px + Math.cos(a2) * lAg, py + Math.sin(a2) * lAg);
+          c.stroke();
+        }
+      }
+    }
+  } else {
+    // Latifoliada (Nothofagus): hojas ovales pequeñas y apretadas
+    for (let i = 0; i < 620; i++) {
+      const x = azar(0.03, 0.97) * N, y = azar(0.03, 0.97) * N;
+      const rx = azar(4.5, 9.5), ry = rx * azar(0.52, 0.82);
+      const ang = azar(0, Math.PI * 2);
+      const verde = Math.floor(azar(185, 252));
+      const rojo = Math.floor(verde * azar(0.62, 0.88));
+      const azul = Math.floor(verde * azar(0.58, 0.82));
+      c.fillStyle = `rgba(${rojo},${verde},${azul},1)`;
+      c.beginPath();
+      c.ellipse(x, y, rx, ry, ang, 0, Math.PI * 2);
+      c.fill();
+      // Nervadura central: da textura al mirar de cerca
+      c.strokeStyle = `rgba(${Math.min(255, Math.floor(rojo * 0.78))},${Math.min(255, Math.floor(verde * 0.80))},${Math.floor(azul * 0.75)},0.5)`;
+      c.lineWidth = 1;
+      c.beginPath();
+      c.moveTo(x - Math.cos(ang) * rx, y - Math.sin(ang) * rx);
+      c.lineTo(x + Math.cos(ang) * rx, y + Math.sin(ang) * rx);
+      c.stroke();
+    }
+  }
+
+  // Reserva opaca para troncos y ramas
+  c.fillStyle = '#ffffff';
+  c.fillRect(N * 0.90, N * 0.90, N * 0.10, N * 0.10);
+
+  const tex = new THREE.CanvasTexture(lienzo);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 8;
+  tex.generateMipmaps = true;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.needsUpdate = true;
+  _atlasCache.set(clase, tex);
+  return tex;
+}
+
+/**
+ * UV del parche opaco, para la madera.
+ *
+ * La V va en 0,05 y no en 0,95 porque three invierte la textura en el eje Y
+ * (flipY): el parche que se dibuja abajo a la derecha del lienzo termina
+ * arriba a la derecha en coordenadas de textura. Con 0,95 los troncos
+ * muestreaban una zona transparente y el recorte por alfa los hacía desaparecer
+ * enteros.
+ */
+const UV_MADERA = [0.95, 0.05];
+
+/**
+ * Tarjetas de follaje repartidas en el volumen de la copa.
+ *
+ * La normal de cada tarjeta no es la de su plano sino la que va del centro de
+ * la copa hacia afuera. Es un engaño deliberado: hace que la copa se ilumine
+ * como un volumen redondo en vez de como un montón de carteles planos, que es
+ * lo que delata a los árboles baratos.
+ */
+function tarjetasFollaje({ centro, radioH, radioV, cantidad, tamano, color, variacion = 0.2, aplanar = 1 }) {
+  const pos = [], nor = [], uv = [], col = [], flx = [], idx = [];
+  let v = 0;
+  const c = new THREE.Color();
+
+  for (let i = 0; i < cantidad; i++) {
+    // Punto dentro del elipsoide de la copa, con sesgo hacia la superficie
+    const u = Math.random() * Math.PI * 2;
+    const w = Math.acos(2 * Math.random() - 1);
+    const rad = Math.pow(Math.random(), 0.45);
+    const px = centro.x + Math.sin(w) * Math.cos(u) * radioH * rad;
+    const pz = centro.z + Math.sin(w) * Math.sin(u) * radioH * rad;
+    const py = centro.y + Math.cos(w) * radioV * rad;
+
+    // Normal hacia afuera de la copa
+    let nx = px - centro.x, ny = (py - centro.y) * aplanar, nz = pz - centro.z;
+    const ln = Math.hypot(nx, ny, nz) || 1;
+    nx /= ln; ny = ny / ln + 0.35; nz /= ln;
+    const ln2 = Math.hypot(nx, ny, nz) || 1;
+    nx /= ln2; ny /= ln2; nz /= ln2;
+
+    const s = tamano * (0.62 + Math.random() * 0.8);
+    const giro = Math.random() * Math.PI * 2;
+    const inclina = (Math.random() - 0.5) * 1.1;
+
+    // Base ortonormal de la tarjeta
+    const ex = Math.cos(giro), ez = Math.sin(giro);
+    const ux = ex * s, uz = ez * s;
+    const vx = -ez * Math.sin(inclina) * s, vy = Math.cos(inclina) * s, vz = ex * Math.sin(inclina) * s;
+
+    const esquinas = [
+      [px - ux - vx, py - vy, pz - uz - vz],
+      [px + ux - vx, py - vy, pz + uz - vz],
+      [px + ux + vx, py + vy, pz + uz + vz],
+      [px - ux + vx, py + vy, pz - uz + vz],
+    ];
+    // Ventana del atlas: cada tarjeta toma un recorte distinto
+    const u0 = Math.random() * 0.55, v0 = Math.random() * 0.55;
+    const uw = 0.30 + Math.random() * 0.14;
+    const uvs = [[u0, v0], [u0 + uw, v0], [u0 + uw, v0 + uw], [u0, v0 + uw]];
+
+    const brillo = 1 + (Math.random() - 0.5) * variacion * 2;
+    c.copy(color).multiplyScalar(brillo);
+
+    for (let k = 0; k < 4; k++) {
+      pos.push(esquinas[k][0], esquinas[k][1], esquinas[k][2]);
+      nor.push(nx, ny, nz);
+      uv.push(uvs[k][0], uvs[k][1]);
+      col.push(c.r, c.g, c.b);
+      flx.push(1);
+    }
+    idx.push(v, v + 1, v + 2, v, v + 2, v + 3);
+    v += 4;
+  }
+
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  g.setAttribute('aFlexion', new THREE.Float32BufferAttribute(flx, 1));
+  g.setIndex(idx);
+  return g;
+}
+
 // ── Geometría procedural ────────────────────────────────────────────────────
 
 /**
@@ -259,7 +445,7 @@ function construirPlanta(esp) {
           new THREE.Euler(0, Math.random() * 6.28, -0.3 - Math.random() * 0.5)
         ));
         hoja.translate(Math.cos(a) * r, h * (0.6 + j * 0.13), Math.sin(a) * r);
-        pintar(hoja, colHoja, 1.0);
+        pintar(hoja, colHoja, 1.0, 0, 'hoja');
         partes.push(hoja);
       }
     }
@@ -291,62 +477,58 @@ function construirPlanta(esp) {
     partes.push(g);
   }
 
-  // ── Follaje
+  // ── Follaje en tarjetas recortadas
   const cumbre = alturaTronco;
+  const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+
   if (arquetipo === 'columnar') {
-    // Ciprés de la cordillera: columna de conos apilados
-    const capas = 9;
+    // Ciprés de la cordillera: columna angosta que se afina hacia la punta
+    const capas = 7;
     for (let i = 0; i < capas; i++) {
       const t = i / (capas - 1);
-      const y = cumbre * 0.20 + t * alturaRef * 0.80;
-      const r = (1 - t) * alturaRef * 0.16 + 0.18;
-      const g = new THREE.ConeGeometry(r, alturaRef * 0.20, 7, 1);
-      g.translate(0, y, 0);
-      pintar(g, colHoja, 1.0, 0.13);
-      partes.push(g);
+      const y = cumbre * 0.16 + t * alturaRef * 0.84;
+      const r = (1 - t * 0.82) * alturaRef * 0.15 + 0.12;
+      partes.push(tarjetasFollaje({
+        centro: V3(0, y, 0),
+        radioH: r, radioV: alturaRef * 0.09,
+        cantidad: 12, tamano: alturaRef * 0.075,
+        color: colHoja, variacion: 0.16, aplanar: 1.6,
+      }));
     }
   } else if (arquetipo === 'copa_ancha') {
-    // Coihue: copa amplia, horizontal, en pisos
-    const racimos = 16;
-    for (let i = 0; i < racimos; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const r = Math.pow(Math.random(), 0.55) * alturaRef * 0.34;
-      const y = cumbre + Math.random() * alturaRef * 0.40;
-      const tam = alturaRef * (0.13 + Math.random() * 0.10);
-      const g = new THREE.IcosahedronGeometry(tam, 0);
-      g.scale(1.25, 0.62, 1.25);
-      g.translate(Math.cos(a) * r, y, Math.sin(a) * r);
-      pintar(g, colHoja, 1.0, 0.16);
-      partes.push(g);
+    // Coihue: copa amplia y aparasolada, con la masa repartida en lóbulos
+    const lobulos = 5;
+    for (let i = 0; i < lobulos; i++) {
+      const a = (i / lobulos) * Math.PI * 2 + Math.random() * 0.8;
+      const r = alturaRef * (0.10 + Math.random() * 0.16);
+      partes.push(tarjetasFollaje({
+        centro: V3(Math.cos(a) * r, cumbre + alturaRef * (0.10 + Math.random() * 0.26), Math.sin(a) * r),
+        radioH: alturaRef * 0.20, radioV: alturaRef * 0.11,
+        cantidad: 34, tamano: alturaRef * 0.105,
+        color: colHoja, variacion: 0.19, aplanar: 0.55,
+      }));
     }
   } else if (arquetipo === 'retorcido') {
-    // Ñire y lenga achaparrada: masas bajas y densas
-    const racimos = 11;
-    for (let i = 0; i < racimos; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const r = Math.random() * alturaRef * 0.30;
-      const y = cumbre * 0.75 + Math.random() * alturaRef * 0.34;
-      const tam = alturaRef * (0.14 + Math.random() * 0.11);
-      const g = new THREE.IcosahedronGeometry(tam, 0);
-      g.scale(1.1, 0.78, 1.1);
-      g.translate(Math.cos(a) * r, y, Math.sin(a) * r);
-      pintar(g, colHoja, 1.0, 0.18);
-      partes.push(g);
+    // Ñire y lenga: masas bajas, densas y desparejas
+    const lobulos = 4;
+    for (let i = 0; i < lobulos; i++) {
+      const a = (i / lobulos) * Math.PI * 2 + Math.random() * 0.9;
+      const r = alturaRef * Math.random() * 0.20;
+      partes.push(tarjetasFollaje({
+        centro: V3(Math.cos(a) * r, cumbre * 0.82 + alturaRef * (0.08 + Math.random() * 0.24), Math.sin(a) * r),
+        radioH: alturaRef * 0.19, radioV: alturaRef * 0.14,
+        cantidad: 28, tamano: alturaRef * 0.10,
+        color: colHoja, variacion: 0.21, aplanar: 0.8,
+      }));
     }
   } else {
-    // Arbusto: mata redondeada
-    const racimos = 7;
-    for (let i = 0; i < racimos; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const r = Math.random() * alturaRef * 0.26;
-      const y = cumbre * 0.6 + Math.random() * alturaRef * 0.42;
-      const tam = alturaRef * (0.19 + Math.random() * 0.13);
-      const g = new THREE.IcosahedronGeometry(tam, 0);
-      g.scale(1.05, 0.88, 1.05);
-      g.translate(Math.cos(a) * r, y, Math.sin(a) * r);
-      pintar(g, colHoja, 1.0, 0.2);
-      partes.push(g);
-    }
+    // Arbusto: una sola mata redondeada
+    partes.push(tarjetasFollaje({
+      centro: V3(0, cumbre * 0.72 + alturaRef * 0.26, 0),
+      radioH: alturaRef * 0.28, radioV: alturaRef * 0.22,
+      cantidad: 26, tamano: alturaRef * 0.15,
+      color: colHoja, variacion: 0.22, aplanar: 0.9,
+    }));
   }
 
   return fusionar(partes);
@@ -380,21 +562,45 @@ function troncoCurvo(rBase, rTope, altura, segs, curvatura) {
   return g;
 }
 
-/** Asigna color y el peso de flexión al viento (0 tronco rígido, 1 hoja suelta). */
-function pintar(geo, color, flexion, variacion = 0) {
+/**
+ * Asigna color, peso de flexión al viento (0 tronco rígido, 1 hoja suelta) y
+ * coordenadas de textura.
+ *
+ * La madera apunta al parche opaco del atlas: así el tronco y las hojas
+ * comparten un solo material y el árbol entero se dibuja de una sola vez.
+ */
+function pintar(geo, color, flexion, variacion = 0, modoUV = 'madera') {
   const n = geo.attributes.position.count;
   const col = new Float32Array(n * 3);
   const flex = new Float32Array(n);
+  const uv = new Float32Array(n * 2);
   const c = color.clone();
+
+  const u0 = Math.random() * 0.55, v0 = Math.random() * 0.55;
+  const uw = 0.28 + Math.random() * 0.14;
+  const uvOriginal = geo.attributes.uv;
+
   for (let i = 0; i < n; i++) {
     const v = variacion ? 1 + (Math.random() - 0.5) * variacion * 2 : 1;
     col[i * 3] = c.r * v;
     col[i * 3 + 1] = c.g * v;
     col[i * 3 + 2] = c.b * v;
     flex[i] = flexion;
+
+    if (modoUV === 'madera') {
+      uv[i * 2] = UV_MADERA[0];
+      uv[i * 2 + 1] = UV_MADERA[1];
+    } else {
+      // Recorte del atlas, respetando la parametrización original de la pieza
+      const su = uvOriginal ? uvOriginal.getX(i) : (i % 2);
+      const sv = uvOriginal ? uvOriginal.getY(i) : ((i >> 1) % 2);
+      uv[i * 2] = u0 + su * uw;
+      uv[i * 2 + 1] = v0 + sv * uw;
+    }
   }
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
   geo.setAttribute('aFlexion', new THREE.BufferAttribute(flex, 1));
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
 }
 
 function fusionar(geos) {
@@ -407,6 +613,7 @@ function fusionar(geos) {
   const pos = new Float32Array(totalVerts * 3);
   const nor = new Float32Array(totalVerts * 3);
   const col = new Float32Array(totalVerts * 3);
+  const uvs = new Float32Array(totalVerts * 2);
   const flx = new Float32Array(totalVerts);
   const idx = new Uint32Array(totalIdx);
 
@@ -414,10 +621,12 @@ function fusionar(geos) {
   for (const g of geos) {
     const p = g.attributes.position, nAttr = g.attributes.normal;
     const c = g.attributes.color, f = g.attributes.aFlexion;
+    const u = g.attributes.uv;
     const cnt = p.count;
     pos.set(p.array.subarray(0, cnt * 3), vo * 3);
     if (nAttr) nor.set(nAttr.array.subarray(0, cnt * 3), vo * 3);
     col.set(c.array.subarray(0, cnt * 3), vo * 3);
+    if (u) uvs.set(u.array.subarray(0, cnt * 2), vo * 2);
     flx.set(f.array.subarray(0, cnt), vo);
     if (g.index) {
       for (let i = 0; i < g.index.count; i++) idx[io + i] = g.index.array[i] + vo;
@@ -434,6 +643,7 @@ function fusionar(geos) {
   out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
   out.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  out.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   out.setAttribute('aFlexion', new THREE.BufferAttribute(flx, 1));
   out.setIndex(new THREE.BufferAttribute(idx, 1));
   out.computeBoundingSphere();
