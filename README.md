@@ -121,7 +121,11 @@ avistándola en su hábitat real y se completa identificándola de cerca.
   pendientes de más de 48°, flotación y daño por caída
 - Lagos con Fresnel, absorción de Beer-Lambert por profundidad real y espuma
   de orilla, sobre grilla radial centrada en la cámara
-- Vegetación instanciada por aptitud ecológica (4300 plantas, 26 especies)
+- Vegetación instanciada por aptitud ecológica (5700 plantas, 26 especies)
+- Sotobosque de 11 400 elementos: coirón, pastizal húmedo, helechos, michay,
+  piedras sueltas y troncos caídos, cada uno con su regla ecológica. El
+  sembrado se reparte entre cuadros con presupuesto de 5 ms, así cruzar una
+  celda no produce un tirón
 - Fauna con máquina de estados, animación por partes y filtro de hábitat
 - Ciclo día/noche con posición solar astronómica para latitud −41,13
 - Clima mensual con las normales de Bariloche Aero
@@ -129,18 +133,18 @@ avistándola en su hábitat real y se completa identificándola de cerca.
 
 ### Roto o a medio hacer
 
-1. **Falta cubierta de suelo.** Es lo que más separa esto de un juego comercial.
-   No hay pasto, matas bajas, piedras sueltas ni troncos caídos: sólo la
-   superficie del terreno. Ninguna cantidad de shader lo reemplaza; hace falta
-   geometría instanciada a nivel del suelo, que es el próximo paso obvio.
-2. **Los árboles son icosaedros y conos facetados**, sin textura de hoja ni
-   impostores a distancia. Necesitan trabajo de arte, no de código.
-3. **12 M de triángulos por cuadro**, casi todos vegetación multiplicada por
+1. **Los árboles son icosaedros y conos facetados**, sin textura de hoja ni
+   impostores a distancia. Es el defecto visual más visible que queda, y
+   necesita trabajo de arte, no de código.
+2. **13 M de triángulos por cuadro**, casi todos vegetación multiplicada por
    las 4 cascadas de sombra. Falta LOD e impostores.
-4. El códice todavía no consume `geografia.json` ni `historia.json`: los datos
+3. El códice todavía no consume `geografia.json` ni `historia.json`: los datos
    están, la interfaz que los muestra no.
-5. No hay todavía: inventario, crafteo, construcción, audio, ni eventos
+4. No hay todavía: inventario, crafteo, construcción, audio, ni eventos
    naturales (incendio, ceniza, viento blanco) más allá de los parámetros.
+5. El sotobosque llega hasta 64 m del jugador (112 m para piedras y troncos).
+   Más allá el suelo queda desnudo: hace falta una capa de impostores o una
+   textura de detalle que tome el relevo.
 
 #### Sobre la suavidad del terreno
 

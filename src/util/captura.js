@@ -52,6 +52,10 @@ export function instalarCapturas(S) {
     });
 
     vegetacion.actualizar(jugador.posicion, tiempo.segundosTotales, est);
+    // En una captura no se puede esperar a que el sembrado se reparta entre
+    // cuadros: hace falta el sotobosque completo ya mismo.
+    S.sotobosque?.actualizar(jugador.posicion, tiempo.segundosTotales, est);
+    S.sotobosque?.sembrarTodo(jugador.posicion);
     if (o.conFauna !== false) {
       for (let k = 0; k < 16; k++) fauna.actualizar(0.5, jugador, est, tiempo.segundosTotales + k * 2);
     }
@@ -90,6 +94,7 @@ export function instalarCapturas(S) {
       triangulos: render.info.render.triangles,
       nodos: terreno.nodosDibujados,
       plantas: vegetacion.totalInstancias,
+      sotobosque: S.sotobosque?.total ?? 0,
       animales: fauna.vivos.length,
     };
   };

@@ -17,6 +17,7 @@ import { Terreno } from './world/Terreno.js';
 import { Cielo } from './world/Cielo.js';
 import { Agua } from './world/Agua.js';
 import { Vegetacion } from './world/Vegetacion.js';
+import { Sotobosque } from './world/Sotobosque.js';
 import { Fauna } from './entities/Fauna.js';
 import { Codice } from './ui/Codice.js';
 import flora from './data/flora.json';
@@ -118,6 +119,11 @@ async function iniciar() {
   const vegetacion = new Vegetacion(mundo, flora);
   escena.add(vegetacion.grupo);
   for (const lote of vegetacion.lotes) conCSM(csm, lote.malla.material);
+
+  progreso(0.80, 'Sembrando el sotobosque…');
+  const sotobosque = new Sotobosque(mundo);
+  escena.add(sotobosque.grupo);
+  for (const lote of sotobosque.lotes) conCSM(csm, lote.malla.material);
 
   progreso(0.82, 'Soltando la fauna del parque…');
   const bichos = new Fauna(mundo, fauna);
@@ -226,6 +232,7 @@ async function iniciar() {
     // ── Agua y vegetación
     agua.actualizar(tiempo.segundosTotales, camara, est, escena);
     vegetacion.actualizar(jugador.posicion, tiempo.segundosTotales, est);
+    sotobosque.actualizar(jugador.posicion, tiempo.segundosTotales, est);
     bichos.actualizar(dt, jugador, est, tiempo.segundosTotales);
 
     // El domo del cielo acompaña a la cámara
@@ -241,7 +248,7 @@ async function iniciar() {
       elDiag.innerHTML =
         `${fps.toFixed(0)} fps<br>` +
         `${terreno.nodosDibujados} nodos de terreno<br>` +
-        `${vegetacion.totalInstancias} plantas · ${bichos.vivos.length} animales<br>` +
+        `${vegetacion.totalInstancias}+${sotobosque.total} plantas · ${bichos.vivos.length} animales<br>` +
         `${inf.render.calls} llamadas · ${(inf.render.triangles / 1000).toFixed(0)}k tri<br>` +
         `sol ${(cielo.alturaSol * 180 / Math.PI).toFixed(1)}°`;
     }
@@ -250,7 +257,7 @@ async function iniciar() {
 
   // Exponer para inspección y para los subagentes de revisión visual
   window.SurviBar = {
-    escena, camara, render, mundo, terreno, cielo, agua, vegetacion,
+    escena, camara, render, mundo, terreno, cielo, agua, vegetacion, sotobosque,
     fauna: bichos, jugador, tiempo, compositor, csm, hud, codice, entrada,
   };
 
