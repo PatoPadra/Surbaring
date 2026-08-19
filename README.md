@@ -106,8 +106,20 @@ chinchillón anaranjado son de Santa Cruz). Se dejaron documentadas con su
 distribución real en vez de inventarlas, y se agregaron las especies que sí
 están registradas en el parque.
 
-El **códice** (`Tab`) es el objetivo del juego: cada especie se descubre
-avistándola en su hábitat real y se completa identificándola de cerca.
+El **códice** (`Tab`) es el objetivo del juego, con seis secciones: fauna,
+flora, geografía, historia, mitología y saberes.
+
+Qué se colecciona y qué no es una decisión deliberada:
+
+- **Fauna y flora** se descubren avistándolas en su hábitat real y se completan
+  identificándolas de cerca.
+- **Cerros, lagos, glaciares y sitios históricos** se descubren llegando hasta
+  ellos. El radio depende de qué tan lejos se ven: 6 km para el Tronador,
+  1,8 km para un cerro, 260 m para un sitio.
+- **Los hechos históricos** se revelan al descubrir el lugar donde ocurrieron.
+- **La mitología mapuche, la toponimia y el árbol de saberes** están
+  disponibles desde el principio. Poner la cosmovisión de un pueblo vivo
+  detrás de una mecánica de recolección sería tratarla como un trofeo.
 
 ---
 
@@ -138,7 +150,9 @@ avistándola en su hábitat real y se completa identificándola de cerca.
 - Fauna con máquina de estados, animación por partes y filtro de hábitat
 - Ciclo día/noche con posición solar astronómica para latitud −41,13
 - Clima mensual con las normales de Bariloche Aero
-- Códice educativo y HUD en español
+- Códice de seis secciones con descubrimiento por proximidad, 41 lugares
+  reales y unos 65.000 caracteres de contenido verificado accesible en juego
+- HUD en español con posición geográfica real, clima y estado vital
 
 ### Roto o a medio hacer
 
@@ -148,8 +162,8 @@ avistándola en su hábitat real y se completa identificándola de cerca.
 2. **Ocho vistas siguen siendo pocas para un giro rápido.** El cruce entre
    vistas vecinas se nota si la cámara barre rápido en horizontal. Subir a 12 o
    16 vistas lo suavizaría a costa de memoria.
-3. El códice todavía no consume `geografia.json` ni `historia.json`: los datos
-   están, la interfaz que los muestra no.
+3. El árbol de saberes se muestra pero no se puede recorrer: no hay puntos de
+   saber que gastar ni tecnologías que desbloquear todavía.
 4. No hay todavía: inventario, crafteo, construcción, audio, ni eventos
    naturales (incendio, ceniza, viento blanco) más allá de los parámetros.
 5. El sotobosque llega hasta 192 m. Más allá el suelo queda desnudo, aunque a

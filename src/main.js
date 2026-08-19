@@ -22,6 +22,8 @@ import { Fauna } from './entities/Fauna.js';
 import { Codice } from './ui/Codice.js';
 import flora from './data/flora.json';
 import fauna from './data/fauna.json';
+import geografia from './data/geografia.json';
+import historia from './data/historia.json';
 import { Jugador } from './entities/Jugador.js';
 import { Entrada } from './engine/Entrada.js';
 import { Tiempo } from './world/Tiempo.js';
@@ -137,7 +139,7 @@ async function iniciar() {
   entrada.registrar('KeyT', () => tiempo.alternarVelocidad());
 
   const hud = new HUD(mundo, jugador, tiempo);
-  const codice = new Codice(flora, fauna, hud);
+  const codice = new Codice({ flora, fauna, geografia, historia, mundo, hud });
   entrada.registrar('Tab', () => codice.alternar());
   entrada.registrar('KeyE', () => {
     const a = bichos.masCercano(jugador.posicion, 70);
@@ -184,6 +186,7 @@ async function iniciar() {
   const PASO = 1 / 60;
   let acumulador = 0;
   let fps = 60, ultimoDiag = 0;
+  let acumProximidad = 0;
   const elDiag = document.getElementById('diag');
   const colorNiebla = new THREE.Color();
 
@@ -238,6 +241,14 @@ async function iniciar() {
     vegetacion.actualizar(jugador.posicion, tiempo.segundosTotales, est, camara);
     sotobosque.actualizar(jugador.posicion, tiempo.segundosTotales, est);
     bichos.actualizar(dt, jugador, est, tiempo.segundosTotales);
+
+    // Descubrimiento de lugares: dos veces por segundo alcanza y evita medir
+    // distancias contra medio centenar de sitios en cada cuadro.
+    acumProximidad += dt;
+    if (acumProximidad > 0.5) {
+      acumProximidad = 0;
+      codice.revisarProximidad(jugador.posicion);
+    }
 
     // El domo del cielo acompaña a la cámara
     cielo.malla.position.copy(camara.position);
