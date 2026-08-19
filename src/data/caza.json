@@ -1,6 +1,6 @@
 {
   "marcoLegal": {
-    "resumen": "Dentro de un Parque Nacional argentino la fauna autóctona está protegida de manera absoluta: no existe temporada de caza para especies nativas, ni permiso que la habilite con fines deportivos o de subsistencia. El Parque Nacional Nahuel Huapi se rige por la Ley 22.351 de Parques Nacionales, administrada por la Administración de Parques Nacionales (APN), que prohíbe toda actividad de caza salvo las excepciones que la propia autoridad dispone por razones de manejo. Esas excepciones son los programas de control de especies exóticas invasoras, como el ciervo colorado y el jabalí europeo, que la APN ejecuta o autoriza con permiso escrito, zonas delimitadas, cupos, métodos aprobados y control de guardaparques. Fuera de los límites del parque, en jurisdicción de la provincia de Río Negro, rige la ley provincial de fauna y las resoluciones anuales de la autoridad de aplicación provincial, que fijan temporadas, especies y cupos que cambian todos los años. La pesca deportiva en la Patagonia andina es una actividad aparte, regulada por un reglamento conjunto de las provincias patagónicas y la APN, con temporada aproximada de noviembre a abril o mayo y permiso obligatorio. Ninguna norma habilita a cazar un Monumento Natural Nacional como el huemul o el cóndor andino: matarlos es un delito, no una infracción menor. Este archivo tiene fines educativos dentro de un videojuego y no reemplaza la reglamentación vigente. Los cupos, fechas exactas y montos de multa figuran como null cuando no pudieron verificarse contra la resolución oficial del año en curso, porque se actualizan por temporada.",
+    "resumen": "Dentro de un Parque Nacional argentino la fauna autóctona está protegida de manera absoluta: no existe temporada de caza para especies nativas, ni permiso que la habilite con fines deportivos o de subsistencia. El Parque Nacional Nahuel Huapi se rige por la Ley 22.351 de Parques Nacionales, administrada por la Administración de Parques Nacionales (APN), que prohíbe toda actividad de caza salvo las excepciones que la propia autoridad dispone por razones de manejo. El artículo 5 de esa ley prohíbe la caza y toda acción sobre la fauna dentro de los Parques Nacionales, salvo cuando razones biológicas, técnicas o científicas aconsejen la captura o reducción de ejemplares de determinadas especies. Sobre esa excepción se apoya la única caza habilitada en el Nahuel Huapi: la de ciervo colorado y jabalí europeo, reglamentada por el Reglamento Único aprobado por Resolución de Directorio 277/2011, con turnos adjudicados por subasta, zonas asignadas, permisos, precintos y control de guardaparques. Fuera de los límites del parque, en jurisdicción de la provincia de Río Negro, rige el régimen provincial de fauna y una resolución anual de la Dirección de Fauna Silvestre que fija temporadas, especies y cupos distintos, que cambian todos los años. La pesca deportiva es una actividad aparte, regulada por el Reglamento de Pesca Deportiva Continental Patagónico, con temporada general en el parque del 1 de noviembre al 30 de abril y temporada extendida en el lago Nahuel Huapi del 1 de octubre al 31 de mayo, siempre con permiso. Ninguna norma habilita a cazar un Monumento Natural Nacional como el huemul o el cóndor andino: matarlos es un delito, no una infracción menor. Este archivo tiene fines educativos dentro de un videojuego y no reemplaza la reglamentación vigente. Los cupos, fechas exactas y montos de multa figuran como null cuando no pudieron verificarse contra la resolución oficial del año en curso, porque se actualizan por temporada.",
     "normas": [
       {
         "nombre": "Ley 22.351 de Parques Nacionales, Monumentos Naturales y Reservas Nacionales",
@@ -107,10 +107,10 @@
         "mesDesde": null,
         "mesHasta": null,
         "nombre": "Caza menor según reglamentación provincial",
-        "notas": "Dentro del parque no hay caza deportiva de liebre habilitada de manera general; fuera del parque, en Río Negro, la caza menor se rige por la resolución anual de la provincia. Fechas no verificadas."
+        "notas": "Dentro del parque no hay caza deportiva de liebre habilitada de manera general: el Reglamento Único de caza del Nahuel Huapi cubre sólo ciervo colorado y jabalí. Fuera del parque, en Río Negro, la resolución provincial de temporada la trata como exótica invasora, habilitada durante todo el año y sin cupo."
       },
       "requierePermiso": true,
-      "cupo": null,
+      "cupo": "En jurisdicción de Río Negro, fuera del parque, se caza sin cupo por su condición de exótica invasora; siempre con licencia de caza provincial vigente.",
       "metodosPermitidos": ["rifle de bajo calibre", "arco"],
       "metodosProhibidos": ["veneno", "trampa", "perros", "caza nocturna con reflector"],
       "razonEcologica": "La liebre europea consume pastos y renovales, compite con herbívoros nativos y mantiene artificialmente altas las poblaciones de depredadores, lo que aumenta la presión sobre presas autóctonas. En zonas de estepa y borde de bosque contribuye a la degradación del pastizal.",
@@ -125,7 +125,7 @@
         "mesDesde": null,
         "mesHasta": null,
         "nombre": "Control dirigido, sin temporada deportiva",
-        "notas": "El visón se maneja mediante campañas de control y trampeo ejecutadas o autorizadas por la autoridad, no como caza deportiva. No hay temporada abierta al público general."
+        "notas": "Dentro del parque el visón se maneja mediante campañas de control y trampeo ejecutadas o autorizadas por la autoridad, no como caza deportiva. En la provincia de Río Negro, fuera del parque, la resolución de temporada lo trata como exótica invasora habilitada todo el año y sin cupo, junto con la liebre europea, el conejo y la codorniz de California."
       },
       "requierePermiso": true,
       "cupo": null,
@@ -143,10 +143,10 @@
         "mesDesde": 11,
         "mesHasta": 4,
         "nombre": "Temporada de pesca deportiva patagónica",
-        "notas": "La temporada general en la Patagonia andina va aproximadamente de principios de noviembre a fines de abril o mediados de mayo, con aguas de temporada extendida y otras cerradas. Las fechas exactas y las aguas habilitadas cambian cada año según el reglamento de pesca."
+        "notas": "En el Parque Nacional Nahuel Huapi la temporada general de ríos y ambientes abre el 1 de noviembre y cierra el 30 de abril, mientras que el lago Nahuel Huapi tiene temporada extendida del 1 de octubre al 31 de mayo. Los permisos se gestionan de forma online. Verificar siempre el reglamento del año en curso, porque cambia por ambiente."
       },
       "requierePermiso": true,
-      "cupo": "Hay cupo diario de piezas y medidas mínimas y máximas según el ambiente; muchos tramos son de devolución obligatoria. Los números exactos no pudieron verificarse.",
+      "cupo": "Hay cupo diario y medidas según el ambiente; en el parque la normativa permite conservar truchas de hasta unos 40 centímetros y varios lagos son de devolución obligatoria. El número exacto de piezas por día no pudo verificarse.",
       "metodosPermitidos": ["mosca", "spinning", "trolling donde esté habilitado"],
       "metodosProhibidos": ["red", "veneno", "explosivos", "electricidad", "pesca sin permiso"],
       "razonEcologica": "Los salmónidos introducidos depredan y desplazan a peces nativos como la perca, el puyén y el bagre aterciopelado, y alteran las redes tróficas de lagos y ríos. Hoy están tan establecidos que su manejo se orienta a regular la pesca y a evitar nuevas siembras.",
@@ -161,10 +161,10 @@
         "mesDesde": 11,
         "mesHasta": 4,
         "nombre": "Temporada de pesca deportiva patagónica",
-        "notas": "Misma temporada general aproximada que la arcoíris, de noviembre a abril o mayo, con excepciones por ambiente. Verificar el reglamento vigente."
+        "notas": "Misma temporada que la arcoíris: 1 de noviembre a 30 de abril en ríos y ambientes del parque, y 1 de octubre a 31 de mayo en el lago Nahuel Huapi. Verificar el reglamento vigente porque hay excepciones por ambiente."
       },
       "requierePermiso": true,
-      "cupo": "Cupo diario y medidas según ambiente; no verificado.",
+      "cupo": "Cupo diario y medidas según ambiente, con devolución obligatoria en varios cuerpos de agua; el número exacto no pudo verificarse.",
       "metodosPermitidos": ["mosca", "spinning", "trolling donde esté habilitado"],
       "metodosProhibidos": ["red", "veneno", "explosivos", "electricidad", "pesca sin permiso"],
       "razonEcologica": "Es un depredador voraz y territorial que impacta fuerte sobre peces nativos y sobre invertebrados acuáticos. En arroyos chicos puede eliminar poblaciones enteras de especies autóctonas de pequeño tamaño.",
@@ -256,7 +256,7 @@
     {
       "id": "veda_pesca_invernal",
       "nombre": "Veda de pesca de otoño e invierno",
-      "descripcion": "Fuera de la temporada de pesca deportiva, aproximadamente entre mayo y octubre, la mayoría de las aguas están cerradas para proteger el desove de los salmónidos y de los peces nativos. Algunas aguas mantienen temporada extendida con devolución obligatoria.",
+      "descripcion": "Fuera de la temporada de pesca deportiva, entre el 1 de mayo y el 31 de octubre, la mayoría de las aguas del parque están cerradas para proteger el desove de los salmónidos y de los peces nativos. El lago Nahuel Huapi es la excepción principal, con temporada extendida de octubre a mayo.",
       "mesDesde": 5,
       "mesHasta": 10,
       "razon": "desove y bajo caudal"

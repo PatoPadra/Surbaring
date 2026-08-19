@@ -98,9 +98,12 @@ CONICET, SAREM, IUCN, SMN).
 - **`src/data/geografia.json`** — gradiente de precipitación en 8 puntos,
   6 unidades litológicas, 5 volcanes, 5 glaciares, 17 lagos, 7 ríos, 16 cerros
   y 14 fenómenos naturales.
-- **`src/data/caza.json`** — marco legal, categorías de protección, temporadas
-  por especie y fuentes de carroña, con la distinción entre lo que rige dentro
-  del parque y lo que rige en la provincia.
+- **`src/data/caza.json`** — 6 normas citadas, 3 categorías de protección,
+  11 especies con temporada, 4 vedas y 4 fuentes de carroña. Distingue lo que
+  rige dentro del parque de lo que rige en Río Negro: el ciervo colorado y el
+  jabalí se cazan de marzo a mayo por turnos de subasta (Res. Directorio APN
+  277/2011), mientras que la liebre, fuera del parque, no tiene temporada ni
+  cupo. El huemul es Monumento Natural por Ley 24.702.
 - **`src/data/historia.json`** — 6 eras, 32 eventos, 12 personajes,
   16 entradas de mitología, 30 topónimos en mapuzugun, 47 tecnologías
   encadenadas en un árbol de saberes y 20 sitios históricos.
