@@ -127,7 +127,9 @@ avistándola en su hábitat real y se completa identificándola de cerca.
 - Nivel de detalle con impostores horneados: más allá de 120 m cada árbol pasa
   a ser una cartelera cilíndrica de dos triángulos. La vegetación baja de
   1.935.700 a 45.262 triángulos, 43 veces menos, y el cuadro completo de
-  11,8 M a 2,4 M
+  11,8 M a 2,4 M. Cada especie se hornea desde 8 azimuts en un atlas de 4 × 2,
+  y el shader interpola entre las dos vistas vecinas, así el árbol lejano
+  cambia de perfil al rodearlo (26 MB de atlas en total)
 - Sotobosque de 11 400 elementos: coirón, pastizal húmedo, helechos, michay,
   piedras sueltas y troncos caídos, cada uno con su regla ecológica. El
   sembrado se reparte entre cuadros con presupuesto de 5 ms, así cruzar una
@@ -142,9 +144,9 @@ avistándola en su hábitat real y se completa identificándola de cerca.
 1. **El follaje no tiene variación de brillo por cara.** Las tarjetas se
    iluminan con la normal de la copa, que da volumen pero aplana el detalle
    interno; falta oclusión propia dentro de la copa.
-2. **Las carteleras se hornean desde un solo ángulo.** Al rodear un árbol
-   lejano, su imagen no cambia de perfil. Se resolvería con un atlas de varias
-   vistas, interpolando entre las dos más cercanas al ángulo de cámara.
+2. **Ocho vistas siguen siendo pocas para un giro rápido.** El cruce entre
+   vistas vecinas se nota si la cámara barre rápido en horizontal. Subir a 12 o
+   16 vistas lo suavizaría a costa de memoria.
 3. El códice todavía no consume `geografia.json` ni `historia.json`: los datos
    están, la interfaz que los muestra no.
 4. No hay todavía: inventario, crafteo, construcción, audio, ni eventos

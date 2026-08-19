@@ -53,7 +53,7 @@ export function instalarCapturas(S) {
 
     vegetacion.uniformesImpostor.uNiebla.value.copy(escena.fog.color);
     vegetacion.uniformesImpostor.uDensidadNiebla.value = escena.fog.density;
-    vegetacion.actualizar(jugador.posicion, tiempo.segundosTotales, est);
+    vegetacion.actualizar(jugador.posicion, tiempo.segundosTotales, est, camara);
     // En una captura no se puede esperar a que el sembrado se reparta entre
     // cuadros: hace falta el sotobosque completo ya mismo.
     S.sotobosque?.actualizar(jugador.posicion, tiempo.segundosTotales, est);

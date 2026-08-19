@@ -235,7 +235,7 @@ async function iniciar() {
     agua.actualizar(tiempo.segundosTotales, camara, est, escena);
     vegetacion.uniformesImpostor.uNiebla.value.copy(escena.fog.color);
     vegetacion.uniformesImpostor.uDensidadNiebla.value = escena.fog.density;
-    vegetacion.actualizar(jugador.posicion, tiempo.segundosTotales, est);
+    vegetacion.actualizar(jugador.posicion, tiempo.segundosTotales, est, camara);
     sotobosque.actualizar(jugador.posicion, tiempo.segundosTotales, est);
     bichos.actualizar(dt, jugador, est, tiempo.segundosTotales);
 

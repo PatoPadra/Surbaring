@@ -47,6 +47,8 @@ export class Vegetacion {
       uAmbiente: { value: new THREE.Color(0.35, 0.40, 0.45) },
       uNiebla: { value: new THREE.Color(0.6, 0.7, 0.8) },
       uDensidadNiebla: { value: 0.00005 },
+      // La cartelera necesita saber desde dónde se la mira para elegir la vista
+      uCamara: { value: new THREE.Vector3() },
     };
 
     // Sólo las especies leñosas se dibujan como instancias; las hierbas van al
@@ -127,6 +129,8 @@ export class Vegetacion {
         uMapa: { value: horneado.textura },
         uAncho: { value: horneado.ancho },
         uAlto: { value: horneado.alto },
+        uVistas: { value: horneado.vistas },
+        uRejilla: { value: new THREE.Vector2(horneado.cols, horneado.filas) },
         uEstacion: { value: 0 },
         uColorOtono: { value: new THREE.Color(esp.colorHojaOtono || esp.colorHojaVerano || '#8a4a1e') },
         uPerenne: { value: esp.perenne !== false ? 1 : 0 },
@@ -173,8 +177,13 @@ export class Vegetacion {
     return Math.max(0, alt) * hum * pend * (esp.densidadRelativa ?? 0.5);
   }
 
-  /** Repuebla si el jugador cambió de celda. */
-  actualizar(posicion, tiempo, estado) {
+  /**
+   * Repuebla si el jugador cambió de celda.
+   * @param {THREE.Camera} [camara] hace falta para elegir la vista del atlas
+   */
+  actualizar(posicion, tiempo, estado, camara) {
+    if (camara) camara.getWorldPosition(this.uniformesImpostor.uCamara.value);
+    else this.uniformesImpostor.uCamara.value.copy(posicion);
     this.uniformes.uTiempo.value = tiempo;
     const rad = (estado.direccionViento ?? 270) * Math.PI / 180;
     this.uniformes.uViento.value.set(Math.sin(rad), -Math.cos(rad));
@@ -342,7 +351,7 @@ export class Vegetacion {
  * El bakeo usa un material propio, sin la inyección de viento, porque aquella
  * lee instanceMatrix y acá se dibuja una malla suelta.
  */
-function hornearImpostor(render, geometria, mapaFollaje, resolucion = 256) {
+function hornearImpostor(render, geometria, mapaFollaje) {
   const geo = geometria.clone();
   geo.computeBoundingBox();
   const caja = geo.boundingBox;
@@ -370,10 +379,14 @@ function hornearImpostor(render, geometria, mapaFollaje, resolucion = 256) {
   escena.add(sol);
   escena.add(new THREE.AmbientLight(0xffffff, 1.05));
 
-  // Proporción del cartel: se mantiene el aspecto real del árbol
-  const aspecto = ancho / alto;
-  const anchoTex = Math.max(64, Math.round(resolucion * Math.min(1.4, Math.max(0.35, aspecto))));
-  const objetivo = new THREE.WebGLRenderTarget(anchoTex, resolucion, {
+  // Atlas de vistas: el árbol se hornea desde ocho azimuts repartidos alrededor
+  // del eje vertical, en una grilla de 4 × 2. Con una sola vista, al rodear un
+  // árbol lejano su perfil no cambiaba nunca y se notaba que era un cartel.
+  const COLS = 4, FILAS = 2;
+  const VISTAS = COLS * FILAS;
+  const anchoTeja = 128, altoTeja = 192;
+
+  const objetivo = new THREE.WebGLRenderTarget(anchoTeja * COLS, altoTeja * FILAS, {
     minFilter: THREE.LinearMipmapLinearFilter,
     magFilter: THREE.LinearFilter,
     format: THREE.RGBAFormat,
@@ -382,37 +395,64 @@ function hornearImpostor(render, geometria, mapaFollaje, resolucion = 256) {
   });
 
   const camara = new THREE.OrthographicCamera(
-    -ancho / 2, ancho / 2, alto / 2, -alto / 2, 0.1, ancho * 6 + alto * 6
+    -ancho / 2, ancho / 2, alto / 2, -alto / 2, 0.1, (ancho + alto) * 6
   );
-  camara.position.set(0, centroY, ancho * 2 + alto * 2);
-  camara.lookAt(0, centroY, 0);
+  const distancia = (ancho + alto) * 2;
 
   const objetivoPrevio = render.getRenderTarget();
   const colorPrevio = new THREE.Color();
   render.getClearColor(colorPrevio);
   const alfaPrevia = render.getClearAlpha();
+  const autoLimpiarPrevio = render.autoClear;
 
   render.setRenderTarget(objetivo);
   render.setClearColor(0x000000, 0);
   render.clear();
-  render.render(escena, camara);
+  render.autoClear = false;
 
+  for (let i = 0; i < VISTAS; i++) {
+    // Azimut de la vista i, con el mismo convenio que usa el shader:
+    // ángulo = atan2(dx, dz) del vector que va del árbol a la cámara.
+    const azimut = (i / VISTAS) * Math.PI * 2;
+    camara.position.set(
+      Math.sin(azimut) * distancia,
+      centroY,
+      Math.cos(azimut) * distancia
+    );
+    camara.lookAt(0, centroY, 0);
+
+    const col = i % COLS;
+    // El origen del viewport de WebGL está abajo a la izquierda
+    const fila = FILAS - 1 - Math.floor(i / COLS);
+    render.setViewport(col * anchoTeja, fila * altoTeja, anchoTeja, altoTeja);
+    render.setScissor(col * anchoTeja, fila * altoTeja, anchoTeja, altoTeja);
+    render.setScissorTest(true);
+    render.render(escena, camara);
+  }
+
+  render.setScissorTest(false);
+  render.autoClear = autoLimpiarPrevio;
   render.setRenderTarget(objetivoPrevio);
   render.setClearColor(colorPrevio, alfaPrevia);
+  const tam = new THREE.Vector2();
+  render.getSize(tam);
+  render.setViewport(0, 0, tam.x, tam.y);
 
   geo.dispose();
   mat.dispose();
 
-  return { textura: objetivo.texture, ancho, alto, objetivo };
+  return { textura: objetivo.texture, ancho, alto, objetivo, vistas: VISTAS, cols: COLS, filas: FILAS };
 }
 
 const VERT_IMPOSTOR = /* glsl */`
 attribute vec3 iTinte;
 uniform float uAncho;
 uniform float uAlto;
+uniform vec3 uCamara;
 varying vec2 vUv;
 varying vec3 vTinte;
 varying float vDist;
+varying float vAzimut;
 
 void main() {
   vUv = uv;
@@ -422,6 +462,11 @@ void main() {
   vec3 centro = (modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
   float escX = length(instanceMatrix[0].xyz);
   float escY = length(instanceMatrix[1].xyz);
+
+  // Azimut desde el que se está mirando este árbol. Mismo convenio que el
+  // horneado: atan2(dx, dz) del vector que va del árbol a la cámara.
+  vec3 haciaCamara = uCamara - centro;
+  vAzimut = atan(haciaCamara.x, haciaCamara.z);
 
   // Cartelera cilíndrica: gira sólo alrededor del eje vertical. Si girara
   // libremente, al mirar hacia arriba los árboles lejanos se acostarían.
@@ -450,12 +495,51 @@ uniform vec3 uColorOtono;
 uniform float uEstacion;
 uniform float uPerenne;
 uniform float uCotaNieve;
+uniform float uVistas;
+uniform vec2 uRejilla;      // columnas, filas del atlas
 varying vec2 vUv;
 varying vec3 vTinte;
 varying float vDist;
+varying float vAzimut;
+
+const float TAU = 6.2831853;
+
+/** UV dentro de la teja i del atlas, con margen para que no sangre la vecina. */
+vec2 uvDeVista(float i, vec2 local) {
+  float col = mod(i, uRejilla.x);
+  float fila = floor(i / uRejilla.x);
+  vec2 tam = 1.0 / uRejilla;
+  // Un texel y medio de margen: el filtrado bilineal de los mipmaps arrastra
+  // color de la teja de al lado y aparecen costuras verticales.
+  vec2 margen = tam * 0.012;
+  vec2 base = vec2(col, fila) * tam;
+  return base + margen + local * (tam - margen * 2.0);
+}
 
 void main() {
-  vec4 texel = texture2D(uMapa, vUv);
+  // Vista continua correspondiente al ángulo de cámara
+  float t = (mod(vAzimut, TAU) / TAU) * uVistas;
+  float i0 = floor(t);
+  float mezcla = t - i0;
+
+  // La mezcla se endurece cerca de los extremos: así se ve una vista nítida la
+  // mayor parte del giro y el cruce ocurre rápido, en vez de mostrar dos
+  // árboles fantasma superpuestos todo el tiempo.
+  float k = smoothstep(0.28, 0.72, mezcla);
+
+  // Fuera de la franja de cruce sobra una de las dos muestras. El azimut es
+  // constante por instancia, así que el árbol entero toma la misma rama y el
+  // ahorro es real: son dos accesos a textura por fragmento contra uno.
+  vec4 texel;
+  if (k <= 0.0) {
+    texel = texture2D(uMapa, uvDeVista(mod(i0, uVistas), vUv));
+  } else if (k >= 1.0) {
+    texel = texture2D(uMapa, uvDeVista(mod(i0 + 1.0, uVistas), vUv));
+  } else {
+    vec4 a = texture2D(uMapa, uvDeVista(mod(i0, uVistas), vUv));
+    vec4 b = texture2D(uMapa, uvDeVista(mod(i0 + 1.0, uVistas), vUv));
+    texel = mix(a, b, k);
+  }
   if (texel.a < 0.32) discard;
 
   vec3 color = texel.rgb * vTinte;
