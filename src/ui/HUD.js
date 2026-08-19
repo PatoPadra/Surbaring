@@ -44,6 +44,7 @@ export class HUD {
 
     this._construirBrujula();
     this._construirVitales();
+    this._construirBolso();
     this._acumulador = 0;
     this._avisoHasta = 0;
   }
@@ -77,6 +78,67 @@ export class HUD {
       barra: document.getElementById(`v-${id}`),
       texto: document.getElementById(`v-${id}-n`),
     }));
+  }
+
+  /** Bolso, acción disponible y avisos térmicos. */
+  _construirBolso() {
+    const el = document.createElement('div');
+    el.className = 'panel';
+    el.id = 'bolso';
+    document.getElementById('hud').appendChild(el);
+    this.elBolso = el;
+
+    const acc = document.createElement('div');
+    acc.id = 'accion';
+    document.getElementById('hud').appendChild(acc);
+    this.elAccion = acc;
+
+    const est = document.createElement('style');
+    est.textContent = `
+      #bolso { bottom: 1rem; left: 15rem; width: 200px; max-height: 42vh; overflow: hidden; }
+      #bolso h4 { font-size: .64rem; letter-spacing: .12em; text-transform: uppercase;
+        color: var(--tinta-tenue); margin-bottom: .35rem; display: flex; justify-content: space-between; }
+      #bolso .it { display: flex; justify-content: space-between; font-size: .72rem; line-height: 1.55; }
+      #bolso .it b { color: var(--tinta); font-weight: 500; font-variant-numeric: tabular-nums; }
+      #bolso .vacio { font-size: .7rem; color: #6d766f; font-style: italic; }
+      #bolso .alim { color: #b0c47a; }
+      #accion { position: absolute; bottom: 21%; left: 50%; transform: translateX(-50%);
+        font-size: .78rem; letter-spacing: .05em; color: var(--tinta);
+        text-shadow: 0 2px 10px #000; opacity: 0; transition: opacity .2s ease; text-align: center; }
+      #accion.visible { opacity: 1; }
+      #accion b { color: var(--acento); }
+      #termico { position: absolute; top: 46%; left: 50%; transform: translateX(-50%);
+        font-size: .8rem; letter-spacing: .16em; text-transform: uppercase;
+        text-shadow: 0 2px 12px #000; opacity: 0; transition: opacity .6s ease; }
+      #termico.visible { opacity: 1; }
+      #termico.frio { color: #7fb8d8; }
+      #termico.calor { color: #d8a05a; }
+    `;
+    document.head.appendChild(est);
+
+    const term = document.createElement('div');
+    term.id = 'termico';
+    document.getElementById('hud').appendChild(term);
+    this.elTermico = term;
+  }
+
+  /** @param {{tipo:string, etiqueta:string}|null} accion */
+  mostrarAccion(accion) {
+    if (!accion) { this.elAccion.classList.remove('visible'); return; }
+    this.elAccion.innerHTML = `<b>E</b> · ${accion.etiqueta}`;
+    this.elAccion.classList.add('visible');
+  }
+
+  pintarBolso(inventario) {
+    const items = inventario.listar();
+    const cab = `<h4><span>Bolso</span><span>${inventario.pesoKg.toFixed(1)} / ${inventario.capacidadKg} kg</span></h4>`;
+    if (!items.length) {
+      this.elBolso.innerHTML = cab + `<div class="vacio">Vacío. Pulsá E cerca de una planta.</div>`;
+      return;
+    }
+    this.elBolso.innerHTML = cab + items.slice(0, 12).map(i =>
+      `<div class="it ${i.cat === 'alimento' ? 'alim' : ''}"><span>${i.nombre}</span><b>${i.cantidad}</b></div>`
+    ).join('') + (items.length > 12 ? `<div class="vacio">y ${items.length - 12} más…</div>` : '');
   }
 
   /** Referencia real más cercana, con rumbo y distancia. */
@@ -158,6 +220,26 @@ export class HUD {
       b.barra.style.width = `${v}%`;
       b.texto.textContent = v.toFixed(0);
       b.barra.style.opacity = v < 22 ? '0.55' : '1';
+    }
+
+    // ── Aviso térmico: lo que de verdad mata en la Patagonia
+    const j = this.jugador;
+    if (j.hipotermia) {
+      this.elTermico.textContent = j.temperatura < 34.5 ? 'Hipotermia grave' : 'Estás perdiendo calor';
+      this.elTermico.className = 'visible frio';
+    } else if (j.golpeCalor) {
+      this.elTermico.textContent = 'Golpe de calor';
+      this.elTermico.className = 'visible calor';
+    } else {
+      this.elTermico.className = '';
+    }
+
+    // La sensación térmica se suma al panel del clima
+    if (j.sensacionTermica != null) {
+      this.elReloj.insertAdjacentHTML('beforeend',
+        `<div class="fila" style="border-top:1px solid rgba(255,255,255,.08);margin-top:.3rem;padding-top:.3rem">
+          <span class="et">Sensación</span><span>${j.sensacionTermica.toFixed(0)} °C</span></div>
+         <div class="fila"><span class="et">Corporal</span><span>${j.temperatura.toFixed(1)} °C</span></div>`);
     }
   }
 }

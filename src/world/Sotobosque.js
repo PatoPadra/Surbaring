@@ -379,6 +379,24 @@ export class Sotobosque {
     }
   }
 
+  /** Elemento del sotobosque más cercano, para recolectar. */
+  masCercano(posicion, radio = 5) {
+    if (!this._m2) this._m2 = new THREE.Matrix4();
+    let mejor = null, mejorD = radio;
+    for (const lote of this.lotes) {
+      for (let i = 0; i < lote.n; i++) {
+        lote.malla.getMatrixAt(i, this._m2);
+        const e = this._m2.elements;
+        const d = Math.hypot(e[12] - posicion.x, e[14] - posicion.z);
+        if (d < mejorD) {
+          mejorD = d;
+          mejor = { tipo: lote.tipo, x: e[12], y: e[13], z: e[14], distancia: d };
+        }
+      }
+    }
+    return mejor;
+  }
+
   dispose() {
     for (const l of this.lotes) { l.malla.geometry.dispose(); l.malla.material.dispose(); }
   }

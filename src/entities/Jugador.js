@@ -246,6 +246,62 @@ export class Jugador {
     this.camaraSumergida = this.enAgua && this.camara.position.y < (m.cotaLagoEn(this.camara.position.x, this.camara.position.z) ?? -1e9);
   }
 
+  /**
+   * Supervivencia. La temperatura es la variable que manda en la Patagonia:
+   * se enfría con la altura a 6,5 °C por kilómetro, el viento se lleva calor
+   * mucho más rápido que el aire quieto, y mojarse multiplica esa pérdida.
+   * Un día lindo a 800 m puede ser hipotermia a 2000 m con viento.
+   *
+   * @param {number} dt segundos simulados
+   * @param {object} clima estado devuelto por Tiempo.estado()
+   * @param {number} escalaTiempo cuántos segundos de juego pasan por segundo real
+   */
+  actualizarSupervivencia(dt, clima, escalaTiempo = 60) {
+    // El desgaste se mide en tiempo de juego, no en tiempo real
+    const h = (dt * escalaTiempo) / 3600;  // horas de juego transcurridas
+
+    const esfuerzo = this.corriendo ? 2.1 : (Math.hypot(this.velocidad.x, this.velocidad.z) > 0.4 ? 1.25 : 0.8);
+    this.hambre = Math.max(0, this.hambre - 2.6 * h * esfuerzo);
+    this.sed = Math.max(0, this.sed - 4.1 * h * esfuerzo);
+
+    // ── Temperatura percibida
+    const gradiente = (this.posicion.y - 893) / 1000 * 6.5;   // isoterma real
+    const ambiente = (clima?.temperatura ?? 12) - gradiente;
+    const viento = clima?.vientoKmh ?? 15;
+    // Enfriamiento por viento: crece rápido al principio y después satura
+    const sensacion = ambiente - Math.min(11, Math.pow(viento, 0.62) * 0.9);
+    const mojado = this.enAgua || (clima?.lluvia ?? 0) > 0.2;
+
+    // El cuerpo tiende al equilibrio con la sensación térmica, más lento si
+    // está abrigado por el propio esfuerzo
+    // El coeficiente importa: con 0,075 el equilibrio en la cumbre del Catedral
+    // caía en 35,09 °C, apenas por encima del umbral de daño, y la hipotermia
+    // se avisaba sin lastimar nunca. Con 0,11 la altura pasa a ser un peligro
+    // real, que es justamente lo que hay que enseñar.
+    const objetivo = 36.6 + (sensacion - 16) * 0.11 + (esfuerzo - 1) * 0.5;
+    const velocidad = mojado ? 0.9 : 0.34;
+    this.temperatura += (objetivo - this.temperatura) * Math.min(1, velocidad * h * 3);
+    this.sensacionTermica = sensacion;
+    this.mojado = mojado;
+
+    // ── Consecuencias
+    let dano = 0;
+    if (this.hambre <= 0) dano += 1.8 * h;
+    if (this.sed <= 0) dano += 4.0 * h;          // la deshidratación mata antes
+    if (this.temperatura < 35.0) dano += (35.0 - this.temperatura) * 5.5 * h;
+    if (this.temperatura > 39.0) dano += (this.temperatura - 39.0) * 4.0 * h;
+    if (dano > 0) this.salud = Math.max(0, this.salud - dano);
+    else if (this.hambre > 40 && this.sed > 40) {
+      this.salud = Math.min(100, this.salud + 1.4 * h);   // se recupera solo
+    }
+
+    // Cargar de más agota antes
+    if (this.pesoCargado > 25) this.energia = Math.max(0, this.energia - (this.pesoCargado - 25) * 0.02 * h * 60);
+
+    this.hipotermia = this.temperatura < 35.5;
+    this.golpeCalor = this.temperatura > 38.5;
+  }
+
   /** Datos geográficos para la interfaz educativa. */
   informe() {
     const { lat, lon } = this.mundo.aLatLon(this.posicion.x, this.posicion.z);

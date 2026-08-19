@@ -28,6 +28,9 @@ import { Jugador } from './entities/Jugador.js';
 import { Entrada } from './engine/Entrada.js';
 import { Tiempo } from './world/Tiempo.js';
 import { HUD } from './ui/HUD.js';
+import { Inventario } from './systems/Inventario.js';
+import { Saberes } from './systems/Saberes.js';
+import { Recoleccion } from './systems/Recoleccion.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -139,13 +142,29 @@ async function iniciar() {
   entrada.registrar('KeyT', () => tiempo.alternarVelocidad());
 
   const hud = new HUD(mundo, jugador, tiempo);
-  const codice = new Codice({ flora, fauna, geografia, historia, mundo, hud });
-  entrada.registrar('Tab', () => codice.alternar());
-  entrada.registrar('KeyE', () => {
-    const a = bichos.masCercano(jugador.posicion, 70);
-    if (a) codice.registrarFauna(a.esp, true);
-    else hud.aviso('Nada cerca', 'Acercate a un animal para identificarlo');
+  const inventario = new Inventario(38);
+  const saberes = new Saberes(historia, inventario);
+  const codice = new Codice({ flora, fauna, geografia, historia, mundo, hud, saberes, inventario });
+  const recoleccion = new Recoleccion({
+    mundo, jugador, vegetacion, sotobosque, fauna: bichos,
+    inventario, saberes, codice, hud,
   });
+
+  saberes.alCambiar = (p, motivo) => {
+    if (p > 0) hud.aviso(motivo, `+${p} puntos de saber · total ${saberes.puntos}`);
+  };
+  // Descubrir un lugar también enseña
+  const registrarLugar = codice.revisarProximidad.bind(codice);
+  codice.revisarProximidad = (pos) => {
+    const antes = codice.lugares.size;
+    registrarLugar(pos);
+    const nuevos = codice.lugares.size - antes;
+    if (nuevos > 0) saberes.otorgar(nuevos * 3, nuevos === 1 ? 'Lugar descubierto' : `${nuevos} lugares descubiertos`);
+  };
+
+  entrada.registrar('Tab', () => codice.alternar());
+  entrada.registrar('KeyE', () => recoleccion.actuar(tiempo.segundosTotales));
+  entrada.registrar('KeyQ', () => recoleccion.comer());
   bichos.alAvistar = (esp) => codice.registrarFauna(esp, false);
 
   // ── Compositor ────────────────────────────────────────────────────────────
@@ -201,6 +220,8 @@ async function iniciar() {
     while (acumulador >= PASO && pasos < 5) {
       jugador.actualizar(PASO, entrada);
       tiempo.avanzar(PASO);
+      jugador.pesoCargado = inventario.pesoKg;
+      jugador.actualizarSupervivencia(PASO, tiempo.estado(), tiempo.velocidad);
       acumulador -= PASO;
       pasos++;
     }
@@ -249,6 +270,10 @@ async function iniciar() {
       acumProximidad = 0;
       codice.revisarProximidad(jugador.posicion);
     }
+    if (acumProximidad === 0) {
+      hud.mostrarAccion(recoleccion.quePuedoHacer(tiempo.segundosTotales));
+      hud.pintarBolso(inventario);
+    }
 
     // El domo del cielo acompaña a la cámara
     cielo.malla.position.copy(camara.position);
@@ -274,6 +299,7 @@ async function iniciar() {
   window.SurviBar = {
     escena, camara, render, mundo, terreno, cielo, agua, vegetacion, sotobosque,
     fauna: bichos, jugador, tiempo, compositor, csm, hud, codice, entrada,
+    inventario, saberes, recoleccion,
   };
 
   if (import.meta.env.DEV) {

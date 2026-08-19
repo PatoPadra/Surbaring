@@ -12,6 +12,8 @@
  * mecánica de recolección sería tratarla como un trofeo.
  */
 
+import { normalizar as normalizarRec } from '../systems/Recursos.js';
+
 const ESTADOS_UICN = {
   EX: ['Extinta', '#4a4a4a'],
   EW: ['Extinta en estado silvestre', '#5a4a5a'],
@@ -47,7 +49,9 @@ export class Codice {
   /**
    * @param {object} datos {flora, fauna, geografia, historia, mundo, hud}
    */
-  constructor({ flora, fauna, geografia, historia, mundo, hud }) {
+  constructor({ flora, fauna, geografia, historia, mundo, hud, saberes, inventario }) {
+    this.saberes = saberes;
+    this.inventario = inventario;
     this.flora = flora;
     this.fauna = fauna;
     this.geo = geografia;
@@ -304,6 +308,16 @@ export class Codice {
     lista.className = 'cx-lista ' + (this.pestana === 'fauna' || this.pestana === 'flora' || this.pestana === 'geografia' ? 'rejilla' : 'columna');
     pie.innerHTML = ayuda + ' · <b>Tab</b> cierra';
     this._actualizarCuenta();
+
+    lista.querySelectorAll('.sab-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        const tec = this.saberes?.porId.get(b.dataset.tec);
+        if (!tec) return;
+        const res = this.saberes.desbloquear(tec);
+        if (res.estado === 'desbloqueada') this.hud?.aviso(`Aprendiste ${tec.nombre}`, tec.contextoHistorico || '');
+        this._pintar();
+      });
+    });
   }
 
   _pintarEspecies(entradas) {
@@ -500,12 +514,22 @@ export class Codice {
   }
 
   _pintarSaberes() {
+    const S = this.saberes;
     const porEra = new Map();
     for (const t of this.historia.tecnologias || []) {
       if (!porEra.has(t.era)) porEra.set(t.era, []);
       porEra.get(t.era).push(t);
     }
-    let html = '';
+
+    const r = S?.resumen();
+    let html = r ? `<article class="cx-bloque" style="--c:#6fae7c">
+      <h3>Saberes <em>${r.desbloqueadas} de ${r.total}</em></h3>
+      <p class="cx-desc">Tenés <b>${r.puntos}</b> puntos de saber. Se ganan
+      conociendo: identificar una especie da 2, una amenazada 6, llegar a un
+      lugar 3. De lo que falta, ${r.alcanzables} son alcanzables con lo que hoy
+      existe en el mundo y ${r.inalcanzables} piden materiales que todavía no se
+      pueden conseguir.</p></article>` : '';
+
     for (const era of this.historia.eras || []) {
       const ts = porEra.get(era.id);
       if (!ts?.length) continue;
@@ -513,12 +537,40 @@ export class Codice {
         <h3>${era.nombre}</h3></article>`;
       html += `<div class="cx-saberes">`;
       for (const t of ts) {
-        const mats = (t.materiales || []).map(m => `${m.cantidad} × ${m.recurso}`).join(', ');
-        html += `<div class="cx-saber">
+        const e = S ? S.estado(t) : { estado: 'lista' };
+        const mats = (t.materiales || []).map(m => {
+          const info = e.materiales?.find(x => x.recurso === normalizarRec(m.recurso));
+          if (!info) return `${m.cantidad} × ${m.recurso}`;
+          const cls = info.imposible ? 'mat-imposible' : info.alcanza ? 'mat-ok' : 'mat-falta';
+          return `<span class="${cls}">${info.hay}/${info.pide} ${info.nombre}</span>`;
+        }).join(' ');
+
+        let pie = '', clase = '';
+        switch (e.estado) {
+          case 'desbloqueada':
+            clase = 'sab-ok'; pie = '<span class="sab-marca">Aprendido</span>'; break;
+          case 'lista':
+            clase = 'sab-lista';
+            pie = `<button class="sab-btn" data-tec="${t.id}">Aprender por ${t.costoSaber} saber</button>`;
+            break;
+          case 'faltan_puntos':
+            pie = `<span class="sab-nota">Te faltan ${e.faltanPuntos} puntos de saber</span>`; break;
+          case 'faltan_materiales':
+            pie = `<span class="sab-nota">Falta juntar: ${e.faltanMateriales.map(m => `${m.pide - m.hay} ${m.nombre.toLowerCase()}`).join(', ')}</span>`; break;
+          case 'requiere_previas':
+            pie = `<span class="sab-nota">Antes: ${e.faltanPrevias.join(', ')}</span>`; break;
+          case 'inalcanzable':
+            clase = 'sab-imposible';
+            pie = `<span class="sab-nota">Todavía no se puede conseguir ${e.imposibles.map(m => m.nombre.toLowerCase()).join(', ')}</span>`;
+            break;
+        }
+
+        html += `<div class="cx-saber ${clase}">
           <h4>${t.nombre} <span class="cx-costo">${t.costoSaber ?? 0}</span></h4>
           <p class="cx-desc">${t.descripcion || ''}</p>
           ${t.contextoHistorico ? `<p class="cx-curioso">${t.contextoHistorico}</p>` : ''}
-          <p class="cx-meta">${mats || 'sin materiales'}${t.requiere?.length ? ` · requiere: ${t.requiere.join(', ')}` : ''}</p>
+          <p class="cx-mats">${mats || 'sin materiales'}</p>
+          <div class="cx-pie-saber">${pie}</div>
         </div>`;
       }
       html += `</div>`;
@@ -620,6 +672,21 @@ const CSS = `
 .cx-saber { padding: .65rem .8rem; background: rgba(255,255,255,.026); border-radius: 3px; border-left: 2px solid #4a8fb5; }
 .cx-saber h4 { font-size: .85rem; font-weight: 500; color: #e8e4dc; margin-bottom: .22rem; display: flex; justify-content: space-between; }
 .cx-costo { color: #6fae7c; font-size: .72rem; font-weight: 400; }
+.cx-saber.sab-ok { border-left-color: #6fae7c; background: rgba(111,174,124,.07); }
+.cx-saber.sab-lista { border-left-color: #c8b45a; background: rgba(200,180,90,.06); }
+.cx-saber.sab-imposible { opacity: .45; border-left-color: #5a544b; }
+.cx-mats { font-size: .68rem; margin-bottom: .4rem; display: flex; flex-wrap: wrap; gap: .3rem; }
+.cx-mats span { padding: .06rem .34rem; border-radius: 2px; }
+.mat-ok { color: #6fae7c; background: rgba(111,174,124,.12); }
+.mat-falta { color: #d8a05a; background: rgba(216,160,90,.12); }
+.mat-imposible { color: #8a8378; background: rgba(138,131,120,.12); text-decoration: line-through; }
+.cx-pie-saber { min-height: 1.4rem; }
+.sab-btn { background: rgba(200,180,90,.16); border: 1px solid rgba(200,180,90,.5);
+  color: #e0cf88; font: inherit; font-size: .72rem; padding: .26rem .7rem;
+  border-radius: 3px; cursor: pointer; letter-spacing: .04em; }
+.sab-btn:hover { background: rgba(200,180,90,.3); color: #fff; }
+.sab-marca { font-size: .7rem; color: #6fae7c; letter-spacing: .1em; text-transform: uppercase; }
+.sab-nota { font-size: .68rem; color: #8a9188; font-style: italic; }
 
 .cx-marco footer { padding: .75rem 1.6rem; border-top: 1px solid rgba(255,255,255,.08); font-size: .68rem; color: #7d857c; letter-spacing: .05em; }
 .cx-marco footer b { color: #e8e4dc; }

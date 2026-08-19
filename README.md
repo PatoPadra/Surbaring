@@ -36,7 +36,8 @@ npm run dem
 | `Espacio` | Saltar / nadar hacia arriba |
 | `Ctrl` / `C` | Agacharse |
 | `F` | Alternar primera y tercera persona |
-| `E` | Identificar al animal más cercano |
+| `E` | Recolectar / identificar / beber |
+| `Q` | Comer lo mejor del bolso |
 | `Tab` | Abrir el códice |
 | `T` | Acelerar el paso del tiempo |
 | `F3` | Panel de diagnóstico |
@@ -153,6 +154,15 @@ Qué se colecciona y qué no es una decisión deliberada:
 - Códice de seis secciones con descubrimiento por proximidad, 41 lugares
   reales y unos 65.000 caracteres de contenido verificado accesible en juego
 - HUD en español con posición geográfica real, clima y estado vital
+- Inventario por peso (38 kg), que además frena al jugador cuesta arriba
+- Recolección con una sola tecla: identifica al animal cercano, bebe si hay
+  agua, o cosecha la planta o la mata que tenga delante
+- Supervivencia con temperatura real: gradiente de 6,5 °C/km, enfriamiento por
+  viento y mojadura. En un día de verano a 14,6 °C, la costa del lago es
+  segura, el cerro Otto ya produce hipotermia leve y la cumbre del Catedral
+  (sensación 0,1 °C) va bajando la salud
+- Puntos de saber que se ganan conociendo, no matando, y desbloqueo de
+  tecnologías que consume materiales del bolso
 
 ### Roto o a medio hacer
 
@@ -162,12 +172,35 @@ Qué se colecciona y qué no es una decisión deliberada:
 2. **Ocho vistas siguen siendo pocas para un giro rápido.** El cruce entre
    vistas vecinas se nota si la cámara barre rápido en horizontal. Subir a 12 o
    16 vistas lo suavizaría a costa de memoria.
-3. El árbol de saberes se muestra pero no se puede recorrer: no hay puntos de
-   saber que gastar ni tecnologías que desbloquear todavía.
-4. No hay todavía: inventario, crafteo, construcción, audio, ni eventos
-   naturales (incendio, ceniza, viento blanco) más allá de los parámetros.
+3. **El árbol de saberes se traba en la primera era, y hace falta una decisión
+   de diseño para destrabarlo.** Con materiales vegetales ilimitados sólo 7 de
+   47 tecnologías son alcanzables: el resto pide cuero, tendón y grasa, que son
+   de origen animal. Ver [la decisión pendiente](#la-decisión-pendiente).
+4. No hay todavía: construcción, audio, ni eventos naturales (incendio,
+   ceniza, viento blanco) más allá de los parámetros.
 5. El sotobosque llega hasta 192 m. Más allá el suelo queda desnudo, aunque a
    esa distancia la niebla aérea ya disimula bastante el corte.
+
+#### La decisión pendiente
+
+El árbol de tecnologías está anclado históricamente y arranca con punta de
+proyectil, boleadora, arco de colihue y toldo. Los cuatro piden **cuero y
+tendón**. Sin una fuente de materiales animales, el jugador se queda en fuego
+por fricción y cestería, y las otras 40 tecnologías quedan de museo.
+
+Hay al menos tres salidas, y no son equivalentes:
+
+1. **Cazar sólo especies invasoras.** El dataset de fauna ya marca las 9
+   invasoras con `protegida: false` frente a las 52 nativas con `true`, así que
+   la afordancia está puesta. Manejar poblaciones de ciervo colorado y jabalí
+   es manejo real de parques, y sería una lección legítima. Requiere sistema de
+   caza: armas, daño, faena.
+2. **Carroña y despojos.** Aprovechar los restos de una presa de puma o un
+   animal muerto. Ecológicamente cierto y sin combate, pero más pasivo.
+3. **Dejar el árbol como referencia.** No atar la progresión al crafteo y que
+   los saberes sean sólo conocimiento. El juego pierde el bucle de construcción.
+
+La primera cambia el género del juego, así que no la tomé por mi cuenta.
 
 #### Sobre la suavidad del terreno
 

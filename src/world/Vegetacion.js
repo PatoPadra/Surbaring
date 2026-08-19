@@ -337,6 +337,28 @@ export class Vegetacion {
     this.impostores = lejanos;
   }
 
+  /**
+   * Planta con malla completa más cercana al jugador, para recolectar.
+   * Sólo se buscan las cercanas: a una cartelera de dos triángulos a 300 m no
+   * se le puede sacar corteza.
+   */
+  masCercana(posicion, radio = 7) {
+    if (!this._matriz2) this._matriz2 = new THREE.Matrix4();
+    let mejor = null, mejorD = radio;
+    for (const lote of this.lotes) {
+      for (let i = 0; i < lote.n; i++) {
+        lote.malla.getMatrixAt(i, this._matriz2);
+        const e = this._matriz2.elements;
+        const d = Math.hypot(e[12] - posicion.x, e[14] - posicion.z);
+        if (d < mejorD) {
+          mejorD = d;
+          mejor = { esp: lote.esp, x: e[12], y: e[13], z: e[14], distancia: d };
+        }
+      }
+    }
+    return mejor;
+  }
+
   dispose() {
     for (const l of this.lotes) { l.malla.geometry.dispose(); l.malla.material.dispose(); }
   }
