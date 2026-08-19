@@ -31,6 +31,7 @@ import { HUD } from './ui/HUD.js';
 import { Inventario } from './systems/Inventario.js';
 import { Saberes } from './systems/Saberes.js';
 import { Recoleccion } from './systems/Recoleccion.js';
+import { Caza } from './systems/Caza.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -145,10 +146,23 @@ async function iniciar() {
   const inventario = new Inventario(38);
   const saberes = new Saberes(historia, inventario);
   const codice = new Codice({ flora, fauna, geografia, historia, mundo, hud, saberes, inventario });
+  // La normativa de caza se carga aparte y con tolerancia: si el dataset
+  // todavía no está, el sistema cae en sus reglas mínimas —nativas nunca,
+  // exóticas sí— en vez de impedir que el juego arranque.
+  let normativaCaza = null;
+  try {
+    normativaCaza = (await import('./data/caza.json')).default;
+  } catch {
+    console.warn('caza.json ausente: se usan las reglas mínimas de fauna protegida');
+  }
+  const caza = new Caza(normativaCaza, {
+    jugador, inventario, saberes, codice, hud, tiempo, mundo,
+  });
   const recoleccion = new Recoleccion({
     mundo, jugador, vegetacion, sotobosque, fauna: bichos,
     inventario, saberes, codice, hud,
   });
+  recoleccion.caza = caza;
 
   saberes.alCambiar = (p, motivo) => {
     if (p > 0) hud.aviso(motivo, `+${p} puntos de saber · total ${saberes.puntos}`);
@@ -165,6 +179,13 @@ async function iniciar() {
   entrada.registrar('Tab', () => codice.alternar());
   entrada.registrar('KeyE', () => recoleccion.actuar(tiempo.segundosTotales));
   entrada.registrar('KeyQ', () => recoleccion.comer());
+  // La tecla de caza siempre responde con una explicación, aunque no se pueda:
+  // la negativa es el contenido educativo.
+  entrada.registrar('KeyH', () => {
+    const a = bichos.masCercano(jugador.posicion, 26);
+    if (!a) { hud.aviso('No hay ningún animal cerca', 'Acercate a menos de 26 m'); return; }
+    caza.intentar(a, tiempo.estado().mes);
+  });
   bichos.alAvistar = (esp) => codice.registrarFauna(esp, false);
 
   // ── Compositor ────────────────────────────────────────────────────────────
@@ -299,7 +320,7 @@ async function iniciar() {
   window.SurviBar = {
     escena, camara, render, mundo, terreno, cielo, agua, vegetacion, sotobosque,
     fauna: bichos, jugador, tiempo, compositor, csm, hud, codice, entrada,
-    inventario, saberes, recoleccion,
+    inventario, saberes, recoleccion, caza,
   };
 
   if (import.meta.env.DEV) {

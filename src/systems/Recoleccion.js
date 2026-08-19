@@ -36,6 +36,11 @@ export class Recoleccion {
     const animal = this.fauna.masCercano(p, 22);
     if (animal) return { tipo: 'identificar', etiqueta: `Identificar ${animal.esp.nombreComun.toLowerCase()}`, animal };
 
+    const resto = this.sotobosque.masCercano(p, 5);
+    if (resto?.tipo.id === 'carronia' && !this._enDescanso(resto.x, resto.z, ahora)) {
+      return { tipo: 'carronia', etiqueta: 'Aprovechar los restos', resto };
+    }
+
     if (this.jugador.enAgua || this._aguaCerca()) {
       return { tipo: 'beber', etiqueta: 'Beber agua' };
     }
@@ -46,7 +51,7 @@ export class Recoleccion {
     }
 
     const mata = this.sotobosque.masCercano(p, 5);
-    if (mata && COSECHA_SOTOBOSQUE[mata.tipo.id] && !this._enDescanso(mata.x, mata.z, ahora)) {
+    if (mata && mata.tipo.id !== 'carronia' && COSECHA_SOTOBOSQUE[mata.tipo.id] && !this._enDescanso(mata.x, mata.z, ahora)) {
       return { tipo: 'sotobosque', etiqueta: `Juntar ${mata.tipo.nombre.toLowerCase()}`, mata };
     }
 
@@ -105,6 +110,12 @@ export class Recoleccion {
         }
         if (!obtenido.length) this.hud.aviso('No entra nada más', `Cargás ${this.inventario.pesoKg.toFixed(1)} kg`);
         else if (!nueva) this.hud.aviso(esp.nombreComun, obtenido.join(' · '));
+        return;
+      }
+
+      case 'carronia': {
+        this.descansando.set(this._clave(acc.resto.x, acc.resto.z), ahora);
+        this.caza?.aprovechar({ fuenteId: 'presa_puma' });
         return;
       }
 

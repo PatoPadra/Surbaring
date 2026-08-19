@@ -1,0 +1,326 @@
+{
+  "marcoLegal": {
+    "resumen": "Dentro de un Parque Nacional argentino la fauna autóctona está protegida de manera absoluta: no existe temporada de caza para especies nativas, ni permiso que la habilite con fines deportivos o de subsistencia. El Parque Nacional Nahuel Huapi se rige por la Ley 22.351 de Parques Nacionales, administrada por la Administración de Parques Nacionales (APN), que prohíbe toda actividad de caza salvo las excepciones que la propia autoridad dispone por razones de manejo. Esas excepciones son los programas de control de especies exóticas invasoras, como el ciervo colorado y el jabalí europeo, que la APN ejecuta o autoriza con permiso escrito, zonas delimitadas, cupos, métodos aprobados y control de guardaparques. Fuera de los límites del parque, en jurisdicción de la provincia de Río Negro, rige la ley provincial de fauna y las resoluciones anuales de la autoridad de aplicación provincial, que fijan temporadas, especies y cupos que cambian todos los años. La pesca deportiva en la Patagonia andina es una actividad aparte, regulada por un reglamento conjunto de las provincias patagónicas y la APN, con temporada aproximada de noviembre a abril o mayo y permiso obligatorio. Ninguna norma habilita a cazar un Monumento Natural Nacional como el huemul o el cóndor andino: matarlos es un delito, no una infracción menor. Este archivo tiene fines educativos dentro de un videojuego y no reemplaza la reglamentación vigente. Los cupos, fechas exactas y montos de multa figuran como null cuando no pudieron verificarse contra la resolución oficial del año en curso, porque se actualizan por temporada.",
+    "normas": [
+      {
+        "nombre": "Ley 22.351 de Parques Nacionales, Monumentos Naturales y Reservas Nacionales",
+        "anio": 1980,
+        "que": "Establece el régimen de las áreas protegidas nacionales y prohíbe dentro de los Parques Nacionales toda explotación y toda acción que altere la fauna autóctona, incluida la caza. Crea además la figura de Monumento Natural, con protección absoluta."
+      },
+      {
+        "nombre": "Ley 22.421 de Conservación de la Fauna Silvestre",
+        "anio": 1981,
+        "que": "Es la ley nacional de fauna: declara de interés público la protección de la fauna silvestre, somete la caza a autorización previa de la autoridad de aplicación y tipifica delitos y sanciones por caza y comercio ilegales."
+      },
+      {
+        "nombre": "Ley 24.702 de Monumentos Naturales",
+        "anio": 1996,
+        "que": "Declara Monumento Natural Nacional, en los términos del artículo 8 de la Ley 22.351, al huemul (Hippocamelus bisulcus) y a la taruca (Hippocamelus antisensis). El huemul tiene así el máximo nivel de protección legal del país y cualquier daño, captura o muerte queda alcanzado por el régimen más severo."
+      },
+      {
+        "nombre": "Reglamento Único de Caza de Ciervo Colorado y Jabalí Europeo en los Parques Nacionales Nahuel Huapi y Lanín (Resolución de Directorio APN 277/2011)",
+        "anio": 2011,
+        "que": "Es la norma que habilita y reglamenta la única caza permitida dentro de estos parques: la de dos especies exóticas invasoras, como herramienta de manejo. Fija turnos, zonas, permisos, derechos y precintos; los turnos se asignan por subasta pública."
+      },
+      {
+        "nombre": "Reglamento de Pesca Deportiva Continental Patagónico",
+        "anio": null,
+        "que": "Reglamento conjunto de las provincias patagónicas y la Administración de Parques Nacionales que fija temporada, aguas habilitadas, artes de pesca, medidas y cupos para salmónidos. Se actualiza cada temporada, por eso las fechas exactas aquí figuran como referencia de la última temporada verificada."
+      },
+      {
+        "nombre": "Régimen provincial de fauna de Río Negro y resoluciones anuales de temporada",
+        "anio": null,
+        "que": "Fuera de los límites del parque, la provincia regula la caza mediante su autoridad de fauna, con antecedentes en la Ley provincial 2056 de 1985 y la Ley 445, y una nueva ley provincial de fauna sancionada en los últimos años. Cada temporada se abre por resolución de la Dirección de Fauna Silvestre, por ejemplo la Resolución 7/DFS-2026."
+      }
+    ],
+    "principio": "Dentro del parque, lo nativo no se toca nunca; lo exótico sólo se controla con permiso de Parques Nacionales, jamás por cuenta propia."
+  },
+  "categorias": [
+    {
+      "id": "nativa_protegida",
+      "nombre": "Fauna nativa",
+      "permitido": false,
+      "explicacion": "La fauna autóctona de un Parque Nacional está protegida sin excepciones y sin temporada: no hay mes del año en que se pueda cazar un pudú, un huillín o un puma dentro del área protegida. El parque existe justamente para conservar esas poblaciones y los procesos ecológicos de los que forman parte. Muchas de estas especies tienen poblaciones chicas y aisladas, donde la muerte de pocos individuos compromete a toda la población local. Tampoco está permitido molestarlas, perseguirlas, capturarlas vivas ni recolectar sus crías o huevos.",
+      "penalidad": "Es infracción a la Ley 22.351 y puede constituir delito bajo la Ley 22.421: acta labrada por guardaparques, secuestro del arma, del vehículo y de los animales o partes, multa, expulsión del área protegida y causa penal según el caso.",
+      "colorAviso": "#c8503f"
+    },
+    {
+      "id": "monumento_natural",
+      "nombre": "Monumento Natural",
+      "permitido": false,
+      "explicacion": "El Monumento Natural es la categoría de protección más alta del sistema argentino: la especie es intangible en todo el territorio nacional, no sólo dentro del parque. En la región del Nahuel Huapi alcanza al huemul, y el cóndor andino cuenta con protección equivalente por normas específicas. La prohibición cubre matar, herir, capturar, acosar, tenerlo, transportarlo o comerciar con cualquier parte del animal. Ni siquiera se admite el aprovechamiento de un ejemplar hallado muerto sin intervención de la autoridad.",
+      "penalidad": "Denuncia penal por caza de fauna protegida, secuestro de todo el equipo, multas de la mayor escala prevista y antecedentes que impiden obtener permisos futuros de caza o pesca.",
+      "colorAviso": "#a11a1a"
+    },
+    {
+      "id": "exotica_invasora",
+      "nombre": "Exótica invasora",
+      "permitido": true,
+      "explicacion": "Las especies exóticas invasoras fueron introducidas por el ser humano y compiten con la fauna nativa, degradan el bosque y transmiten enfermedades, por lo que su reducción es un objetivo de manejo del parque. Por eso la Administración de Parques Nacionales habilita programas de control y, en zonas y momentos determinados, caza mayor autorizada de ciervo colorado y jabalí. Nunca es libre: requiere permiso escrito e intransferible, inscripción previa, zona asignada, cupo por cazador, métodos aprobados y reporte del resultado. Los guardaparques controlan el ingreso, el arma, la munición y la extracción de las piezas.",
+      "penalidad": "Cazar fuera de temporada, fuera de la zona asignada, sin permiso o excediendo el cupo se sanciona igual que la caza furtiva: acta de infracción, secuestro de arma y piezas, multa y pérdida del derecho a obtener permisos.",
+      "colorAviso": "#d08a3a"
+    }
+  ],
+  "especies": [
+    {
+      "id": "ciervo_colorado",
+      "nombreComun": "Ciervo colorado",
+      "categoria": "exotica_invasora",
+      "permitido": true,
+      "temporada": {
+        "mesDesde": 3,
+        "mesHasta": 5,
+        "nombre": "Brama o berrea",
+        "notas": "La temporada de caza mayor dentro de los Parques Nacionales Nahuel Huapi y Lanín arranca en marzo, con la brama, y se extiende hasta principios de mayo. Se organiza en turnos, y los turnos se adjudican por subasta pública anunciada meses antes. Las fechas exactas se fijan cada año; durante los turnos se cierran algunos senderos de trekking por seguridad."
+      },
+      "requierePermiso": true,
+      "cupo": "En el Nahuel Huapi el reglamento contempla un límite de dos piezas por turno de caza. Los valores, derechos y precintos se pagan aparte y cambian cada temporada.",
+      "metodosPermitidos": ["arco", "rifle"],
+      "metodosProhibidos": ["trampa", "veneno", "perros", "caza nocturna", "reflectores"],
+      "razonEcologica": "El ciervo colorado ramonea los renovales de coihue, lenga y ñire e impide que el bosque se regenere, dejando un sotobosque empobrecido y suelo expuesto a la erosión. Descorteza árboles jóvenes durante la brama y compite por alimento y espacio con el huemul y el pudú. Su abundancia también sostiene poblaciones altas de otros herbívoros exóticos y altera la dinámica del fuego y del matorral.",
+      "notaEducativa": "El ciervo colorado no es de acá: llegó a la región por introducciones para caza deportiva a principios del siglo XX. Cazarlo dentro del parque sólo tiene sentido como parte de un programa de control, con permiso y bajo la mirada del guardaparque. Si ves un ciervo fuera de temporada, la respuesta correcta es anotarlo y reportarlo, no dispararle."
+    },
+    {
+      "id": "jabali_europeo",
+      "nombreComun": "Jabalí europeo",
+      "categoria": "exotica_invasora",
+      "permitido": true,
+      "temporada": {
+        "mesDesde": 3,
+        "mesHasta": 5,
+        "nombre": "Temporada de caza mayor en turnos",
+        "notas": "Está incluido en el mismo Reglamento Único que el ciervo colorado en los Parques Nacionales Nahuel Huapi y Lanín, con turnos entre marzo y principios de mayo. Fuera del parque, en Río Negro, rige la resolución provincial de temporada de cada año."
+      },
+      "requierePermiso": true,
+      "cupo": "Por su condición de plaga, los parques informan que no se fija límite de piezas de jabalí dentro del turno adjudicado. Aun sin cupo, hace falta permiso, turno y precinto.",
+      "metodosPermitidos": ["rifle", "arco"],
+      "metodosProhibidos": ["veneno", "trampa de lazo", "caza nocturna sin autorización expresa"],
+      "razonEcologica": "El jabalí hociquea el suelo del bosque y de las mallines, destruye la hojarasca, las raíces y los bancos de semillas, y abre huecos que ocupan plantas exóticas. Come frutos, hongos, huevos y crías, y compite directamente con el pudú y con aves que nidifican en el suelo. Además transmite enfermedades al ganado y a la fauna silvestre.",
+      "notaEducativa": "El jabalí europeo se hibridó con cerdos domésticos asilvestrados y hoy es una de las peores plagas del bosque andino patagónico. Su control es un trabajo de manejo, no un trofeo. La carne requiere análisis sanitario antes de consumirse por riesgo de triquinosis."
+    },
+    {
+      "id": "liebre_europea",
+      "nombreComun": "Liebre europea",
+      "categoria": "exotica_invasora",
+      "permitido": true,
+      "temporada": {
+        "mesDesde": null,
+        "mesHasta": null,
+        "nombre": "Caza menor según reglamentación provincial",
+        "notas": "Dentro del parque no hay caza deportiva de liebre habilitada de manera general; fuera del parque, en Río Negro, la caza menor se rige por la resolución anual de la provincia. Fechas no verificadas."
+      },
+      "requierePermiso": true,
+      "cupo": null,
+      "metodosPermitidos": ["rifle de bajo calibre", "arco"],
+      "metodosProhibidos": ["veneno", "trampa", "perros", "caza nocturna con reflector"],
+      "razonEcologica": "La liebre europea consume pastos y renovales, compite con herbívoros nativos y mantiene artificialmente altas las poblaciones de depredadores, lo que aumenta la presión sobre presas autóctonas. En zonas de estepa y borde de bosque contribuye a la degradación del pastizal.",
+      "notaEducativa": "La liebre es exótica y abundante, pero eso no la vuelve de caza libre dentro del parque. Confundirla con el pudú o con un chinchillón es un error caro: en la duda, no se dispara."
+    },
+    {
+      "id": "vison_americano",
+      "nombreComun": "Visón americano",
+      "categoria": "exotica_invasora",
+      "permitido": true,
+      "temporada": {
+        "mesDesde": null,
+        "mesHasta": null,
+        "nombre": "Control dirigido, sin temporada deportiva",
+        "notas": "El visón se maneja mediante campañas de control y trampeo ejecutadas o autorizadas por la autoridad, no como caza deportiva. No hay temporada abierta al público general."
+      },
+      "requierePermiso": true,
+      "cupo": null,
+      "metodosPermitidos": ["trampeo autorizado dentro de programas de control"],
+      "metodosProhibidos": ["veneno", "trampeo particular sin autorización"],
+      "razonEcologica": "El visón americano, escapado de criaderos peleteros, es un depredador semiacuático que arrasa con aves acuáticas, anfibios, peces y crustáceos nativos. Es la principal amenaza directa para el huillín, con el que además compite por territorio y refugios. Su expansión por ríos y lagos deja tramos enteros de costa sin aves nidificantes.",
+      "notaEducativa": "Ojo: el visón se parece al huillín, que es nativo y está protegido. Nunca se trampea por cuenta propia. Si ves un mustélido en la costa, lo útil es reportar el avistaje al guardaparque, que distingue las especies."
+    },
+    {
+      "id": "trucha_arcoiris",
+      "nombreComun": "Trucha arcoíris",
+      "categoria": "exotica_invasora",
+      "permitido": true,
+      "temporada": {
+        "mesDesde": 11,
+        "mesHasta": 4,
+        "nombre": "Temporada de pesca deportiva patagónica",
+        "notas": "La temporada general en la Patagonia andina va aproximadamente de principios de noviembre a fines de abril o mediados de mayo, con aguas de temporada extendida y otras cerradas. Las fechas exactas y las aguas habilitadas cambian cada año según el reglamento de pesca."
+      },
+      "requierePermiso": true,
+      "cupo": "Hay cupo diario de piezas y medidas mínimas y máximas según el ambiente; muchos tramos son de devolución obligatoria. Los números exactos no pudieron verificarse.",
+      "metodosPermitidos": ["mosca", "spinning", "trolling donde esté habilitado"],
+      "metodosProhibidos": ["red", "veneno", "explosivos", "electricidad", "pesca sin permiso"],
+      "razonEcologica": "Los salmónidos introducidos depredan y desplazan a peces nativos como la perca, el puyén y el bagre aterciopelado, y alteran las redes tróficas de lagos y ríos. Hoy están tan establecidos que su manejo se orienta a regular la pesca y a evitar nuevas siembras.",
+      "notaEducativa": "Para pescar hace falta permiso vigente, y hay que conocer el reglamento del ambiente donde se pesca: cupo, medida y si es de devolución obligatoria. Desinfectar botas y equipo entre cuerpos de agua evita propagar el alga didymo."
+    },
+    {
+      "id": "trucha_marron",
+      "nombreComun": "Trucha marrón",
+      "categoria": "exotica_invasora",
+      "permitido": true,
+      "temporada": {
+        "mesDesde": 11,
+        "mesHasta": 4,
+        "nombre": "Temporada de pesca deportiva patagónica",
+        "notas": "Misma temporada general aproximada que la arcoíris, de noviembre a abril o mayo, con excepciones por ambiente. Verificar el reglamento vigente."
+      },
+      "requierePermiso": true,
+      "cupo": "Cupo diario y medidas según ambiente; no verificado.",
+      "metodosPermitidos": ["mosca", "spinning", "trolling donde esté habilitado"],
+      "metodosProhibidos": ["red", "veneno", "explosivos", "electricidad", "pesca sin permiso"],
+      "razonEcologica": "Es un depredador voraz y territorial que impacta fuerte sobre peces nativos y sobre invertebrados acuáticos. En arroyos chicos puede eliminar poblaciones enteras de especies autóctonas de pequeño tamaño.",
+      "notaEducativa": "La trucha marrón es exótica, pero su pesca está reglada igual que cualquier otra: sin permiso no se pesca. Manipular el pez con las manos mojadas y devolverlo rápido mejora su supervivencia cuando la devolución es obligatoria."
+    },
+    {
+      "id": "huemul",
+      "nombreComun": "Huemul",
+      "categoria": "monumento_natural",
+      "permitido": false,
+      "temporada": null,
+      "requierePermiso": false,
+      "cupo": null,
+      "metodosPermitidos": [],
+      "metodosProhibidos": ["todos"],
+      "razonEcologica": "El huemul es un ciervo nativo de los Andes patagónicos, en peligro de extinción, con poblaciones muy reducidas y fragmentadas. Sufre por competencia con ciervo colorado y ganado, enfermedades, perros y pérdida de hábitat. Cada individuo cuenta para la supervivencia de la especie.",
+      "notaEducativa": "El huemul es Monumento Natural Nacional: no se caza nunca, en ningún mes, con ningún permiso. Aparece en el escudo nacional junto al cóndor. Si tenés la suerte de ver uno, mantené distancia, no lo persigas y reportá el avistaje al guardaparque."
+    },
+    {
+      "id": "pudu",
+      "nombreComun": "Pudú",
+      "categoria": "nativa_protegida",
+      "permitido": false,
+      "temporada": null,
+      "requierePermiso": false,
+      "cupo": null,
+      "metodosPermitidos": [],
+      "metodosProhibidos": ["todos"],
+      "razonEcologica": "El pudú es el ciervo más chico del mundo y depende del sotobosque denso de caña colihue para refugiarse. La caza, los perros sueltos y el jabalí lo golpean directamente, y la pérdida de sotobosque lo deja sin escondite.",
+      "notaEducativa": "Es nativo y está protegido: no hay temporada de pudú, nunca. Los perros sueltos matan más pudúes que cualquier cazador, así que llevar al perro atado dentro del parque también es conservación."
+    },
+    {
+      "id": "puma",
+      "nombreComun": "Puma",
+      "categoria": "nativa_protegida",
+      "permitido": false,
+      "temporada": null,
+      "requierePermiso": false,
+      "cupo": null,
+      "metodosPermitidos": [],
+      "metodosProhibidos": ["todos"],
+      "razonEcologica": "El puma es el gran depredador del ecosistema andino patagónico y regula las poblaciones de herbívoros, incluidos los exóticos. Eliminarlo desbalancea todo el sistema y aumenta la presión de ramoneo sobre el bosque.",
+      "notaEducativa": "Dentro del parque el puma está protegido y su caza está prohibida. Sus restos de presa, en cambio, son parte del ciclo natural y otros animales los aprovechan. Ante un encuentro: no correr, hacerse grande, retroceder de frente."
+    },
+    {
+      "id": "condor_andino",
+      "nombreComun": "Cóndor andino",
+      "categoria": "monumento_natural",
+      "permitido": false,
+      "temporada": null,
+      "requierePermiso": false,
+      "cupo": null,
+      "metodosPermitidos": [],
+      "metodosProhibidos": ["todos"],
+      "razonEcologica": "El cóndor es un carroñero de reproducción lentísima: pone un huevo cada dos años y madura tarde, así que cualquier muerte adulta pesa muchísimo. Muere sobre todo por cebos envenenados destinados a depredadores y por intoxicación con plomo de munición dejada en las carcasas.",
+      "notaEducativa": "El cóndor tiene la máxima protección legal y cultural. Usar munición sin plomo y no dejar carcasas contaminadas es la forma concreta de cuidarlo. Envenenar un animal muerto puede matar decenas de cóndores de una sola vez."
+    },
+    {
+      "id": "huillin",
+      "nombreComun": "Huillín",
+      "categoria": "nativa_protegida",
+      "permitido": false,
+      "temporada": null,
+      "requierePermiso": false,
+      "cupo": null,
+      "metodosPermitidos": [],
+      "metodosProhibidos": ["todos"],
+      "razonEcologica": "El huillín es una nutria nativa en peligro, casi extinguida por la caza peletera del siglo XX y hoy amenazada por el visón americano, la contaminación y la modificación de las costas. Sus poblaciones en la región son muy pequeñas y dependen de costas con vegetación densa y troncos caídos.",
+      "notaEducativa": "El huillín está protegido y no puede cazarse ni trampearse. Se lo confunde con el visón exótico, por eso el trampeo particular está prohibido. Respetar las costas con vegetación nativa es cuidar su refugio."
+    }
+  ],
+  "vedas": [
+    {
+      "id": "veda_permanente_nativa",
+      "nombre": "Veda permanente de fauna autóctona en Parque Nacional",
+      "descripcion": "Dentro del Parque Nacional Nahuel Huapi la caza de fauna nativa está prohibida los doce meses del año, sin excepción y sin permiso posible. No es una veda estacional: es una prohibición permanente derivada del régimen de áreas protegidas.",
+      "mesDesde": 1,
+      "mesHasta": 12,
+      "razon": "protección integral del área protegida"
+    },
+    {
+      "id": "veda_reproductiva",
+      "nombre": "Veda reproductiva de primavera y verano",
+      "descripcion": "En el período de celo tardío, parición y cría de la mayoría de las especies, la caza de exóticas también se restringe fuertemente para no dejar crías huérfanas ni alterar los sitios de nidificación. Las fechas exactas dependen de la resolución de temporada.",
+      "mesDesde": 9,
+      "mesHasta": 12,
+      "razon": "época reproductiva"
+    },
+    {
+      "id": "veda_pesca_invernal",
+      "nombre": "Veda de pesca de otoño e invierno",
+      "descripcion": "Fuera de la temporada de pesca deportiva, aproximadamente entre mayo y octubre, la mayoría de las aguas están cerradas para proteger el desove de los salmónidos y de los peces nativos. Algunas aguas mantienen temporada extendida con devolución obligatoria.",
+      "mesDesde": 5,
+      "mesHasta": 10,
+      "razon": "desove y bajo caudal"
+    },
+    {
+      "id": "veda_metodos",
+      "nombre": "Prohibición permanente de métodos no selectivos",
+      "descripcion": "El veneno, los cebos tóxicos, las trampas de cepo, las redes, los explosivos, la caza nocturna con reflector y el uso de perros para perseguir fauna están prohibidos todo el año, incluso sobre especies exóticas, porque matan indiscriminadamente y afectan a fauna protegida.",
+      "mesDesde": 1,
+      "mesHasta": 12,
+      "razon": "métodos no selectivos que dañan fauna protegida"
+    }
+  ],
+  "carronia": {
+    "explicacion": "Aprovechar restos es distinto de cazar porque el animal ya está muerto por causas ajenas a quien lo encuentra: una presa de puma, un invierno duro, una avalancha o una faena autorizada. No hay decisión de matar, no se reduce la población y no se altera la dinámica de las presas. Aun así, la carroña no es tierra de nadie: forma parte de la cadena trófica y sostiene al cóndor, al zorro, al jote y a un ejército de insectos y hongos que reciclan nutrientes. Levantarla toda deja sin comida a esos carroñeros, por eso lo razonable es tomar poco y dejar el resto en el lugar. Dentro de un Parque Nacional, además, la recolección de restos de fauna autóctona no está permitida sin autorización, porque un cuerpo puede ser evidencia de un delito o material de estudio sanitario. Consumir carroña tiene riesgo sanitario real: enfermedades, parásitos y toxinas que no se ven a simple vista.",
+    "fuentes": [
+      {
+        "id": "presa_puma",
+        "nombre": "Restos de presa de puma",
+        "descripcion": "El puma mata, come lo mejor y tapa el resto con hojarasca para volver más tarde. Si la presa es un exótico, como un ciervo o un jabalí, los restos aprovechables suelen ser cuero, tendones y hueso.",
+        "rinde": [
+          { "recurso": "cuero", "cantidad": 2 },
+          { "recurso": "tendon", "cantidad": 1 },
+          { "recurso": "hueso", "cantidad": 2 }
+        ],
+        "probabilidadRelativa": 0.4,
+        "notaEcologica": "Nunca te quedes cerca de una presa tapada: el puma vuelve. Tomá poco, rápido, y alejate. Esos restos también alimentan al cóndor y al zorro."
+      },
+      {
+        "id": "muerte_invernal",
+        "nombre": "Animal muerto por avalancha o invierno duro",
+        "descripcion": "Al final del invierno aparecen animales muertos por hambre, frío o aludes, sobre todo en laderas y quebradas. Es una mortandad natural que concentra alimento para los carroñeros en la peor época del año.",
+        "rinde": [
+          { "recurso": "cuero", "cantidad": 3 },
+          { "recurso": "hueso", "cantidad": 3 },
+          { "recurso": "tendon", "cantidad": 1 }
+        ],
+        "probabilidadRelativa": 0.25,
+        "notaEcologica": "Los picos de mortandad invernal son el sostén del cóndor a fines de invierno. Dejar la mayor parte del cuerpo en el lugar es lo correcto."
+      },
+      {
+        "id": "desmogue_astas",
+        "nombre": "Astas caídas de ciervo (desmogue)",
+        "descripcion": "Los ciervos macho pierden las astas cada año después de la brama y las vuelven a crecer. Recogerlas no implica matar ni herir a ningún animal y es la fuente de material duro más limpia del bosque.",
+        "rinde": [
+          { "recurso": "asta", "cantidad": 1 },
+          { "recurso": "hueso", "cantidad": 1 }
+        ],
+        "probabilidadRelativa": 0.25,
+        "notaEcologica": "Las astas caídas son roídas por roedores que aprovechan el calcio, así que tampoco conviene juntarlas todas. Dentro del parque, la recolección de material biológico puede requerir autorización."
+      },
+      {
+        "id": "faena_autorizada",
+        "nombre": "Restos de faena autorizada",
+        "descripcion": "Los descartes de una caza de control autorizada o de una faena de ganado en un puesto poblador rinden cuero, grasa y tendones ya limpios. Es la fuente más segura desde el punto de vista sanitario porque el origen es conocido.",
+        "rinde": [
+          { "recurso": "cuero", "cantidad": 4 },
+          { "recurso": "grasa", "cantidad": 2 },
+          { "recurso": "tendon", "cantidad": 2 }
+        ],
+        "probabilidadRelativa": 0.1,
+        "notaEcologica": "Las vísceras dejadas en el campo alimentan cóndores, pero si el animal fue abatido con munición de plomo pueden envenenarlos. Munición sin plomo, siempre."
+      }
+    ],
+    "reglas": "No se puede recolectar, tener, transportar ni usar restos, cueros, plumas, huesos ni astas de fauna autóctona protegida o Monumento Natural sin autorización expresa de la autoridad: tener un cuero de huemul o una pluma de cóndor se trata igual que haberlo cazado, y la carga de probar el origen recae en quien lo lleva. Tampoco se puede mover ni ocultar un animal nativo hallado muerto, porque puede ser evidencia de caza furtiva o de un evento sanitario: corresponde reportarlo al guardaparque con la ubicación. Y nunca se envenena ni se ceba una carcasa, porque mata cóndores, zorros y perros por igual."
+  }
+}

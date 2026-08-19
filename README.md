@@ -38,6 +38,7 @@ npm run dem
 | `F` | Alternar primera y tercera persona |
 | `E` | Recolectar / identificar / beber |
 | `Q` | Comer lo mejor del bolso |
+| `H` | Intentar cazar (fijate qué dice la ley) |
 | `Tab` | Abrir el códice |
 | `T` | Acelerar el paso del tiempo |
 | `F3` | Panel de diagnóstico |
@@ -97,6 +98,9 @@ CONICET, SAREM, IUCN, SMN).
 - **`src/data/geografia.json`** — gradiente de precipitación en 8 puntos,
   6 unidades litológicas, 5 volcanes, 5 glaciares, 17 lagos, 7 ríos, 16 cerros
   y 14 fenómenos naturales.
+- **`src/data/caza.json`** — marco legal, categorías de protección, temporadas
+  por especie y fuentes de carroña, con la distinción entre lo que rige dentro
+  del parque y lo que rige en la provincia.
 - **`src/data/historia.json`** — 6 eras, 32 eventos, 12 personajes,
   16 entradas de mitología, 30 topónimos en mapuzugun, 47 tecnologías
   encadenadas en un árbol de saberes y 20 sitios históricos.
@@ -181,26 +185,34 @@ Qué se colecciona y qué no es una decisión deliberada:
 5. El sotobosque llega hasta 192 m. Más allá el suelo queda desnudo, aunque a
    esa distancia la niebla aérea ya disimula bastante el corte.
 
-#### La decisión pendiente
+#### La caza, y por qué casi siempre te la van a negar
 
-El árbol de tecnologías está anclado históricamente y arranca con punta de
-proyectil, boleadora, arco de colihue y toldo. Los cuatro piden **cuero y
-tendón**. Sin una fuente de materiales animales, el jugador se queda en fuego
-por fricción y cestería, y las otras 40 tecnologías quedan de museo.
+El árbol de tecnologías arranca con punta de proyectil, boleadora, arco de
+colihue y toldo, y los cuatro piden cuero y tendón. Se resolvió por las dos vías
+que la realidad admite, y ninguna es cazar fauna nativa.
 
-Hay al menos tres salidas, y no son equivalentes:
+**Dentro de un parque nacional argentino, la fauna autóctona no se caza nunca.**
+No hay temporada, no hay cupo, no hay permiso que lo habilite. Esto es lo que
+más se malentiende del tema, así que el juego lo enseña haciéndolo: si apuntás a
+un huemul y pulsás `H`, el juego no bloquea la acción en silencio, te explica
+qué es un Monumento Natural y te descuenta puntos de saber. La negativa es el
+contenido, no un obstáculo.
 
-1. **Cazar sólo especies invasoras.** El dataset de fauna ya marca las 9
-   invasoras con `protegida: false` frente a las 52 nativas con `true`, así que
-   la afordancia está puesta. Manejar poblaciones de ciervo colorado y jabalí
-   es manejo real de parques, y sería una lección legítima. Requiere sistema de
-   caza: armas, daño, faena.
-2. **Carroña y despojos.** Aprovechar los restos de una presa de puma o un
-   animal muerto. Ecológicamente cierto y sin combate, pero más pasivo.
-3. **Dejar el árbol como referencia.** No atar la progresión al crafteo y que
-   los saberes sean sólo conocimiento. El juego pierde el bucle de construcción.
+Lo que sí se puede:
 
-La primera cambia el género del juego, así que no la tomé por mi cuenta.
+- **Exóticas invasoras** (ciervo colorado, jabalí, liebre, visón), porque
+  arrasan con el bosque nativo: el ciervo ramonea los renovales de coihue y
+  lenga e impide que el bosque se regenere. Aun así no es libre: hay temporada,
+  y cazar fuera de ella también penaliza, porque las vedas existen para no
+  interrumpir la reproducción incluso de una especie que se quiere controlar.
+- **Aprovechar restos hallados**: presas de puma, animales muertos por el
+  invierno, astas de desmogue. No es cazar, es lo que hace cualquier carroñero
+  del bosque. Un puma deja cerca del 40 % de su presa y de ahí comen el cóndor,
+  el zorro y el chimango.
+
+Con estas dos vías el árbol pasó de 7 a 15 tecnologías alcanzables: las dos
+primeras eras quedan jugables completas. Las 32 restantes piden hierro, batería
+y motor, que necesitarían minería y fundición.
 
 #### Sobre la suavidad del terreno
 

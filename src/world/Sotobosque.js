@@ -110,6 +110,16 @@ export class Sotobosque {
         apto: (alt, hum, pend) => 0.22 + pend / 45 + Math.max(0, (alt - 1400) / 900),
       },
       {
+        id: 'carronia',
+        nombre: 'Restos de un animal',
+        geo: () => restos(),
+        color: 0x9a8f7e, colorAlt: 0x6b5f4e,
+        radio: RADIO_LEJOS, porCelda: 0.10, flexible: false,
+        // Donde caza el puma: bosque cerrado, lejos del agua abierta, en
+        // laderas donde puede acechar
+        apto: (alt, hum, pend) => alt < 1700 && hum > 0.35 && pend > 6 ? 0.5 : 0,
+      },
+      {
         id: 'tronco',
         nombre: 'Tronco caído',
         geo: () => tronco(3.4, 0.24),
@@ -499,6 +509,27 @@ function piedra(radio) {
   g.computeVertexNormals();
   g.translate(0, radio * 0.26, 0);
   return fusionar([g]);
+}
+
+/** Restos de un animal: costillar a la vista y algo de cuero seco. */
+function restos() {
+  const geos = [];
+  for (let i = 0; i < 7; i++) {
+    const c = new THREE.CylinderGeometry(0.022, 0.016, 0.34 + Math.random() * 0.2, 4, 1);
+    c.rotateZ(Math.PI / 2 + (Math.random() - 0.5) * 0.5);
+    c.rotateY(Math.random() * Math.PI);
+    c.translate((i - 3) * 0.09, 0.10 + Math.random() * 0.05, (Math.random() - 0.5) * 0.14);
+    geos.push(c);
+  }
+  const craneo = new THREE.IcosahedronGeometry(0.13, 0);
+  craneo.scale(1.5, 0.8, 0.9);
+  craneo.translate(0.42, 0.10, 0.04);
+  geos.push(craneo);
+  const piel = new THREE.PlaneGeometry(0.62, 0.44);
+  piel.rotateX(-Math.PI / 2 + 0.12);
+  piel.translate(-0.14, 0.035, 0.1);
+  geos.push(piel);
+  return fusionar(geos);
 }
 
 /** Tronco caído, tumbado y con un extremo astillado. */

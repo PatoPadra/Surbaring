@@ -27,6 +27,8 @@ const EQUIVALE_A = {
   madera_blanda: ['madera', 'lena', 'tabla'],
   cana: ['junco'],
   fruto: ['azucar'],
+  asta: ['herramienta'],
+  cuero: ['red'],
 };
 
 export const RECURSOS = {
@@ -47,6 +49,16 @@ export const RECURSOS = {
   junco:         { nombre: 'Junco', kg: 0.1, cat: 'material' },
   hongo:         { nombre: 'Hongos', kg: 0.06, cat: 'alimento', nutre: 5, hidrata: 2 },
   agua:          { nombre: 'Agua', kg: 1.0, cat: 'alimento', nutre: 0, hidrata: 28 },
+
+  // ── De origen animal ─────────────────────────────────────────────────────
+  // Vienen de dos vías, y ninguna es cazar fauna nativa: el control autorizado
+  // de exóticas invasoras, y el aprovechamiento de restos hallados en el campo.
+  cuero:         { nombre: 'Cuero', kg: 0.9, cat: 'material' },
+  tendon:        { nombre: 'Tendón', kg: 0.05, cat: 'material' },
+  grasa:         { nombre: 'Grasa', kg: 0.3, cat: 'material' },
+  lana:          { nombre: 'Lana', kg: 0.15, cat: 'material' },
+  asta:          { nombre: 'Asta', kg: 0.6, cat: 'material' },
+  carne:         { nombre: 'Carne', kg: 0.4, cat: 'alimento', nutre: 22, hidrata: 2 },
 };
 
 /**
