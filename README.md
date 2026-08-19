@@ -129,21 +129,31 @@ avistándola en su hábitat real y se completa identificándola de cerca.
 
 ### Roto o a medio hacer
 
-1. **El suelo se lee como dunas lisas, no como terreno.** Es el defecto visual
-   principal y es estructural: el DEM tiene 32 m por texel, y visto desde 1,70 m
-   de altura no hay ningún accidente por debajo de esa escala. El sombreado ya
-   suma detalle multiescala con proyección triplanar, pero la geometría sigue
-   siendo suave. La solución real es desplazamiento procedural de vértices a
-   escala de metros, replicado en `Mundo.alturaEn()` para que la física no se
-   desincronice.
+1. **Falta cubierta de suelo.** Es lo que más separa esto de un juego comercial.
+   No hay pasto, matas bajas, piedras sueltas ni troncos caídos: sólo la
+   superficie del terreno. Ninguna cantidad de shader lo reemplaza; hace falta
+   geometría instanciada a nivel del suelo, que es el próximo paso obvio.
 2. **Los árboles son icosaedros y conos facetados**, sin textura de hoja ni
    impostores a distancia. Necesitan trabajo de arte, no de código.
-3. **8,5 M de triángulos por cuadro**, casi todos vegetación multiplicada por
+3. **12 M de triángulos por cuadro**, casi todos vegetación multiplicada por
    las 4 cascadas de sombra. Falta LOD e impostores.
 4. El códice todavía no consume `geografia.json` ni `historia.json`: los datos
    están, la interfaz que los muestra no.
 5. No hay todavía: inventario, crafteo, construcción, audio, ni eventos
    naturales (incendio, ceniza, viento blanco) más allá de los parámetros.
+
+#### Sobre la suavidad del terreno
+
+El terreno tiene ondulaciones largas y suaves, y **no es un defecto**: es lo que
+mide el dato. El SRTM entrega una muestra cada 32 m, así que todo accidente más
+chico que eso sencillamente no existe en la fuente. Se le suma un campo de
+relieve fino de 1,9 m, pero la escala media —barrancas de 5 m, terrazas,
+afloramientos— no está y no se puede inventar sin dejar de ser Bariloche.
+
+Vale la pena decirlo porque se descartaron tres explicaciones equivocadas antes
+de llegar a esta: estiramiento de la proyección (se resolvió con triplanar y no
+cambió), un hash de ruido con franjas diagonales (se cambió por el de Hoskins y
+no cambió) y mipmapping en ángulo rasante (se probó sin mipmaps y no cambió).
 
 ### Corregido en la segunda pasada
 

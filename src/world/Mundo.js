@@ -13,6 +13,24 @@ import * as THREE from 'three';
 
 export const MPD_LAT = 111320;
 
+/**
+ * Relieve fino que el DEM no puede contener.
+ *
+ * El modelo de elevación tiene 32 m por texel: a la altura de los ojos, un
+ * terreno así se lee como dunas de arcilla, porque no existe ningún accidente
+ * por debajo de esa escala. Se le suma un campo de detalle repetible.
+ *
+ * La clave es que la GPU y la CPU calculen exactamente lo mismo. Replicar una
+ * función de ruido en GLSL y en JavaScript no sirve: la precisión difiere y el
+ * jugador termina flotando o hundido en el suelo que ve. Por eso el detalle es
+ * una textura, muestreada con la misma interpolación bilineal de los dos lados.
+ */
+export const DETALLE = {
+  resolucion: 256,   // texels del mosaico
+  periodoM: 64,      // metros que abarca antes de repetirse
+  amplitudM: 1.9,    // desnivel máximo que agrega
+};
+
 export class Mundo {
   constructor() {
     this.meta = null;
@@ -80,6 +98,8 @@ export class Mundo {
     this._calcularPendiente();
     alProgresar(0.26, 'Modelando el gradiente de humedad…');
     this._calcularHumedad();
+    alProgresar(0.30, 'Tallando el relieve fino…');
+    this._construirDetalle();
     alProgresar(0.32, 'Subiendo el terreno a la placa de video…');
     this._construirTexturas();
     alProgresar(0.36, 'Terreno listo.');
@@ -96,8 +116,8 @@ export class Mundo {
     return j * this.N + i;
   }
 
-  /** Altura del terreno en metros, con interpolación bilineal. */
-  alturaEn(x, z) {
+  /** Altura del DEM, sin el relieve fino. La usa el agua para el lecho. */
+  alturaBaseEn(x, z) {
     const N = this.N;
     const fx = (x / this.tamano + 0.5) * (N - 1);
     const fz = (z / this.tamano + 0.5) * (N - 1);
@@ -108,6 +128,17 @@ export class Mundo {
     const a = this.altura[j0 * N + i0], b = this.altura[j0 * N + i1];
     const c = this.altura[j1 * N + i0], d = this.altura[j1 * N + i1];
     return (a * (1 - sx) + b * sx) * (1 - sz) + (c * (1 - sx) + d * sx) * sz;
+  }
+
+  /**
+   * Altura del terreno tal como se ve y se camina: el DEM más el relieve fino.
+   * Tiene que coincidir texel a texel con lo que hace el shader de vértices, o
+   * el jugador flota sobre el suelo o se hunde en él.
+   */
+  alturaEn(x, z) {
+    const base = this.alturaBaseEn(x, z);
+    if (!this.detalle) return base;
+    return base + this.detalleEn(x, z) * DETALLE.amplitudM * this.factorDetalleEn(x, z);
   }
 
   /** Normal del terreno por diferencias centradas. */
@@ -258,6 +289,95 @@ export class Mundo {
     return k < 0 ? 0 : this.precipitacion[k];
   }
 
+  /**
+   * Campo de detalle repetible. Se suman octavas de ruido de valor sobre
+   * retículas periódicas, así el mosaico calza consigo mismo sin costura.
+   */
+  _construirDetalle() {
+    const N = DETALLE.resolucion;
+    const campo = new Float32Array(N * N);
+
+    // Frecuencias que dividen exactamente la resolución: garantiza periodicidad
+    const octavas = [
+      { f: 2, a: 1.00 },
+      { f: 4, a: 0.52 },
+      { f: 8, a: 0.27 },
+      { f: 16, a: 0.14 },
+      { f: 32, a: 0.07 },
+    ];
+
+    const hash = (i, j, semilla) => {
+      let n = (i * 374761393 + j * 668265263 + semilla * 1442695041) | 0;
+      n = (n ^ (n >>> 13)) * 1274126177;
+      return (((n ^ (n >>> 16)) >>> 0) / 4294967295) * 2 - 1;
+    };
+    const suave = t => t * t * (3 - 2 * t);
+
+    let suma = 0;
+    for (const { a } of octavas) suma += a;
+
+    for (let j = 0; j < N; j++) {
+      for (let i = 0; i < N; i++) {
+        let v = 0;
+        let semilla = 1;
+        for (const { f, a } of octavas) {
+          const x = (i / N) * f, z = (j / N) * f;
+          const x0 = Math.floor(x), z0 = Math.floor(z);
+          const fx = suave(x - x0), fz = suave(z - z0);
+          // El módulo por f es lo que cierra el mosaico sobre sí mismo
+          const xa = ((x0 % f) + f) % f, xb = (xa + 1) % f;
+          const za = ((z0 % f) + f) % f, zb = (za + 1) % f;
+          const h00 = hash(xa, za, semilla), h10 = hash(xb, za, semilla);
+          const h01 = hash(xa, zb, semilla), h11 = hash(xb, zb, semilla);
+          v += a * ((h00 * (1 - fx) + h10 * fx) * (1 - fz)
+                  + (h01 * (1 - fx) + h11 * fx) * fz);
+          semilla++;
+        }
+        campo[j * N + i] = v / suma;
+      }
+    }
+
+    this.detalle = campo;
+    this.detalleN = N;
+
+    this.texDetalle = new THREE.DataTexture(campo, N, N, THREE.RedFormat, THREE.FloatType);
+    this.texDetalle.wrapS = this.texDetalle.wrapT = THREE.RepeatWrapping;
+    this.texDetalle.magFilter = THREE.LinearFilter;
+    this.texDetalle.minFilter = THREE.LinearFilter;
+    this.texDetalle.generateMipmaps = false;
+    this.texDetalle.needsUpdate = true;
+  }
+
+  /**
+   * Detalle en un punto, con la misma interpolación bilineal que hace la GPU.
+   * Devuelve -1..1.
+   */
+  detalleEn(x, z) {
+    const N = this.detalleN;
+    const u = (x / DETALLE.periodoM) * N;
+    const v = (z / DETALLE.periodoM) * N;
+    const i0 = Math.floor(u), j0 = Math.floor(v);
+    const sx = u - i0, sz = v - j0;
+    const ia = ((i0 % N) + N) % N, ib = (ia + 1) % N;
+    const ja = ((j0 % N) + N) % N, jb = (ja + 1) % N;
+    const d = this.detalle;
+    const a = d[ja * N + ia], b = d[ja * N + ib];
+    const c = d[jb * N + ia], e = d[jb * N + ib];
+    return (a * (1 - sx) + b * sx) * (1 - sz) + (c * (1 - sx) + e * sx) * sz;
+  }
+
+  /**
+   * Cuánto detalle corresponde acá. Se apaga sobre los lagos y en sus orillas:
+   * un lecho ondulado atravesaría la superficie del agua.
+   */
+  factorDetalleEn(x, z) {
+    const k = this.indiceDe(x, z);
+    if (k < 0) return 0;
+    if (this.agua[k] > 127) return 0;
+    const d = this.distanciaAgua ? this.distanciaAgua[k] : 999;
+    return Math.min(1, d / 24);
+  }
+
   _construirTexturas() {
     const N = this.N;
 
@@ -293,7 +413,7 @@ export class Mundo {
     this.texNormal.magFilter = THREE.LinearFilter;
     this.texNormal.minFilter = THREE.LinearMipmapLinearFilter;
     this.texNormal.generateMipmaps = true;
-    this.texNormal.anisotropy = 4;
+    this.texNormal.anisotropy = 16;
     this.texNormal.needsUpdate = true;
 
     // Cobertura: R agua, G cauce, B humedad, A pendiente normalizada
@@ -308,7 +428,7 @@ export class Mundo {
     this.texCobertura.magFilter = THREE.LinearFilter;
     this.texCobertura.minFilter = THREE.LinearMipmapLinearFilter;
     this.texCobertura.generateMipmaps = true;
-    this.texCobertura.anisotropy = 4;
+    this.texCobertura.anisotropy = 16;
     this.texCobertura.needsUpdate = true;
   }
 }

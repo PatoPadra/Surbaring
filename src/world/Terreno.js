@@ -12,10 +12,13 @@
  */
 
 import * as THREE from 'three';
+import { DETALLE } from './Mundo.js';
 
 const RES = 32;              // quads por lado en la malla base
-const HOJA_M = 256;          // tamaño del nodo más fino, en metros
-const MAX_NODOS = 4096;
+// Nodo más fino de 64 m: con RES=32 da 2 m por cuadro. Antes eran 256 m (8 m
+// por cuadro) y no había dónde apoyar el relieve fino, que vive entre 1 y 8 m.
+const HOJA_M = 64;
+const MAX_NODOS = 8192;
 
 export class Terreno {
   /**
@@ -26,8 +29,9 @@ export class Terreno {
     this.niveles = Math.round(Math.log2(mundo.tamano / HOJA_M));
     this.rangos = [];
     for (let l = 0; l <= this.niveles; l++) {
-      // Cada nivel duplica su alcance; el más fino cubre 420 m alrededor.
-      this.rangos[l] = 420 * Math.pow(2, l);
+      // Cada nivel duplica su alcance. El más fino cubre 190 m: más allá de eso
+      // los cuadros de 2 m no aportan nada visible y sólo cuestan triángulos.
+      this.rangos[l] = 190 * Math.pow(2, l);
     }
 
     this._construirMinMax();
@@ -137,8 +141,12 @@ export class Terreno {
       shader.vertexShader = `
         attribute vec4 iNodo;
         uniform sampler2D uTexAltura;
+        uniform sampler2D uTexCobertura;
+        uniform sampler2D uTexDetalle;
         uniform float uTamanoMundo;
         uniform float uResGrilla;
+        uniform float uDetallePeriodo;
+        uniform float uDetalleAmplitud;
         uniform vec2 uCamXZ;
       ` + shader.vertexShader;
       shader.vertexShader = shader.vertexShader.replace(
@@ -154,6 +162,13 @@ export class Terreno {
         vec2 frac = fract(rejilla * uResGrilla * 0.5) * 2.0 / uResGrilla;
         mundoXZ -= frac * nodoEscala * k;
         float h = texture2D(uTexAltura, mundoXZ / uTamanoMundo + 0.5).r;
+        {
+          vec4 cob = texture2D(uTexCobertura, mundoXZ / uTamanoMundo + 0.5);
+          float enTierra = 1.0 - smoothstep(0.15, 0.6, cob.r);
+          float nitidez = 1.0 - smoothstep(4.0, 11.0, nodoEscala / uResGrilla);
+          h += texture2D(uTexDetalle, mundoXZ / uDetallePeriodo).r
+             * uDetalleAmplitud * enTierra * nitidez;
+        }
         vec3 transformed = vec3(mundoXZ.x, h, mundoXZ.y);
         `
       );
@@ -176,6 +191,9 @@ export class Terreno {
       uTamanoMundo: { value: m.tamano },
       uResGrilla: { value: RES },
       uCamXZ: { value: new THREE.Vector2() },
+      uTexDetalle: { value: m.texDetalle },
+      uDetallePeriodo: { value: DETALLE.periodoM },
+      uDetalleAmplitud: { value: DETALLE.amplitudM },
       uNieveCota: { value: 1750 },      // el clima la mueve por estación
       uNieveSuavidad: { value: 220 },
       uLineaBosque: { value: 1620 },
@@ -191,8 +209,12 @@ export class Terreno {
       shader.vertexShader = `
         attribute vec4 iNodo;            // xz = esquina del nodo, z = escala, w = rango de morphing
         uniform sampler2D uTexAltura;
+        uniform sampler2D uTexCobertura;
+        uniform sampler2D uTexDetalle;
         uniform float uTamanoMundo;
         uniform float uResGrilla;
+        uniform float uDetallePeriodo;
+        uniform float uDetalleAmplitud;
         uniform vec2 uCamXZ;
         varying vec3 vMundo;
         varying float vMorph;
@@ -200,6 +222,20 @@ export class Terreno {
         float leerAltura(vec2 xz) {
           vec2 uv = xz / uTamanoMundo + 0.5;
           return texture2D(uTexAltura, uv).r;
+        }
+
+        /**
+         * Relieve fino. Tiene que dar exactamente lo mismo que Mundo.alturaEn()
+         * en la CPU, o el jugador camina sobre un suelo que no es el que ve.
+         * Se apaga sobre los lagos, y se desvanece cuando el nodo es tan grueso
+         * que sus cuadros ya no pueden representar el detalle.
+         */
+        float leerDetalle(vec2 xz, float ladoCuadro) {
+          vec4 cob = texture2D(uTexCobertura, xz / uTamanoMundo + 0.5);
+          float enTierra = 1.0 - smoothstep(0.15, 0.6, cob.r);
+          float nitidez = 1.0 - smoothstep(4.0, 11.0, ladoCuadro);
+          float d = texture2D(uTexDetalle, xz / uDetallePeriodo).r;
+          return d * uDetalleAmplitud * enTierra * nitidez;
         }
       ` + shader.vertexShader;
 
@@ -223,7 +259,7 @@ export class Terreno {
         vec2 frac = fract(rejilla * uResGrilla * 0.5) * 2.0 / uResGrilla;
         mundoXZ -= frac * nodoEscala * k;
 
-        float h = leerAltura(mundoXZ);
+        float h = leerAltura(mundoXZ) + leerDetalle(mundoXZ, nodoEscala / uResGrilla);
         vec3 transformed = vec3(mundoXZ.x, h, mundoXZ.y);
         vMundo = transformed;
         `
@@ -232,6 +268,9 @@ export class Terreno {
       shader.fragmentShader = `
         uniform sampler2D uTexNormal;
         uniform sampler2D uTexCobertura;
+        uniform sampler2D uTexDetalle;
+        uniform float uDetallePeriodo;
+        uniform float uDetalleAmplitud;
         uniform float uTamanoMundo;
         uniform float uNieveCota;
         uniform float uNieveSuavidad;
@@ -243,11 +282,13 @@ export class Terreno {
         varying vec3 vMundo;
         varying float vMorph;
 
-        // Ruido de valor con derivadas analíticas suficientes para detalle fino
+        // Hash de Hoskins. El clásico fract(p.x*p.y) produce franjas diagonales
+        // muy visibles en superficies grandes, que era justo lo que ensuciaba
+        // las laderas.
         float hash21(vec2 p) {
-          p = fract(p * vec2(123.34, 456.21));
-          p += dot(p, p + 45.32);
-          return fract(p.x * p.y);
+          vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+          p3 += dot(p3, p3.yzx + 33.33);
+          return fract((p3.x + p3.y) * p3.z);
         }
         float ruido(vec2 p) {
           vec2 i = floor(p), f = fract(p);
@@ -329,11 +370,18 @@ export class Terreno {
 
         // Parches: pastizal claro contra mata oscura. Una pradera nunca es de
         // un solo color, y esto es lo que rompe el aspecto de plastilina.
-        vec3 pastoClaro = vegetacion * 1.38 + vec3(0.055, 0.062, 0.024);
-        vec3 mataOscura = vegetacion * 0.52;
-        vegetacion = mix(mataOscura, pastoClaro, smoothstep(0.28, 0.74, detalle));
+        // Se usa el mismo campo que desplazó los vértices, así el color
+        // acompaña al relieve: las lomas se secan y las hondonadas verdean.
+        float relieve = texture2D(uTexDetalle, vMundo.xz / uDetallePeriodo).r;
+        float relieveFino = texture2D(uTexDetalle, vMundo.xz / (uDetallePeriodo * 0.21)).r;
+        float parche = clamp(0.5 + relieve * 0.85 + relieveFino * 0.45 * cercania
+                             + (detalle - 0.5) * 0.7, 0.0, 1.0);
+
+        vec3 pastoClaro = vegetacion * 1.62 + vec3(0.085, 0.092, 0.032);
+        vec3 mataOscura = vegetacion * 0.44;
+        vegetacion = mix(mataOscura, pastoClaro, smoothstep(0.24, 0.78, parche));
         // Tierra desnuda asomando entre las matas
-        vegetacion = mix(vegetacion, suelo * 1.15, smoothstep(0.72, 0.94, 1.0 - detalle) * 0.55);
+        vegetacion = mix(vegetacion, suelo * 1.25, smoothstep(0.66, 0.96, 1.0 - parche) * 0.6);
 
         // Por encima de la línea de bosque no hay árboles: matorral y roca desnuda
         float sobreBosque = smoothstep(uLineaBosque - 160.0, uLineaBosque + 190.0, alt);
@@ -395,18 +443,29 @@ export class Terreno {
         float f1 = 1.0 - smoothstep(20.0, 300.0, dv);
         float f2 = 1.0 - smoothstep(3.0, 40.0, dv);
 
-        vec3 d1 = vec3(0.9, 0.0, 0.0), d3 = vec3(0.0, 0.0, 0.9);
-        vec2 e1 = vec2(
-          fbmTri(vMundo + d1, normal, 0.55) - fbmTri(vMundo - d1, normal, 0.55),
-          fbmTri(vMundo + d3, normal, 0.55) - fbmTri(vMundo - d3, normal, 0.55)
-        );
+        // Normal del relieve fino, derivada de la MISMA textura que desplazó
+        // los vértices. Si se usara otro ruido, la luz contaría una historia
+        // distinta de la que cuenta la silueta.
+        {
+          vec4 cobN = texture2D(uTexCobertura, vMundo.xz / uTamanoMundo + 0.5);
+          float enTierra = 1.0 - smoothstep(0.15, 0.6, cobN.r);
+          float e = uDetallePeriodo / 256.0;   // un texel del mosaico
+          vec2 uvD = vMundo.xz / uDetallePeriodo;
+          float dx = texture2D(uTexDetalle, uvD + vec2(e / uDetallePeriodo, 0.0)).r
+                   - texture2D(uTexDetalle, uvD - vec2(e / uDetallePeriodo, 0.0)).r;
+          float dz = texture2D(uTexDetalle, uvD + vec2(0.0, e / uDetallePeriodo)).r
+                   - texture2D(uTexDetalle, uvD - vec2(0.0, e / uDetallePeriodo)).r;
+          float k = uDetalleAmplitud * enTierra / (2.0 * e);
+          normal = normalize(normal + vec3(-dx * k, 0.0, -dz * k));
+        }
+
+        // Rugosidad por debajo del relieve fino: grava, matas, grumos de suelo
         vec3 d2 = vec3(0.14, 0.0, 0.0), d4 = vec3(0.0, 0.0, 0.14);
         vec2 e2 = vec2(
           fbmTri(vMundo + d2, normal, 3.4) - fbmTri(vMundo - d2, normal, 3.4),
           fbmTri(vMundo + d4, normal, 3.4) - fbmTri(vMundo - d4, normal, 3.4)
         );
-        normal = normalize(normal + vec3(e1.x, 0.0, e1.y) * 0.62 * f1
-                                  + vec3(e2.x, 0.0, e2.y) * 0.85 * f2);
+        normal = normalize(normal + vec3(e2.x, 0.0, e2.y) * 0.85 * f2);
         vec3 nonPerturbedNormal = normal;
         `
       );
