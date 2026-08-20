@@ -66,6 +66,7 @@ export const RECURSOS = {
   lana:          { nombre: 'Lana', kg: 0.15, cat: 'material' },
   asta:          { nombre: 'Asta', kg: 0.6, cat: 'material' },
   carne:         { nombre: 'Carne', kg: 0.4, cat: 'alimento', nutre: 22, hidrata: 2 },
+  pescado:       { nombre: 'Pescado', kg: 0.25, cat: 'alimento', nutre: 16, hidrata: 3 },
 
   // ── De cantera y de recuperación ─────────────────────────────────────────
   // Áridos: lo único que de verdad se extrae alrededor de Bariloche, y sólo

@@ -41,8 +41,20 @@ export class Recoleccion {
       return { tipo: 'carronia', etiqueta: 'Aprovechar los restos', resto };
     }
 
+    // El permiso de pesca sólo se saca donde se saca, así que cuando el jugador
+    // pasa por la intendencia conviene que se entere.
+    if (this.pesca && !this.pesca.tienePermiso
+        && this.pesca.enIntendencia(p.x, p.z)) {
+      return { tipo: 'permiso', etiqueta: 'Sacar el permiso de pesca en la intendencia' };
+    }
+
     if (this.jugador.enAgua || this._aguaCerca()) {
-      return { tipo: 'beber', etiqueta: 'Beber agua' };
+      // Si además hay un cardumen a mano, se avisa: pescar tiene tecla propia
+      const hay = this.pesca?.loQueHayCerca();
+      return {
+        tipo: 'beber',
+        etiqueta: hay ? 'Beber agua · P para tirar la línea' : 'Beber agua',
+      };
     }
 
     const planta = this.vegetacion.masCercana(p, 7);
@@ -155,6 +167,10 @@ export class Recoleccion {
           obtenido.length ? obtenido.join(' · ') : `No entra nada más (${this.inventario.pesoKg.toFixed(1)} kg)`);
         return;
       }
+
+      case 'permiso':
+        this.pesca?.sacarPermiso();
+        return;
 
       case 'chatarra':
         this.mineria?.recuperarChatarra(ahora);

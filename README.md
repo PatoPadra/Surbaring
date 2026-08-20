@@ -41,6 +41,7 @@ npm run dem
 | `H` | Intentar cazar (fijate qué dice la ley) |
 | `R` | Extraer áridos o levantar chatarra (fijate dónde estás parado) |
 | `G` | Abrir el taller: cantera, hornos, hornadas y obras |
+| `P` | Tirar la línea (el permiso se saca en la intendencia) |
 | `Tab` | Abrir el códice |
 | `T` | Acelerar el paso del tiempo |
 | `F3` | Panel de diagnóstico |
@@ -105,7 +106,9 @@ CONICET, SAREM, IUCN, SMN).
   rige dentro del parque de lo que rige en Río Negro: el ciervo colorado y el
   jabalí se cazan de marzo a mayo por turnos de subasta (Res. Directorio APN
   277/2011), mientras que la liebre, fuera del parque, no tiene temporada ni
-  cupo. El huemul es Monumento Natural por Ley 24.702.
+  cupo. El huemul es Monumento Natural por Ley 24.702. Incluye el régimen de
+  pesca: permiso obligatorio, tres ambientes con su temporada, cinco
+  modalidades, medidas y devolución obligatoria.
 - **`src/data/mineria.json`** — 4 normas citadas, la geología que explica por
   qué acá no hay metal, 7 materiales con su origen real, 5 recursos declarados
   sin fuente local, 4 hornos y 12 recetas. El artículo 5 de la Ley 22.351
@@ -187,6 +190,8 @@ Qué se colecciona y qué no es una decisión deliberada:
   construibles que abrigan, guardan y procesan material
 - Tres jurisdicciones dibujadas sobre el mapa —Parque, Reserva Nacional y
   provincia— que cambian lo que la ley permite hacer en cada lugar
+- Peces instanciados en el agua y pesca con permiso, temporada por ambiente,
+  devolución obligatoria de nativos y medida máxima de salmónidos
 
 ### Roto o a medio hacer
 
@@ -234,6 +239,42 @@ Lo que sí se puede:
 
 Con estas dos vías el árbol pasó de 7 a 15 tecnologías alcanzables: las dos
 primeras eras quedan jugables completas.
+
+#### Los peces, y la contradicción que el parque administra
+
+La pesca deportiva es **la única actividad extractiva que un visitante común
+puede ejercer legalmente dentro del parque**, y existe sobre una contradicción:
+casi todo lo que se pesca es exótico. Los salmónidos —trucha arcoíris, trucha
+marrón, salmón encerrado— se sembraron desde principios del siglo XX en aguas
+que no los tenían, con la Estación de Piscicultura de Bariloche entre los focos
+de esa introducción. Hoy sostienen una actividad turística enorme y al mismo
+tiempo desplazan a la perca criolla, al puyén y al pejerrey patagónico. El
+parque no resuelve esa contradicción: la administra, y el juego la muestra.
+
+Los siete peces del dataset ahora existen en el agua, en cardúmenes instanciados
+que se pueblan alrededor del jugador: el puyén chico en la orilla y en
+superficie, la perca y el puyén grande más hondo, los salmónidos en todos lados
+—que es el problema— y dominando el arroyo chico, donde más desplazan a los
+nativos.
+
+Pescar pregunta lo mismo que pregunta un guardaparque, y en ese orden:
+
+1. **Permiso.** Es obligatorio y no se consigue en cualquier lado: hay que ir a
+   la intendencia, en el Centro Cívico. Tirar la línea sin permiso es la
+   infracción más común y la más fácil de evitar.
+2. **Ambiente y temporada.** El lago Nahuel Huapi tiene temporada extendida, del
+   1 de octubre al 31 de mayo; los ríos y arroyos la general, del 1 de noviembre
+   al 30 de abril. En octubre el juego te deja pescar en el lago y te lo niega en
+   el río, que es exactamente la diferencia que fija el reglamento.
+3. **Especie.** Los nativos se devuelven siempre, por la misma razón por la que
+   no se caza un huemul: son fauna autóctona dentro de un área protegida.
+4. **Medida.** Al salmónido grande también se lo devuelve, porque el reproductor
+   grande vale más en el agua que en la mochila.
+
+Sobre 200 tiradas medidas en el lago en febrero: picaron 128 peces, el 79 % de
+ellos salmónidos introducidos, y de esos se conservó el 46 % —el resto se pasaba
+de medida—. Los 27 nativos volvieron al agua sin excepción. Que lo exótico domine
+el anzuelo no es un sesgo del juego: es el estado del lago.
 
 #### La minería, que es la misma ley leída de nuevo
 
@@ -392,6 +433,8 @@ src/world/Vegetacion.js Bosque instanciado por aptitud ecológica
 src/world/Tiempo.js     Calendario, estaciones y clima
 src/entities/Jugador.js Controlador y física
 src/entities/Fauna.js   Animales y comportamiento
+src/entities/Peces.js   Cardúmenes en lagos, ríos y arroyos
+src/systems/Pesca.js    Permiso, temporada, especie, medida y devolución
 src/world/Limites.js    Parque, Reserva y jurisdicción provincial
 src/world/Hornos.js     Geometría de fogatas, carboneras, hornos y fraguas
 src/systems/Mineria.js  Áridos, chatarra y lo que la ley no deja sacar

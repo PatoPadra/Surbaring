@@ -39,6 +39,8 @@ import { Hornos } from './world/Hornos.js';
 import { Taller } from './ui/Taller.js';
 import { Construccion } from './systems/Construccion.js';
 import { Obras } from './world/Obras.js';
+import { Peces } from './entities/Peces.js';
+import { Pesca } from './systems/Pesca.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -144,6 +146,10 @@ async function iniciar() {
   const bichos = new Fauna(mundo, fauna);
   escena.add(bichos.grupo);
 
+  progreso(0.84, 'Poblando los lagos y los ríos…');
+  const peces = new Peces(mundo, fauna);
+  escena.add(peces.grupo);
+
   const entrada = new Entrada(lienzo);
   entrada.registrar('KeyF', () => { jugador.tercerPersona = !jugador.tercerPersona; });
   entrada.registrar('F3', () => document.getElementById('diag').classList.toggle('visible'));
@@ -199,12 +205,20 @@ async function iniciar() {
   const obras = new Obras();
   escena.add(obras.grupo);
 
+  // La pesca es la única extracción que un visitante puede ejercer legalmente
+  // dentro del parque, y casi todo lo que se pesca es exótico. El sistema vive
+  // de la normativa que ya estaba en caza.json.
+  const pesca = new Pesca(normativaCaza, {
+    peces, mundo, jugador, inventario, saberes, codice, hud, tiempo,
+  });
+
   const recoleccion = new Recoleccion({
     mundo, jugador, vegetacion, sotobosque, fauna: bichos,
     inventario, saberes, codice, hud,
   });
   recoleccion.caza = caza;
   recoleccion.mineria = mineria;
+  recoleccion.pesca = pesca;
 
   const taller = new Taller({ fundicion, mineria, construccion, limites, jugador, inventario });
   const levantarOriginal = construccion.levantar.bind(construccion);
@@ -243,6 +257,8 @@ async function iniciar() {
   entrada.registrar('KeyE', () => recoleccion.actuar(tiempo.segundosTotales));
   entrada.registrar('KeyQ', () => recoleccion.comer());
   entrada.registrar('KeyG', () => taller.alternar());
+  // Tirar la línea. Como la caza, siempre contesta con una explicación.
+  entrada.registrar('KeyP', () => pesca.intentar(tiempo.estado().mes));
   // Extraer: cantera si el yacimiento y la ley lo permiten, chatarra si lo que
   // hay a mano es basura metálica. Como con la caza, la negativa explica.
   entrada.registrar('KeyR', () => {
@@ -354,6 +370,7 @@ async function iniciar() {
     vegetacion.actualizar(jugador.posicion, tiempo.segundosTotales, est, camara);
     sotobosque.actualizar(jugador.posicion, tiempo.segundosTotales, est);
     bichos.actualizar(dt, jugador, est, tiempo.segundosTotales);
+    peces.actualizar(jugador.posicion, tiempo.segundosTotales);
     fundicion.actualizar();
     hornos.actualizar(tiempo.segundosTotales);
     for (const caida of construccion.actualizar()) obras.quitar(caida);
@@ -385,7 +402,7 @@ async function iniciar() {
       elDiag.innerHTML =
         `${fps.toFixed(0)} fps<br>` +
         `${terreno.nodosDibujados} nodos de terreno<br>` +
-        `${vegetacion.mallasCompletas}m+${vegetacion.impostores}i+${sotobosque.total} plantas · ${bichos.vivos.length} animales<br>` +
+        `${vegetacion.mallasCompletas}m+${vegetacion.impostores}i+${sotobosque.total} plantas · ${bichos.vivos.length} animales · ${peces.total} peces<br>` +
         `${inf.render.calls} llamadas · ${(inf.render.triangles / 1000).toFixed(0)}k tri<br>` +
         `sol ${(cielo.alturaSol * 180 / Math.PI).toFixed(1)}°`;
     }
@@ -397,7 +414,7 @@ async function iniciar() {
     escena, camara, render, mundo, terreno, cielo, agua, vegetacion, sotobosque,
     fauna: bichos, jugador, tiempo, compositor, csm, hud, codice, entrada,
     inventario, saberes, recoleccion, caza,
-    limites, mineria, fundicion, hornos, taller, construccion, obras,
+    limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
   };
 
   if (import.meta.env.DEV) {

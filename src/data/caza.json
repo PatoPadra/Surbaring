@@ -75,8 +75,17 @@
       },
       "requierePermiso": true,
       "cupo": "En el Nahuel Huapi el reglamento contempla un límite de dos piezas por turno de caza. Los valores, derechos y precintos se pagan aparte y cambian cada temporada.",
-      "metodosPermitidos": ["arco", "rifle"],
-      "metodosProhibidos": ["trampa", "veneno", "perros", "caza nocturna", "reflectores"],
+      "metodosPermitidos": [
+        "arco",
+        "rifle"
+      ],
+      "metodosProhibidos": [
+        "trampa",
+        "veneno",
+        "perros",
+        "caza nocturna",
+        "reflectores"
+      ],
       "razonEcologica": "El ciervo colorado ramonea los renovales de coihue, lenga y ñire e impide que el bosque se regenere, dejando un sotobosque empobrecido y suelo expuesto a la erosión. Descorteza árboles jóvenes durante la brama y compite por alimento y espacio con el huemul y el pudú. Su abundancia también sostiene poblaciones altas de otros herbívoros exóticos y altera la dinámica del fuego y del matorral.",
       "notaEducativa": "El ciervo colorado no es de acá: llegó a la región por introducciones para caza deportiva a principios del siglo XX. Cazarlo dentro del parque sólo tiene sentido como parte de un programa de control, con permiso y bajo la mirada del guardaparque. Si ves un ciervo fuera de temporada, la respuesta correcta es anotarlo y reportarlo, no dispararle."
     },
@@ -93,8 +102,15 @@
       },
       "requierePermiso": true,
       "cupo": "Por su condición de plaga, los parques informan que no se fija límite de piezas de jabalí dentro del turno adjudicado. Aun sin cupo, hace falta permiso, turno y precinto.",
-      "metodosPermitidos": ["rifle", "arco"],
-      "metodosProhibidos": ["veneno", "trampa de lazo", "caza nocturna sin autorización expresa"],
+      "metodosPermitidos": [
+        "rifle",
+        "arco"
+      ],
+      "metodosProhibidos": [
+        "veneno",
+        "trampa de lazo",
+        "caza nocturna sin autorización expresa"
+      ],
       "razonEcologica": "El jabalí hociquea el suelo del bosque y de las mallines, destruye la hojarasca, las raíces y los bancos de semillas, y abre huecos que ocupan plantas exóticas. Come frutos, hongos, huevos y crías, y compite directamente con el pudú y con aves que nidifican en el suelo. Además transmite enfermedades al ganado y a la fauna silvestre.",
       "notaEducativa": "El jabalí europeo se hibridó con cerdos domésticos asilvestrados y hoy es una de las peores plagas del bosque andino patagónico. Su control es un trabajo de manejo, no un trofeo. La carne requiere análisis sanitario antes de consumirse por riesgo de triquinosis."
     },
@@ -111,8 +127,16 @@
       },
       "requierePermiso": true,
       "cupo": "En jurisdicción de Río Negro, fuera del parque, se caza sin cupo por su condición de exótica invasora; siempre con licencia de caza provincial vigente.",
-      "metodosPermitidos": ["rifle de bajo calibre", "arco"],
-      "metodosProhibidos": ["veneno", "trampa", "perros", "caza nocturna con reflector"],
+      "metodosPermitidos": [
+        "rifle de bajo calibre",
+        "arco"
+      ],
+      "metodosProhibidos": [
+        "veneno",
+        "trampa",
+        "perros",
+        "caza nocturna con reflector"
+      ],
       "razonEcologica": "La liebre europea consume pastos y renovales, compite con herbívoros nativos y mantiene artificialmente altas las poblaciones de depredadores, lo que aumenta la presión sobre presas autóctonas. En zonas de estepa y borde de bosque contribuye a la degradación del pastizal.",
       "notaEducativa": "La liebre es exótica y abundante, pero eso no la vuelve de caza libre dentro del parque. Confundirla con el pudú o con un chinchillón es un error caro: en la duda, no se dispara."
     },
@@ -129,8 +153,13 @@
       },
       "requierePermiso": true,
       "cupo": null,
-      "metodosPermitidos": ["trampeo autorizado dentro de programas de control"],
-      "metodosProhibidos": ["veneno", "trampeo particular sin autorización"],
+      "metodosPermitidos": [
+        "trampeo autorizado dentro de programas de control"
+      ],
+      "metodosProhibidos": [
+        "veneno",
+        "trampeo particular sin autorización"
+      ],
       "razonEcologica": "El visón americano, escapado de criaderos peleteros, es un depredador semiacuático que arrasa con aves acuáticas, anfibios, peces y crustáceos nativos. Es la principal amenaza directa para el huillín, con el que además compite por territorio y refugios. Su expansión por ríos y lagos deja tramos enteros de costa sin aves nidificantes.",
       "notaEducativa": "Ojo: el visón se parece al huillín, que es nativo y está protegido. Nunca se trampea por cuenta propia. Si ves un mustélido en la costa, lo útil es reportar el avistaje al guardaparque, que distingue las especies."
     },
@@ -147,8 +176,18 @@
       },
       "requierePermiso": true,
       "cupo": "Hay cupo diario y medidas según el ambiente; en el parque la normativa permite conservar truchas de hasta unos 40 centímetros y varios lagos son de devolución obligatoria. El número exacto de piezas por día no pudo verificarse.",
-      "metodosPermitidos": ["mosca", "spinning", "trolling donde esté habilitado"],
-      "metodosProhibidos": ["red", "veneno", "explosivos", "electricidad", "pesca sin permiso"],
+      "metodosPermitidos": [
+        "mosca",
+        "spinning",
+        "trolling donde esté habilitado"
+      ],
+      "metodosProhibidos": [
+        "red",
+        "veneno",
+        "explosivos",
+        "electricidad",
+        "pesca sin permiso"
+      ],
       "razonEcologica": "Los salmónidos introducidos depredan y desplazan a peces nativos como la perca, el puyén y el bagre aterciopelado, y alteran las redes tróficas de lagos y ríos. Hoy están tan establecidos que su manejo se orienta a regular la pesca y a evitar nuevas siembras.",
       "notaEducativa": "Para pescar hace falta permiso vigente, y hay que conocer el reglamento del ambiente donde se pesca: cupo, medida y si es de devolución obligatoria. Desinfectar botas y equipo entre cuerpos de agua evita propagar el alga didymo."
     },
@@ -165,8 +204,18 @@
       },
       "requierePermiso": true,
       "cupo": "Cupo diario y medidas según ambiente, con devolución obligatoria en varios cuerpos de agua; el número exacto no pudo verificarse.",
-      "metodosPermitidos": ["mosca", "spinning", "trolling donde esté habilitado"],
-      "metodosProhibidos": ["red", "veneno", "explosivos", "electricidad", "pesca sin permiso"],
+      "metodosPermitidos": [
+        "mosca",
+        "spinning",
+        "trolling donde esté habilitado"
+      ],
+      "metodosProhibidos": [
+        "red",
+        "veneno",
+        "explosivos",
+        "electricidad",
+        "pesca sin permiso"
+      ],
       "razonEcologica": "Es un depredador voraz y territorial que impacta fuerte sobre peces nativos y sobre invertebrados acuáticos. En arroyos chicos puede eliminar poblaciones enteras de especies autóctonas de pequeño tamaño.",
       "notaEducativa": "La trucha marrón es exótica, pero su pesca está reglada igual que cualquier otra: sin permiso no se pesca. Manipular el pez con las manos mojadas y devolverlo rápido mejora su supervivencia cuando la devolución es obligatoria."
     },
@@ -179,7 +228,9 @@
       "requierePermiso": false,
       "cupo": null,
       "metodosPermitidos": [],
-      "metodosProhibidos": ["todos"],
+      "metodosProhibidos": [
+        "todos"
+      ],
       "razonEcologica": "El huemul es un ciervo nativo de los Andes patagónicos, en peligro de extinción, con poblaciones muy reducidas y fragmentadas. Sufre por competencia con ciervo colorado y ganado, enfermedades, perros y pérdida de hábitat. Cada individuo cuenta para la supervivencia de la especie.",
       "notaEducativa": "El huemul es Monumento Natural Nacional: no se caza nunca, en ningún mes, con ningún permiso. Aparece en el escudo nacional junto al cóndor. Si tenés la suerte de ver uno, mantené distancia, no lo persigas y reportá el avistaje al guardaparque."
     },
@@ -192,7 +243,9 @@
       "requierePermiso": false,
       "cupo": null,
       "metodosPermitidos": [],
-      "metodosProhibidos": ["todos"],
+      "metodosProhibidos": [
+        "todos"
+      ],
       "razonEcologica": "El pudú es el ciervo más chico del mundo y depende del sotobosque denso de caña colihue para refugiarse. La caza, los perros sueltos y el jabalí lo golpean directamente, y la pérdida de sotobosque lo deja sin escondite.",
       "notaEducativa": "Es nativo y está protegido: no hay temporada de pudú, nunca. Los perros sueltos matan más pudúes que cualquier cazador, así que llevar al perro atado dentro del parque también es conservación."
     },
@@ -205,7 +258,9 @@
       "requierePermiso": false,
       "cupo": null,
       "metodosPermitidos": [],
-      "metodosProhibidos": ["todos"],
+      "metodosProhibidos": [
+        "todos"
+      ],
       "razonEcologica": "El puma es el gran depredador del ecosistema andino patagónico y regula las poblaciones de herbívoros, incluidos los exóticos. Eliminarlo desbalancea todo el sistema y aumenta la presión de ramoneo sobre el bosque.",
       "notaEducativa": "Dentro del parque el puma está protegido y su caza está prohibida. Sus restos de presa, en cambio, son parte del ciclo natural y otros animales los aprovechan. Ante un encuentro: no correr, hacerse grande, retroceder de frente."
     },
@@ -218,7 +273,9 @@
       "requierePermiso": false,
       "cupo": null,
       "metodosPermitidos": [],
-      "metodosProhibidos": ["todos"],
+      "metodosProhibidos": [
+        "todos"
+      ],
       "razonEcologica": "El cóndor es un carroñero de reproducción lentísima: pone un huevo cada dos años y madura tarde, así que cualquier muerte adulta pesa muchísimo. Muere sobre todo por cebos envenenados destinados a depredadores y por intoxicación con plomo de munición dejada en las carcasas.",
       "notaEducativa": "El cóndor tiene la máxima protección legal y cultural. Usar munición sin plomo y no dejar carcasas contaminadas es la forma concreta de cuidarlo. Envenenar un animal muerto puede matar decenas de cóndores de una sola vez."
     },
@@ -231,7 +288,9 @@
       "requierePermiso": false,
       "cupo": null,
       "metodosPermitidos": [],
-      "metodosProhibidos": ["todos"],
+      "metodosProhibidos": [
+        "todos"
+      ],
       "razonEcologica": "El huillín es una nutria nativa en peligro, casi extinguida por la caza peletera del siglo XX y hoy amenazada por el visón americano, la contaminación y la modificación de las costas. Sus poblaciones en la región son muy pequeñas y dependen de costas con vegetación densa y troncos caídos.",
       "notaEducativa": "El huillín está protegido y no puede cazarse ni trampearse. Se lo confunde con el visón exótico, por eso el trampeo particular está prohibido. Respetar las costas con vegetación nativa es cuidar su refugio."
     }
@@ -278,9 +337,18 @@
         "nombre": "Restos de presa de puma",
         "descripcion": "El puma mata, come lo mejor y tapa el resto con hojarasca para volver más tarde. Si la presa es un exótico, como un ciervo o un jabalí, los restos aprovechables suelen ser cuero, tendones y hueso.",
         "rinde": [
-          { "recurso": "cuero", "cantidad": 2 },
-          { "recurso": "tendon", "cantidad": 1 },
-          { "recurso": "hueso", "cantidad": 2 }
+          {
+            "recurso": "cuero",
+            "cantidad": 2
+          },
+          {
+            "recurso": "tendon",
+            "cantidad": 1
+          },
+          {
+            "recurso": "hueso",
+            "cantidad": 2
+          }
         ],
         "probabilidadRelativa": 0.4,
         "notaEcologica": "Nunca te quedes cerca de una presa tapada: el puma vuelve. Tomá poco, rápido, y alejate. Esos restos también alimentan al cóndor y al zorro."
@@ -290,9 +358,18 @@
         "nombre": "Animal muerto por avalancha o invierno duro",
         "descripcion": "Al final del invierno aparecen animales muertos por hambre, frío o aludes, sobre todo en laderas y quebradas. Es una mortandad natural que concentra alimento para los carroñeros en la peor época del año.",
         "rinde": [
-          { "recurso": "cuero", "cantidad": 3 },
-          { "recurso": "hueso", "cantidad": 3 },
-          { "recurso": "tendon", "cantidad": 1 }
+          {
+            "recurso": "cuero",
+            "cantidad": 3
+          },
+          {
+            "recurso": "hueso",
+            "cantidad": 3
+          },
+          {
+            "recurso": "tendon",
+            "cantidad": 1
+          }
         ],
         "probabilidadRelativa": 0.25,
         "notaEcologica": "Los picos de mortandad invernal son el sostén del cóndor a fines de invierno. Dejar la mayor parte del cuerpo en el lugar es lo correcto."
@@ -302,8 +379,14 @@
         "nombre": "Astas caídas de ciervo (desmogue)",
         "descripcion": "Los ciervos macho pierden las astas cada año después de la brama y las vuelven a crecer. Recogerlas no implica matar ni herir a ningún animal y es la fuente de material duro más limpia del bosque.",
         "rinde": [
-          { "recurso": "asta", "cantidad": 1 },
-          { "recurso": "hueso", "cantidad": 1 }
+          {
+            "recurso": "asta",
+            "cantidad": 1
+          },
+          {
+            "recurso": "hueso",
+            "cantidad": 1
+          }
         ],
         "probabilidadRelativa": 0.25,
         "notaEcologica": "Las astas caídas son roídas por roedores que aprovechan el calcio, así que tampoco conviene juntarlas todas. Dentro del parque, la recolección de material biológico puede requerir autorización."
@@ -313,14 +396,129 @@
         "nombre": "Restos de faena autorizada",
         "descripcion": "Los descartes de una caza de control autorizada o de una faena de ganado en un puesto poblador rinden cuero, grasa y tendones ya limpios. Es la fuente más segura desde el punto de vista sanitario porque el origen es conocido.",
         "rinde": [
-          { "recurso": "cuero", "cantidad": 4 },
-          { "recurso": "grasa", "cantidad": 2 },
-          { "recurso": "tendon", "cantidad": 2 }
+          {
+            "recurso": "cuero",
+            "cantidad": 4
+          },
+          {
+            "recurso": "grasa",
+            "cantidad": 2
+          },
+          {
+            "recurso": "tendon",
+            "cantidad": 2
+          }
         ],
         "probabilidadRelativa": 0.1,
         "notaEcologica": "Las vísceras dejadas en el campo alimentan cóndores, pero si el animal fue abatido con munición de plomo pueden envenenarlos. Munición sin plomo, siempre."
       }
     ],
     "reglas": "No se puede recolectar, tener, transportar ni usar restos, cueros, plumas, huesos ni astas de fauna autóctona protegida o Monumento Natural sin autorización expresa de la autoridad: tener un cuero de huemul o una pluma de cóndor se trata igual que haberlo cazado, y la carga de probar el origen recae en quien lo lleva. Tampoco se puede mover ni ocultar un animal nativo hallado muerto, porque puede ser evidencia de caza furtiva o de un evento sanitario: corresponde reportarlo al guardaparque con la ubicación. Y nunca se envenena ni se ceba una carcasa, porque mata cóndores, zorros y perros por igual."
+  },
+  "pesca": {
+    "explicacion": "La pesca deportiva es la única actividad extractiva que un visitante común puede ejercer legalmente dentro del Parque Nacional Nahuel Huapi, y existe por una razón incómoda: casi todo lo que se pesca es exótico. Los salmónidos —trucha arcoíris, trucha marrón, salmón encerrado— fueron sembrados desde principios del siglo XX en aguas que no los tenían, con la Estación de Piscicultura de Bariloche como uno de los focos de esa introducción. Hoy son la base de una actividad turística enorme y, al mismo tiempo, uno de los principales impactos sobre los peces nativos: depredan y desplazan a la perca, el puyén y el pejerrey patagónico. El parque convive con esa contradicción y la administra: temporada, permiso, cupo, medidas mínimas y máximas, ambientes de devolución obligatoria y métodos permitidos. Los peces nativos, en cambio, son fauna autóctona dentro de un área protegida, con todo lo que eso implica.",
+    "permiso": {
+      "obligatorio": true,
+      "donde": "Se gestiona en las intendencias y seccionales de la Administración de Parques Nacionales, en comercios habilitados y por vía online.",
+      "categorias": [
+        "diario",
+        "semanal",
+        "temporada"
+      ],
+      "costo": null,
+      "nota": "El permiso es personal e intransferible y hay que llevarlo encima: el guardaparque lo pide junto con el equipo y la captura."
+    },
+    "ambientes": [
+      {
+        "id": "lago_nahuel_huapi",
+        "nombre": "Lago Nahuel Huapi",
+        "temporada": {
+          "mesDesde": 10,
+          "mesHasta": 5,
+          "nombre": "Temporada extendida de lago"
+        },
+        "nota": "El cuerpo de agua principal tiene temporada extendida, del 1 de octubre al 31 de mayo."
+      },
+      {
+        "id": "lagos",
+        "nombre": "Lagos y lagunas del parque",
+        "temporada": {
+          "mesDesde": 11,
+          "mesHasta": 4,
+          "nombre": "Temporada general"
+        },
+        "nota": "Cada ambiente puede tener su propia excepción; varios son de devolución obligatoria."
+      },
+      {
+        "id": "rios",
+        "nombre": "Ríos y arroyos",
+        "temporada": {
+          "mesDesde": 11,
+          "mesHasta": 4,
+          "nombre": "Temporada general de ríos"
+        },
+        "nota": "Del 1 de noviembre al 30 de abril. En los arroyos chicos el impacto de la pesca es mucho mayor que en un lago grande."
+      }
+    ],
+    "modalidades": [
+      {
+        "id": "mosca",
+        "nombre": "Mosca",
+        "permitida": true,
+        "nota": "La modalidad de menor impacto: anzuelo sin rebaba y captura y devolución hacen que el pez sobreviva casi siempre."
+      },
+      {
+        "id": "spinning",
+        "nombre": "Spinning",
+        "permitida": true,
+        "nota": "Señuelo artificial recobrado. Permitida en general, con restricciones de anzuelo según el ambiente."
+      },
+      {
+        "id": "trolling",
+        "nombre": "Trolling",
+        "permitida": true,
+        "nota": "Arrastre desde embarcación, sólo donde está expresamente habilitado."
+      },
+      {
+        "id": "red",
+        "nombre": "Red",
+        "permitida": false,
+        "nota": "Prohibida para la pesca deportiva: no selecciona especie ni talla."
+      },
+      {
+        "id": "veneno",
+        "nombre": "Veneno o explosivos",
+        "permitida": false,
+        "nota": "Delito. Mata todo el tramo, no sólo lo que se lleva."
+      }
+    ],
+    "devolucion": {
+      "comoSeHace": "Mano mojada o sin tocar, anzuelo sin rebaba, el pez adentro del agua el mayor tiempo posible y nunca por las agallas. Un pez devuelto mal manipulado muere igual, sólo que más tarde y sin que nadie lo vea.",
+      "obligatoriaEn": "Varios cuerpos de agua del parque son de devolución obligatoria para salmónidos, y la lista cambia por temporada.",
+      "nativas": "Los peces nativos son fauna autóctona dentro de un parque nacional. En este juego se devuelven siempre, por la misma razón por la que no se caza un huemul."
+    },
+    "medidas": {
+      "salmonidoMaximoCm": 40,
+      "nota": "En el parque la normativa apunta a conservar ejemplares chicos y devolver los grandes, que son los mejores reproductores. El número exacto de piezas por día y las medidas por ambiente no pudieron verificarse contra el reglamento del año en curso.",
+      "cupoDiario": null
+    },
+    "especiesNativas": [
+      {
+        "id": "perca_criolla",
+        "nota": "La perca criolla es el pez nativo más común del Nahuel Huapi y uno de los más desplazados por los salmónidos."
+      },
+      {
+        "id": "puyen_grande",
+        "nota": "El puyén es la base de la cadena trófica del lago y el alimento de casi todo lo demás, incluidas las truchas introducidas."
+      },
+      {
+        "id": "puyen_chico",
+        "nota": "Galaxias maculatus, el mismo puyén que en Chile se conoce como pejerreycito. Usarlo como carnada viva está prohibido."
+      },
+      {
+        "id": "pejerrey_patagonico",
+        "nota": "Pejerrey patagónico, evaluado como vulnerable. Su declive se asocia a la introducción de especies y a la pesca."
+      }
+    ]
   }
 }
