@@ -45,6 +45,7 @@ npm run dem
 | `Tab` | Abrir el códice |
 | `T` | Acelerar el paso del tiempo |
 | `M` | Silenciar o activar el sonido |
+| `O` | Posproceso: completo / sin oclusión / crudo |
 | `F3` | Panel de diagnóstico |
 
 ---
@@ -328,6 +329,59 @@ al tronco en vez de al alcance de la copa, y en el coihue, que es el de copa má
 ancha, sobraban por casi un 15 %. Ahora el largo se deriva del alcance del
 follaje y del ángulo de elevación de la rama, así que toda rama termina dentro de
 la copa, que es donde no se la ve.
+
+#### Oclusión ambiental y corrección de color
+
+Era lo que más pesaba en el aspecto general: nada se apoyaba en nada. El pasto no
+oscurecía su base, las matas no se sombreaban entre sí y todo parecía calcomanía
+pegada sobre el terreno.
+
+**Por qué una oclusión propia y no la de three.** `GTAOPass` y `SSAOPass`
+dibujan la escena una segunda vez con `scene.overrideMaterial` para sacar
+normales y profundidad. Acá eso no sirve: el terreno no existe como geometría
+—se genera desplazando vértices en el shader— y un material impuesto desde
+afuera lo dibujaría plano a cota cero. Lo mismo con la vegetación instanciada y
+con las tarjetas recortadas por alfa, que serían rectángulos sólidos.
+
+La salida fue no dibujar nada de nuevo: se le engancha una textura de
+profundidad al objetivo del compositor, y esa profundidad es —por
+construcción— la de la escena tal como se dibujó. De ahí se reconstruye la
+posición de cada píxel y la normal por diferencias, se muestrea en espiral, se
+desenfoca en dos pasadas conscientes de la profundidad y recién ahí se mezcla con
+el color. La oclusión se calcula a media resolución: es de baja frecuencia y a
+resolución completa se paga cuatro veces por una diferencia que no se ve.
+
+Dos trampas costaron su rato y quedan documentadas en el código:
+
+- **`this.render = renderer` dentro de un `Pass` lo rompe.** `Pass` tiene un
+  método `render`, y asignarle el renderer lo pisa: el compositor falla con
+  `pass.render is not a function`.
+- **Los dos búferes del compositor comparten la textura de profundidad.** El
+  segundo objetivo sale de `clone()`, y el clon de una textura comparte su
+  `source`; como three indexa las texturas de GPU por `source`, ambos terminan
+  con la MISMA textura. Al leerla mientras se dibuja sobre el otro búfer, el
+  driver detecta un bucle de realimentación, **descarta el dibujo y la pantalla
+  queda negra**, avisando sólo con un `GL_INVALID_OPERATION` en la consola. La
+  solución es darle al segundo objetivo su propia textura de profundidad.
+
+La corrección de color agrega techo suave a las luces —el cielo nublado se iba a
+blanco puro—, curva en S, sombras frías contra luces cálidas, algo de saturación
+y un viñeteado apenas perceptible.
+
+Todo esto se apaga con `O`, en tres estados. La oclusión cuesta, y cuánto depende
+mucho de la placa; que se pueda comparar es más honesto que elegir por el
+jugador.
+
+#### Dos patrones que se veían y ya no
+
+- **La grilla del valle.** Desde el aire, el terreno se veía como un damero
+  regular de manchones verdes: era el mosaico de detalle repitiéndose. Se rompe
+  con una tercera lectura de la misma textura, con los ejes cambiados, un período
+  muy distinto y un corrimiento, que **modula** en vez de sumarse.
+- **El pastizal pegado.** La oclusión de pantalla resuelve el contacto de cerca
+  pero se desvanece a los pocos metros por costo. El sotobosque lleva ahora su
+  propia oclusión horneada: la base de cada mata recibe casi la mitad de luz que
+  la punta.
 
 #### El suelo de cerca
 

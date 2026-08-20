@@ -44,6 +44,7 @@ import { Pesca } from './systems/Pesca.js';
 import { Eventos } from './systems/Eventos.js';
 import { Clima } from './world/Clima.js';
 import { Audio } from './engine/Audio.js';
+import { PasoOclusion, PasoColor } from './engine/Posproceso.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -168,12 +169,24 @@ async function iniciar() {
   entrada.registrar('KeyF', () => { jugador.tercerPersona = !jugador.tercerPersona; });
   entrada.registrar('F3', () => document.getElementById('diag').classList.toggle('visible'));
   entrada.registrar('KeyT', () => tiempo.alternarVelocidad());
+  // Interruptor del posproceso: la oclusión ambiental cuesta, y cuánto depende
+  // mucho de la placa. Que se pueda apagar y comparar es más honesto que elegir
+  // por el jugador.
+  entrada.registrar('KeyO', () => {
+    const estados = ['completo', 'sin oclusión', 'crudo'];
+    modoPosproceso = (modoPosproceso + 1) % estados.length;
+    oclusion.enabled = modoPosproceso === 0;
+    color.enabled = modoPosproceso < 2;
+    hud.aviso(`Posproceso: ${estados[modoPosproceso]}`,
+      'O alterna oclusión ambiental y corrección de color');
+  });
   entrada.registrar('KeyM', () => {
     audio.iniciar();
     const callado = audio.alternarSilencio();
     hud.aviso(callado ? 'Sonido silenciado' : 'Sonido activado', 'M para alternar');
   });
 
+  let modoPosproceso = 0;
   const hud = new HUD(mundo, jugador, tiempo);
   const inventario = new Inventario(38);
   const saberes = new Saberes(historia, inventario);
@@ -301,14 +314,42 @@ async function iniciar() {
 
   // ── Compositor ────────────────────────────────────────────────────────────
   progreso(0.86, 'Ajustando la cámara…');
-  const compositor = new EffectComposer(render);
+  // El objetivo del compositor lleva textura de profundidad: es lo que permite
+  // calcular la oclusión ambiental sin volver a dibujar la escena. Vale la pena
+  // recordar por qué: el terreno y la vegetación se generan en el vértice, así
+  // que un pase con material impuesto los dibujaría planos.
+  const objetivoCompositor = new THREE.WebGLRenderTarget(innerWidth, innerHeight, {
+    type: THREE.HalfFloatType,
+    depthTexture: new THREE.DepthTexture(innerWidth, innerHeight, THREE.FloatType),
+    depthBuffer: true,
+    stencilBuffer: false,
+    samples: 0,   // con multimuestreo no se puede leer la profundidad
+  });
+  const compositor = new EffectComposer(render, objetivoCompositor);
+  // El compositor hace ping-pong entre dos objetivos y el segundo lo saca con
+  // clone(). El clon de una textura COMPARTE su `source`, y three indexa las
+  // texturas de GPU por source: los dos objetivos terminaban con la MISMA
+  // textura de profundidad. Al leerla mientras se dibuja sobre el otro búfer,
+  // el driver detecta un bucle de realimentación, descarta el dibujo y la
+  // pantalla queda negra, avisando sólo con un GL_INVALID_OPERATION en consola.
+  // Se le da al segundo objetivo su propia textura de profundidad.
+  compositor.renderTarget2.depthTexture =
+    new THREE.DepthTexture(innerWidth, innerHeight, THREE.FloatType);
   compositor.addPass(new RenderPass(escena, camara));
+
+  // Oclusión ambiental: nada se apoyaba en nada, y era el defecto que más
+  // pesaba. Va antes del resplandor para que no se ilumine lo que se ocluye.
+  const oclusion = new PasoOclusion(camara);
+  compositor.addPass(oclusion);
 
   const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.34, 0.62, 0.86);
   compositor.addPass(bloom);
 
   const fxaa = new ShaderPass(FXAAShader);
   compositor.addPass(fxaa);
+  // Corrección de color al final, ya con la imagen armada
+  const color = new PasoColor();
+  compositor.addPass(color);
   compositor.addPass(new OutputPass());
 
   function redimensionar() {
@@ -320,6 +361,7 @@ async function iniciar() {
     render.setSize(w, h);
     compositor.setPixelRatio(pr);
     compositor.setSize(w, h);
+    oclusion.setSize(w * pr, h * pr);
     fxaa.material.uniforms.resolution.value.set(1 / (w * pr), 1 / (h * pr));
     csm.updateFrustums();
   }
@@ -487,7 +529,7 @@ async function iniciar() {
     fauna: bichos, jugador, tiempo, compositor, csm, hud, codice, entrada,
     inventario, saberes, recoleccion, caza, audio,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
-    eventos, clima,
+    eventos, clima, oclusion, color,
   };
 
   if (import.meta.env.DEV) {

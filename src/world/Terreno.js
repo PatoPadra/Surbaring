@@ -455,7 +455,14 @@ export class Terreno {
         // acompaña al relieve: las lomas se secan y las hondonadas verdean.
         float relieve = texture2D(uTexDetalle, vMundo.xz / uDetallePeriodo).r;
         float relieveFino = texture2D(uTexDetalle, vMundo.xz / (uDetallePeriodo * 0.21)).r;
-        float parche = clamp(0.5 + relieve * 0.85 + relieveFino * 0.45 * cercania
+        // Tercera lectura del mismo mosaico, con los ejes cambiados, un período
+        // muy distinto y un corrimiento: rompe la correlación consigo mismo. Sin
+        // esto, desde el aire el valle entero se ve como una grilla regular de
+        // manchones verdes, que es el mosaico repitiéndose. Modula en vez de
+        // sumarse, así que apaga el patrón sin aplanar el color.
+        float relieveAncho = texture2D(uTexDetalle, vMundo.zx / (uDetallePeriodo * 3.7) + 0.37).r;
+        float parche = clamp(0.5 + relieve * 0.85 * (0.45 + relieveAncho * 1.1)
+                             + relieveFino * 0.45 * cercania
                              + (detalle - 0.5) * 0.7, 0.0, 1.0);
 
         vec3 pastoClaro = vegetacion * 1.62 + vec3(0.085, 0.092, 0.032);

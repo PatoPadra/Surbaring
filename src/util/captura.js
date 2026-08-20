@@ -130,18 +130,14 @@ export function instalarCapturas(S) {
     //
     // Leer el lienzo con toDataURL no sirve si el panel del navegador está
     // oculto: el framebuffer por defecto no se compone y salen desgarros
-    // horizontales. Y los objetivos del compositor son multimuestreados, así
-    // que readRenderTargetPixels devuelve cero sobre ellos sin resolver antes.
-    //
-    // Se dibuja entonces a un objetivo propio de una sola muestra. El precio es
-    // que la captura no lleva bloom ni antialias del compositor; a cambio es
-    // una ruta que no depende de que haya nada en pantalla.
+    // horizontales. Se dibuja entonces a un objetivo propio de una sola
+    // muestra, del que sí se puede leer con readRenderTargetPixels.
     if (!window.__objetivoCaptura || window.__objetivoCaptura.width !== ancho) {
       window.__objetivoCaptura?.dispose();
       window.__objetivoCaptura = new THREE.WebGLRenderTarget(ancho, alto, {
         format: THREE.RGBAFormat,
         type: THREE.UnsignedByteType,
-        colorSpace: THREE.SRGBColorSpace,
+        colorSpace: THREE.NoColorSpace,
         samples: 0,
       });
     }
@@ -150,9 +146,38 @@ export function instalarCapturas(S) {
     render.info.autoReset = false;
     render.info.reset();
     const previo = render.getRenderTarget();
+
+    // La captura pasa por el COMPOSITOR, no por un render pelado: si no, no se
+    // verían ni la oclusión ambiental ni la corrección de color, que son
+    // justamente lo que uno quiere revisar. Como el objetivo del compositor es
+    // de media precisión y no se puede leer en bytes, se copia su resultado a
+    // un objetivo de 8 bits con un cuadro a pantalla completa.
+    const alPrincipio = compositor.renderToScreen;
+    compositor.renderToScreen = false;
+    compositor.setSize(ancho, alto);
+    S.oclusion?.setSize(ancho, alto);
+    compositor.render();
+    compositor.renderToScreen = alPrincipio;
+
+    if (!window.__copiaCaptura) {
+      const mat = new THREE.MeshBasicMaterial({ map: null, depthTest: false, depthWrite: false });
+      const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+      const escenaCopia = new THREE.Scene();
+      escenaCopia.add(quad);
+      // La cámara mira el plano desde 1 m: con la cámara y el plano en z = 0 el
+      // cuadro cae justo sobre el plano cercano y la captura sale negra.
+      const camaraCopia = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+      camaraCopia.position.z = 1;
+      window.__copiaCaptura = { mat, escena: escenaCopia, camara: camaraCopia };
+    }
+    const copia = window.__copiaCaptura;
+    const salida = compositor.readBuffer.texture;
+    salida.colorSpace = THREE.NoColorSpace;
+    copia.mat.map = salida;
+    copia.mat.needsUpdate = true;
     render.setRenderTarget(objetivo);
     render.clear();
-    render.render(escena, camara);
+    render.render(copia.escena, copia.camara);
     render.setRenderTarget(previo);
 
     const pixeles = new Uint8Array(ancho * alto * 4);

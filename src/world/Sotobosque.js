@@ -226,6 +226,12 @@ export class Sotobosque {
         #include <color_fragment>
         diffuseColor.rgb *= vTinte;
 
+        // Oclusión propia de la mata: la base recibe mucho menos cielo que la
+        // punta. La oclusión de pantalla resuelve el contacto de cerca, pero se
+        // desvanece a los pocos metros por costo; sin esto, de media distancia
+        // el pastizal vuelve a verse como calcomanías pegadas al suelo.
+        diffuseColor.rgb *= mix(0.55, 1.0, clamp(vAlturaLocal / 0.6, 0.0, 1.0));
+
         // Otoño e invierno secan el pastizal
         float seco = clamp(1.0 - abs(uEstacion - 1.6), 0.0, 1.0);
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.52, 0.44, 0.24), seco * 0.42 * ${flexible.toFixed(1)});
