@@ -36,10 +36,17 @@ export class Fundicion {
     this.hornos = [];
     this.hechos = 0;
     this.alCambiar = null;
+    /** Recetas que aportan otros sistemas: el aserradero, el ahumadero, el molino. */
+    this.recetasExtra = [];
   }
 
   get definicionesHorno() { return this.d.hornos || []; }
-  get recetas() { return this.d.recetas || []; }
+  get recetas() { return [...(this.d.recetas || []), ...this.recetasExtra]; }
+
+  /** Registrar recetas de obras que procesan, para que el taller las muestre. */
+  agregarRecetas(recetas) {
+    this.recetasExtra.push(...recetas);
+  }
 
   hornoPorId(id) { return this.definicionesHorno.find(h => h.id === id); }
 

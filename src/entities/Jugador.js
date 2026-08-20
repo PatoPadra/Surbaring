@@ -268,9 +268,21 @@ export class Jugador {
     const gradiente = (this.posicion.y - 893) / 1000 * 6.5;   // isoterma real
     const ambiente = (clima?.temperatura ?? 12) - gradiente;
     const viento = clima?.vientoKmh ?? 15;
+    // Estar bajo techo no calienta el aire: corta el viento y la mojadura, que
+    // es de donde sale casi toda la pérdida de calor. Un parapeto de ramas ya
+    // frena buena parte del enfriamiento por viento, y ésa es la razón por la
+    // que se arma uno aunque no tape nada más.
+    const abrigo = this.abrigo || 0;
+    const vientoSentido = viento * (1 - 0.85 * abrigo);
+    // Un recinto cerrado además levanta la temperatura del aire de adentro con
+    // el propio cuerpo. Diez grados sobre el ambiente en el mejor caso es lo que
+    // hace que un refugio de montaña sirva: en la cumbre del Catedral no queda
+    // cómodo, queda apenas por encima del umbral de daño. Sin fuego, eso es
+    // exactamente lo que un refugio de piedra da.
+    const ambienteSentido = ambiente + 10 * abrigo;
     // Enfriamiento por viento: crece rápido al principio y después satura
-    const sensacion = ambiente - Math.min(11, Math.pow(viento, 0.62) * 0.9);
-    const mojado = this.enAgua || (clima?.lluvia ?? 0) > 0.2;
+    const sensacion = ambienteSentido - Math.min(11, Math.pow(vientoSentido, 0.62) * 0.9);
+    const mojado = this.enAgua || ((clima?.lluvia ?? 0) > 0.2 && abrigo < 0.5);
 
     // El cuerpo tiende al equilibrio con la sensación térmica, más lento si
     // está abrigado por el propio esfuerzo

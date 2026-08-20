@@ -37,6 +37,8 @@ import { Mineria } from './systems/Mineria.js';
 import { Fundicion } from './systems/Fundicion.js';
 import { Hornos } from './world/Hornos.js';
 import { Taller } from './ui/Taller.js';
+import { Construccion } from './systems/Construccion.js';
+import { Obras } from './world/Obras.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -182,6 +184,21 @@ async function iniciar() {
   const hornos = new Hornos();
   escena.add(hornos.grupo);
 
+  // Construcción: la misma ley leída por tercera vez. Lo efímero va a todos
+  // lados, lo permanente sólo fuera del área protegida, y el refugio de montaña
+  // entra por la excepción que la propia ley prevé para el uso público.
+  let datosConstruccion = null;
+  try {
+    datosConstruccion = (await import('./data/construccion.json')).default;
+  } catch {
+    console.warn('construccion.json ausente: el taller queda sin obras');
+  }
+  const construccion = new Construccion(datosConstruccion, {
+    inventario, saberes, jugador, tiempo, hud, limites, mundo, fundicion,
+  });
+  const obras = new Obras();
+  escena.add(obras.grupo);
+
   const recoleccion = new Recoleccion({
     mundo, jugador, vegetacion, sotobosque, fauna: bichos,
     inventario, saberes, codice, hud,
@@ -189,7 +206,16 @@ async function iniciar() {
   recoleccion.caza = caza;
   recoleccion.mineria = mineria;
 
-  const taller = new Taller({ fundicion, mineria, limites, jugador, inventario });
+  const taller = new Taller({ fundicion, mineria, construccion, limites, jugador, inventario });
+  const levantarOriginal = construccion.levantar.bind(construccion);
+  construccion.levantar = (obra) => {
+    const c = levantarOriginal(obra);
+    if (c) {
+      const nodo = obras.agregar(c);
+      nodo.traverse(o => { if (o.isMesh) conCSM(csm, o.material); });
+    }
+    return c;
+  };
   const construirOriginal = fundicion.construir.bind(fundicion);
   fundicion.construir = (def) => {
     const h = construirOriginal(def);
@@ -330,6 +356,9 @@ async function iniciar() {
     bichos.actualizar(dt, jugador, est, tiempo.segundosTotales);
     fundicion.actualizar();
     hornos.actualizar(tiempo.segundosTotales);
+    for (const caida of construccion.actualizar()) obras.quitar(caida);
+    // Lo que abriga alrededor entra en el modelo térmico del jugador
+    jugador.abrigo = construccion.abrigoEn(jugador.posicion.x, jugador.posicion.z);
 
     // Descubrimiento de lugares: dos veces por segundo alcanza y evita medir
     // distancias contra medio centenar de sitios en cada cuadro.
@@ -368,7 +397,7 @@ async function iniciar() {
     escena, camara, render, mundo, terreno, cielo, agua, vegetacion, sotobosque,
     fauna: bichos, jugador, tiempo, compositor, csm, hud, codice, entrada,
     inventario, saberes, recoleccion, caza,
-    limites, mineria, fundicion, hornos, taller,
+    limites, mineria, fundicion, hornos, taller, construccion, obras,
   };
 
   if (import.meta.env.DEV) {

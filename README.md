@@ -40,7 +40,7 @@ npm run dem
 | `Q` | Comer lo mejor del bolso |
 | `H` | Intentar cazar (fijate qué dice la ley) |
 | `R` | Extraer áridos o levantar chatarra (fijate dónde estás parado) |
-| `G` | Abrir el taller: hornos, fragua y cantera |
+| `G` | Abrir el taller: cantera, hornos, hornadas y obras |
 | `Tab` | Abrir el códice |
 | `T` | Acelerar el paso del tiempo |
 | `F3` | Panel de diagnóstico |
@@ -112,6 +112,11 @@ CONICET, SAREM, IUCN, SMN).
   prohíbe la minería en el Parque igual que la caza; en la Reserva Nacional
   puede autorizarse una cantera, y fuera del área protegida rige el dominio
   provincial y el Código de Minería.
+- **`src/data/construccion.json`** — 4 normas citadas, 4 categorías de obra
+  según jurisdicción, 11 obras y 4 recetas de aserradero, ahumadero y molino.
+  El mismo artículo 5 que prohíbe cazar y extraer prohíbe también construir,
+  con la excepción de las obras de uso público autorizadas: por eso existen los
+  refugios de montaña y no las cabañas particulares al lado.
 - **`src/data/historia.json`** — 6 eras, 32 eventos, 12 personajes,
   16 entradas de mitología, 30 topónimos en mapuzugun, 47 tecnologías
   encadenadas en un árbol de saberes y 20 sitios históricos.
@@ -178,6 +183,10 @@ Qué se colecciona y qué no es una decisión deliberada:
   (sensación 0,1 °C) va bajando la salud
 - Puntos de saber que se ganan conociendo, no matando, y desbloqueo de
   tecnologías que consume materiales del bolso
+- Cantera, fragua y hornos con cocción en horas del mundo, y once obras
+  construibles que abrigan, guardan y procesan material
+- Tres jurisdicciones dibujadas sobre el mapa —Parque, Reserva Nacional y
+  provincia— que cambian lo que la ley permite hacer en cada lugar
 
 ### Roto o a medio hacer
 
@@ -193,8 +202,8 @@ Qué se colecciona y qué no es una decisión deliberada:
    batería, motor, radio, sensor, panel o combustible nuclear, y ninguna de
    esas cosas sale de un bosque: para llegar ahí haría falta industria, no otro
    sistema de recolección.
-4. No hay todavía: construcción de refugios, audio, ni eventos naturales
-   (incendio, ceniza, viento blanco) más allá de los parámetros.
+4. No hay todavía: audio, ni eventos naturales (incendio, ceniza, viento
+   blanco) más allá de los parámetros.
 5. El sotobosque llega hasta 192 m. Más allá el suelo queda desnudo, aunque a
    esa distancia la niebla aérea ya disimula bastante el corte.
 
@@ -271,6 +280,54 @@ treinta horas se resuelve acelerando el reloj con `T`.
 Con esto el árbol pasó de 15 a 26 tecnologías con todos sus materiales al
 alcance.
 
+#### La construcción, que es la misma ley leída por tercera vez
+
+El artículo 5 de la Ley 22.351 vuelve a aparecer: también prohíbe levantar
+edificios e instalaciones dentro de un Parque Nacional, salvo los destinados al
+control del área y a la atención del turismo, autorizados por la Administración
+de Parques Nacionales. Esa excepción no es un detalle: **es la razón por la que
+existen los refugios de montaña del Nahuel Huapi** —Frey, Jakob, López, Otto
+Meiling, sostenidos en general por el Club Andino Bariloche— y por la que no
+existe una cabaña particular al lado, a la misma altura y con la misma vista.
+
+El juego lo pone en la mano del jugador con cuatro categorías, cada una con su
+jurisdicción:
+
+- **Refugio efímero** (parapeto, vivac): va a todos lados, incluida el área
+  núcleo, porque la ley no lo trata como obra. Es material caído y se desarma
+  solo a los tres días. Ese vencimiento no es una limitación técnica: es
+  exactamente la condición que lo hacía legal.
+- **Campamento** (toldo, troje): en reserva y afuera. Dentro del parque el
+  acampe sólo va en áreas habilitadas.
+- **Obra de uso público** (refugio de montaña): la excepción de la propia ley.
+  Pide la tecnología correspondiente y estar por encima de los 1.100 m, porque
+  un refugio se justifica donde el clima es un peligro.
+- **Construcción permanente** (galpón, cabaña, casa de piedra, aserradero,
+  ahumadero, molino): sólo fuera del área protegida.
+
+Las obras no son decorado: hacen tres cosas medibles.
+
+**Abrigan**, y eso entra en el modelo térmico. Estar bajo techo no calienta el
+aire de la montaña, pero corta el viento —de donde sale casi toda la pérdida de
+calor— y un recinto cerrado se sostiene por encima del ambiente. En la cumbre
+del Catedral, un día de 6 °C con viento de 45 km/h, el equilibrio del cuerpo a
+la intemperie cae a 33,3 °C y la salud se va a 63; un vivac lo lleva a 34,3 y un
+refugio de montaña a 35,1, apenas por encima del umbral de daño. Sin fuego, eso
+es exactamente lo que da un refugio de piedra. En la costa del lago, en cambio,
+un vivac alcanza para pasar de perder salud a estar seguro.
+
+**Guardan**: un troje aguanta 60 kg y un galpón 240. Con el bolso limitado a 38
+kg, poder dejar material sin cargarlo es lo que permite dejar de vivir en viaje.
+
+**Procesan**: el aserradero convierte troncos en tabla y poste, el ahumadero
+carne en charqui y el molino semilla en harina. Aparecen en el mismo taller que
+los hornos, porque para el jugador es todo cargar y esperar.
+
+Un detalle de vocabulario que cambió el juego: **la madera en bruto ya no
+satisface los pedidos de tabla ni de poste**. Antes cualquier rama servía para
+todo; ahora hace falta el aserradero. Es la diferencia entre construir y talar, y
+prefiero que esté en las reglas y no sólo en un texto.
+
 #### Sobre la suavidad del terreno
 
 El terreno tiene ondulaciones largas y suaves, y **no es un defecto**: es lo que
@@ -339,7 +396,9 @@ src/world/Limites.js    Parque, Reserva y jurisdicción provincial
 src/world/Hornos.js     Geometría de fogatas, carboneras, hornos y fraguas
 src/systems/Mineria.js  Áridos, chatarra y lo que la ley no deja sacar
 src/systems/Fundicion.js  Hornadas, fragua y tiempo de cocción
-src/ui/Taller.js        Panel de hornos, hornadas y cantera
+src/systems/Construccion.js  Obras, abrigo, depósito y lo efímero
+src/world/Obras.js      Geometría de refugios, cabañas y obras
+src/ui/Taller.js        Panel de cantera, hornos, hornadas y obras
 src/ui/Codice.js        Enciclopedia del parque
 src/ui/HUD.js           Interfaz
 ```

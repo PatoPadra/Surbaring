@@ -1,0 +1,433 @@
+{
+  "resumen": "Construir en un Parque Nacional argentino está tan regulado como cazar o extraer, y por el mismo artículo. La Ley 22.351 prohíbe en los Parques Nacionales levantar edificios e instalaciones, con la excepción de las obras destinadas al control y la vigilancia del área y a la atención del turismo, siempre autorizadas por la Administración de Parques Nacionales. Ésa es la puerta legal por la que existen los refugios de montaña del Nahuel Huapi, que no son cabañas particulares sino instalaciones de uso público operadas bajo permiso, en general por el Club Andino Bariloche. En las Reservas Nacionales el régimen admite asentamientos y obras bajo control de la autoridad, y fuera del área protegida rige el código urbano del municipio y la normativa provincial. Queda una categoría que la ley no trata como construcción y que es la que sostiene a cualquiera que ande por el campo: el refugio efímero. Un parapeto de ramas caídas y un vivac no son una obra, no modifican el paisaje y se desarman al irse. La regla que los gobierna no es de permisos sino de técnica: no se corta vegetación viva, no se mueve el suelo, no se hace fuego fuera de sitio habilitado y no se deja rastro. Acampar es otra cosa distinta de las dos anteriores: sólo se puede en las áreas de acampe habilitadas del parque, organizadas o agrestes, y no en cualquier lugar donde uno se canse.",
+  "normas": [
+    {
+      "id": "ley_22351_construccion",
+      "norma": "Ley 22.351, artículo 5",
+      "que": "Prohíbe en los Parques Nacionales la construcción de edificios e instalaciones, salvo las destinadas al control y vigilancia del área y a la atención del turismo, autorizadas por la Administración de Parques Nacionales.",
+      "consecuencia": "Una cabaña particular dentro del área núcleo no es un trámite difícil: es una obra que la ley no contempla. Un refugio de montaña de uso público sí, y por eso existen."
+    },
+    {
+      "id": "reservas_asentamiento",
+      "norma": "Ley 22.351, régimen de Reservas Nacionales",
+      "que": "Las Reservas Nacionales admiten asentamientos humanos y actividades productivas compatibles, bajo control y autorización de la autoridad de aplicación.",
+      "consecuencia": "Las villas, los hoteles y los centros de esquí del Nahuel Huapi están en Reserva Nacional, no en el área núcleo. Por eso pudieron construirse."
+    },
+    {
+      "id": "acampe",
+      "norma": "Reglamentación de uso público de la Administración de Parques Nacionales",
+      "que": "El acampe sólo está permitido en las áreas habilitadas, organizadas o agrestes, con las reglas de fuego, residuos y permanencia que fija cada seccional.",
+      "consecuencia": "Armar campamento donde uno se cansó no es una infracción menor: concentra impacto en lugares que no están preparados para recibirlo."
+    },
+    {
+      "id": "minimo_impacto",
+      "norma": "Técnicas de mínimo impacto",
+      "que": "No cortar vegetación viva, no remover el suelo, no hacer fuego fuera de sitio habilitado, acampar sobre superficie ya afectada y llevarse todos los residuos.",
+      "consecuencia": "Un refugio de emergencia hecho con ramas caídas y desarmado al irse no deja rastro. El mismo refugio hecho con ramas cortadas de un renoval de lenga deja un daño que tarda décadas."
+    }
+  ],
+  "categorias": [
+    {
+      "id": "efimera",
+      "nombre": "Refugio efímero",
+      "dondeSePuede": [
+        "parque",
+        "reserva",
+        "fuera"
+      ],
+      "explicacion": "No es una obra: es un abrigo armado con material caído y desarmado al irse. La ley no lo trata como construcción y la técnica de mínimo impacto lo permite en cualquier lado, siempre que no se corte nada vivo ni se mueva el suelo.",
+      "duracionDias": 3,
+      "tituloNegado": "Refugio efímero no admitido acá"
+    },
+    {
+      "id": "campamento",
+      "nombre": "Campamento",
+      "dondeSePuede": [
+        "reserva",
+        "fuera"
+      ],
+      "explicacion": "Toldo, carpa y estructuras livianas de estadía. Dentro del parque sólo en áreas de acampe habilitadas; en Reserva Nacional hay sitios preparados para eso.",
+      "duracionDias": 30,
+      "tituloNegado": "Acampe fuera de área habilitada"
+    },
+    {
+      "id": "uso_publico",
+      "nombre": "Obra de uso público autorizada",
+      "dondeSePuede": [
+        "parque",
+        "reserva",
+        "fuera"
+      ],
+      "explicacion": "La excepción que la propia ley prevé: instalaciones para el control del área y la atención del turismo, autorizadas por la Administración de Parques Nacionales. Los refugios de montaña del Nahuel Huapi entran por acá, y por eso se puede levantar uno en plena alta montaña mientras una cabaña particular a la misma altura sería ilegal.",
+      "requiereTecnologia": "refugio_montana",
+      "duracionDias": null,
+      "tituloNegado": "Obra de uso público no admitida acá"
+    },
+    {
+      "id": "permanente",
+      "nombre": "Construcción permanente",
+      "dondeSePuede": [
+        "fuera"
+      ],
+      "explicacion": "Vivienda, galpón, taller: obra fija con cimiento. Dentro del área núcleo la ley no la contempla; en Reserva Nacional requiere autorización de la Administración de Parques Nacionales, y fuera del área protegida rige el código urbano del municipio.",
+      "duracionDias": null,
+      "tituloNegado": "Construcción permanente no admitida acá"
+    }
+  ],
+  "obras": [
+    {
+      "id": "parapeto",
+      "nombre": "Parapeto de ramas",
+      "categoria": "efimera",
+      "requiereTecnologia": null,
+      "materiales": [
+        {
+          "recurso": "lena",
+          "cantidad": 8
+        },
+        {
+          "recurso": "fibra",
+          "cantidad": 3
+        }
+      ],
+      "abrigo": 0.35,
+      "descripcion": "Media pared de ramas caídas contra el viento dominante, que en la comarca viene del oeste. No tapa la lluvia, pero corta el enfriamiento por viento, que es lo que de verdad baja la temperatura del cuerpo.",
+      "nota": "Todo con material caído. Cortar ramas verdes de un renoval para armar esto haría más daño que dormir a la intemperie."
+    },
+    {
+      "id": "vivac_nieve",
+      "nombre": "Vivac",
+      "categoria": "efimera",
+      "requiereTecnologia": null,
+      "materiales": [
+        {
+          "recurso": "cana",
+          "cantidad": 6
+        },
+        {
+          "recurso": "cuero",
+          "cantidad": 2
+        },
+        {
+          "recurso": "fibra",
+          "cantidad": 2
+        }
+      ],
+      "abrigo": 0.55,
+      "descripcion": "Refugio cerrado de una noche: armazón de caña colihue y cubierta de cuero, apoyado contra una roca o un tronco caído. Es lo que separa una noche incómoda de una hipotermia.",
+      "nota": "El colihue seco abunda en el sotobosque y es la caña más útil del bosque andino."
+    },
+    {
+      "id": "toldo",
+      "nombre": "Toldo de cuero",
+      "categoria": "campamento",
+      "requiereTecnologia": "toldo_cuero",
+      "materiales": [
+        {
+          "recurso": "cuero",
+          "cantidad": 8
+        },
+        {
+          "recurso": "madera",
+          "cantidad": 6
+        },
+        {
+          "recurso": "tendon",
+          "cantidad": 3
+        }
+      ],
+      "abrigo": 0.7,
+      "descripcion": "La vivienda de los pueblos del área: cueros cosidos sobre varillas, desmontable y transportable. Se arma y se levanta siguiendo el ciclo del año, que es exactamente lo contrario de la casa fija.",
+      "nota": "Que la vivienda sea desmontable no es precariedad: es la respuesta correcta a un territorio que se recorre."
+    },
+    {
+      "id": "canasto",
+      "nombre": "Troje de junco",
+      "categoria": "campamento",
+      "requiereTecnologia": "cesteria_junco",
+      "materiales": [
+        {
+          "recurso": "junco",
+          "cantidad": 8
+        },
+        {
+          "recurso": "fibra",
+          "cantidad": 4
+        },
+        {
+          "recurso": "madera",
+          "cantidad": 2
+        }
+      ],
+      "guarda": 60,
+      "descripcion": "Depósito trenzado, levantado del suelo para que no le entre la humedad. Guardar lo que no se puede cargar es lo que permite dejar de andar con cuarenta kilos encima.",
+      "nota": "La cestería del área usa junco y colihue, y las piezas arqueológicas muestran técnicas que siguen vivas."
+    },
+    {
+      "id": "galpon",
+      "nombre": "Galpón de tablas",
+      "categoria": "permanente",
+      "requiereTecnologia": "construccion_troncos",
+      "materiales": [
+        {
+          "recurso": "tabla",
+          "cantidad": 12
+        },
+        {
+          "recurso": "clavo",
+          "cantidad": 10
+        },
+        {
+          "recurso": "chapa",
+          "cantidad": 4
+        }
+      ],
+      "guarda": 240,
+      "abrigo": 0.5,
+      "descripcion": "Cuatro paredes de tabla y techo de chapa acanalada. Es la construcción más repetida de la Patagonia rural, y la que hizo posible acumular sin cargar.",
+      "nota": "La chapa llegaba a lomo de mula porque es lo más liviano que aguanta el peso de la nieve."
+    },
+    {
+      "id": "cabana_troncos",
+      "nombre": "Cabaña de troncos",
+      "categoria": "permanente",
+      "requiereTecnologia": "construccion_troncos",
+      "materiales": [
+        {
+          "recurso": "tronco",
+          "cantidad": 12
+        },
+        {
+          "recurso": "clavo",
+          "cantidad": 10
+        },
+        {
+          "recurso": "tabla",
+          "cantidad": 8
+        }
+      ],
+      "abrigo": 0.85,
+      "guarda": 120,
+      "descripcion": "Troncos encastrados en las esquinas, techo a dos aguas y estufa. Es la casa de la colonización, y su forma la dicta la nieve: techo empinado para que no se acumule.",
+      "nota": "Se levanta con madera aserrada, no con árboles del parque: el aserradero es lo que separa una cabaña de una tala."
+    },
+    {
+      "id": "casa_piedra",
+      "nombre": "Casa de piedra y madera",
+      "categoria": "permanente",
+      "requiereTecnologia": "estilo_bustillo",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 20
+        },
+        {
+          "recurso": "tabla",
+          "cantidad": 15
+        },
+        {
+          "recurso": "clavo",
+          "cantidad": 12
+        },
+        {
+          "recurso": "vidrio",
+          "cantidad": 4
+        }
+      ],
+      "abrigo": 0.95,
+      "guarda": 200,
+      "descripcion": "Zócalo de piedra local a la vista, estructura de madera y techo empinado: la arquitectura que Parques Nacionales fijó para la región en los años treinta y que define la imagen de Bariloche, del Centro Cívico al Llao Llao.",
+      "nota": "El criterio era que el edificio pareciera salido del lugar: piedra del sitio, madera de la región y ninguna forma importada."
+    },
+    {
+      "id": "refugio_montana",
+      "nombre": "Refugio de montaña",
+      "categoria": "uso_publico",
+      "requiereTecnologia": "refugio_montana",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 12
+        },
+        {
+          "recurso": "tabla",
+          "cantidad": 8
+        },
+        {
+          "recurso": "chapa",
+          "cantidad": 6
+        }
+      ],
+      "abrigo": 1.0,
+      "guarda": 100,
+      "alturaMinimaM": 1100,
+      "descripcion": "Casa de piedra en alta montaña, abierta a quien llegue. Los refugios del Nahuel Huapi —Frey, Jakob, López, Otto Meiling— son instalaciones de uso público sostenidas en general por el Club Andino Bariloche, fundado en 1931, y existen por la excepción que la propia ley prevé para la atención del turismo.",
+      "nota": "Un refugio no es una casa particular con vista: es infraestructura pública de seguridad en montaña, y por eso se autoriza donde una cabaña no."
+    },
+    {
+      "id": "aserradero",
+      "nombre": "Aserradero",
+      "categoria": "permanente",
+      "requiereTecnologia": "aserradero_hidraulico",
+      "materiales": [
+        {
+          "recurso": "hierro",
+          "cantidad": 6
+        },
+        {
+          "recurso": "madera",
+          "cantidad": 8
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 6
+        }
+      ],
+      "procesa": true,
+      "descripcion": "Sierra movida por agua. Convierte troncos en tabla y poste, que es lo que permite construir en serio. También fue el motor de la deforestación previa al parque: la misma máquina que levanta una casa vacía un valle.",
+      "nota": "En el juego se alimenta de troncos caídos. En la historia real de la comarca no fue así, y ése es justamente el problema que el parque vino a frenar."
+    },
+    {
+      "id": "ahumadero",
+      "nombre": "Ahumadero",
+      "categoria": "permanente",
+      "requiereTecnologia": "ahumadero",
+      "materiales": [
+        {
+          "recurso": "tabla",
+          "cantidad": 6
+        },
+        {
+          "recurso": "lena",
+          "cantidad": 5
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 4
+        }
+      ],
+      "procesa": true,
+      "descripcion": "Cámara cerrada donde el humo frío seca y conserva la carne. Antes del frío artificial, ahumar y salar era la única forma de que la carne del otoño llegara a la primavera.",
+      "nota": "El ahumado no cocina: deshidrata y deja compuestos del humo que frenan la putrefacción."
+    },
+    {
+      "id": "molino",
+      "nombre": "Molino harinero",
+      "categoria": "permanente",
+      "requiereTecnologia": "molino_harinero",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 8
+        },
+        {
+          "recurso": "madera",
+          "cantidad": 8
+        },
+        {
+          "recurso": "hierro",
+          "cantidad": 2
+        }
+      ],
+      "procesa": true,
+      "descripcion": "Dos piedras y un salto de agua. Muele semilla y grano, y en la comarca también se molió piñón de pehuén y fruto seco.",
+      "nota": "Un molino fija población: alrededor de la piedra de moler se arma un pueblo."
+    }
+  ],
+  "recetas": [
+    {
+      "id": "aserrar_tabla",
+      "nombre": "Tablas",
+      "obra": "aserradero",
+      "entra": [
+        {
+          "recurso": "tronco",
+          "cantidad": 1
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "tabla",
+          "cantidad": 4
+        }
+      ],
+      "horas": 3,
+      "nota": "Un tronco caído da cuatro tablas y el resto se va en aserrín y despunte."
+    },
+    {
+      "id": "aserrar_poste",
+      "nombre": "Postes",
+      "obra": "aserradero",
+      "entra": [
+        {
+          "recurso": "tronco",
+          "cantidad": 1
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "poste",
+          "cantidad": 3
+        }
+      ],
+      "horas": 2,
+      "nota": "El poste de ciprés dura décadas enterrado, y es la unidad de medida del alambrado patagónico."
+    },
+    {
+      "id": "charqui",
+      "nombre": "Charqui",
+      "obra": "ahumadero",
+      "entra": [
+        {
+          "recurso": "carne",
+          "cantidad": 4
+        },
+        {
+          "recurso": "lena",
+          "cantidad": 3
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "charqui",
+          "cantidad": 3
+        }
+      ],
+      "horas": 18,
+      "nota": "Carne cortada fina, secada y ahumada. Pesa un tercio que la carne fresca y aguanta meses: es comida de viaje, no de mesa."
+    },
+    {
+      "id": "harina",
+      "nombre": "Harina",
+      "obra": "molino",
+      "entra": [
+        {
+          "recurso": "semilla",
+          "cantidad": 6
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "harina",
+          "cantidad": 4
+        }
+      ],
+      "horas": 4,
+      "nota": "En la comarca se molió trigo, pero también piñón de pehuén, que fue alimento base de los pueblos de la cordillera."
+    }
+  ],
+  "penalidades": {
+    "parque": {
+      "gravedad": "grave",
+      "titulo": "Construcción en un Parque Nacional",
+      "detalle": "La Ley 22.351 no contempla obras particulares dentro del área núcleo: sólo las destinadas al control del área y a la atención del turismo, autorizadas por la Administración de Parques Nacionales. Un refugio de uso público entra por ahí; una casa propia, no.",
+      "castigoSaber": 8
+    },
+    "reserva": {
+      "gravedad": "leve",
+      "titulo": "Obra sin autorización",
+      "detalle": "En Reserva Nacional se admiten asentamientos y obras, pero bajo autorización de la autoridad. Levantar sin permiso es lo que fue creando los conflictos de tierras que el parque todavía arrastra.",
+      "castigoSaber": 3
+    }
+  }
+}

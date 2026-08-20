@@ -23,8 +23,11 @@ export function normalizar(nombre) {
  * madera dura, y eso cuenta como "madera" para cualquier receta que la pida.
  */
 const EQUIVALE_A = {
-  madera_dura: ['madera', 'tabla', 'poste', 'tronco'],
-  madera_blanda: ['madera', 'lena', 'tabla'],
+  // La madera en bruto NO satisface pedidos de tabla ni de poste: para eso está
+  // el aserradero. Es la diferencia entre construir y talar, y el juego la
+  // sostiene en el vocabulario.
+  madera_dura: ['madera', 'tronco'],
+  madera_blanda: ['madera', 'lena'],
   cana: ['junco'],
   fruto: ['azucar'],
   asta: ['herramienta'],
@@ -87,6 +90,12 @@ export const RECURSOS = {
   chapa:         { nombre: 'Chapa', kg: 1.6, cat: 'material' },
   herramienta:   { nombre: 'Herramienta', kg: 1.3, cat: 'material' },
   hormigon:      { nombre: 'Hormigón', kg: 4.0, cat: 'material' },
+
+  // ── De aserradero, ahumadero y molino ────────────────────────────────────
+  tabla:         { nombre: 'Tabla', kg: 2.5, cat: 'material' },
+  poste:         { nombre: 'Poste', kg: 4.5, cat: 'material' },
+  charqui:       { nombre: 'Charqui', kg: 0.12, cat: 'alimento', nutre: 26, hidrata: 0 },
+  harina:        { nombre: 'Harina', kg: 0.5, cat: 'alimento', nutre: 14, hidrata: 0 },
 };
 
 /**

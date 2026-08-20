@@ -1,9 +1,10 @@
 /**
  * Taller — el panel de hornos y hornadas.
  *
- * Muestra tres cosas y en este orden, porque es el orden en que importan: en
- * qué jurisdicción está parado el jugador (de eso depende si puede encender
- * fuego o abrir cantera), qué puede levantar acá, y qué está cociéndose.
+ * Muestra las cosas en el orden en que importan: en qué jurisdicción está
+ * parado el jugador —de eso depende si puede encender fuego, abrir cantera o
+ * levantar una casa—, qué material hay bajo los pies, qué hornos puede armar,
+ * qué se está cociendo y qué obras admite este lugar.
  */
 
 const CSS = `
@@ -39,13 +40,14 @@ const CSS = `
 
 export class Taller {
   /**
-   * @param {object} deps {fundicion, mineria, limites, jugador, inventario}
+   * @param {object} deps {fundicion, mineria, construccion, limites, jugador, inventario}
    */
   constructor(deps) {
     Object.assign(this, deps);
     this.abierto = false;
     this._crear();
     this.fundicion.alCambiar = () => { if (this.abierto) this.pintar(); };
+    if (this.construccion) this.construccion.alCambiar = () => { if (this.abierto) this.pintar(); };
   }
 
   _crear() {
@@ -54,7 +56,7 @@ export class Taller {
     el.innerHTML = `
       <div class="tl-marco">
         <h2>Taller</h2>
-        <p class="tl-sub">Hornos, fragua y cantera</p>
+        <p class="tl-sub">Cantera, hornos, hornadas y obras</p>
         <div id="tl-cuerpo"></div>
         <footer>El tiempo de cocción corre en horas del mundo · <b>T</b> acelera el reloj · <b>G</b> cierra</footer>
       </div>`;
@@ -77,6 +79,17 @@ export class Taller {
       } else if (accion === 'retirar') {
         const horno = this.fundicion.cercano();
         if (horno) this.fundicion.retirar(horno);
+      } else if (accion === 'levantar') {
+        const obra = this.construccion.catalogo.find(o => o.id === id);
+        if (obra) this.construccion.levantar(obra);
+      } else if (accion === 'guardar') {
+        const p = this.jugador.posicion;
+        const dep = this.construccion.depositoCercano(p.x, p.z);
+        if (dep) this.construccion.guardarTodo(dep);
+      } else if (accion === 'sacar') {
+        const p = this.jugador.posicion;
+        const dep = this.construccion.depositoCercano(p.x, p.z);
+        if (dep) this.construccion.retirar(dep, id, dep.guardado.get(id) || 0);
       }
       this.pintar();
     });
@@ -105,7 +118,7 @@ export class Taller {
       <small>${vc.detalle || ''}</small></div>`;
 
     // ── Construir
-    html += '<h3>Construir acá</h3>';
+    html += '<h3>Hornos</h3>';
     for (const def of this.fundicion.definicionesHorno) {
       const falta = this.fundicion.faltaPara(def);
       const receta = (def.materiales || [])
@@ -146,7 +159,56 @@ export class Taller {
       }
     }
 
+    html += this._pintarObras(p, j);
     document.getElementById('tl-cuerpo').innerHTML = html;
+  }
+
+  /**
+   * Obras: qué se puede levantar acá y qué hay guardado a mano. Las que la
+   * jurisdicción no admite igual se listan, con el motivo escrito: enterarse de
+   * que una cabaña no va dentro del parque es parte del contenido.
+   */
+  _pintarObras(p, j) {
+    if (!this.construccion) return '';
+    let html = '<h3>Obras</h3>';
+
+    for (const obra of this.construccion.catalogo) {
+      const v = this.construccion.evaluar(obra, p.x, p.z);
+      const cat = this.construccion.categoriaDe(obra);
+      const receta = (obra.materiales || [])
+        .map(m => `${m.cantidad} ${m.recurso.replace(/_/g, ' ')}`).join(' · ');
+      const efectos = [
+        obra.abrigo ? `abriga ${Math.round(obra.abrigo * 100)} %` : null,
+        obra.guarda ? `guarda ${obra.guarda} kg` : null,
+        obra.procesa ? 'procesa material' : null,
+        cat.duracionDias ? `dura ${cat.duracionDias} días` : null,
+      ].filter(Boolean).join(' · ');
+
+      html += `<div class="tl-fila">
+        <b>${obra.nombre}</b>
+        <small>${obra.descripcion}<br>
+          <span style="opacity:.75">${receta}${efectos ? ' · ' + efectos : ''} · ${cat.nombre || ''}</span>
+          ${v.permitido ? '' : `<br><span style="opacity:.8;color:#d08a3a">${v.titulo}</span>`}</small>
+        <button data-accion="levantar" data-id="${obra.id}" ${v.permitido ? '' : 'disabled'}>Levantar</button>
+      </div>`;
+    }
+
+    const dep = this.construccion.depositoCercano(p.x, p.z);
+    if (dep) {
+      const guardado = [...dep.guardado.entries()];
+      html += `<h3>${dep.obra.nombre}</h3>
+        <div class="tl-fila">
+          <b>${this.construccion.pesoGuardado(dep).toFixed(1)} / ${dep.obra.guarda} kg</b>
+          <small>Lo que dejás acá no pesa en el bolso. Los alimentos se quedan con vos.</small>
+          <button data-accion="guardar">Guardar todo</button>
+        </div>`;
+      for (const [id, n] of guardado) {
+        html += `<div class="tl-fila"><b>${id.replace(/_/g, ' ')}</b>
+          <small>${n} unidades</small>
+          <button data-accion="sacar" data-id="${id}">Sacar</button></div>`;
+      }
+    }
+    return html;
   }
 
   _textoJurisdiccion(j) {
