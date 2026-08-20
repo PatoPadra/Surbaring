@@ -88,9 +88,26 @@ export class Terreno {
 
   _construirMalla() {
     // Malla base en [0,1]x[0,1]; el shader la escala y la desplaza por instancia.
+    //
+    // Además del tablero, lleva una FALDA: un anillo de vértices duplicados en
+    // el borde que el shader hunde unos metros. Sirve para tapar las grietas
+    // entre nodos de distinto nivel.
+    //
+    // Hacen falta porque el morphing de CDLOD sólo cierra la costura entre un
+    // nodo y su vecino de UN nivel de diferencia. El árbol no está balanceado a
+    // 2:1 —la distancia se mide a la caja del nodo, y en terreno montañoso dos
+    // nodos contiguos pueden diferir en dos niveles—, y ahí quedan rendijas por
+    // las que se ve el cielo. Se notaban como líneas blancas a trazos
+    // recorriendo el valle desde el aire. La falda no arregla la causa: la
+    // esconde, que es lo que hace todo el mundo, y cuesta 128 triángulos por
+    // nodo sobre 2.048.
     const verts = (RES + 1) * (RES + 1);
-    const pos = new Float32Array(verts * 3);
+    const bordeVerts = 4 * (RES + 1);
+    const total = verts + bordeVerts;
+    const pos = new Float32Array(total * 3);
+    const falda = new Float32Array(total);
     const idx = [];
+
     for (let j = 0; j <= RES; j++) {
       for (let i = 0; i <= RES; i++) {
         const k = j * (RES + 1) + i;
@@ -106,10 +123,42 @@ export class Terreno {
       }
     }
 
+    // Los cuatro bordes, cada uno con su tira de falda. El orden de los índices
+    // de cada cara sigue el del borde para que la falda mire hacia afuera.
+    // El devanado de cada tira decide hacia dónde mira su cara. Al revés, el
+    // culling se come la falda entera y las grietas siguen ahí: se ve idéntico
+    // a no tener falda, que fue exactamente lo que pasó la primera vez.
+    const bordes = [
+      { indice: (t) => t,                     invertir: true },   // z = 0
+      { indice: (t) => RES * (RES + 1) + t,   invertir: false },  // z = 1
+      { indice: (t) => t * (RES + 1),         invertir: false },  // x = 0
+      { indice: (t) => t * (RES + 1) + RES,   invertir: true },   // x = 1
+    ];
+
+    let siguiente = verts;
+    for (const borde of bordes) {
+      const primeroFalda = siguiente;
+      for (let t = 0; t <= RES; t++) {
+        const origen = borde.indice(t);
+        const destino = siguiente++;
+        pos[destino * 3] = pos[origen * 3];
+        pos[destino * 3 + 1] = 0;
+        pos[destino * 3 + 2] = pos[origen * 3 + 2];
+        falda[destino] = 1;
+      }
+      for (let t = 0; t < RES; t++) {
+        const a = borde.indice(t), b = borde.indice(t + 1);
+        const c = primeroFalda + t, d = primeroFalda + t + 1;
+        if (borde.invertir) idx.push(a, b, c, b, d, c);
+        else idx.push(a, c, b, b, c, d);
+      }
+    }
+
     const geo = new THREE.InstancedBufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(verts * 3).fill(0), 3));
-    geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(verts * 2), 2));
+    geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(total * 3).fill(0), 3));
+    geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(total * 2), 2));
+    geo.setAttribute('aFalda', new THREE.BufferAttribute(falda, 1));
     geo.setIndex(idx);
     // El culling lo hace la selección del cuadrantoárbol, no three.
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e9);
@@ -140,6 +189,7 @@ export class Terreno {
       Object.assign(shader.uniforms, this.uniformes);
       shader.vertexShader = `
         attribute vec4 iNodo;
+        attribute float aFalda;
         uniform sampler2D uTexAltura;
         uniform sampler2D uTexCobertura;
         uniform sampler2D uTexDetalle;
@@ -147,7 +197,7 @@ export class Terreno {
         uniform float uResGrilla;
         uniform float uDetallePeriodo;
         uniform float uDetalleAmplitud;
-        uniform vec2 uCamXZ;
+        uniform vec3 uCam;
       ` + shader.vertexShader;
       shader.vertexShader = shader.vertexShader.replace(
         '#include <begin_vertex>',
@@ -157,7 +207,10 @@ export class Terreno {
         float nodoRango = iNodo.w;
         vec2 rejilla = position.xz;
         vec2 mundoXZ = nodoOrigen + rejilla * nodoEscala;
-        float dist = distance(mundoXZ, uCamXZ);
+        // Mismo criterio 3D que el material visible: si difieren, la sombra la
+        // proyecta una malla distinta de la que se ve.
+        float hCruda = texture2D(uTexAltura, mundoXZ / uTamanoMundo + 0.5).r;
+        float dist = distance(vec3(mundoXZ.x, hCruda, mundoXZ.y), uCam);
         float k = clamp((dist / nodoRango - 0.62) / 0.30, 0.0, 1.0);
         vec2 frac = fract(rejilla * uResGrilla * 0.5) * 2.0 / uResGrilla;
         mundoXZ -= frac * nodoEscala * k;
@@ -169,6 +222,7 @@ export class Terreno {
           h += texture2D(uTexDetalle, mundoXZ / uDetallePeriodo).r
              * uDetalleAmplitud * enTierra * nitidez;
         }
+        h -= aFalda * nodoEscala * 0.05;
         vec3 transformed = vec3(mundoXZ.x, h, mundoXZ.y);
         `
       );
@@ -190,7 +244,10 @@ export class Terreno {
       uTexCobertura: { value: m.texCobertura },
       uTamanoMundo: { value: m.tamano },
       uResGrilla: { value: RES },
-      uCamXZ: { value: new THREE.Vector2() },
+      // Posición 3D de la cámara del jugador. En el paso de sombras
+      // `cameraPosition` es la de la luz, así que el morphing necesita su
+      // propio uniforme o las sombras se calculan con otro nivel de detalle.
+      uCam: { value: new THREE.Vector3() },
       uTexDetalle: { value: m.texDetalle },
       uDetallePeriodo: { value: DETALLE.periodoM },
       uDetalleAmplitud: { value: DETALLE.amplitudM },
@@ -208,6 +265,7 @@ export class Terreno {
 
       shader.vertexShader = `
         attribute vec4 iNodo;            // xz = esquina del nodo, z = escala, w = rango de morphing
+        attribute float aFalda;          // 1 en el anillo que tapa las costuras
         uniform sampler2D uTexAltura;
         uniform sampler2D uTexCobertura;
         uniform sampler2D uTexDetalle;
@@ -215,7 +273,7 @@ export class Terreno {
         uniform float uResGrilla;
         uniform float uDetallePeriodo;
         uniform float uDetalleAmplitud;
-        uniform vec2 uCamXZ;
+        uniform vec3 uCam;
         varying vec3 vMundo;
         varying float vMorph;
 
@@ -250,7 +308,16 @@ export class Terreno {
         vec2 mundoXZ = nodoOrigen + rejilla * nodoEscala;
 
         // Factor de morphing: 0 en el interior del nodo, 1 al borde de su alcance.
-        float dist = distance(mundoXZ, uCamXZ);
+        //
+        // La distancia tiene que medirse EN 3D, igual que la que usa la
+        // selección de nodos en la CPU. Midiéndola en planta funcionaba a ras
+        // del suelo, donde ambas coinciden, y se rompía desde el aire: a 200 m
+        // de altura un nodo justo debajo está a 200 m para la selección y a 0 m
+        // para el shader, así que el nodo fino llegaba a su borde sin terminar
+        // de transformarse y aparecían grietas rectangulares por donde se veía
+        // el cielo. Cuesta una lectura de altura de más y las cierra.
+        float hCruda = leerAltura(mundoXZ) + leerDetalle(mundoXZ, nodoEscala / uResGrilla);
+        float dist = distance(vec3(mundoXZ.x, hCruda, mundoXZ.y), uCam);
         float k = clamp((dist / nodoRango - 0.62) / 0.30, 0.0, 1.0);
         vMorph = k;
 
@@ -260,6 +327,9 @@ export class Terreno {
         mundoXZ -= frac * nodoEscala * k;
 
         float h = leerAltura(mundoXZ) + leerDetalle(mundoXZ, nodoEscala / uResGrilla);
+        // La falda baja en proporción al tamaño del nodo: la grieta que puede
+        // abrirse es del orden del error de altura entre dos niveles.
+        h -= aFalda * nodoEscala * 0.05;
         vec3 transformed = vec3(mundoXZ.x, h, mundoXZ.y);
         vMundo = transformed;
         `
@@ -528,7 +598,7 @@ export class Terreno {
     this._matriz.multiplyMatrices(camara.projectionMatrix, camara.matrixWorldInverse);
     this._frustum.setFromProjectionMatrix(this._matriz);
     camara.getWorldPosition(this._camPos);
-    this.uniformes.uCamXZ.value.set(this._camPos.x, this._camPos.z);
+    this.uniformes.uCam.value.copy(this._camPos);
 
     this._n = 0;
     const raiz = this.mundo.tamano;

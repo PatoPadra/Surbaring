@@ -823,10 +823,16 @@ function construirPlanta(esp) {
   for (let i = 0; i < nRamas; i++) {
     const t = 0.42 + (i / Math.max(1, nRamas)) * 0.55;
     const ang = (i / nRamas) * Math.PI * 2 + Math.random() * 0.9;
-    const largo = alturaTronco * (0.42 + Math.random() * 0.4) * (arquetipo === 'copa_ancha' ? 1.5 : 1);
+    // El largo se deriva del alcance de la copa, no del tronco. Antes eran
+    // proporcionales al tronco y en el coihue sobrepasaban el follaje: quedaban
+    // patas de araña oscuras asomando contra el cielo, que era lo que más
+    // delataba a los árboles de lejos. Una rama que termina dentro de la copa
+    // no se ve, y ésa es exactamente la idea.
+    const elevacion = arquetipo === 'copa_ancha' ? 0.95 : 0.55;
+    const alcanceCopa = alturaRef * (arquetipo === 'copa_ancha' ? 0.30 : 0.16);
+    const largo = (alcanceCopa / Math.max(0.3, Math.sin(elevacion))) * (0.7 + Math.random() * 0.5);
     const g = new THREE.CylinderGeometry(radioBase * 0.10, radioBase * 0.26, largo, 4, 1);
     g.translate(0, largo / 2, 0);
-    const elevacion = arquetipo === 'copa_ancha' ? 0.95 : 0.55;
     g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, 0, -elevacion)));
     g.applyMatrix4(new THREE.Matrix4().makeRotationY(ang));
     g.translate(0, alturaTronco * t, 0);

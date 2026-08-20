@@ -292,6 +292,40 @@ la escena. El terreno se come las partículas y no se ve caer nada, sin ningún
 error en consola. Es el mismo patrón que los otros tres defectos de shader de más
 abajo: **un shader mal integrado no lanza excepciones, sólo desaparece**.
 
+#### Las grietas del terreno, y por qué la primera solución no funcionó
+
+Desde el aire aparecían líneas blancas a trazos recorriendo el valle, con
+quiebres en ángulo recto: grietas de un píxel entre nodos del terreno, por las
+que se veía el cielo. El morphing de CDLOD sólo cierra la costura entre un nodo y
+su vecino de **un** nivel de diferencia, y este árbol no está balanceado a 2:1
+—la distancia se mide contra la caja del nodo, y en terreno montañoso dos nodos
+contiguos pueden diferir en dos niveles—.
+
+La solución es una falda: un anillo de vértices duplicados en el borde de cada
+nodo, hundido en proporción a su tamaño, que tapa la rendija. Cuesta 768
+triángulos por nodo sobre 6.144.
+
+Lo que vale contar es que **la falda no funcionó la primera vez**, y el resultado
+era exactamente idéntico a no tenerla: el devanado de las tiras estaba invertido
+y el culling de caras traseras se las comía enteras. Se descubrió poniendo el
+material en `DoubleSide` un momento: las grietas desaparecieron, y eso señalaba
+al devanado y no a la geometría. Antes de eso se había probado —y descartado—
+que fueran plantas, que fuera el agua, y que fuera la distancia de morphing
+medida en planta en vez de en 3D. Esa última no era la causa, pero el arreglo se
+dejó igual: la selección de nodos mide en 3D y el shader medía en planta, y desde
+el aire eso hacía que el morphing terminara en otro lado. También se le dio su
+propio uniforme de cámara, porque en el paso de sombras `cameraPosition` es la de
+la luz.
+
+#### Las ramas que sobresalían de la copa
+
+Los árboles de lejos mostraban patas de araña: ramas oscuras y rectas que
+pasaban de largo el follaje y se recortaban contra el cielo. Eran proporcionales
+al tronco en vez de al alcance de la copa, y en el coihue, que es el de copa más
+ancha, sobraban por casi un 15 %. Ahora el largo se deriva del alcance del
+follaje y del ángulo de elevación de la rama, así que toda rama termina dentro de
+la copa, que es donde no se la ve.
+
 #### El suelo de cerca
 
 El terreno tenía detalle en tres escalas —manchones de 48 m, matas de 3,5 m y
