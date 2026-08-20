@@ -41,7 +41,9 @@ export function instalarCapturas(S) {
 
     if (o.lat !== undefined && o.lon !== undefined) {
       const { x, z } = mundo.aMundo(o.lat, o.lon);
-      jugador.posicion.set(x, mundo.alturaEn(x, z) + (o.altura ?? 1.8), z);
+      // Sobre un lago la referencia es la superficie, no el fondo: si no, una
+      // captura pedida a dos metros salía desde treinta metros bajo el agua.
+      jugador.posicion.set(x, mundo.superficieEn(x, z) + (o.altura ?? 1.8), z);
       jugador.velocidad.set(0, 0, 0);
     }
     if (o.rumbo !== undefined) jugador.giro = o.rumbo * Math.PI / 180;
@@ -152,6 +154,11 @@ export function instalarCapturas(S) {
     // justamente lo que uno quiere revisar. Como el objetivo del compositor es
     // de media precisión y no se puede leer en bytes, se copia su resultado a
     // un objetivo de 8 bits con un cuadro a pantalla completa.
+    // El espejo del lago también en las capturas: si no, la revisión visual
+    // mira un agua distinta de la que ve el jugador.
+    agua.dibujarReflejo(render, escena, camara);
+    agua.dibujarReflejo(render, escena, camara);   // dibuja un cuadro sí y uno no
+
     const alPrincipio = compositor.renderToScreen;
     compositor.renderToScreen = false;
     compositor.setSize(ancho, alto);

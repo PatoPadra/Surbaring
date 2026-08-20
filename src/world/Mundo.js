@@ -94,6 +94,9 @@ export class Mundo {
       this.cauce[k] = pxRios[k * 4];            // gris en R
     }
 
+    alProgresar(0.18, 'Excavando el fondo de los lagos…');
+    this._excavarLagos();
+
     alProgresar(0.2, 'Calculando pendientes…');
     this._calcularPendiente();
     alProgresar(0.26, 'Modelando el gradiente de humedad…');
@@ -104,6 +107,81 @@ export class Mundo {
     this._construirTexturas();
     alProgresar(0.36, 'Terreno listo.');
     return this;
+  }
+
+  /**
+   * Batimetría: le da fondo a los lagos.
+   *
+   * El DEM Terrarium trae los lagos aplanados a la cota de su superficie —es un
+   * modelo de elevación del terreno, no de la cubeta— y eso tenía una
+   * consecuencia que se veía y no se entendía: el plano de agua quedaba a la
+   * misma altura que el lecho, peleaban por el mismo píxel de profundidad y
+   * ganaba el terreno. El Nahuel Huapi se veía como una playa de barro. El
+   * color por absorción tampoco podía funcionar: con cero metros de agua
+   * encima, Beer-Lambert no tiene nada que absorber.
+   *
+   * No hay batimetría real en el dataset, así que se estima por distancia a la
+   * orilla, que es lo que hace la naturaleza en un lago glaciario: pared
+   * empinada cerca de la costa y una cubeta profunda en el medio. Se calcula
+   * con un barrido de distancia por celdas —dos pasadas, como una transformada
+   * de distancia de chanfle— y se hunde el lecho con una raíz, para que la
+   * caída sea rápida junto a la orilla y se vaya aplanando hacia el centro.
+   */
+  _excavarLagos() {
+    const N = this.N, m = this.metrosPorTexel;
+    const INF = 1e9;
+    const dist = new Float32Array(N * N);
+
+    // Distancia a la orilla, en celdas. Chanfle 3×3: la diagonal cuesta √2.
+    for (let k = 0; k < N * N; k++) dist[k] = this.agua[k] > 127 ? INF : 0;
+    const D = 1, DD = Math.SQRT2;
+    for (let j = 0; j < N; j++) {
+      for (let i = 0; i < N; i++) {
+        const k = j * N + i;
+        if (dist[k] === 0) continue;
+        let d = dist[k];
+        if (i > 0) d = Math.min(d, dist[k - 1] + D);
+        if (j > 0) d = Math.min(d, dist[k - N] + D);
+        if (i > 0 && j > 0) d = Math.min(d, dist[k - N - 1] + DD);
+        if (i < N - 1 && j > 0) d = Math.min(d, dist[k - N + 1] + DD);
+        dist[k] = d;
+      }
+    }
+    for (let j = N - 1; j >= 0; j--) {
+      for (let i = N - 1; i >= 0; i--) {
+        const k = j * N + i;
+        if (dist[k] === 0) continue;
+        let d = dist[k];
+        if (i < N - 1) d = Math.min(d, dist[k + 1] + D);
+        if (j < N - 1) d = Math.min(d, dist[k + N] + D);
+        if (i < N - 1 && j < N - 1) d = Math.min(d, dist[k + N + 1] + DD);
+        if (i > 0 && j < N - 1) d = Math.min(d, dist[k + N - 1] + DD);
+        dist[k] = d;
+      }
+    }
+
+    // Profundidad máxima por cuerpo, de los datos: el Nahuel Huapi tiene 464 m
+    // medidos, pero para el ojo y para la física alcanza con una cubeta
+    // creíble, y una fosa de 400 m debajo del jugador no aporta nada.
+    const PROF_MAX = 120;
+    // Metros de fondo por raíz de metro de distancia a la costa. Con 3,4 el
+    // lago llega a 60 m a unos 300 m de la orilla, que es aproximadamente el
+    // perfil real de un lago de origen glaciario.
+    const CAIDA = 3.4;
+
+    this.profundidadLago = new Float32Array(N * N);
+    // La cota de la superficie, que es la que traía el DEM: hace falta guardarla
+    // porque a partir de acá `altura` es el fondo, y media docena de sistemas
+    // —la física de nado, los cardúmenes, el mapa— preguntan por la superficie.
+    this.superficieLago = new Float32Array(N * N);
+    for (let k = 0; k < N * N; k++) {
+      if (this.agua[k] <= 127) continue;
+      const dm = dist[k] * m;
+      const prof = Math.min(PROF_MAX, CAIDA * Math.sqrt(dm));
+      this.profundidadLago[k] = prof;
+      this.superficieLago[k] = this.altura[k];
+      this.altura[k] -= prof;
+    }
   }
 
   // ── Consultas ─────────────────────────────────────────────────────────────
@@ -173,10 +251,20 @@ export class Mundo {
     return k < 0 ? 0.5 : this.humedad[k];
   }
 
+  /**
+   * Altura de la superficie: la del terreno, salvo sobre un lago, donde el
+   * terreno es ahora el fondo y lo que se pisa —o se nada— es el espejo.
+   */
+  superficieEn(x, z) {
+    const k = this.indiceDe(x, z);
+    if (k >= 0 && this.agua[k] > 127 && this.superficieLago) return this.superficieLago[k];
+    return this.alturaEn(x, z);
+  }
+
   /** Cota del lago que cubre este punto, o null. */
   cotaLagoEn(x, z) {
     if (!this.esAgua(x, z)) return null;
-    const h = this.alturaEn(x, z);
+    const h = this.superficieEn(x, z);
     let mejor = null, mejorD = Infinity;
     for (const l of this.meta.lagos) {
       const d = Math.abs(l.cota - h);
@@ -381,8 +469,19 @@ export class Mundo {
   _construirTexturas() {
     const N = this.N;
 
-    // Altura como float de un canal: el shader la lee con filtrado lineal.
-    this.texAltura = new THREE.DataTexture(this.altura, N, N, THREE.RedFormat, THREE.FloatType);
+    // Altura en dos canales: R el terreno —que dentro de un lago es el fondo— y
+    // G la superficie, que sobre el agua es la cota del espejo y fuera de ella
+    // repite la del terreno. El agua necesita las dos: la primera para saber
+    // cuánto absorbe la columna y la segunda para saber cuál de los cuatro
+    // planos de lago le corresponde a este punto. Quien sólo quiere el relieve
+    // sigue leyendo el canal rojo y no se entera.
+    const alt = new Float32Array(N * N * 2);
+    for (let k = 0; k < N * N; k++) {
+      alt[k * 2] = this.altura[k];
+      alt[k * 2 + 1] = this.superficieLago && this.superficieLago[k] > 0
+        ? this.superficieLago[k] : this.altura[k];
+    }
+    this.texAltura = new THREE.DataTexture(alt, N, N, THREE.RGFormat, THREE.FloatType);
     this.texAltura.magFilter = THREE.LinearFilter;
     this.texAltura.minFilter = THREE.LinearFilter;
     this.texAltura.wrapS = this.texAltura.wrapT = THREE.ClampToEdgeWrapping;

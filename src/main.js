@@ -396,7 +396,7 @@ async function iniciar() {
   // corresponde, y después se mide el cuadro de verdad y se ajusta solo.
   const calidad = new Calidad({
     render, compositor, camara, csm, escena, oclusion, color,
-    resplandor: bloom, suavizado: fxaa, vegetacion, sotobosque,
+    resplandor: bloom, suavizado: fxaa, vegetacion, sotobosque, agua,
   });
   calidad.nivel = calidad.nivelDetectado;
   calidad.alCambiar = (p) => {
@@ -602,6 +602,10 @@ async function iniciar() {
 
     // El domo del cielo acompaña a la cámara
     cielo.malla.position.copy(camara.position);
+
+    // El espejo del lago se dibuja antes del pase principal: necesita la escena
+    // ya actualizada y la superficie del agua todavía sin dibujar.
+    agua.dibujarReflejo(render, escena, camara);
 
     compositor.render();
 

@@ -401,10 +401,15 @@ function hornearImpostor(render, geometria, mapaFollaje) {
   escena.add(sol);
   escena.add(new THREE.AmbientLight(0xffffff, 1.05));
 
-  // Atlas de vistas: el árbol se hornea desde ocho azimuts repartidos alrededor
-  // del eje vertical, en una grilla de 4 × 2. Con una sola vista, al rodear un
-  // árbol lejano su perfil no cambiaba nunca y se notaba que era un cartel.
-  const COLS = 4, FILAS = 2;
+  // Atlas de vistas: el árbol se hornea desde dieciséis azimuts repartidos
+  // alrededor del eje vertical, en una grilla de 4 × 4. Con una sola vista, al
+  // rodear un árbol lejano su perfil no cambiaba nunca y se notaba que era un
+  // cartel. Con ocho el perfil ya cambiaba, pero el relevo entre vecinas caía
+  // cada 45° y en el barrido de la cámara se notaba el pestañeo del cruce.
+  // Dieciséis lo bajan a 22,5°: el salto queda por debajo de lo que el ojo
+  // sigue. El atlas pasa de 512×384 a 512×768, que se paga una sola vez al
+  // hornear y no cuesta nada por cuadro.
+  const COLS = 4, FILAS = 4;
   const VISTAS = COLS * FILAS;
   const anchoTeja = 128, altoTeja = 192;
 
@@ -739,7 +744,22 @@ function tarjetasFollaje({ centro, radioH, radioV, cantidad, tamano, color, vari
     const uw = 0.30 + Math.random() * 0.14;
     const uvs = [[u0, v0], [u0 + uw, v0], [u0 + uw, v0 + uw], [u0, v0 + uw]];
 
-    const brillo = 1 + (Math.random() - 0.5) * variacion * 2;
+    // Oclusión interna de la copa. Hasta acá todas las tarjetas se iluminaban
+    // igual, y una copa donde el corazón brilla tanto como la superficie no se
+    // lee como volumen sino como una nube de calcomanías. Un árbol real es
+    // oscuro por dentro: las hojas de afuera le hacen sombra a las de adentro,
+    // y esa sombra tiene dirección —viene de arriba—, así que la panza de la
+    // copa queda más apagada que la corona aunque las dos estén en el borde.
+    //
+    // Se hornea en el color del vértice: cuesta cero por cuadro, viaja gratis
+    // al impostor —que se dibuja con estos mismos colores— y no depende de la
+    // hora del día, que es justamente lo que se le pide a una oclusión.
+    const profundidad = 1.0 - rad;                       // 0 en la piel, 1 en el corazón
+    const alturaRel = (py - centro.y) / (radioV || 1);   // -1 abajo, +1 arriba
+    const ao = (1 - profundidad * profundidad * 0.62)
+             * (0.80 + 0.20 * (alturaRel * 0.5 + 0.5));
+
+    const brillo = (1 + (Math.random() - 0.5) * variacion * 2) * ao;
     c.copy(color).multiplyScalar(brillo);
 
     for (let k = 0; k < 4; k++) {

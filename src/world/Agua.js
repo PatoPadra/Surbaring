@@ -52,7 +52,17 @@ export class Agua {
       uFuerzaOleaje: { value: 0.35 },
       uFactorDia: { value: 1 },
       uCamara: { value: new THREE.Vector3() },
+      // Reflejo planar: la textura, la matriz que proyecta el mundo sobre ella
+      // y un interruptor. Cuando vale 0 el fragmento cae al reflejo del cielo
+      // calculado a mano, que es lo que había antes y sigue siendo el respaldo.
+      uReflejo: { value: null },
+      uMatrizReflejo: { value: new THREE.Matrix4() },
     };
+
+    // Espejo de agua: apagado hasta que alguien llame a `prepararReflejo`.
+    this.reflejo = null;
+    this.cotaReflejada = null;
+    this._cuadro = 0;
 
     // Una sola geometría radial compartida por todas las cotas
     this.geometria = construirGrillaRadial(0.6, 26000, 150, 180);
@@ -68,6 +78,8 @@ export class Agua {
     const uniformes = {
       ...this.uniformesComunes,
       uCota: { value: nivel.cota },
+      // Propio y no compartido: sólo la cota que se está mirando usa el espejo
+      uFuerzaReflejo: { value: 0 },
     };
 
     // La niebla se resuelve dentro del shader, así que no dejamos que three
@@ -130,8 +142,176 @@ export class Agua {
     }
   }
 
+  // ── Reflejo planar ────────────────────────────────────────────────────────
+
+  /**
+   * Enciende el espejo. `escala` es la fracción de la resolución de pantalla a
+   * la que se dibuja el reflejo: 0 lo apaga.
+   *
+   * Por qué un reflejo de verdad y no más cielo procedural: en un lago de
+   * montaña lo que más se ve reflejado no es el cielo sino el cerro de
+   * enfrente. El agua devolvía un degradé azul incluso con el Catedral al
+   * frente, y eso —más que las olas o la espuma— era lo que la delataba como
+   * una superficie pintada.
+   *
+   * El costo es dibujar la escena dos veces, así que se abarata por todos
+   * lados: a una fracción de la resolución, un cuadro sí y uno no, y sólo para
+   * una cota de lago —la que el jugador está mirando—. Las demás siguen con el
+   * reflejo del cielo, que a la distancia a la que quedan no se distingue.
+   */
+  prepararReflejo(render, escala = 0.45) {
+    if (!escala) {
+      this.reflejo?.objetivo.dispose();
+      this.reflejo = null;
+      this.uniformesComunes.uReflejo.value = null;
+      for (const m of this.mallas) m.material.uniforms.uFuerzaReflejo.value = 0;
+      return;
+    }
+    const tam = new THREE.Vector2();
+    render.getSize(tam);
+    const ancho = Math.max(64, Math.round(tam.x * escala));
+    const alto = Math.max(64, Math.round(tam.y * escala));
+    if (this.reflejo && this.reflejo.ancho === ancho && this.reflejo.alto === alto) return;
+
+    this.reflejo?.objetivo.dispose();
+    const objetivo = new THREE.WebGLRenderTarget(ancho, alto, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      depthBuffer: true,
+      stencilBuffer: false,
+      // Ocho bits por canal alcanzan: el reflejo se muestrea distorsionado por
+      // el oleaje y se mezcla al 86 %, así que la banda extra de un flotante no
+      // se vería y sí se pagaría en memoria y en ancho de banda.
+      colorSpace: THREE.NoColorSpace,
+    });
+    this.reflejo = {
+      objetivo, ancho, alto,
+      camara: new THREE.PerspectiveCamera(),
+      plano: new THREE.Plane(),
+      recorte: new THREE.Plane(),
+      matriz: new THREE.Matrix4(),
+      // Del espacio de recorte al de textura: x,y de [-1,1] a [0,1]
+      aTextura: new THREE.Matrix4().set(
+        0.5, 0, 0, 0.5,
+        0, 0.5, 0, 0.5,
+        0, 0, 0.5, 0.5,
+        0, 0, 0, 1
+      ),
+    };
+    this.uniformesComunes.uReflejo.value = objetivo.texture;
+  }
+
+  /**
+   * Dibuja el espejo del cuadro. Se llama antes del pase principal.
+   * @param {THREE.WebGLRenderer} render
+   * @param {THREE.Scene} escena
+   * @param {THREE.PerspectiveCamera} camara
+   */
+  dibujarReflejo(render, escena, camara) {
+    const r = this.reflejo;
+    if (!r) return;
+
+    // Un cuadro sí y uno no: el agua se mueve, pero el cerro reflejado no, y a
+    // 30 Hz el reflejo no se nota atrasado.
+    this._cuadro++;
+    if (this._cuadro % 2 === 0) return;
+
+    const ojo = new THREE.Vector3();
+    camara.getWorldPosition(ojo);
+
+    // Qué lago está mirando el jugador. Elegir "la cota más cercana por debajo
+    // del ojo" parecía razonable y era falso: parado en una ladera a 838 m
+    // elegía el laguito de 835 que no se ve, mientras el Nahuel Huapi ocupaba
+    // media pantalla. Así que se pregunta lo mismo que responde el shader:
+    // se camina el rayo de vista, se busca el primer punto que la máscara del
+    // DEM marca como agua, y se toma la cota más baja que lo cubre.
+    const cota = this._cotaMirada(camara, ojo);
+    if (cota === null) { this._apagarReflejo(); return; }
+    // Desde muy arriba el espejo aporta poco y el plano se ve casi de canto
+    if (ojo.y - cota > 900) { this._apagarReflejo(); return; }
+    this.cotaReflejada = cota;
+
+    // Cámara espejada respecto del plano y = cota
+    const c = r.camara;
+    c.copy(camara);
+    c.position.copy(ojo);
+    c.position.y = 2 * cota - ojo.y;
+    const objetivo = new THREE.Vector3(0, 0, -1)
+      .applyQuaternion(camara.getWorldQuaternion(new THREE.Quaternion()))
+      .add(ojo);
+    objetivo.y = 2 * cota - objetivo.y;
+    c.up.set(0, -1, 0);          // el reflejo invierte el sentido del arriba
+    c.lookAt(objetivo);
+    c.up.set(0, 1, 0);
+    c.updateMatrixWorld();
+    c.updateProjectionMatrix();
+
+    // Matriz que lleva un punto del mundo a las coordenadas de la textura
+    r.matriz.copy(r.aTextura)
+      .multiply(c.projectionMatrix)
+      .multiply(c.matrixWorldInverse);
+    this.uniformesComunes.uMatrizReflejo.value.copy(r.matriz);
+
+    // Todo lo que está bajo el agua no puede aparecer en el reflejo: el fondo
+    // del lago reflejado sobre su propia superficie es el artefacto clásico.
+    r.recorte.set(new THREE.Vector3(0, 1, 0), -cota + 0.15);
+
+    const recortePrevio = render.clippingPlanes;
+    const objetivoPrevio = render.getRenderTarget();
+    const nieblaPrevia = escena.fog;
+    const visibles = this.mallas.map(m => m.visible);
+    for (const m of this.mallas) m.visible = false;
+
+    render.clippingPlanes = [r.recorte];
+    render.setRenderTarget(r.objetivo);
+    render.clear();
+    render.render(escena, c);
+
+    render.setRenderTarget(objetivoPrevio);
+    render.clippingPlanes = recortePrevio;
+    escena.fog = nieblaPrevia;
+    this.mallas.forEach((m, i) => { m.visible = visibles[i]; });
+
+    // Sólo la cota reflejada usa la textura; las otras siguen con el cielo
+    for (const m of this.mallas) {
+      m.material.uniforms.uFuerzaReflejo.value =
+        Math.abs(m.material.uniforms.uCota.value - cota) < 0.5 ? 1 : 0;
+    }
+  }
+
+  /**
+   * Cota del cuerpo de agua que la cámara tiene delante, o null si no hay.
+   * Doce muestras en progresión: fina cerca, gruesa lejos.
+   */
+  _cotaMirada(camara, ojo) {
+    const dir = new THREE.Vector3(0, 0, -1)
+      .applyQuaternion(camara.getWorldQuaternion(new THREE.Quaternion()));
+    const paso = [12, 28, 50, 85, 140, 220, 340, 500, 700, 950, 1250, 1600];
+    for (const d of paso) {
+      const x = ojo.x + dir.x * d;
+      const z = ojo.z + dir.z * d;
+      if (!this.mundo.esAgua(x, z)) continue;
+      // La cota que corresponde a este punto es la que más se parece a la
+      // superficie que el DEM marca ahí, no la primera que alcance a cubrirlo.
+      const altura = this.mundo.superficieEn(x, z);
+      let mejor = null, mejorD = 8;
+      for (const n of this.niveles) {
+        if (n.cota > ojo.y - 0.05) continue;      // el ojo está debajo de esa agua
+        const dd = Math.abs(n.cota - altura);
+        if (dd < mejorD) { mejor = n.cota; mejorD = dd; }
+      }
+      if (mejor !== null) return mejor;
+    }
+    return null;
+  }
+
+  _apagarReflejo() {
+    for (const m of this.mallas) m.material.uniforms.uFuerzaReflejo.value = 0;
+  }
+
   dispose() {
     for (const m of this.mallas) { m.geometry.dispose(); m.material.dispose(); }
+    this.reflejo?.objetivo.dispose();
   }
 }
 
@@ -210,11 +390,17 @@ void main() {
   vec2 mundoXZ = mundoP.xz;
 
   vec2 uv = mundoXZ / uTamanoMundo + 0.5;
-  float fondo = texture2D(uTexAltura, uv).r;
+  vec2 relieve = texture2D(uTexAltura, uv).rg;
+  float fondo = relieve.r;          // el lecho, ya excavado
+  float superficie = relieve.g;     // la cota del espejo que marca el DEM
   vec4 cob = texture2D(uTexCobertura, uv);
 
   vProfundidad = max(0.0, uCota - fondo);
-  vMascara = cob.r;
+  // Cada plano dibuja su propio cuerpo y nada más. Antes los distinguía la
+  // profundidad —el plano del Mascardi caía casi al ras del Nahuel Huapi y se
+  // descartaba solo—, pero eso dejó de ser cierto al excavar los lechos: sin
+  // esta comparación, el plano del lago de arriba tapa el cielo del de abajo.
+  vMascara = cob.r * step(abs(uCota - superficie), 3.0);
 
   // En aguas bajas las olas se achican, como en la orilla real
   float atenuacion = smoothstep(0.0, 2.2, vProfundidad);
@@ -253,6 +439,9 @@ uniform float uFactorDia;
 uniform vec3 uCamara;
 uniform vec3 fogColor;
 uniform float fogDensity;
+uniform sampler2D uReflejo;
+uniform mat4 uMatrizReflejo;
+uniform float uFuerzaReflejo;
 
 varying vec3 vMundo;
 varying float vProfundidad;
@@ -317,6 +506,28 @@ void main() {
   float alturaR = clamp(R.y, 0.0, 1.0);
   vec3 reflejo = mix(uColorHorizonte, uColorCielo, pow(alturaR, 0.55));
 
+  // ── Espejo planar: el cerro de enfrente, que es lo que un lago de montaña
+  // devuelve de verdad. Se proyecta el punto del agua sobre la textura que se
+  // dibujó desde la cámara espejada y se desplaza la muestra con la pendiente
+  // de la ola: sin ese corrimiento el reflejo queda rígido, como una foto
+  // pegada al agua en vez de una imagen que el oleaje rompe.
+  if (uFuerzaReflejo > 0.0) {
+    vec4 proy = uMatrizReflejo * vec4(vMundo, 1.0);
+    vec2 uvR = proy.xy / max(proy.w, 0.0001);
+    vec2 chapoteo = vec2(N.x, N.z) * 0.055 * clamp(fuerza, 0.2, 1.2);
+    // Cerca la ola distorsiona mucho; lejos, casi nada: si no, el reflejo del
+    // horizonte hierve.
+    chapoteo *= smoothstep(320.0, 12.0, length(uCamara - vMundo));
+    vec2 uvD = clamp(uvR + chapoteo, vec2(0.002), vec2(0.998));
+    vec3 espejo = texture2D(uReflejo, uvD).rgb;
+
+    // Fuera de la pantalla no hay nada que reflejar: ahí manda el cielo. El
+    // desvanecido en los bordes evita el corte duro que delata la técnica.
+    vec2 borde = smoothstep(0.0, 0.09, uvR) * smoothstep(0.0, 0.09, 1.0 - uvR);
+    float valido = borde.x * borde.y * step(0.0, proy.w);
+    reflejo = mix(reflejo, espejo, valido * uFuerzaReflejo * 0.86);
+  }
+
   // Brillo especular del sol sobre el agua: el reguero de luz del atardecer
   vec3 sol = normalize(uSol);
   float espec = pow(max(0.0, dot(R, sol)), 420.0);
@@ -330,6 +541,14 @@ void main() {
   float turbulencia = ruido(vMundo.xz * 1.4 + uTiempo * 0.55) * 0.5
                     + ruido(vMundo.xz * 3.7 - uTiempo * 0.9) * 0.5;
   float espuma = smoothstep(0.44, 0.86, orilla * (0.55 + turbulencia * 0.75));
+
+  // Resaca: la línea de espuma sube y baja con la ola en vez de quedar clavada
+  // a una profundidad fija. Es el detalle que hace que la orilla respire; sin
+  // él la costa parece dibujada con un fibrón a la misma altura siempre.
+  float vaiven = sin(uTiempo * 0.62 + ruido(vMundo.xz * 0.09) * 6.28) * 0.5 + 0.5;
+  float lengua = 1.0 - smoothstep(0.0, 0.35 + vaiven * 0.75 * fuerza, vProfundidad);
+  espuma = max(espuma, smoothstep(0.35, 0.9, lengua * (0.6 + turbulencia * 0.6)));
+
   // Crestas encabritadas con viento fuerte
   float cresta = smoothstep(0.16, 0.30, vDesplazamiento.y * fuerza) * smoothstep(0.5, 1.1, fuerza);
   espuma = clamp(espuma + cresta * turbulencia * 0.85, 0.0, 1.0);

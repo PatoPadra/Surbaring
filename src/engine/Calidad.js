@@ -33,6 +33,7 @@ export const PRESETS = [
     oclusion: true, divisorOclusion: 2,
     resplandor: true, suavizado: true, correccionColor: true,
     vegetacion: 1.0, sotobosque: 1.0, vista: 90000,
+    reflejoAgua: 0.5,
   },
   {
     id: 'media', nombre: 'Media',
@@ -41,6 +42,7 @@ export const PRESETS = [
     oclusion: true, divisorOclusion: 2,
     resplandor: true, suavizado: true, correccionColor: true,
     vegetacion: 0.8, sotobosque: 0.7, vista: 70000,
+    reflejoAgua: 0.35,
   },
   {
     id: 'baja', nombre: 'Baja',
@@ -49,6 +51,7 @@ export const PRESETS = [
     oclusion: false, divisorOclusion: 3,
     resplandor: false, suavizado: true, correccionColor: true,
     vegetacion: 0.55, sotobosque: 0.45, vista: 55000,
+    reflejoAgua: 0,
   },
   {
     id: 'minima', nombre: 'Mínima',
@@ -57,6 +60,7 @@ export const PRESETS = [
     oclusion: false, divisorOclusion: 4,
     resplandor: false, suavizado: false, correccionColor: true,
     vegetacion: 0.35, sotobosque: 0.25, vista: 45000,
+    reflejoAgua: 0,
   },
 ];
 
@@ -163,6 +167,10 @@ export class Calidad {
     if (color) color.enabled = p.correccionColor;
     if (resplandor) resplandor.enabled = p.resplandor;
     if (suavizado) suavizado.enabled = p.suavizado;
+
+    // ── Reflejo del agua. El espejo planar dibuja la escena una segunda vez,
+    // así que abajo se apaga entero y arriba se dibuja a media resolución.
+    this.ctx.agua?.prepararReflejo(render, p.reflejoAgua);
 
     // ── Distancia de vista
     if (camara) {
