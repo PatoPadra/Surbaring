@@ -51,7 +51,7 @@ import { Mapa } from './ui/Mapa.js';
 import { Opciones } from './ui/Opciones.js';
 import { Bolso } from './ui/Bolso.js';
 import { Fin } from './ui/Fin.js';
-import { Ayuda } from './ui/Ayuda.js';
+import { Partida } from './systems/Partida.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -184,14 +184,16 @@ async function iniciar() {
     hud.aviso(`Calidad: ${p.nombre}`,
       `${calidad.resumen} · C para cambiar · el ajuste automático queda apagado`);
   });
-  entrada.registrar('KeyO', () => {
-    const estados = ['completo', 'sin oclusión', 'crudo'];
-    modoPosproceso = (modoPosproceso + 1) % estados.length;
+  const ESTADOS_POSPROCESO = ['completo', 'sin oclusión', 'crudo'];
+  /** Modo de posproceso, desde la tecla O o desde la pestaña de video. */
+  function aplicarPosproceso(modo) {
+    modoPosproceso = (modo + ESTADOS_POSPROCESO.length) % ESTADOS_POSPROCESO.length;
     oclusion.enabled = modoPosproceso === 0;
     color.enabled = modoPosproceso < 2;
-    hud.aviso(`Posproceso: ${estados[modoPosproceso]}`,
+    hud.aviso(`Posproceso: ${ESTADOS_POSPROCESO[modoPosproceso]}`,
       'O alterna oclusión ambiental y corrección de color');
-  });
+  }
+  entrada.registrar('KeyO', () => aplicarPosproceso(modoPosproceso + 1));
   // El silencio pasó a las opciones: M es la tecla del mapa en todos los juegos
   // del mundo y pelearse con esa costumbre no tiene sentido.
 
@@ -274,27 +276,41 @@ async function iniciar() {
   const mapa = new Mapa({ mundo, jugador, tiempo, exploracion, codice });
   const bolso = new Bolso({ inventario, jugador, hud, recoleccion });
   const fin = new Fin({ jugador, mundo, tiempo, hud, codice, saberes, construccion });
-  // Catorce teclas y ninguna forma de conocerlas dentro del juego: para quien
-  // abre esto a probarlo, la mitad de lo construido no existía.
-  const ayuda = new Ayuda();
-  jugador.alMorir = (m) => fin.mostrar(m);
+  /** Una obra en el mundo, con sus materiales enganchados a las cascadas. */
+  const dibujarObra = (c) => {
+    const nodo = obras.agregar(c);
+    nodo.traverse(o => { if (o.isMesh) conCSM(csm, o.material); });
+    return nodo;
+  };
+  const dibujarHorno = (h) => {
+    const nodo = hornos.agregar(h);
+    nodo.traverse(o => { if (o.isMesh) conCSM(csm, o.material); });
+    return nodo;
+  };
+
+  // Guardado estilo Rust: la partida se guarda sola, al morir se pierde lo que
+  // se carga encima y se reaparece en la base más cercana. Lo aprendido —códice,
+  // tecnologías, mapa— no se pierde nunca: ésa es la tesis del juego.
+  const partida = new Partida({
+    jugador, inventario, saberes, codice, construccion, fundicion, tiempo,
+    mundo, hud, exploracion,
+    obras: { agregar: dibujarObra },
+    hornos: { agregar: dibujarHorno },
+  });
+  fin.partida = partida;
+  jugador.alMorir = (m) => { partida.registrarMuerte(m); fin.mostrar(m); };
+
   const levantarOriginal = construccion.levantar.bind(construccion);
   construccion.levantar = (obra) => {
     const c = levantarOriginal(obra);
-    if (c) {
-      const nodo = obras.agregar(c);
-      nodo.traverse(o => { if (o.isMesh) conCSM(csm, o.material); });
-    }
+    if (c) dibujarObra(c);
     return c;
   };
   const construirOriginal = fundicion.construir.bind(fundicion);
   fundicion.construir = (def) => {
     const h = construirOriginal(def);
-    if (h) {
-      const nodo = hornos.agregar(h);
-      // Sólo el horno nuevo: encadenar dos veces el mismo material lo rompería
-      nodo.traverse(o => { if (o.isMesh) conCSM(csm, o.material); });
-    }
+    // Sólo el horno nuevo: encadenar dos veces el mismo material lo rompería
+    if (h) dibujarHorno(h);
     return h;
   };
 
@@ -313,7 +329,7 @@ async function iniciar() {
   entrada.registrar('Tab', () => codice.alternar());
   entrada.registrar('KeyM', () => mapa.alternar());
   entrada.registrar('KeyI', () => bolso.alternar());
-  entrada.registrar('F1', () => ayuda.alternar());
+  entrada.registrar('F1', () => opciones.alternar('controles'));
   entrada.registrar('KeyE', () => recoleccion.actuar(tiempo.segundosTotales));
   entrada.registrar('KeyQ', () => recoleccion.comer());
   entrada.registrar('KeyG', () => taller.alternar());
@@ -391,11 +407,22 @@ async function iniciar() {
 
   const opciones = new Opciones({
     calidad, audio, entrada, camara, jugador, tiempo, exploracion, hud, render,
+    partida,
+    fps: () => fps,
+    modoPosproceso: () => modoPosproceso,
+    posproceso: (modo) => aplicarPosproceso(modo),
   });
+
+  // La partida guardada se repone recién acá: necesita el mundo entero armado
+  // —obras, hornos, calidad— para volver a poner cada cosa donde estaba.
+  if (partida.cargar()) {
+    hud.aviso('Partida repuesta',
+      `${construccion.obras.length} obras en pie · ${inventario.pesoKg.toFixed(1)} kg en el bolso`);
+  }
 
   /** ¿Hay algún panel abierto? Sirve para no encimarlos. */
   const hayPanel = () => codice.abierto || taller.abierto || mapa.abierto
-    || bolso.abierto || opciones.abierto || fin.abierto || ayuda.abierto;
+    || bolso.abierto || opciones.abierto || fin.abierto;
 
   // Con el puntero capturado, Escape se lo come el navegador para liberarlo y la
   // tecla nunca llega acá. Lo que sí llega es que el puntero se soltó, y eso es
@@ -406,8 +433,7 @@ async function iniciar() {
   });
   addEventListener('keydown', (ev) => {
     if (ev.code !== 'Escape') return;
-    if (ayuda.abierto) ayuda.cerrar();
-    else if (opciones.abierto) opciones.cerrar();
+    if (opciones.abierto) opciones.cerrar();
     else if (mapa.abierto) mapa.alternar();
     else if (bolso.abierto) bolso.alternar();
     else if (taller.abierto) taller.alternar();
@@ -494,6 +520,9 @@ async function iniciar() {
         exploracion.guardar();
         if (mapa.abierto) mapa.dibujar();
       }
+      // Guardado automático: cada tanto, sin pedirlo. Guardar a mano justo
+      // antes de una decisión difícil es lo que le saca peso a la decisión.
+      partida.actualizar(dt);
     }
 
     // ── Cielo y luz
@@ -599,7 +628,7 @@ async function iniciar() {
     inventario, saberes, recoleccion, caza, audio,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima, oclusion, color, calidad,
-    exploracion, mapa, bolso, opciones, fin, ayuda,
+    exploracion, mapa, bolso, opciones, fin, partida,
   };
 
   if (import.meta.env.DEV) {

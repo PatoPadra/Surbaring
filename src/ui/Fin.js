@@ -113,6 +113,24 @@ export class Fin {
     }
   }
 
+  /**
+   * Qué costó morirse, en kilos y en distancia. Un juego de supervivencia
+   * necesita que la muerte tenga precio; conviene que el precio esté escrito.
+   */
+  _perdida() {
+    const p = this.partida?.ultimaMuerte;
+    if (!p) return '';
+    const lista = p.perdido.slice(0, 6).map(i => `${i.nombre} ×${i.cantidad}`).join(', ');
+    const resto = p.perdido.length > 6 ? ` y ${p.perdido.length - 6} cosas más` : '';
+    return `
+      <span>Se perdió</span><span>${p.perdido.length
+        ? `${p.kg} kg encima: ${lista}${resto}`
+        : 'nada: ibas con el bolso vacío'}</span>
+      <span>Volvés a</span><span>${p.base
+        ? `${p.base}, a ${p.distancia} m de donde caíste`
+        : 'la costa donde empezaste, porque no hay ninguna base levantada'}</span>`;
+  }
+
   mostrar(m) {
     const f = this.tiempo.fechaLocal;
     const geo = this.mundo.aLatLon(this.jugador.posicion.x, this.jugador.posicion.z);
@@ -129,7 +147,8 @@ export class Fin {
       <span>Especies</span><span>${this.codice?.identificadas.size ?? 0} identificadas ·
         ${this.codice?.lugares.size ?? 0} lugares descubiertos</span>
       <span>Saber</span><span>${this.saberes?.ganadosTotales ?? 0} puntos ganados ·
-        ${this.saberes?.desbloqueadas.size ?? 0} tecnologías</span>`;
+        ${this.saberes?.desbloqueadas.size ?? 0} tecnologías</span>
+      ${this._perdida()}`;
     this.el.querySelector('#fn-leccion').innerHTML = this._leccion(m);
 
     this.abierto = true;
@@ -140,9 +159,11 @@ export class Fin {
   reiniciar() {
     this.abierto = false;
     this.el.classList.remove('visible');
+    // La reaparición la decide la partida: se pierde el bolso donde caíste y se
+    // vuelve a la base más cercana. El códice, las tecnologías y las obras
+    // siguen ahí. Se pierde el cuerpo y la carga, no lo aprendido.
+    if (this.partida) { this.partida.reaparecer(); return; }
     this.jugador.revivir();
-    // Vuelve a la costa donde empezó: el códice, las tecnologías y las obras
-    // siguen ahí. Se pierde el cuerpo, no lo aprendido.
     this.jugador.aparecerEn(-41.0870, -71.4290);
     this.hud?.aviso('Otra vez en pie', 'Lo que aprendiste sigue en el códice');
   }
