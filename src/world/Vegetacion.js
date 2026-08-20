@@ -22,8 +22,17 @@ const MAX_IMPOSTORES = 12000;   // carteleras: todo lo demás
  * triángulos y dos deja de notarse, pero el ahorro es de dos órdenes de
  * magnitud, sobre todo porque las carteleras además no proyectan sombra y cada
  * sombra cuesta cuatro dibujos con las cuatro cascadas.
+ *
+ * El reparto se decide en la resiembra, midiendo desde el centro de la celda,
+ * así que un umbral fijo dibuja una circunferencia nítida a 120 m: todos los
+ * árboles de ese anillo cambian de forma a la vez, y un cambio simultáneo se
+ * lee como un parpadeo del bosque aunque cada árbol individual apenas cambie.
+ * `JITTER_IMPOSTOR` le da a cada árbol su propio umbral, derivado de su
+ * posición —o sea, siempre el mismo para ese árbol—, y el anillo se convierte
+ * en una franja difusa de 100 a 140 m donde los relevos ocurren de a uno.
  */
 const DIST_IMPOSTOR = 120;
+const JITTER_IMPOSTOR = 0.34;
 
 /** Rotación nula, para las carteleras que se orientan solas. */
 const IDENTIDAD = new THREE.Quaternion();
@@ -112,7 +121,11 @@ export class Vegetacion {
     this.grupo.add(malla);
 
     const impostor = this.render ? this._crearImpostor(esp, geo, mat.map) : null;
-    return { esp, malla, colores, n: 0, impostor };
+    // Distancia de cada instancia al centro del sembrado. Es lo que permite
+    // ordenar de cerca a lejos y que el recorte del preset suelte siempre la
+    // cola lejana en vez de un puñado arbitrario que cambia en cada resiembra.
+    const dist = new Float32Array(MAX_POR_ESPECIE);
+    return { esp, malla, colores, dist, n: 0, impostor };
   }
 
   /** Cartelera de una especie: se hornea la malla y se instancia un cuadrilátero. */
@@ -154,7 +167,7 @@ export class Vegetacion {
     malla.geometry.setAttribute('iTinte', colores);
 
     this.grupo.add(malla);
-    return { malla, colores, n: 0, horneado };
+    return { malla, colores, dist: new Float32Array(MAX_IMPOSTORES), n: 0, horneado };
   }
 
   /** Aptitud de una especie en un punto: 0 = no crece, 1 = óptimo. */
@@ -280,9 +293,13 @@ export class Vegetacion {
           const claro = ruidoValor(x * 0.0042, z * 0.0042);
           if (claro < 0.24) continue;
 
-          // Nivel de detalle: cerca la malla completa, lejos la cartelera.
+          // Nivel de detalle: cerca la malla completa, lejos la cartelera. El
+          // umbral lleva un desvío propio de este árbol, estable porque sale de
+          // su posición: el mismo árbol elige siempre el mismo umbral, así que
+          // cruzarlo es un evento único y no un rebote entre cuadros.
           const dist = Math.hypot(x - centroX, z - centroZ);
-          const usaImpostor = lote.impostor && dist > DIST_IMPOSTOR;
+          const umbral = DIST_IMPOSTOR * (1 + (hashPos(x, z) - 0.5) * JITTER_IMPOSTOR);
+          const usaImpostor = lote.impostor && dist > umbral;
           const destino = usaImpostor ? lote.impostor : lote;
           const tope = usaImpostor ? MAX_IMPOSTORES : MAX_POR_ESPECIE;
           if (destino.n >= tope) continue;
@@ -310,6 +327,7 @@ export class Vegetacion {
           const v = 0.82 + azar() * 0.36;
           color.setRGB(v * (0.92 + azar() * 0.16), v, v * (0.88 + azar() * 0.2));
           destino.colores.setXYZ(destino.n, color.r, color.g, color.b);
+          destino.dist[destino.n] = dist;
 
           destino.n++;
           total++;
@@ -319,6 +337,8 @@ export class Vegetacion {
 
     let cercanos = 0, lejanos = 0;
     for (const lote of this.lotes) {
+      this._ordenarPorDistancia(lote);
+      if (lote.impostor) this._ordenarPorDistancia(lote.impostor);
       lote.malla.count = lote.n;
       lote.malla.instanceMatrix.needsUpdate = true;
       lote.colores.needsUpdate = true;
@@ -335,6 +355,49 @@ export class Vegetacion {
     this.totalInstancias = total;
     this.mallasCompletas = cercanos;
     this.impostores = lejanos;
+  }
+
+  /**
+   * Reordena las instancias de un destino de la más cercana a la más lejana.
+   *
+   * El orden dentro del búfer lo decidía el barrido de celdas, que empieza en
+   * una esquina distinta según dónde esté el jugador. Con ese orden, recortar
+   * `count` deja fuera un conjunto arbitrario y —peor— distinto en cada
+   * resiembra: el mismo árbol se dibujaba, dejaba de dibujarse y volvía, sin
+   * que nada hubiera cambiado en el mundo. Ordenado por distancia, el corte es
+   * siempre "las N más cercanas", que es una decisión estable —un árbol sólo
+   * cambia de lado si el jugador se acerca o se aleja de verdad— y además la
+   * correcta, porque lo que se suelta es lo que menos píxeles ocupa.
+   *
+   * Se permuta a mano sobre los búferes de instancia. Ordenar índices y copiar
+   * es más barato que recomponer matrices, y esto corre una vez cada 96 m.
+   */
+  _ordenarPorDistancia(destino) {
+    const n = destino.n;
+    if (n < 2) return;
+    const orden = Array.from({ length: n }, (_, i) => i);
+    orden.sort((a, b) => destino.dist[a] - destino.dist[b]);
+
+    // ¿Ya estaba ordenado? Es lo habitual en los lotes chicos y ahorra la copia.
+    let ordenado = true;
+    for (let i = 0; i < n; i++) if (orden[i] !== i) { ordenado = false; break; }
+    if (ordenado) return;
+
+    const mat = destino.malla.instanceMatrix.array;
+    const col = destino.colores.array;
+    const dst = destino.dist;
+    const mat2 = new Float32Array(n * 16);
+    const col2 = new Float32Array(n * 3);
+    const dst2 = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const j = orden[i];
+      mat2.set(mat.subarray(j * 16, j * 16 + 16), i * 16);
+      col2.set(col.subarray(j * 3, j * 3 + 3), i * 3);
+      dst2[i] = dst[j];
+    }
+    mat.set(mat2, 0);
+    col.set(col2, 0);
+    dst.set(dst2, 0);
   }
 
   /**
@@ -1135,6 +1198,17 @@ function inyectarViento(mat, uniformes, esp) {
 
   };
 
+}
+
+/**
+ * Hash estable de una posición, en 0..1. Se cuantiza a 10 cm antes de mezclar
+ * para que el mismo árbol —sembrado siempre con la misma semilla de celda—
+ * saque siempre el mismo número por más que se lo pregunte en otra resiembra.
+ */
+function hashPos(x, z) {
+  let n = Math.round(x * 10) * 374761393 + Math.round(z * 10) * 668265263;
+  n = (n ^ (n >> 13)) * 1274126177;
+  return ((n ^ (n >> 16)) & 0x7fffffff) / 0x7fffffff;
 }
 
 // Ruido de valor simple para los claros del bosque

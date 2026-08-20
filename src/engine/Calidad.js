@@ -184,21 +184,40 @@ export class Calidad {
   }
 
   /**
-   * Recorte de instancias. Se aplica DESPUÉS de que cada sistema actualice sus
-   * lotes, porque ellos reescriben `count` en cada cuadro. Es un recorte tosco
-   * —se dibujan menos matas de las sembradas— pero no toca la lógica de siembra
-   * y se puede subir y bajar en caliente.
+   * Recorte de instancias.
+   *
+   * Acá vivía la causa de que "los árboles aparezcan y desaparezcan". El
+   * recorte multiplicaba `malla.count` por el factor del preset en CADA cuadro,
+   * dando por sentado que los sistemas reescriben `count` siempre. No lo hacen:
+   * la vegetación sólo resiembra cuando el jugador cambia de celda (96 m) y el
+   * sotobosque sólo publica mientras le queda cola. En los cuadros del medio el
+   * factor se aplicaba sobre un valor ya recortado y la cuenta caía en
+   * progresión geométrica hasta cero —medido: 15.037 matas a 414 en diez
+   * cuadros con el factor 0,7— para volver de golpe en la siguiente resiembra.
+   * Eso es el parpadeo: no se veía un árbol entrar y salir, se veía el bosque
+   * entero evaporarse y reaparecer cada vez que se cruzaba una celda.
+   *
+   * La cuenta se deriva ahora del total sembrado, `lote.n`, que es el dato
+   * autorizado y no se toca. Así el recorte es idempotente: aplicarlo mil veces
+   * da lo mismo que aplicarlo una.
+   *
+   * Y como los dos sistemas ordenan sus instancias de cerca a lejos, cortar por
+   * el final significa siempre soltar las más lejanas —las que menos se notan—
+   * en vez de un conjunto arbitrario que cambia de identidad en cada resiembra.
    */
   recortarInstancias() {
     const p = this.preset;
-    if (p.sotobosque < 1 && this.ctx.sotobosque) {
+    if (this.ctx.sotobosque) {
       for (const lote of this.ctx.sotobosque.lotes) {
-        lote.malla.count = Math.floor(lote.malla.count * p.sotobosque);
+        lote.malla.count = Math.floor(lote.n * p.sotobosque);
       }
     }
-    if (p.vegetacion < 1 && this.ctx.vegetacion) {
+    if (this.ctx.vegetacion) {
       for (const lote of this.ctx.vegetacion.lotes) {
-        lote.malla.count = Math.floor(lote.malla.count * p.vegetacion);
+        lote.malla.count = Math.floor(lote.n * p.vegetacion);
+        if (lote.impostor) {
+          lote.impostor.malla.count = Math.floor(lote.impostor.n * p.vegetacion);
+        }
       }
     }
   }
@@ -218,11 +237,20 @@ export class Calidad {
 
     const fps = 1000 / this.msSuave;
     if (fps < this._objetivoFps * 0.8 && this.nivel < PRESETS.length - 1) {
+      // Si venimos de subir hace poco, el nivel de arriba queda marcado como
+      // techo. Sin esto el gobernador probaba, no daba, bajaba, volvía a
+      // sobrarle margen y probaba de nuevo, en un ciclo de ocho segundos; y
+      // como cada preset cambia el factor de recorte y la distancia de vista,
+      // cada vuelta del ciclo se veía como una tanda de árboles que entra y
+      // sale. Un techo que sólo baja corta la oscilación de raíz.
+      if (this._subioEn != null && this._desdeCambio < 20) this._techo = this.nivel + 1;
+      this._subioEn = null;
       this.nivel++;
       this.aplicar();
-    } else if (fps > this._objetivoFps * 1.9 && this.nivel > 0) {
+    } else if (fps > this._objetivoFps * 1.9 && this.nivel > 0 && this.nivel > (this._techo ?? 0)) {
       // Para subir hace falta mucho margen: es mejor sobrar que oscilar
       this.nivel--;
+      this._subioEn = true;
       this.aplicar();
     }
   }
@@ -231,6 +259,9 @@ export class Calidad {
   elegir(nivel) {
     this.nivel = Math.max(0, Math.min(PRESETS.length - 1, nivel));
     this.automatico = false;
+    // El techo era del gobernador; si el jugador elige, deja de aplicar.
+    this._techo = null;
+    this._subioEn = null;
     return this.aplicar();
   }
 
