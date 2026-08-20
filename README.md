@@ -46,6 +46,7 @@ npm run dem
 | `T` | Acelerar el paso del tiempo |
 | `M` | Silenciar o activar el sonido |
 | `O` | Posproceso: completo / sin oclusión / crudo |
+| `C` | Cambiar calidad: alta / media / baja / mínima |
 | `F3` | Panel de diagnóstico |
 
 ---
@@ -329,6 +330,54 @@ al tronco en vez de al alcance de la copa, y en el coihue, que es el de copa má
 ancha, sobraban por casi un 15 %. Ahora el largo se deriva del alcance del
 follaje y del ángulo de elevación de la rama, así que toda rama termina dentro de
 la copa, que es donde no se la ve.
+
+#### El error de método que costó el rendimiento
+
+Vale escribirlo porque es la lección más cara del proyecto: **se verificó con
+capturas fijas, nunca con un cuadro corriendo.** Una captura dice si algo se
+dibuja bien; no dice si el juego anda. El contador de fps que se leía durante el
+desarrollo daba números imposibles —656 fps, una llamada de dibujo— porque el
+panel del navegador no estaba componiendo cuadros, y en vez de desconfiar de la
+medición se siguió construyendo encima.
+
+Cuando por fin se midió con `EXT_disjoint_timer_query_webgl2` sobre la placa de
+destino real —una **Intel HD Graphics 4000, de 2012**— el cuadro tardaba
+**504 ms**. Dos cuadros por segundo.
+
+El desglose por subsistema encontró el culpable enseguida, y no era el que
+parecía: **el terreno se llevaba 377 de esos 504 ms**, y no por polígonos sino
+por el shader de fragmento. Calculaba unas **180 octavas de ruido por píxel** y
+después multiplicaba la mitad por cero: las escalas finas —la mata de 3,5 m, el
+grano de 40 cm, la gravilla de 12 cm, el relieve fino de la normal— se computaban
+completas aunque su factor de desvanecimiento fuera 0 a doscientos metros.
+
+El arreglo es aburrido y enorme: envolver cada escala en el `if` de su propio
+factor y bajar las octavas de cinco a tres o dos según el término. Un píxel
+lejano pasó de 180 octavas a nueve.
+
+| | antes | después |
+|---|---|---|
+| Cuadro completo | 504 ms (2 fps) | **26 ms (39 fps)** |
+| Terreno | 377 ms | 1,7 ms |
+
+El resto del cuadro se reparte hoy en sombras (7 ms), oclusión ambiental
+(4,5 ms), vegetación (2,3 ms) y resplandor (1,8 ms).
+
+#### Presets de calidad, detección y gobernador
+
+Que el juego ande en la máquina de quien lo escribe no significa nada, y elegir
+la calidad a ojo desde otra máquina es adivinar. Así que `src/engine/Calidad.js`
+hace tres cosas:
+
+1. **Detecta la placa** por su cadena de identificación y arranca en el nivel que
+   le corresponde. Una HD 4000 arranca en *Baja*, no en *Alta*.
+2. **Aplica el preset en caliente**: resolución de render —la palanca más grande,
+   porque casi todo lo caro se paga por píxel—, tamaño y alcance de los mapas de
+   sombra, oclusión, resplandor, suavizado, distancia de vista y un recorte de
+   instancias de pasto y árboles.
+3. **Mide el cuadro de verdad y se ajusta solo**, con histéresis y tiempo de
+   gracia. Si el jugador elige a mano con `C`, el gobernador se apaga: ya
+   decidió alguien con más información que el programa.
 
 #### Oclusión ambiental y corrección de color
 

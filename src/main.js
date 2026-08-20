@@ -45,6 +45,7 @@ import { Eventos } from './systems/Eventos.js';
 import { Clima } from './world/Clima.js';
 import { Audio } from './engine/Audio.js';
 import { PasoOclusion, PasoColor } from './engine/Posproceso.js';
+import { Calidad } from './engine/Calidad.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -172,6 +173,11 @@ async function iniciar() {
   // Interruptor del posproceso: la oclusión ambiental cuesta, y cuánto depende
   // mucho de la placa. Que se pueda apagar y comparar es más honesto que elegir
   // por el jugador.
+  entrada.registrar('KeyC', () => {
+    const p = calidad.siguiente();
+    hud.aviso(`Calidad: ${p.nombre}`,
+      `${calidad.resumen} · C para cambiar · el ajuste automático queda apagado`);
+  });
   entrada.registrar('KeyO', () => {
     const estados = ['completo', 'sin oclusión', 'crudo'];
     modoPosproceso = (modoPosproceso + 1) % estados.length;
@@ -352,18 +358,25 @@ async function iniciar() {
   compositor.addPass(color);
   compositor.addPass(new OutputPass());
 
+  // ── Calidad ───────────────────────────────────────────────────────────────
+  // Nada de esto se elige a ojo: se detecta la placa, se arranca donde
+  // corresponde, y después se mide el cuadro de verdad y se ajusta solo.
+  const calidad = new Calidad({
+    render, compositor, camara, csm, escena, oclusion, color,
+    resplandor: bloom, suavizado: fxaa, vegetacion, sotobosque,
+  });
+  calidad.nivel = calidad.nivelDetectado;
+  calidad.alCambiar = (p) => {
+    const pr = render.getPixelRatio();
+    fxaa.material.uniforms.resolution.value.set(1 / (innerWidth * pr), 1 / (innerHeight * pr));
+    hud.aviso(`Calidad: ${p.nombre}`,
+      `${calidad.placa.slice(0, 52)} · C para cambiar a mano`);
+  };
+
   function redimensionar() {
-    const w = innerWidth, h = innerHeight;
-    const pr = Math.min(devicePixelRatio, 2);
-    camara.aspect = w / h;
+    camara.aspect = innerWidth / innerHeight;
     camara.updateProjectionMatrix();
-    render.setPixelRatio(pr);
-    render.setSize(w, h);
-    compositor.setPixelRatio(pr);
-    compositor.setSize(w, h);
-    oclusion.setSize(w * pr, h * pr);
-    fxaa.material.uniforms.resolution.value.set(1 / (w * pr), 1 / (h * pr));
-    csm.updateFrustums();
+    calidad.aplicar(innerWidth, innerHeight);
   }
   addEventListener('resize', redimensionar);
   redimensionar();
@@ -410,6 +423,7 @@ async function iniciar() {
     requestAnimationFrame(cuadro);
     const dt = Math.min(reloj.getDelta(), 0.1);
     fps += (1 / Math.max(dt, 1e-4) - fps) * 0.06;
+    calidad.gobernar(dt);
 
     // El estado del ambiente se calcula UNA vez por cuadro y se le aplican los
     // eventos: si la supervivencia usara su propia llamada a tiempo.estado(),
@@ -466,6 +480,9 @@ async function iniciar() {
     vegetacion.uniformesImpostor.uDensidadNiebla.value = escena.fog.density;
     vegetacion.actualizar(jugador.posicion, tiempo.segundosTotales, est, camara);
     sotobosque.actualizar(jugador.posicion, tiempo.segundosTotales, est);
+    // Recorte de instancias del preset, después de que cada sistema haya
+    // reescrito sus cuentas
+    calidad.recortarInstancias();
     bichos.actualizar(dt, jugador, est, tiempo.segundosTotales);
     peces.actualizar(jugador.posicion, tiempo.segundosTotales);
     fundicion.actualizar();
@@ -517,7 +534,7 @@ async function iniciar() {
         `${terreno.nodosDibujados} nodos de terreno<br>` +
         `${vegetacion.mallasCompletas}m+${vegetacion.impostores}i+${sotobosque.total} plantas · ${bichos.vivos.length} animales · ${peces.total} peces<br>` +
         `${inf.render.calls} llamadas · ${(inf.render.triangles / 1000).toFixed(0)}k tri<br>` +
-        `sol ${(cielo.alturaSol * 180 / Math.PI).toFixed(1)}°` +
+        `sol ${(cielo.alturaSol * 180 / Math.PI).toFixed(1)}° · calidad ${calidad.preset.nombre}` +
         (eventos.activos.length ? `<br>${eventos.resumen().map(e => e.nombre).join(' · ')}` : '');
     }
   }
@@ -529,7 +546,7 @@ async function iniciar() {
     fauna: bichos, jugador, tiempo, compositor, csm, hud, codice, entrada,
     inventario, saberes, recoleccion, caza, audio,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
-    eventos, clima, oclusion, color,
+    eventos, clima, oclusion, color, calidad,
   };
 
   if (import.meta.env.DEV) {
