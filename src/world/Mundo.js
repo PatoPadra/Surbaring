@@ -186,20 +186,40 @@ export class Mundo {
 
   // ── Consultas ─────────────────────────────────────────────────────────────
 
+  /**
+   * Coordenada de texel de un punto del mundo, en la MISMA convención que usa
+   * la GPU al muestrear las texturas del terreno.
+   *
+   * Esto no es un detalle: el shader hace `texture2D(tex, xz / tamano + 0.5)`, y
+   * en OpenGL el centro del texel i cae en (i + 0.5) / N. La CPU venía mapeando
+   * a i / (N - 1) —los texels extremos en los bordes exactos—, que es la
+   * convención de una malla de vértices, no la de una textura. La diferencia es
+   * de medio texel como máximo, pero acá un texel mide 32 m: cerca del borde del
+   * mundo la física leía el relieve desplazado hasta 16 m en horizontal, y sobre
+   * una ladera eso son varios metros de altura. El terreno dibujado quedaba por
+   * encima del suelo que pisaba el jugador y la cámara aparecía hundida.
+   *
+   * @returns {number} coordenada continua 0..N-1, ya recortada al borde
+   */
+  _texelDe(w) {
+    const t = (w / this.tamano + 0.5) * this.N - 0.5;
+    return Math.max(0, Math.min(this.N - 1, t));
+  }
+
   /** Índice de texel a partir de coordenadas de mundo, sin interpolar. */
   indiceDe(x, z) {
-    const i = Math.round((x / this.tamano + 0.5) * (this.N - 1));
-    const j = Math.round((z / this.tamano + 0.5) * (this.N - 1));
-    if (i < 0 || i >= this.N || j < 0 || j >= this.N) return -1;
+    if (!this.dentro(x, z)) return -1;
+    const i = Math.min(this.N - 1, Math.max(0, Math.round(this._texelDe(x))));
+    const j = Math.min(this.N - 1, Math.max(0, Math.round(this._texelDe(z))));
     return j * this.N + i;
   }
 
   /** Altura del DEM, sin el relieve fino. La usa el agua para el lecho. */
   alturaBaseEn(x, z) {
     const N = this.N;
-    const fx = (x / this.tamano + 0.5) * (N - 1);
-    const fz = (z / this.tamano + 0.5) * (N - 1);
-    if (fx < 0 || fz < 0 || fx > N - 1 || fz > N - 1) return this.alturaMin;
+    if (!this.dentro(x, z)) return this.alturaMin;
+    const fx = this._texelDe(x);
+    const fz = this._texelDe(z);
     const i0 = Math.floor(fx), j0 = Math.floor(fz);
     const i1 = Math.min(N - 1, i0 + 1), j1 = Math.min(N - 1, j0 + 1);
     const sx = fx - i0, sz = fz - j0;
@@ -442,8 +462,11 @@ export class Mundo {
    */
   detalleEn(x, z) {
     const N = this.detalleN;
-    const u = (x / DETALLE.periodoM) * N;
-    const v = (z / DETALLE.periodoM) * N;
+    // El medio texel de menos es la convención de la GPU, igual que en _texelDe.
+    // Acá el texel mide 25 cm, así que el error era chico, pero es gratis que
+    // los dos lados lean exactamente el mismo número.
+    const u = (x / DETALLE.periodoM) * N - 0.5;
+    const v = (z / DETALLE.periodoM) * N - 0.5;
     const i0 = Math.floor(u), j0 = Math.floor(v);
     const sx = u - i0, sz = v - j0;
     const ia = ((i0 % N) + N) % N, ib = (ia + 1) % N;
@@ -457,13 +480,33 @@ export class Mundo {
   /**
    * Cuánto detalle corresponde acá. Se apaga sobre los lagos y en sus orillas:
    * un lecho ondulado atravesaría la superficie del agua.
+   *
+   * Tiene que ser LA MISMA función que `leerDetalle()` en el shader del terreno:
+   * una lectura bilineal de la máscara de agua y un smoothstep(0.15, 0.6) sobre
+   * ella. Antes acá se usaba una rampa por distancia a la costa (d / 24 m) que
+   * no existe en la GPU, y en la franja de orilla la física apagaba un relieve
+   * que el terreno seguía dibujando.
+   *
+   * Lo que el shader hace de más —desvanecer el detalle cuando el nodo es tan
+   * grueso que sus cuadros no pueden representarlo— no se replica a propósito:
+   * en los 190 m alrededor de la cámara el nodo siempre es el más fino, con
+   * cuadros de 2 m, y ahí ese factor vale exactamente 1. Fuera de ese radio no
+   * hay física que resolver.
    */
   factorDetalleEn(x, z) {
-    const k = this.indiceDe(x, z);
-    if (k < 0) return 0;
-    if (this.agua[k] > 127) return 0;
-    const d = this.distanciaAgua ? this.distanciaAgua[k] : 999;
-    return Math.min(1, d / 24);
+    if (!this.dentro(x, z)) return 0;
+    const N = this.N;
+    const fx = this._texelDe(x), fz = this._texelDe(z);
+    const i0 = Math.floor(fx), j0 = Math.floor(fz);
+    const i1 = Math.min(N - 1, i0 + 1), j1 = Math.min(N - 1, j0 + 1);
+    const sx = fx - i0, sz = fz - j0;
+    const A = this.agua;
+    const a = A[j0 * N + i0], b = A[j0 * N + i1];
+    const c = A[j1 * N + i0], d = A[j1 * N + i1];
+    const agua = ((a * (1 - sx) + b * sx) * (1 - sz)
+                + (c * (1 - sx) + d * sx) * sz) / 255;
+    const t = Math.max(0, Math.min(1, (agua - 0.15) / (0.6 - 0.15)));
+    return 1 - t * t * (3 - 2 * t);
   }
 
   _construirTexturas() {

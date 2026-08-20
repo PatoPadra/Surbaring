@@ -165,9 +165,6 @@ export function instalarCapturas(S) {
     S.oclusion?.setSize(ancho, alto);
     compositor.render();
     compositor.renderToScreen = alPrincipio;
-    // La captura fija su propio tamaño; sin devolverle el suyo al preset, el
-    // juego se queda dibujando a la resolución de la captura.
-    S.calidad?.aplicar();
 
     if (!window.__copiaCaptura) {
       const mat = new THREE.MeshBasicMaterial({ map: null, depthTest: false, depthWrite: false });
@@ -192,6 +189,16 @@ export function instalarCapturas(S) {
 
     const pixeles = new Uint8Array(ancho * alto * 4);
     render.readRenderTargetPixels(objetivo, 0, 0, ancho, alto, pixeles);
+
+    // Recién ahora se le devuelve al preset su resolución. Antes esto se hacía
+    // apenas terminaba compositor.render(), y ahí estaba el problema de las
+    // capturas negras: `calidad.aplicar()` llama a compositor.setSize(), que
+    // reasigna los dos objetivos de ping-pong y los deja en blanco. La copia
+    // leía entonces un buffer recién creado —y con el panel del navegador
+    // oculto, además, de 64×64— así que la captura salía negra siempre, hasta
+    // apuntando al cielo al mediodía. El orden importa: primero se leen los
+    // píxeles, después se toca el tamaño.
+    S.calidad?.aplicar();
 
     // El origen de OpenGL está abajo: hay que dar vuelta las filas
     const lienzo2d = document.createElement('canvas');
