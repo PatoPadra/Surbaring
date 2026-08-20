@@ -59,7 +59,12 @@ export class Jugador {
     this.vivo = true;
     this.causaMuerte = null;
     this.salud = 100; this.energia = 100;
-    this.hambre = 85; this.sed = 85;
+    // Cuerpo nuevo, entero. Volver con 85 de sed sonaba a que morirse deja
+    // resaca, pero en la práctica devolvía al jugador a pocos minutos de la
+    // próxima muerte: un pozo del que no se sale. La lección de la muerte la da
+    // la pantalla de fin, que explica qué la causó; no hace falta cobrarla dos
+    // veces.
+    this.hambre = 100; this.sed = 100;
     this.temperatura = 36.6;
     this.horasVividas = 0;
     this.velocidad.set(0, 0, 0);

@@ -298,6 +298,18 @@ async function iniciar() {
     hornos: { agregar: dibujarHorno },
   });
   fin.partida = partida;
+  // Reaparecer teletransporta, y el mundo no viaja con el jugador: la
+  // vegetación se resiembra recién cuando se cruza una celda de casi cien
+  // metros, así que se volvía a la vida en un descampado sin una planta que
+  // recolectar ni un animal a la vista, con el reloj corriendo. Se siembra a
+  // mano en el acto.
+  const reaparecerOriginal = partida.reaparecer.bind(partida);
+  partida.reaparecer = () => {
+    reaparecerOriginal();
+    const p = jugador.posicion;
+    sotobosque.sembrarTodo(p);
+    vegetacion.actualizar(p, tiempo.segundosTotales, tiempo.estado(), camara);
+  };
   jugador.alMorir = (m) => { partida.registrarMuerte(m); fin.mostrar(m); };
 
   const levantarOriginal = construccion.levantar.bind(construccion);
@@ -456,8 +468,34 @@ async function iniciar() {
   document.getElementById('hud').classList.add('visible');
   setTimeout(() => elCarga.remove(), 1100);
 
+  // Bienvenida. El juego tenía diecisiete teclas y no decía ninguna: quien lo
+  // abría por primera vez caía en un bosque sin saber siquiera que hay que
+  // hacer clic para que el ratón mire. La primera vez se abre el panel en
+  // Controles; después alcanza con un aviso, porque repetir el panel en cada
+  // arranque es la clase de cortesía que se vuelve estorbo.
+  const CLAVE_BIENVENIDA = 'survibar.bienvenida';
+  let yaVino = false;
+  try { yaVino = !!localStorage.getItem(CLAVE_BIENVENIDA); } catch { /* sin almacenamiento */ }
+  if (!yaVino) {
+    try { localStorage.setItem(CLAVE_BIENVENIDA, '1'); } catch { /* da igual */ }
+    setTimeout(() => opciones.abrir('controles'), 900);
+  } else {
+    hud.aviso('Clic para mirar · F1 para los controles',
+      'E recolecta e identifica · Q come · Tab abre el códice · G el taller · M el mapa', 9000);
+  }
+
   const reloj = new THREE.Clock();
   const PASO = 1 / 60;
+  /**
+   * Segundos de juego por segundo real a los que envejece el cuerpo.
+   *
+   * Con 24, una barra de sed llena dura unos cincuenta minutos caminando y un
+   * trago devuelve un cuarto de hora: se puede salir a explorar sin volver al
+   * agua cada dos minutos, que era lo que convertía la supervivencia en una
+   * tarea. El hambre aguanta más de una hora. Son números de juego, no de
+   * fisiología: un cuerpo real aguanta días, y jugar eso sería no jugar nada.
+   */
+  const ESCALA_METABOLISMO = 24;
   let acumulador = 0;
   let fps = 60, ultimoDiag = 0;
   let acumProximidad = 0;
@@ -505,7 +543,21 @@ async function iniciar() {
       jugador.actualizar(PASO, entrada);
       tiempo.avanzar(PASO);
       jugador.pesoCargado = inventario.pesoKg;
-      jugador.actualizarSupervivencia(PASO, est, tiempo.velocidad);
+      // El metabolismo corre a su propia escala, y no a la del reloj del mundo.
+      //
+      // Estaban atados, y la cuenta daba un juego imposible: con el reloj en su
+      // velocidad por defecto —trescientos segundos de juego por segundo real—
+      // la sed llegaba a cero en menos de cuatro minutos de estar sentado
+      // jugando, y un fruto devolvía treinta segundos de caminata. No era una
+      // tensión de supervivencia: era una cuenta regresiva, y el juego se
+      // reducía a apretar E contra el lago para siempre.
+      //
+      // Separarlos tiene además una consecuencia buena de diseño: acelerar el
+      // tiempo con T pasa a servir para lo que se inventó —esperar una hornada
+      // de treinta horas, ver amanecer— sin que eso mate al jugador de sed
+      // mientras espera. El costo de adelantar el reloj es el del mundo, no el
+      // del cuerpo.
+      jugador.actualizarSupervivencia(PASO, est, ESCALA_METABOLISMO);
       acumulador -= PASO;
       pasos++;
     }
