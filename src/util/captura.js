@@ -158,6 +158,9 @@ export function instalarCapturas(S) {
     S.oclusion?.setSize(ancho, alto);
     compositor.render();
     compositor.renderToScreen = alPrincipio;
+    // La captura fija su propio tamaño; sin devolverle el suyo al preset, el
+    // juego se queda dibujando a la resolución de la captura.
+    S.calidad?.aplicar();
 
     if (!window.__copiaCaptura) {
       const mat = new THREE.MeshBasicMaterial({ map: null, depthTest: false, depthWrite: false });

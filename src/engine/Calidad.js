@@ -19,6 +19,8 @@
  *    a que el jugador decida a mano.
  */
 
+import * as THREE from 'three';
+
 /**
  * De más a menos. Cada preset dice qué resolución usar y qué apagar; los
  * factores de instancias recortan pasto y árboles sin tocar sus sistemas.
@@ -98,18 +100,48 @@ export class Calidad {
 
   get preset() { return PRESETS[this.nivel]; }
 
+  /**
+   * Cambiar el tamaño de un objetivo NO cambia el de su textura de profundidad.
+   * Quedan descolgadas —el color a 617 y la profundidad a 772— y el resultado es
+   * que el objetivo deja de estar completo: el navegador no lanza una excepción,
+   * simplemente deja de dibujar. Fue la causa de que cambiar la calidad
+   * "no hiciera nada": no es que no cambiara, es que después no se dibujaba más.
+   */
+  _ajustarProfundidad(objetivo, ancho, alto) {
+    if (!objetivo?.depthTexture) return;
+    objetivo.depthTexture.dispose();
+    objetivo.depthTexture = new THREE.DepthTexture(ancho, alto, THREE.FloatType);
+  }
+
   /** Aplica el preset actual a todo lo que se pueda cambiar en caliente. */
   aplicar(ancho = innerWidth, alto = innerHeight) {
     const p = this.preset;
     const { render, compositor, camara, csm, oclusion, color, resplandor, suavizado } = this.ctx;
 
     // ── Resolución. La palanca grande.
-    const pr = Math.min(devicePixelRatio, p.maxPixelRatio) * p.escala;
-    render.setPixelRatio(pr);
-    render.setSize(ancho, alto);
-    compositor.setPixelRatio(pr);
-    compositor.setSize(ancho, alto);
-    oclusion?.setSize(ancho * pr, alto * pr);
+    //
+    // Se dibuja a una resolución interna entera y el lienzo se estira por CSS a
+    // toda la ventana. Con `setPixelRatio` fraccionario los objetivos quedaban
+    // en 617,6 × 590,4 píxeles, que no existen: WebGL trabaja en enteros y el
+    // desajuste rompía el muestreo de la oclusión.
+    const escalaTotal = Math.min(devicePixelRatio, p.maxPixelRatio) * p.escala;
+    const anchoPx = Math.max(64, Math.round(ancho * escalaTotal));
+    const altoPx = Math.max(64, Math.round(alto * escalaTotal));
+    this.anchoPx = anchoPx;
+    this.altoPx = altoPx;
+
+    render.setPixelRatio(1);
+    render.setSize(anchoPx, altoPx, false);   // false: no tocar el CSS del lienzo
+    // El lienzo se muestra siempre a ventana completa y el navegador estira lo
+    // que se dibujó adentro. Si quedara el tamaño en píxeles metido en el
+    // atributo de estilo, bajar la calidad encogería la imagen en una esquina.
+    render.domElement.style.width = '100vw';
+    render.domElement.style.height = '100vh';
+    compositor.setPixelRatio(1);
+    compositor.setSize(anchoPx, altoPx);
+    this._ajustarProfundidad(compositor.renderTarget1, anchoPx, altoPx);
+    this._ajustarProfundidad(compositor.renderTarget2, anchoPx, altoPx);
+    oclusion?.setSize(anchoPx, altoPx);
 
     // ── Sombras
     render.shadowMap.enabled = p.sombras;

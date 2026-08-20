@@ -379,10 +379,9 @@ async function iniciar() {
   });
   calidad.nivel = calidad.nivelDetectado;
   calidad.alCambiar = (p) => {
-    const pr = render.getPixelRatio();
-    fxaa.material.uniforms.resolution.value.set(1 / (innerWidth * pr), 1 / (innerHeight * pr));
+    fxaa.material.uniforms.resolution.value.set(1 / calidad.anchoPx, 1 / calidad.altoPx);
     hud.aviso(`Calidad: ${p.nombre}`,
-      `${calidad.placa.slice(0, 52)} · C para cambiar a mano`);
+      `${calidad.anchoPx}×${calidad.altoPx} · ${calidad.placa.slice(0, 46)}`);
   };
 
   const opciones = new Opciones({
