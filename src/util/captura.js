@@ -56,12 +56,44 @@ export function instalarCapturas(S) {
 
     const est = tiempo.estado();
 
+    // Eventos naturales: se puede forzar uno para poder mirarlo. Sin esto, una
+    // captura de tormenta dependería de que el dado quisiera.
+    if (o.evento && S.eventos) {
+      S.eventos.activos.length = 0;
+      S.eventos.disparar(o.evento, o.horasEvento ?? 6);
+      const ev = S.eventos.activos[0];
+      if (ev) {
+        // Al medio del evento, que es donde está a plena intensidad
+        const medio = ev.desde + (ev.hasta - ev.desde) / 2;
+        const guardo = tiempo.fecha;
+        tiempo.fecha = new Date(medio);
+        if (ev.x != null) {
+          // El evento local va DELANTE de la cámara, no hacia el este: el rumbo
+          // del jugador y el eje x del mundo no son lo mismo, y poner el humo
+          // en +x hacía capturas sin humo que parecían un fallo de dibujo.
+          const dir = new THREE.Vector3();
+          camara.getWorldDirection(dir);
+          const d = o.distanciaEvento ?? 700;
+          ev.x = camara.position.x + dir.x * d;
+          ev.z = camara.position.z + dir.z * d;
+        }
+        S.eventos.aplicar(est);
+        tiempo.fecha = guardo;
+      }
+    } else if (S.eventos) {
+      S.eventos.aplicar(est);
+    }
+    // Forzados sueltos, para revisar la precipitación sin depender del clima
+    for (const k of ['lluvia', 'nieve', 'granizo', 'ceniza', 'rayos', 'vientoKmh']) {
+      if (o[k] !== undefined) est[k] = o[k];
+    }
+
     cielo.actualizar(tiempo.fecha, mundo.meta.centro.lat, mundo.meta.centro.lon, tiempo.segundosTotales);
     cielo.configurarAtmosfera({ nubes: est.nubosidad, turbiedad: est.turbiedad, ceniza: est.ceniza });
 
     cielo.colorNiebla(escena.fog.color);
     escena.fog.density = est.densidadNiebla;
-    render.toneMappingExposure = est.exposicion;
+    render.toneMappingExposure = est.exposicion * (1 + (S.clima?.destello ?? 0) * 1.6);
 
     terreno.aplicarEstacion({
       estacion: est.estacionContinua, cotaNieve: est.cotaNieve,
@@ -81,10 +113,14 @@ export function instalarCapturas(S) {
     terreno.actualizar(camara);
     agua.actualizar(tiempo.segundosTotales, camara, est, escena);
 
+    // Precipitación, humo y rayos: la parte del clima que se ve caer
+    S.clima?.actualizar(o.dtClima ?? 0.6, est, camara);
+    if (o.rayo) S.clima.destello = 1;
+
     csm.lightDirection.copy(cielo.direccionSol).negate().normalize();
     for (const luz of csm.lights) {
       luz.color.copy(cielo.luzSol.color);
-      luz.intensity = cielo.luzSol.intensity * 0.92;
+      luz.intensity = cielo.luzSol.intensity * 0.92 + (S.clima?.destello ?? 0) * 6.0;
     }
     cielo.luzSol.intensity = 0;
     csm.update();

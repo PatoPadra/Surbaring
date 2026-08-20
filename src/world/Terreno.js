@@ -359,10 +359,21 @@ export class Terreno {
         float meso  = fbmTri(vMundo, nrm, 0.28);       // matas de ~3,5 m
         float micro = fbmTri(vMundo, nrm, 2.6);        // grano de ~0,4 m
         float grano = fbmTri(vMundo, nrm, 0.42);
+        // Cuarta escala, la de los últimos metros: gravilla, hojarasca y grumos
+        // de ~12 cm. Sin ella el suelo bajo los pies es un manchón marrón
+        // desenfocado, que era el peor defecto visual que quedaba: todo el
+        // trabajo multiescala se terminaba antes de llegar a donde el jugador
+        // realmente mira.
+        float pasoCorto = 1.0 - smoothstep(1.2, 16.0, distVista);
+        float gravilla = fbmTri(vMundo, nrm, 8.2);
 
         float detalle = macro;
         detalle = mix(detalle, mix(detalle, meso, 0.55), cercania);
         detalle = mix(detalle, mix(detalle, micro, 0.42), muyCerca);
+        // La gravilla NO entra en el campo detalle: ese campo decide parches de
+        // vegetación y vetas de roca, y meterle una frecuencia de 12 cm llenaba
+        // el suelo de manchas negras del tamaño de una mano. Sirve para el
+        // moteado del albedo y para la normal, no para la estructura.
 
         // ── Mezcla vegetal según el gradiente de lluvia oeste-este ──────────
         vec3 vegetacion = mix(estepa, bosqueSeco, smoothstep(0.22, 0.48, humedad));
@@ -418,6 +429,12 @@ export class Terreno {
         tierra = mix(tierra, tierra * 0.62, cauce * 0.8);
         tierra = mix(tierra, vec3(0.128, 0.118, 0.098), esAgua * 0.85);
 
+        // Variación de albedo de escala corta: piedritas claras, hojarasca
+        // oscura. Se aplica sólo en los últimos metros y respeta la nieve, que
+        // por definición tapa el detalle del suelo.
+        float moteado = mix(0.5, gravilla, pasoCorto * (1.0 - mascaraNieve));
+        tierra *= 0.90 + 0.20 * moteado;
+
         // La lluvia reciente oscurece y satura el suelo
         tierra = mix(tierra, tierra * 0.72, uHumedadGlobal * (1.0 - mascaraNieve) * 0.55);
 
@@ -466,6 +483,19 @@ export class Terreno {
           fbmTri(vMundo + d4, normal, 3.4) - fbmTri(vMundo - d4, normal, 3.4)
         );
         normal = normalize(normal + vec3(e2.x, 0.0, e2.y) * 0.85 * f2);
+
+        // Y una escala más, la de los últimos metros: es la que hace que la luz
+        // rasante de la mañana enganche en el grano del suelo en vez de resbalar
+        // sobre una superficie lisa.
+        float f3 = 1.0 - smoothstep(1.0, 11.0, dv);
+        if (f3 > 0.001) {
+          vec3 d5 = vec3(0.045, 0.0, 0.0), d6 = vec3(0.0, 0.0, 0.045);
+          vec2 e3 = vec2(
+            fbmTri(vMundo + d5, normal, 9.0) - fbmTri(vMundo - d5, normal, 9.0),
+            fbmTri(vMundo + d6, normal, 9.0) - fbmTri(vMundo - d6, normal, 9.0)
+          );
+          normal = normalize(normal + vec3(e3.x, 0.0, e3.y) * 1.5 * f3);
+        }
         vec3 nonPerturbedNormal = normal;
         `
       );

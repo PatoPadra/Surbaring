@@ -41,6 +41,8 @@ import { Construccion } from './systems/Construccion.js';
 import { Obras } from './world/Obras.js';
 import { Peces } from './entities/Peces.js';
 import { Pesca } from './systems/Pesca.js';
+import { Eventos } from './systems/Eventos.js';
+import { Clima } from './world/Clima.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -115,6 +117,11 @@ async function iniciar() {
   });
 
   escena.fog = new THREE.FogExp2(0x9ab4c8, 0.000055);
+
+  // Precipitación, rayos y humo: hasta acá el clima existía en los números y en
+  // el color del cielo, pero no se veía caer nada.
+  const clima = new Clima(escena, render);
+  clima.alturaEn = (x, z) => mundo.alturaEn(x, z);
 
   // ── Tiempo y estaciones ───────────────────────────────────────────────────
   const tiempo = new Tiempo(mundo.meta.centro.lat, mundo.meta.centro.lon);
@@ -211,6 +218,11 @@ async function iniciar() {
   const pesca = new Pesca(normativaCaza, {
     peces, mundo, jugador, inventario, saberes, codice, hud, tiempo,
   });
+
+  // Eventos naturales: los catorce fenómenos del dataset, disparados por el
+  // clima que ya se simula. Nunca contra el vacío —no hay viento blanco sin
+  // viento ni incendio con el suelo mojado— y siempre avisando primero.
+  const eventos = new Eventos(geografia, { tiempo, mundo, jugador, hud, saberes, codice });
 
   const recoleccion = new Recoleccion({
     mundo, jugador, vegetacion, sotobosque, fauna: bichos,
@@ -322,6 +334,11 @@ async function iniciar() {
     const dt = Math.min(reloj.getDelta(), 0.1);
     fps += (1 / Math.max(dt, 1e-4) - fps) * 0.06;
 
+    // El estado del ambiente se calcula UNA vez por cuadro y se le aplican los
+    // eventos: si la supervivencia usara su propia llamada a tiempo.estado(),
+    // el viento blanco no la tocaría y el jugador no se enteraría de nada.
+    const est = eventos.aplicar(tiempo.estado());
+
     // Simulación a paso fijo: la física no depende de la tasa de refresco
     acumulador += dt;
     let pasos = 0;
@@ -329,27 +346,30 @@ async function iniciar() {
       jugador.actualizar(PASO, entrada);
       tiempo.avanzar(PASO);
       jugador.pesoCargado = inventario.pesoKg;
-      jugador.actualizarSupervivencia(PASO, tiempo.estado(), tiempo.velocidad);
+      jugador.actualizarSupervivencia(PASO, est, tiempo.velocidad);
       acumulador -= PASO;
       pasos++;
     }
+    // Lo que los eventos hacen por su cuenta: quemar, golpear, voltear
+    eventos.golpear(dt, est, jugador, dt * tiempo.velocidad / 3600);
 
     // ── Cielo y luz
     cielo.actualizar(tiempo.fecha, mundo.meta.centro.lat, mundo.meta.centro.lon, tiempo.segundosTotales);
-    const est = tiempo.estado();
     cielo.configurarAtmosfera({ nubes: est.nubosidad, turbiedad: est.turbiedad, ceniza: est.ceniza });
 
     // Niebla coherente con el cielo y con la densidad del aire del día
     cielo.colorNiebla(colorNiebla);
     escena.fog.color.copy(colorNiebla);
     escena.fog.density = est.densidadNiebla;
-    render.toneMappingExposure = est.exposicion;
+    // El relámpago no dibuja una raya: ilumina el paisaje entero por un instante
+    clima.actualizar(dt, est, camara);
+    render.toneMappingExposure = est.exposicion * (1 + clima.destello * 1.6);
 
     // ── Sombras en cascada siguiendo al sol
     csm.lightDirection.copy(cielo.direccionSol).negate().normalize();
     for (const luz of csm.lights) {
       luz.color.copy(cielo.luzSol.color);
-      luz.intensity = cielo.luzSol.intensity * 0.92;
+      luz.intensity = cielo.luzSol.intensity * 0.92 + clima.destello * 6.0;
     }
     cielo.luzSol.intensity = 0; // la sombra la aportan las cascadas
     csm.update();
@@ -387,6 +407,7 @@ async function iniciar() {
     if (acumProximidad === 0) {
       hud.mostrarAccion(recoleccion.quePuedoHacer(tiempo.segundosTotales));
       hud.pintarBolso(inventario);
+      hud.pintarFenomenos(eventos.resumen());
     }
 
     // El domo del cielo acompaña a la cámara
@@ -404,7 +425,8 @@ async function iniciar() {
         `${terreno.nodosDibujados} nodos de terreno<br>` +
         `${vegetacion.mallasCompletas}m+${vegetacion.impostores}i+${sotobosque.total} plantas · ${bichos.vivos.length} animales · ${peces.total} peces<br>` +
         `${inf.render.calls} llamadas · ${(inf.render.triangles / 1000).toFixed(0)}k tri<br>` +
-        `sol ${(cielo.alturaSol * 180 / Math.PI).toFixed(1)}°`;
+        `sol ${(cielo.alturaSol * 180 / Math.PI).toFixed(1)}°` +
+        (eventos.activos.length ? `<br>${eventos.resumen().map(e => e.nombre).join(' · ')}` : '');
     }
   }
   cuadro();
@@ -415,6 +437,7 @@ async function iniciar() {
     fauna: bichos, jugador, tiempo, compositor, csm, hud, codice, entrada,
     inventario, saberes, recoleccion, caza,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
+    eventos, clima,
   };
 
   if (import.meta.env.DEV) {

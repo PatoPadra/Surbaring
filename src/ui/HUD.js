@@ -113,6 +113,15 @@ export class HUD {
       #termico.visible { opacity: 1; }
       #termico.frio { color: #7fb8d8; }
       #termico.calor { color: #d8a05a; }
+      #fenomenos { position: absolute; top: 1rem; left: 50%; transform: translateX(-50%);
+        display: flex; gap: .4rem; pointer-events: none; }
+      #fenomenos .fen { font-size: .68rem; letter-spacing: .06em; padding: .22rem .6rem;
+        border-radius: 2px; background: rgba(12,14,13,.72); border-left: 2px solid;
+        text-shadow: 0 1px 6px #000; }
+      #fenomenos .p1, #fenomenos .p2 { border-color: #7fa8c0; color: #cfe0ea; }
+      #fenomenos .p3 { border-color: #d8c05a; color: #eadfae; }
+      #fenomenos .p4 { border-color: #d08a3a; color: #f0cfa2; }
+      #fenomenos .p5 { border-color: #c8503f; color: #f2b7ad; }
     `;
     document.head.appendChild(est);
 
@@ -120,6 +129,13 @@ export class HUD {
     term.id = 'termico';
     document.getElementById('hud').appendChild(term);
     this.elTermico = term;
+
+    // Qué está pasando en el ambiente ahora mismo, con el color de su
+    // peligrosidad: la del dataset, del 1 al 5.
+    const fen = document.createElement('div');
+    fen.id = 'fenomenos';
+    document.getElementById('hud').appendChild(fen);
+    this.elFenomenos = fen;
   }
 
   /** @param {{tipo:string, etiqueta:string}|null} accion */
@@ -131,6 +147,16 @@ export class HUD {
       ? accion.etiqueta.replace(tecla, `<b>${tecla}</b>`)
       : `<b>E</b> · ${accion.etiqueta}`;
     this.elAccion.classList.add('visible');
+  }
+
+  /** @param {Array<{nombre:string, peligrosidad:number, distancia?:number}>} activos */
+  pintarFenomenos(activos) {
+    if (!activos.length) { this.elFenomenos.innerHTML = ''; return; }
+    this.elFenomenos.innerHTML = activos.map(a => {
+      const lejos = a.distancia != null && a.distancia > 400
+        ? ` · a ${(a.distancia / 1000).toFixed(1)} km` : '';
+      return `<span class="fen p${a.peligrosidad || 1}">${a.nombre}${lejos}</span>`;
+    }).join('');
   }
 
   pintarBolso(inventario) {

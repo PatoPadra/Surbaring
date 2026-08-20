@@ -192,6 +192,9 @@ Qué se colecciona y qué no es una decisión deliberada:
   provincia— que cambian lo que la ley permite hacer en cada lugar
 - Peces instanciados en el agua y pesca con permiso, temporada por ambiente,
   devolución obligatoria de nativos y medida máxima de salmónidos
+- Los catorce fenómenos naturales del dataset ocurriendo, con aviso previo,
+  desarrollo y amaine, y con lluvia, nieve, granizo, ceniza, rayos y humo que
+  se ven caer
 
 ### Roto o a medio hacer
 
@@ -207,8 +210,7 @@ Qué se colecciona y qué no es una decisión deliberada:
    batería, motor, radio, sensor, panel o combustible nuclear, y ninguna de
    esas cosas sale de un bosque: para llegar ahí haría falta industria, no otro
    sistema de recolección.
-4. No hay todavía: audio, ni eventos naturales (incendio, ceniza, viento
-   blanco) más allá de los parámetros.
+4. No hay audio.
 5. El sotobosque llega hasta 192 m. Más allá el suelo queda desnudo, aunque a
    esa distancia la niebla aérea ya disimula bastante el corte.
 
@@ -239,6 +241,69 @@ Lo que sí se puede:
 
 Con estas dos vías el árbol pasó de 7 a 15 tecnologías alcanzables: las dos
 primeras eras quedan jugables completas.
+
+#### Los eventos naturales, y por qué avisan antes
+
+`geografia.json` describía catorce fenómenos con su estacionalidad, su
+peligrosidad, su frecuencia y —lo más útil— **sus señales previas**. Eso último
+es la parte educativa: en montaña casi nada pasa de golpe, y saber leer el aviso
+es la diferencia entre volver y no volver. Por eso cada evento tiene tres
+momentos y el jugador los ve: el aviso con las señales previas, el desarrollo, y
+el amaine.
+
+Los eventos **no se sortean contra el vacío**: se disparan cuando el clima
+simulado los habilita. No hay viento blanco sin viento y sin nieve, ni incendio
+con el suelo mojado. La frecuencia del dataset pondera, no decide, y el
+resultado tiene firma geográfica: medido sobre un año simulado, la lluvia
+orográfica sólo aparece en la ladera húmeda del oeste, el viento blanco y la
+avalancha sólo arriba de la cota de nieve, y la niebla de valle sólo abajo. Son
+entre 40 y 76 episodios por año según dónde se esté parado, con el ambiente
+alterado alrededor del 10 % del tiempo.
+
+Hay una cadena que me gusta especialmente porque no está escrita a mano: la
+**sequía estival** sube el riesgo de incendio, y con el suelo seco y viento el
+**incendio forestal** se enciende solo. Salieron siete incendios en tres años
+simulados. Costó un defecto de orden: el sorteo corría antes de aplicar los
+eventos activos, así que el riesgo que levantaba la sequía todavía no existía
+cuando se tiraba el dado y el incendio no podía ocurrir nunca.
+
+#### Lo que ahora se ve caer
+
+Hasta acá el clima existía en los números y en el color del cielo, pero no se
+veía caer nada. `src/world/Clima.js` dibuja lluvia, nieve, granizo, ceniza,
+rayos y humo, con tres decisiones que importan:
+
+- **La precipitación viaja con la cámara**, en una caja de 62 m que se recicla
+  por los bordes. Dibujar lluvia en 65 km de mundo no tiene sentido.
+- **La lluvia son segmentos, no puntos.** Una gota vista de costado es una raya
+  corta —medio metro, no tres— inclinada por el viento real del estado del
+  ambiente.
+- **El rayo no es una textura, es un golpe de luz**: sube la intensidad de las
+  cascadas y la exposición por unos cuadros, que es lo que hace un relámpago de
+  verdad e ilumina el paisaje entero.
+
+El humo del incendio son bocanadas con degradado radial y grumos generados en un
+canvas; con planos lisos la columna se veía como una pila de cajas.
+
+**Un defecto que costó encontrar y que vale documentar**: el render usa
+`logarithmicDepthBuffer`, y un `ShaderMaterial` propio que no incluya los chunks
+`logdepthbuf_*` escribe una profundidad que no se corresponde con la del resto de
+la escena. El terreno se come las partículas y no se ve caer nada, sin ningún
+error en consola. Es el mismo patrón que los otros tres defectos de shader de más
+abajo: **un shader mal integrado no lanza excepciones, sólo desaparece**.
+
+#### El suelo de cerca
+
+El terreno tenía detalle en tres escalas —manchones de 48 m, matas de 3,5 m y
+grano de 40 cm— y ninguna resolvía los últimos metros, que es justamente donde el
+jugador mira. Se agregó una cuarta escala de 12 cm para el moteado del albedo y
+para la normal, que es la que hace que la luz rasante enganche en el grano en vez
+de resbalar sobre una superficie lisa.
+
+Un detalle que salió mal en el camino y vale como aviso: esa gravilla se metió
+primero en el campo `detalle`, que decide parches de vegetación y vetas de roca.
+El resultado fue un suelo lleno de manchas negras del tamaño de una mano. La
+frecuencia alta sirve para el moteado y la normal, no para la estructura.
 
 #### Los peces, y la contradicción que el parque administra
 
@@ -435,6 +500,8 @@ src/entities/Jugador.js Controlador y física
 src/entities/Fauna.js   Animales y comportamiento
 src/entities/Peces.js   Cardúmenes en lagos, ríos y arroyos
 src/systems/Pesca.js    Permiso, temporada, especie, medida y devolución
+src/systems/Eventos.js  Los catorce fenómenos naturales, disparados por el clima
+src/world/Clima.js      Lluvia, nieve, granizo, ceniza, rayos y humo
 src/world/Limites.js    Parque, Reserva y jurisdicción provincial
 src/world/Hornos.js     Geometría de fogatas, carboneras, hornos y fraguas
 src/systems/Mineria.js  Áridos, chatarra y lo que la ley no deja sacar
