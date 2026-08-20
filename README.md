@@ -43,8 +43,10 @@ npm run dem
 | `G` | Abrir el taller: cantera, hornos, hornadas y obras |
 | `P` | Tirar la línea (el permiso se saca en la intendencia) |
 | `Tab` | Abrir el códice |
+| `M` | Mapa del parque (se revela explorando) |
+| `I` | Bolso completo: pesos, comer y tirar |
+| `Esc` | Opciones |
 | `T` | Acelerar el paso del tiempo |
-| `M` | Silenciar o activar el sonido |
 | `O` | Posproceso: completo / sin oclusión / crudo |
 | `C` | Cambiar calidad: alta / media / baja / mínima |
 | `F3` | Panel de diagnóstico |
@@ -200,6 +202,8 @@ Qué se colecciona y qué no es una decisión deliberada:
   se ven caer
 - Audio sintetizado en tiempo real: viento, lluvia, granizo, orilla, fuego,
   truenos con su demora por distancia y pasos con cadencia por zancada
+- Muerte con causa explicada, mapa topográfico que se revela explorando,
+  inventario completo y menú de opciones
 
 ### Roto o a medio hacer
 
@@ -330,6 +334,55 @@ al tronco en vez de al alcance de la copa, y en el coihue, que es el de copa má
 ancha, sobraban por casi un 15 %. Ahora el largo se deriva del alcance del
 follaje y del ángulo de elevación de la rama, así que toda rama termina dentro de
 la copa, que es donde no se la ve.
+
+#### Morirse, y qué se hace con eso
+
+Hasta acá la salud podía llegar a cero y no pasaba nada: se seguía caminando con
+la barra vacía. Todo el modelo de supervivencia era decorativo.
+
+Ahora la muerte existe, y la pantalla que aparece no dice "moriste" y ya. Dice
+**de qué**, **dónde**, **con qué condiciones** y **qué habría cambiado el
+resultado**, con el texto armado a partir del estado real que la causó: la
+temperatura del cuerpo, la sensación térmica, la altitud, si había refugio y
+cuánto abrigaba. Morirse de hipotermia a 2.359 m sin cortar el viento es
+exactamente la lección del lugar, y mostrar un botón de reintentar sería tirar el
+único momento en que el jugador está prestando atención de verdad.
+
+Ni el hambre ni la sed matan de golpe: **desgastan**. Lo que mata es la salud en
+cero, y a ella llegan por caminos de velocidad muy distinta —la sed descuenta más
+del doble que el hambre, porque se muere de sed en días y de hambre en semanas—.
+Medido: en la cumbre del Catedral con viento de 60 km/h y sin refugio, la
+hipotermia mata en 9 horas de juego; la deshidratación, en 25.
+
+Antes de matar, avisan: con cualquiera de las dos en cero **no se corre más** y
+el HUD lo dice. Eso convierte una barra en cero en una decisión —volver o
+seguir— en vez de un número que baja solo.
+
+Al reiniciar se conservan el códice, las tecnologías, las obras y el mapa. Se
+pierde el cuerpo, no lo aprendido.
+
+#### El mapa se revela caminando
+
+La carta se dibuja píxel por píxel con el mismo modelo de elevación que pisa el
+jugador: sombreado desde el noroeste como manda la convención cartográfica,
+curvas de nivel cada 200 m, lagos y cauces de las máscaras del terreno. Si el
+mapa dice que hay un filo, hay un filo.
+
+Y arranca en negro. Lo que se revela depende de **desde dónde se mira**, con un
+alcance que sale de la prominencia real —la altura sobre el terreno de un
+kilómetro a la redonda, no la altitud absoluta— y que el clima y la noche
+cierran. Medido:
+
+| Desde dónde | Alcance |
+|---|---|
+| Costa del lago, 822 m | 650 m |
+| Cumbre del Catedral, 2.359 m | 3.158 m |
+| Mismo lugar con niebla espesa | 325 m |
+| De noche | 220 m |
+
+Que subir a un mirador abra veinticinco veces más superficie que caminar por el
+bosque no es una mecánica inventada: es para lo que sirve subir a un mirador. Lo
+explorado se guarda en el navegador y sobrevive a recargar y a morirse.
 
 #### El error de método que costó el rendimiento
 

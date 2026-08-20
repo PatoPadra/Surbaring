@@ -41,10 +41,29 @@ export class Jugador {
     this.oxigeno = 100;
     this.pesoCargado = 0;
 
+    // Muerte: qué la causó y cuánto se aguantó. El juego no la usa para
+    // castigar sino para explicar, así que hace falta guardar el contexto.
+    this.vivo = true;
+    this.causaMuerte = null;
+    this.horasVividas = 0;
+    this.alMorir = null;
+
     this._balanceo = 0;
     this._normalSuelo = new THREE.Vector3(0, 1, 0);
     this._tmp = new THREE.Vector3();
     this._distanciaRecorrida = 0;
+  }
+
+  /** Vuelve a empezar: mismo mundo, cuerpo nuevo. */
+  revivir() {
+    this.vivo = true;
+    this.causaMuerte = null;
+    this.salud = 100; this.energia = 100;
+    this.hambre = 85; this.sed = 85;
+    this.temperatura = 36.6;
+    this.horasVividas = 0;
+    this.velocidad.set(0, 0, 0);
+    return this;
   }
 
   /** Ubica al jugador en coordenadas geográficas reales. */
@@ -74,7 +93,7 @@ export class Jugador {
   _mirar(entrada) {
     const sens = 0.0022 * (entrada.sensibilidad ?? 1);
     this.giro -= entrada.ratonDX * sens;
-    this.cabeceo -= entrada.ratonDY * sens;
+    this.cabeceo -= entrada.ratonDY * sens * (entrada.invertirY ? -1 : 1);
     const limite = Math.PI / 2 - 0.02;
     this.cabeceo = Math.max(-limite, Math.min(limite, this.cabeceo));
     entrada.consumirRaton();
@@ -82,7 +101,8 @@ export class Jugador {
 
   _mover(dt, entrada) {
     this.agachado = entrada.agachar;
-    this.corriendo = entrada.correr && entrada.adelante > 0 && this.energia > 0.5;
+    this.corriendo = entrada.correr && entrada.adelante > 0
+      && this.energia > 0.5 && !this.desfallecido;
 
     // Base ortonormal en el plano horizontal
     const sin = Math.sin(this.giro), cos = Math.cos(this.giro);
@@ -257,6 +277,7 @@ export class Jugador {
    * @param {number} escalaTiempo cuántos segundos de juego pasan por segundo real
    */
   actualizarSupervivencia(dt, clima, escalaTiempo = 60) {
+    if (!this.vivo) return;
     // El desgaste se mide en tiempo de juego, no en tiempo real
     const h = (dt * escalaTiempo) / 3600;  // horas de juego transcurridas
 
@@ -297,14 +318,55 @@ export class Jugador {
     this.mojado = mojado;
 
     // ── Consecuencias
+    //
+    // Ni el hambre ni la sed matan de golpe: desgastan. Lo que mata es la salud
+    // en cero, y a ella llegan por caminos de velocidad muy distinta. Que la
+    // deshidratación pegue más del doble que el hambre no es un ajuste de
+    // dificultad: se muere de sed en días y de hambre en semanas.
+    this.horasVividas += h;
     let dano = 0;
-    if (this.hambre <= 0) dano += 1.8 * h;
-    if (this.sed <= 0) dano += 4.0 * h;          // la deshidratación mata antes
-    if (this.temperatura < 35.0) dano += (35.0 - this.temperatura) * 5.5 * h;
-    if (this.temperatura > 39.0) dano += (this.temperatura - 39.0) * 4.0 * h;
+    const causas = [];
+    if (this.hambre <= 0) { dano += 1.8 * h; causas.push(['hambre', 1.8]); }
+    if (this.sed <= 0) { dano += 4.0 * h; causas.push(['sed', 4.0]); }
+    if (this.temperatura < 35.0) {
+      const d = (35.0 - this.temperatura) * 5.5;
+      dano += d * h; causas.push(['hipotermia', d]);
+    }
+    if (this.temperatura > 39.0) {
+      const d = (this.temperatura - 39.0) * 4.0;
+      dano += d * h; causas.push(['golpe de calor', d]);
+    }
     if (dano > 0) this.salud = Math.max(0, this.salud - dano);
     else if (this.hambre > 40 && this.sed > 40) {
       this.salud = Math.min(100, this.salud + 1.4 * h);   // se recupera solo
+    }
+
+    // El desgaste se nota antes de matar: sin comer ni beber no se corre, y el
+    // cuerpo deja de reponer resistencia. Es lo que convierte una barra en cero
+    // en una decisión —volver o seguir— en vez de un número que baja solo.
+    if (this.hambre <= 0 || this.sed <= 0) {
+      this.energia = Math.max(0, this.energia - 14 * h);
+      this.desfallecido = true;
+    } else {
+      this.desfallecido = false;
+    }
+
+    // La causa de muerte es la que más rápido estaba matando en ese momento
+    if (this.vivo && this.salud <= 0) {
+      this.vivo = false;
+      causas.sort((a, b) => b[1] - a[1]);
+      this.causaMuerte = {
+        causa: causas[0] ? causas[0][0] : 'agotamiento',
+        porHora: causas[0] ? +causas[0][1].toFixed(1) : 0,
+        altitud: this.posicion.y,
+        temperaturaCuerpo: this.temperatura,
+        sensacion: this.sensacionTermica,
+        clima,
+        horas: this.horasVividas,
+        abrigo: this.abrigo || 0,
+        hambre: this.hambre, sed: this.sed,
+      };
+      this.alMorir?.(this.causaMuerte);
     }
 
     // Cargar de más agota antes

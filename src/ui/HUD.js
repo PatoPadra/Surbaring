@@ -260,6 +260,12 @@ export class HUD {
     } else if (j.golpeCalor) {
       this.elTermico.textContent = 'Golpe de calor';
       this.elTermico.className = 'visible calor';
+    } else if (j.desfallecido) {
+      // El aviso llega antes que la muerte: con el alimento o el agua en cero se
+      // deja de correr y la salud empieza a bajar. Que se vea es lo que
+      // convierte una barra en cero en una decisión.
+      this.elTermico.textContent = j.sed <= 0 ? 'Deshidratado' : 'Sin fuerzas';
+      this.elTermico.className = 'visible calor';
     } else {
       this.elTermico.className = '';
     }

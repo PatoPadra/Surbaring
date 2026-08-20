@@ -7,6 +7,7 @@ export class Entrada {
     this.ratonDX = 0;
     this.ratonDY = 0;
     this.sensibilidad = 1;
+    this.invertirY = false;
     this.bloqueado = false;
     this.alPulsar = new Map();
 

@@ -46,6 +46,11 @@ import { Clima } from './world/Clima.js';
 import { Audio } from './engine/Audio.js';
 import { PasoOclusion, PasoColor } from './engine/Posproceso.js';
 import { Calidad } from './engine/Calidad.js';
+import { Exploracion } from './systems/Exploracion.js';
+import { Mapa } from './ui/Mapa.js';
+import { Opciones } from './ui/Opciones.js';
+import { Bolso } from './ui/Bolso.js';
+import { Fin } from './ui/Fin.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -186,11 +191,8 @@ async function iniciar() {
     hud.aviso(`Posproceso: ${estados[modoPosproceso]}`,
       'O alterna oclusión ambiental y corrección de color');
   });
-  entrada.registrar('KeyM', () => {
-    audio.iniciar();
-    const callado = audio.alternarSilencio();
-    hud.aviso(callado ? 'Sonido silenciado' : 'Sonido activado', 'M para alternar');
-  });
+  // El silencio pasó a las opciones: M es la tecla del mapa en todos los juegos
+  // del mundo y pelearse con esa costumbre no tiene sentido.
 
   let modoPosproceso = 0;
   const hud = new HUD(mundo, jugador, tiempo);
@@ -264,6 +266,14 @@ async function iniciar() {
   recoleccion.pesca = pesca;
 
   const taller = new Taller({ fundicion, mineria, construccion, limites, jugador, inventario });
+
+  // Exploración, mapa, bolso, opciones y final. El mapa arranca en blanco y se
+  // revela caminando; lo explorado se guarda en el navegador.
+  const exploracion = new Exploracion(mundo);
+  const mapa = new Mapa({ mundo, jugador, tiempo, exploracion, codice });
+  const bolso = new Bolso({ inventario, jugador, hud, recoleccion });
+  const fin = new Fin({ jugador, mundo, tiempo, hud, codice, saberes, construccion });
+  jugador.alMorir = (m) => fin.mostrar(m);
   const levantarOriginal = construccion.levantar.bind(construccion);
   construccion.levantar = (obra) => {
     const c = levantarOriginal(obra);
@@ -297,6 +307,8 @@ async function iniciar() {
   };
 
   entrada.registrar('Tab', () => codice.alternar());
+  entrada.registrar('KeyM', () => mapa.alternar());
+  entrada.registrar('KeyI', () => bolso.alternar());
   entrada.registrar('KeyE', () => recoleccion.actuar(tiempo.segundosTotales));
   entrada.registrar('KeyQ', () => recoleccion.comer());
   entrada.registrar('KeyG', () => taller.alternar());
@@ -373,6 +385,31 @@ async function iniciar() {
       `${calidad.placa.slice(0, 52)} · C para cambiar a mano`);
   };
 
+  const opciones = new Opciones({
+    calidad, audio, entrada, camara, jugador, tiempo, exploracion, hud, render,
+  });
+
+  /** ¿Hay algún panel abierto? Sirve para no encimarlos. */
+  const hayPanel = () => codice.abierto || taller.abierto || mapa.abierto
+    || bolso.abierto || opciones.abierto || fin.abierto;
+
+  // Con el puntero capturado, Escape se lo come el navegador para liberarlo y la
+  // tecla nunca llega acá. Lo que sí llega es que el puntero se soltó, y eso es
+  // lo que el jugador quiso hacer: se abre el menú.
+  document.addEventListener('pointerlockchange', () => {
+    if (document.pointerLockElement) return;
+    if (!hayPanel()) setTimeout(() => { if (!hayPanel()) opciones.abrir(); }, 60);
+  });
+  addEventListener('keydown', (ev) => {
+    if (ev.code !== 'Escape') return;
+    if (opciones.abierto) opciones.cerrar();
+    else if (mapa.abierto) mapa.alternar();
+    else if (bolso.abierto) bolso.alternar();
+    else if (taller.abierto) taller.alternar();
+    else if (codice.abierto) codice.alternar();
+    else opciones.abrir();
+  });
+
   function redimensionar() {
     camara.aspect = innerWidth / innerHeight;
     camara.updateProjectionMatrix();
@@ -442,7 +479,17 @@ async function iniciar() {
       pasos++;
     }
     // Lo que los eventos hacen por su cuenta: quemar, golpear, voltear
-    eventos.golpear(dt, est, jugador, dt * tiempo.velocidad / 3600);
+    if (jugador.vivo) eventos.golpear(dt, est, jugador, dt * tiempo.velocidad / 3600);
+
+    // Lo que se conoce del parque: se revela caminando y mirando desde alto
+    if (jugador.vivo) {
+      exploracion.revisar(jugador.posicion, est, dt);
+      if (exploracion.nuevasDesdeUltimoDibujo > 400) {
+        exploracion.nuevasDesdeUltimoDibujo = 0;
+        exploracion.guardar();
+        if (mapa.abierto) mapa.dibujar();
+      }
+    }
 
     // ── Cielo y luz
     cielo.actualizar(tiempo.fecha, mundo.meta.centro.lat, mundo.meta.centro.lon, tiempo.segundosTotales);
@@ -547,6 +594,7 @@ async function iniciar() {
     inventario, saberes, recoleccion, caza, audio,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima, oclusion, color, calidad,
+    exploracion, mapa, bolso, opciones, fin,
   };
 
   if (import.meta.env.DEV) {
