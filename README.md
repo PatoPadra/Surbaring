@@ -44,6 +44,7 @@ npm run dem
 | `P` | Tirar la línea (el permiso se saca en la intendencia) |
 | `Tab` | Abrir el códice |
 | `T` | Acelerar el paso del tiempo |
+| `M` | Silenciar o activar el sonido |
 | `F3` | Panel de diagnóstico |
 
 ---
@@ -195,6 +196,8 @@ Qué se colecciona y qué no es una decisión deliberada:
 - Los catorce fenómenos naturales del dataset ocurriendo, con aviso previo,
   desarrollo y amaine, y con lluvia, nieve, granizo, ceniza, rayos y humo que
   se ven caer
+- Audio sintetizado en tiempo real: viento, lluvia, granizo, orilla, fuego,
+  truenos con su demora por distancia y pasos con cadencia por zancada
 
 ### Roto o a medio hacer
 
@@ -210,7 +213,7 @@ Qué se colecciona y qué no es una decisión deliberada:
    batería, motor, radio, sensor, panel o combustible nuclear, y ninguna de
    esas cosas sale de un bosque: para llegar ahí haría falta industria, no otro
    sistema de recolección.
-4. No hay audio.
+4. El audio es de ambiente y de acciones; no hay música ni voces de fauna.
 5. El sotobosque llega hasta 192 m. Más allá el suelo queda desnudo, aunque a
    esa distancia la niebla aérea ya disimula bastante el corte.
 
@@ -468,6 +471,36 @@ satisface los pedidos de tabla ni de poste**. Antes cualquier rama servía para
 todo; ahora hace falta el aserradero. Es la diferencia entre construir y talar, y
 prefiero que esté en las reglas y no sólo en un texto.
 
+#### El audio, sintetizado y sin un solo archivo
+
+No hay banco de muestras y no lo va a haber. Grabaciones de campo del Nahuel
+Huapi con licencia clara son difíciles de conseguir, y una biblioteca genérica de
+"bosque" traería mirlos europeos y cigarras que acá no existen. Antes que poner
+fauna equivocada, se sintetiza lo que sí es honesto describir con física.
+
+Y resulta que casi todo el ambiente de la Patagonia andina **es ruido filtrado**:
+el viento del oeste, la lluvia sobre el follaje, el agua contra la orilla, el
+crepitar de una fogata y el trueno son el mismo ruido blanco pasado por filtros
+distintos. Lo que cambia es dónde está el filtro y cómo se mueve.
+
+Tres cosas que se modelaron en serio porque cambian cómo se siente el lugar:
+
+- **El viento sube con la altura, no sólo con su velocidad.** En la cumbre suena
+  aunque abajo esté calmo. Y el silbido agudo entre las ramas recién aparece
+  pasados los 35 km/h; por debajo hay sólo aire moviéndose.
+- **La nevada silencia.** La nieve cae sin energía y además absorbe el resto del
+  ambiente: medido en la mezcla, una nevada intensa deja el canal de
+  precipitación en 0,011 contra los 0,126 de la lluvia. El silencio de una
+  nevada no es una licencia poética, es absorción acústica.
+- **El trueno llega tarde.** El rayo dispara luz al instante y el sonido viaja a
+  343 m/s, así que el trueno se agenda con esa demora: a 3.430 m, diez segundos
+  exactos. Contar esos segundos es cómo se mide la distancia de una tormenta, y
+  el juego permite hacerlo.
+
+Los pasos no se reproducen por temporizador sino **por distancia recorrida**, así
+que la cadencia sale sola: 30 pasos en 26 m caminando, 46 en 62 m corriendo, y
+ninguno en el aire. El timbre cambia en el agua y agachado.
+
 #### Sobre la suavidad del terreno
 
 El terreno tiene ondulaciones largas y suaves, y **no es un defecto**: es lo que
@@ -536,6 +569,7 @@ src/entities/Peces.js   Cardúmenes en lagos, ríos y arroyos
 src/systems/Pesca.js    Permiso, temporada, especie, medida y devolución
 src/systems/Eventos.js  Los catorce fenómenos naturales, disparados por el clima
 src/world/Clima.js      Lluvia, nieve, granizo, ceniza, rayos y humo
+src/engine/Audio.js     Ambiente y acciones sintetizados con WebAudio
 src/world/Limites.js    Parque, Reserva y jurisdicción provincial
 src/world/Hornos.js     Geometría de fogatas, carboneras, hornos y fraguas
 src/systems/Mineria.js  Áridos, chatarra y lo que la ley no deja sacar

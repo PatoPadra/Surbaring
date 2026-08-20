@@ -43,6 +43,7 @@ import { Peces } from './entities/Peces.js';
 import { Pesca } from './systems/Pesca.js';
 import { Eventos } from './systems/Eventos.js';
 import { Clima } from './world/Clima.js';
+import { Audio } from './engine/Audio.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -157,10 +158,21 @@ async function iniciar() {
   const peces = new Peces(mundo, fauna);
   escena.add(peces.grupo);
 
+  // Audio sintetizado, sin archivos. No puede arrancar hasta que haya un gesto
+  // del usuario: los navegadores dejan el contexto suspendido hasta entonces.
+  const audio = new Audio();
+  lienzo.addEventListener('click', () => audio.iniciar());
+  addEventListener('keydown', () => audio.iniciar(), { once: true });
+
   const entrada = new Entrada(lienzo);
   entrada.registrar('KeyF', () => { jugador.tercerPersona = !jugador.tercerPersona; });
   entrada.registrar('F3', () => document.getElementById('diag').classList.toggle('visible'));
   entrada.registrar('KeyT', () => tiempo.alternarVelocidad());
+  entrada.registrar('KeyM', () => {
+    audio.iniciar();
+    const callado = audio.alternarSilencio();
+    hud.aviso(callado ? 'Sonido silenciado' : 'Sonido activado', 'M para alternar');
+  });
 
   const hud = new HUD(mundo, jugador, tiempo);
   const inventario = new Inventario(38);
@@ -328,6 +340,29 @@ async function iniciar() {
   let acumProximidad = 0;
   const elDiag = document.getElementById('diag');
   const colorNiebla = new THREE.Color();
+  let distanciaAlAgua = 9999;
+  let destelloPrevio = 0;
+
+  /** Cuánto fuego hay a mano: hornos encendidos e incendio forestal. */
+  function fuegoCercano(est) {
+    let f = 0;
+    for (const h of fundicion.hornos) {
+      if (!h.trabajo) continue;
+      const d = Math.hypot(h.x - jugador.posicion.x, h.z - jugador.posicion.z);
+      f = Math.max(f, Math.max(0, 1 - d / 16));
+    }
+    for (const o of construccion.obras) {
+      if (o.obra.id !== 'ahumadero') continue;
+      const d = Math.hypot(o.x - jugador.posicion.x, o.z - jugador.posicion.z);
+      f = Math.max(f, Math.max(0, 1 - d / 14) * 0.5);
+    }
+    for (const ev of est.eventos || []) {
+      if (ev.id === 'incendio_forestal' && ev.distancia != null) {
+        f = Math.max(f, Math.max(0, 1 - ev.distancia / 900) * ev.intensidad);
+      }
+    }
+    return f;
+  }
 
   function cuadro() {
     requestAnimationFrame(cuadro);
@@ -397,12 +432,27 @@ async function iniciar() {
     // Lo que abriga alrededor entra en el modelo térmico del jugador
     jugador.abrigo = construccion.abrigoEn(jugador.posicion.x, jugador.posicion.z);
 
+    // ── Audio
+    audio.actualizar(dt, est, {
+      altitud: jugador.posicion.y,
+      distanciaAgua: distanciaAlAgua,
+      fuegoCerca: fuegoCercano(est),
+    });
+    audio.pasos(dt, jugador);
+    // El trueno se dispara con el relámpago y llega más tarde, por la velocidad
+    // del sonido. La distancia sale del propio destello: los cercanos deslumbran.
+    if (clima.destello > destelloPrevio + 0.3) {
+      audio.rayo(clima.destello, 300 + (1 - clima.destello) * 7000);
+    }
+    destelloPrevio = clima.destello;
+
     // Descubrimiento de lugares: dos veces por segundo alcanza y evita medir
     // distancias contra medio centenar de sitios en cada cuadro.
     acumProximidad += dt;
     if (acumProximidad > 0.5) {
       acumProximidad = 0;
       codice.revisarProximidad(jugador.posicion);
+      distanciaAlAgua = medirDistanciaAlAgua(mundo, jugador.posicion);
     }
     if (acumProximidad === 0) {
       hud.mostrarAccion(recoleccion.quePuedoHacer(tiempo.segundosTotales));
@@ -435,7 +485,7 @@ async function iniciar() {
   window.SurviBar = {
     escena, camara, render, mundo, terreno, cielo, agua, vegetacion, sotobosque,
     fauna: bichos, jugador, tiempo, compositor, csm, hud, codice, entrada,
-    inventario, saberes, recoleccion, caza,
+    inventario, saberes, recoleccion, caza, audio,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima,
   };
@@ -463,6 +513,22 @@ function conCSM(csm, material) {
     if (propio) propio.call(this, shader, renderer);
   };
   material.needsUpdate = true;
+}
+
+/**
+ * Distancia aproximada al agua, para el sonido de la orilla. Se mide con anillos
+ * porque el mapa de agua es una textura y no hay una consulta de distancia: con
+ * cinco radios y ocho direcciones alcanza, y sólo corre dos veces por segundo.
+ */
+function medirDistanciaAlAgua(mundo, p) {
+  if (mundo.esAgua(p.x, p.z)) return 0;
+  for (const r of [8, 18, 32, 50, 70]) {
+    for (let a = 0; a < 8; a++) {
+      const ang = a / 8 * Math.PI * 2;
+      if (mundo.esAgua(p.x + Math.cos(ang) * r, p.z + Math.sin(ang) * r)) return r;
+    }
+  }
+  return 9999;
 }
 
 /** Empuja al jugador hasta la costa más cercana si apareció dentro del lago. */
