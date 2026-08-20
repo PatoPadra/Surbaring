@@ -32,6 +32,11 @@ import { Inventario } from './systems/Inventario.js';
 import { Saberes } from './systems/Saberes.js';
 import { Recoleccion } from './systems/Recoleccion.js';
 import { Caza } from './systems/Caza.js';
+import { Limites } from './world/Limites.js';
+import { Mineria } from './systems/Mineria.js';
+import { Fundicion } from './systems/Fundicion.js';
+import { Hornos } from './world/Hornos.js';
+import { Taller } from './ui/Taller.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -158,11 +163,43 @@ async function iniciar() {
   const caza = new Caza(normativaCaza, {
     jugador, inventario, saberes, codice, hud, tiempo, mundo,
   });
+  // La minería es la otra mitad del artículo 5 de la Ley 22.351: la que prohíbe
+  // extraer. Necesita saber en qué jurisdicción está parado el jugador, así que
+  // los límites del parque entran al juego acá.
+  const limites = new Limites(mundo);
+  let datosMineria = null;
+  try {
+    datosMineria = (await import('./data/mineria.json')).default;
+  } catch {
+    console.warn('mineria.json ausente: el taller queda sin recetas');
+  }
+  const mineria = new Mineria(datosMineria, {
+    mundo, limites, jugador, inventario, saberes, hud, historia,
+  });
+  const fundicion = new Fundicion(datosMineria, {
+    inventario, saberes, jugador, tiempo, hud, limites, mundo,
+  });
+  const hornos = new Hornos();
+  escena.add(hornos.grupo);
+
   const recoleccion = new Recoleccion({
     mundo, jugador, vegetacion, sotobosque, fauna: bichos,
     inventario, saberes, codice, hud,
   });
   recoleccion.caza = caza;
+  recoleccion.mineria = mineria;
+
+  const taller = new Taller({ fundicion, mineria, limites, jugador, inventario });
+  const construirOriginal = fundicion.construir.bind(fundicion);
+  fundicion.construir = (def) => {
+    const h = construirOriginal(def);
+    if (h) {
+      const nodo = hornos.agregar(h);
+      // Sólo el horno nuevo: encadenar dos veces el mismo material lo rompería
+      nodo.traverse(o => { if (o.isMesh) conCSM(csm, o.material); });
+    }
+    return h;
+  };
 
   saberes.alCambiar = (p, motivo) => {
     if (p > 0) hud.aviso(motivo, `+${p} puntos de saber · total ${saberes.puntos}`);
@@ -179,6 +216,14 @@ async function iniciar() {
   entrada.registrar('Tab', () => codice.alternar());
   entrada.registrar('KeyE', () => recoleccion.actuar(tiempo.segundosTotales));
   entrada.registrar('KeyQ', () => recoleccion.comer());
+  entrada.registrar('KeyG', () => taller.alternar());
+  // Extraer: cantera si el yacimiento y la ley lo permiten, chatarra si lo que
+  // hay a mano es basura metálica. Como con la caza, la negativa explica.
+  entrada.registrar('KeyR', () => {
+    const p = jugador.posicion;
+    if (mineria.hayChatarra(p.x, p.z)) mineria.recuperarChatarra(tiempo.segundosTotales);
+    else mineria.extraer(tiempo.segundosTotales);
+  });
   // La tecla de caza siempre responde con una explicación, aunque no se pueda:
   // la negativa es el contenido educativo.
   entrada.registrar('KeyH', () => {
@@ -283,6 +328,8 @@ async function iniciar() {
     vegetacion.actualizar(jugador.posicion, tiempo.segundosTotales, est, camara);
     sotobosque.actualizar(jugador.posicion, tiempo.segundosTotales, est);
     bichos.actualizar(dt, jugador, est, tiempo.segundosTotales);
+    fundicion.actualizar();
+    hornos.actualizar(tiempo.segundosTotales);
 
     // Descubrimiento de lugares: dos veces por segundo alcanza y evita medir
     // distancias contra medio centenar de sitios en cada cuadro.
@@ -321,6 +368,7 @@ async function iniciar() {
     escena, camara, render, mundo, terreno, cielo, agua, vegetacion, sotobosque,
     fauna: bichos, jugador, tiempo, compositor, csm, hud, codice, entrada,
     inventario, saberes, recoleccion, caza,
+    limites, mineria, fundicion, hornos, taller,
   };
 
   if (import.meta.env.DEV) {

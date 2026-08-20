@@ -29,6 +29,10 @@ const EQUIVALE_A = {
   fruto: ['azucar'],
   asta: ['herramienta'],
   cuero: ['red'],
+  ladrillo: ['muro'],
+  ceramica: ['vasija', 'olla'],
+  acero: ['hierro'],
+  chapa: ['lata'],
 };
 
 export const RECURSOS = {
@@ -59,6 +63,30 @@ export const RECURSOS = {
   lana:          { nombre: 'Lana', kg: 0.15, cat: 'material' },
   asta:          { nombre: 'Asta', kg: 0.6, cat: 'material' },
   carne:         { nombre: 'Carne', kg: 0.4, cat: 'alimento', nutre: 22, hidrata: 2 },
+
+  // ── De cantera y de recuperación ─────────────────────────────────────────
+  // Áridos: lo único que de verdad se extrae alrededor de Bariloche, y sólo
+  // fuera del área núcleo del parque. La chatarra no es un yacimiento sino
+  // basura metálica: en una comarca sin mineral de hierro, es la única fuente.
+  arena:         { nombre: 'Arena', kg: 1.5, cat: 'material' },
+  ripio:         { nombre: 'Ripio', kg: 1.8, cat: 'material' },
+  tosca:         { nombre: 'Tosca', kg: 1.6, cat: 'material' },
+  pomez:         { nombre: 'Piedra pómez', kg: 0.4, cat: 'material' },
+  chatarra:      { nombre: 'Chatarra', kg: 1.1, cat: 'material' },
+
+  // ── Salidas de horno y fragua ────────────────────────────────────────────
+  carbon:        { nombre: 'Carbón vegetal', kg: 0.35, cat: 'material' },
+  ceniza:        { nombre: 'Ceniza', kg: 0.2, cat: 'material' },
+  ceramica:      { nombre: 'Cerámica', kg: 0.7, cat: 'material' },
+  ladrillo:      { nombre: 'Ladrillo', kg: 2.2, cat: 'material' },
+  vidrio:        { nombre: 'Vidrio', kg: 0.8, cat: 'material' },
+  hierro:        { nombre: 'Hierro', kg: 1.2, cat: 'material' },
+  acero:         { nombre: 'Acero', kg: 1.2, cat: 'material' },
+  clavo:         { nombre: 'Clavos', kg: 0.04, cat: 'material' },
+  alambre:       { nombre: 'Alambre', kg: 0.3, cat: 'material' },
+  chapa:         { nombre: 'Chapa', kg: 1.6, cat: 'material' },
+  herramienta:   { nombre: 'Herramienta', kg: 1.3, cat: 'material' },
+  hormigon:      { nombre: 'Hormigón', kg: 4.0, cat: 'material' },
 };
 
 /**

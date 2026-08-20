@@ -39,6 +39,8 @@ npm run dem
 | `E` | Recolectar / identificar / beber |
 | `Q` | Comer lo mejor del bolso |
 | `H` | Intentar cazar (fijate qué dice la ley) |
+| `R` | Extraer áridos o levantar chatarra (fijate dónde estás parado) |
+| `G` | Abrir el taller: hornos, fragua y cantera |
 | `Tab` | Abrir el códice |
 | `T` | Acelerar el paso del tiempo |
 | `F3` | Panel de diagnóstico |
@@ -104,6 +106,12 @@ CONICET, SAREM, IUCN, SMN).
   jabalí se cazan de marzo a mayo por turnos de subasta (Res. Directorio APN
   277/2011), mientras que la liebre, fuera del parque, no tiene temporada ni
   cupo. El huemul es Monumento Natural por Ley 24.702.
+- **`src/data/mineria.json`** — 4 normas citadas, la geología que explica por
+  qué acá no hay metal, 7 materiales con su origen real, 5 recursos declarados
+  sin fuente local, 4 hornos y 12 recetas. El artículo 5 de la Ley 22.351
+  prohíbe la minería en el Parque igual que la caza; en la Reserva Nacional
+  puede autorizarse una cantera, y fuera del área protegida rige el dominio
+  provincial y el Código de Minería.
 - **`src/data/historia.json`** — 6 eras, 32 eventos, 12 personajes,
   16 entradas de mitología, 30 topónimos en mapuzugun, 47 tecnologías
   encadenadas en un árbol de saberes y 20 sitios históricos.
@@ -179,12 +187,14 @@ Qué se colecciona y qué no es una decisión deliberada:
 2. **Ocho vistas siguen siendo pocas para un giro rápido.** El cruce entre
    vistas vecinas se nota si la cámara barre rápido en horizontal. Subir a 12 o
    16 vistas lo suavizaría a costa de memoria.
-3. **El árbol de saberes se traba en la primera era, y hace falta una decisión
-   de diseño para destrabarlo.** Con materiales vegetales ilimitados sólo 7 de
-   47 tecnologías son alcanzables: el resto pide cuero, tendón y grasa, que son
-   de origen animal. Ver [la decisión pendiente](#la-decisión-pendiente).
-4. No hay todavía: construcción, audio, ni eventos naturales (incendio,
-   ceniza, viento blanco) más allá de los parámetros.
+3. **El árbol de saberes llega hasta la mitad y ahí se corta por honestidad.**
+   Con la caza regulada, la carroña, la cantera y la fragua, 26 de las 47
+   tecnologías tienen todos sus materiales al alcance. Las 21 restantes piden
+   batería, motor, radio, sensor, panel o combustible nuclear, y ninguna de
+   esas cosas sale de un bosque: para llegar ahí haría falta industria, no otro
+   sistema de recolección.
+4. No hay todavía: construcción de refugios, audio, ni eventos naturales
+   (incendio, ceniza, viento blanco) más allá de los parámetros.
 5. El sotobosque llega hasta 192 m. Más allá el suelo queda desnudo, aunque a
    esa distancia la niebla aérea ya disimula bastante el corte.
 
@@ -214,8 +224,52 @@ Lo que sí se puede:
   el zorro y el chimango.
 
 Con estas dos vías el árbol pasó de 7 a 15 tecnologías alcanzables: las dos
-primeras eras quedan jugables completas. Las 32 restantes piden hierro, batería
-y motor, que necesitarían minería y fundición.
+primeras eras quedan jugables completas.
+
+#### La minería, que es la misma ley leída de nuevo
+
+El artículo 5 de la Ley 22.351 es el mismo que prohíbe la caza: también prohíbe
+**la exploración y la explotación mineras** dentro de un Parque Nacional. Así
+que la mecánica es hermana de la de caza, y la negativa vuelve a ser el
+contenido. Lo nuevo es que ahora la ley tiene un lugar en el mapa: hay tres
+jurisdicciones y cambian lo que se puede hacer.
+
+- **Parque Nacional**, el área núcleo: no se extrae nada, y el fuego sólo se
+  hace en sitios habilitados. Intentarlo explica la norma y descuenta saber.
+- **Reserva Nacional**, la franja de la ruta, las villas y el Catedral: acá la
+  Administración de Parques Nacionales *puede* autorizar canteras, pero
+  autorizable no es lo mismo que autorizado.
+- **Fuera del área protegida**, el ejido de Bariloche y la estepa del este: rige
+  el dominio provincial de los recursos y el Código de Minería, y sacar áridos
+  es una actividad normal y regulada.
+
+El trazado de esos límites en `src/world/Limites.js` es **esquemático**: umbrales
+de latitud y longitud elegidos para que cada lugar conocido caiga en la
+categoría correcta —el Centro Cívico afuera, Llao Llao y el Catedral en reserva,
+Blest y el Tronador en el área núcleo—. Sirve para enseñar que la línea existe,
+no para decidir nada real.
+
+La segunda mitad del asunto no es jurídica sino geológica, y sorprende más: **en
+la comarca andina del Nahuel Huapi no hay metal**. El Batolito Norpatagónico es
+roca plutónica sin mineralización explotable, y el hierro del país sale de
+Sierra Grande, a unos seiscientos kilómetros al este. Lo que de verdad se extrae
+alrededor de Bariloche son áridos: arena, ripio, tosca. Así que el juego no
+inventa una mina de hierro en el bosque. El metal se consigue como se consiguió
+siempre acá: **recuperando chatarra y volviéndola a forjar**, que es lo que hizo
+cada fragua de puesto durante un siglo. La chatarra aparece donde hubo gente y
+no aparece en el área núcleo, y levantarla de un sitio histórico está penado por
+la Ley 25.743, así que ahí también hay una negativa que enseña.
+
+De ahí sale una cadena que sí es jugable entera: leña → carbonera → carbón
+vegetal → fragua → hierro → herramienta → cantera → arena y ripio → horno de
+barro → cerámica, ladrillo, vidrio de bosque y hormigón puzolánico. El vidrio se
+hace con arena y ceniza de leña, sin sosa ni cal traídas de lejos, como el
+vidrio de bosque europeo; el acero se saca por cementación en la fragua. Cada
+receta lleva horas del mundo, no segundos reales, así que la carbonera de
+treinta horas se resuelve acelerando el reloj con `T`.
+
+Con esto el árbol pasó de 15 a 26 tecnologías con todos sus materiales al
+alcance.
 
 #### Sobre la suavidad del terreno
 
@@ -281,6 +335,11 @@ src/world/Vegetacion.js Bosque instanciado por aptitud ecológica
 src/world/Tiempo.js     Calendario, estaciones y clima
 src/entities/Jugador.js Controlador y física
 src/entities/Fauna.js   Animales y comportamiento
+src/world/Limites.js    Parque, Reserva y jurisdicción provincial
+src/world/Hornos.js     Geometría de fogatas, carboneras, hornos y fraguas
+src/systems/Mineria.js  Áridos, chatarra y lo que la ley no deja sacar
+src/systems/Fundicion.js  Hornadas, fragua y tiempo de cocción
+src/ui/Taller.js        Panel de hornos, hornadas y cantera
 src/ui/Codice.js        Enciclopedia del parque
 src/ui/HUD.js           Interfaz
 ```

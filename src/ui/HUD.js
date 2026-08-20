@@ -125,7 +125,11 @@ export class HUD {
   /** @param {{tipo:string, etiqueta:string}|null} accion */
   mostrarAccion(accion) {
     if (!accion) { this.elAccion.classList.remove('visible'); return; }
-    this.elAccion.innerHTML = `<b>E</b> · ${accion.etiqueta}`;
+    // Algunas acciones tienen tecla propia: extraer no es recolectar
+    const tecla = accion.tecla || 'E';
+    this.elAccion.innerHTML = accion.tecla
+      ? accion.etiqueta.replace(tecla, `<b>${tecla}</b>`)
+      : `<b>E</b> · ${accion.etiqueta}`;
     this.elAccion.classList.add('visible');
   }
 

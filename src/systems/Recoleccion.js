@@ -56,6 +56,17 @@ export class Recoleccion {
     }
 
     if (planta) return { tipo: 'espera', etiqueta: `${planta.esp.nombreComun}: dale un descanso` };
+
+    // Nada a mano para la tecla de acción, pero puede haber material del suelo.
+    // Se avisa con su propia tecla porque extraer no es recolectar: una cosa la
+    // permite el parque y la otra no.
+    if (this.mineria) {
+      if (this.mineria.hayChatarra(p.x, p.z)) {
+        return { tipo: 'chatarra', etiqueta: 'R para levantar chatarra', tecla: 'R' };
+      }
+      const yac = this.mineria.yacimientoEn(p.x, p.z);
+      if (yac) return { tipo: 'cantera', etiqueta: `R sobre ${yac.nombre.toLowerCase()}`, tecla: 'R' };
+    }
     return null;
   }
 
@@ -144,6 +155,14 @@ export class Recoleccion {
           obtenido.length ? obtenido.join(' · ') : `No entra nada más (${this.inventario.pesoKg.toFixed(1)} kg)`);
         return;
       }
+
+      case 'chatarra':
+        this.mineria?.recuperarChatarra(ahora);
+        return;
+
+      case 'cantera':
+        this.mineria?.extraer(ahora);
+        return;
 
       default:
         this.hud.aviso(acc.etiqueta, 'Volvé más tarde');
