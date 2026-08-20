@@ -59,7 +59,7 @@ export class Opciones {
       <h2>Opciones</h2>
       <p class="op-sub" id="op-placa"></p>
       <div id="op-cuerpo"></div>
-      <p class="op-nota">Escape o clic en el mundo para volver al juego.</p>
+      <p class="op-nota">Escape o clic en el mundo para volver al juego · <b>F1</b> muestra los controles.</p>
     </div>`;
     document.body.appendChild(el);
     const est = document.createElement('style');

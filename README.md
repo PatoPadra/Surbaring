@@ -49,6 +49,7 @@ npm run dem
 | `T` | Acelerar el paso del tiempo |
 | `O` | Posproceso: completo / sin oclusión / crudo |
 | `C` | Cambiar calidad: alta / media / baja / mínima |
+| `F1` | Todos los controles, dentro del juego |
 | `F3` | Panel de diagnóstico |
 
 ---

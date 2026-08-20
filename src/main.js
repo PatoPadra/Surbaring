@@ -51,6 +51,7 @@ import { Mapa } from './ui/Mapa.js';
 import { Opciones } from './ui/Opciones.js';
 import { Bolso } from './ui/Bolso.js';
 import { Fin } from './ui/Fin.js';
+import { Ayuda } from './ui/Ayuda.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -273,6 +274,9 @@ async function iniciar() {
   const mapa = new Mapa({ mundo, jugador, tiempo, exploracion, codice });
   const bolso = new Bolso({ inventario, jugador, hud, recoleccion });
   const fin = new Fin({ jugador, mundo, tiempo, hud, codice, saberes, construccion });
+  // Catorce teclas y ninguna forma de conocerlas dentro del juego: para quien
+  // abre esto a probarlo, la mitad de lo construido no existía.
+  const ayuda = new Ayuda();
   jugador.alMorir = (m) => fin.mostrar(m);
   const levantarOriginal = construccion.levantar.bind(construccion);
   construccion.levantar = (obra) => {
@@ -309,6 +313,7 @@ async function iniciar() {
   entrada.registrar('Tab', () => codice.alternar());
   entrada.registrar('KeyM', () => mapa.alternar());
   entrada.registrar('KeyI', () => bolso.alternar());
+  entrada.registrar('F1', () => ayuda.alternar());
   entrada.registrar('KeyE', () => recoleccion.actuar(tiempo.segundosTotales));
   entrada.registrar('KeyQ', () => recoleccion.comer());
   entrada.registrar('KeyG', () => taller.alternar());
@@ -390,7 +395,7 @@ async function iniciar() {
 
   /** ¿Hay algún panel abierto? Sirve para no encimarlos. */
   const hayPanel = () => codice.abierto || taller.abierto || mapa.abierto
-    || bolso.abierto || opciones.abierto || fin.abierto;
+    || bolso.abierto || opciones.abierto || fin.abierto || ayuda.abierto;
 
   // Con el puntero capturado, Escape se lo come el navegador para liberarlo y la
   // tecla nunca llega acá. Lo que sí llega es que el puntero se soltó, y eso es
@@ -401,7 +406,8 @@ async function iniciar() {
   });
   addEventListener('keydown', (ev) => {
     if (ev.code !== 'Escape') return;
-    if (opciones.abierto) opciones.cerrar();
+    if (ayuda.abierto) ayuda.cerrar();
+    else if (opciones.abierto) opciones.cerrar();
     else if (mapa.abierto) mapa.alternar();
     else if (bolso.abierto) bolso.alternar();
     else if (taller.abierto) taller.alternar();
@@ -593,7 +599,7 @@ async function iniciar() {
     inventario, saberes, recoleccion, caza, audio,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima, oclusion, color, calidad,
-    exploracion, mapa, bolso, opciones, fin,
+    exploracion, mapa, bolso, opciones, fin, ayuda,
   };
 
   if (import.meta.env.DEV) {
