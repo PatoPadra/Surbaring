@@ -161,19 +161,57 @@ export class Partida {
         desbloqueadas: [...this.saberes.desbloqueadas],
       },
       codice: {
+        descubiertas: [...(this.codice?.descubiertas || [])],
         identificadas: [...(this.codice?.identificadas || [])],
         lugares: [...(this.codice?.lugares || [])],
       },
       obras: (this.construccion?.obras || []).map(o => ({
         id: o.obra.id, x: o.x, y: o.y, z: o.z, vence: o.vence,
         guardado: [...o.guardado],
+        // Los hornos de obra se rehacen al reponer la obra, así que la carga en
+        // curso viaja con ella
+        trabajo: this._serializarTrabajo(
+          (this.fundicion?.hornos || []).find(h => h.def.id === o.obra.id
+            && Math.hypot(h.x - o.x, h.z - o.z) < 0.5)?.trabajo),
       })),
       hornos: (this.fundicion?.hornos || [])
         // Los que vienen de una obra se rehacen al reponer la obra
         .filter(h => !(this.construccion?.obras || []).some(o => o.obra.id === h.def.id))
-        .map(h => ({ id: h.def.id, x: h.x, y: h.y, z: h.z })),
+        .map(h => ({ id: h.def.id, x: h.x, y: h.y, z: h.z, trabajo: this._serializarTrabajo(h.trabajo) })),
       muerte: this.ultimaMuerte,
     };
+  }
+
+  /**
+   * La carga que hay dentro de un horno. Una carbonera son treinta horas de
+   * juego: descartarla al guardar era perder justo lo que el jugador estaba
+   * esperando, y encima en el momento en que cierra la pestaña para esperarla.
+   * De la receta va sólo el id; el resto se rearma del dataset al cargar.
+   */
+  _serializarTrabajo(t) {
+    if (!t?.receta) return null;
+    return {
+      receta: t.receta.id,
+      desde: t.desde,
+      // `hasta` es Infinity mientras la hornada espera lugar en el bolso
+      hasta: Number.isFinite(t.hasta) ? t.hasta : null,
+      esperando: !!t.esperando,
+      sale: t.sale || null,
+    };
+  }
+
+  _reponerTrabajo(g) {
+    if (!g?.receta) return null;
+    const receta = (this.fundicion?.recetas || []).find(r => r.id === g.receta);
+    if (!receta) return null;   // el dataset cambió: la carga se descarta sola
+    const t = {
+      receta,
+      desde: g.desde ?? Date.now(),
+      hasta: g.hasta ?? Infinity,
+      esperando: !!g.esperando,
+    };
+    if (g.sale) t.sale = g.sale;
+    return t;
   }
 
   guardar(avisar = false) {
@@ -236,6 +274,11 @@ export class Partida {
       this.saberes.desbloqueadas = new Set(s.desbloqueadas || []);
 
       if (this.codice) {
+        // Una partida vieja no trae `descubiertas`: los avistajes se deducen de
+        // lo identificado, que siempre estuvo antes descubierto.
+        for (const id of d.codice?.descubiertas || d.codice?.identificadas || []) {
+          this.codice.descubiertas.add(id);
+        }
         for (const id of d.codice?.identificadas || []) this.codice.identificadas.add(id);
         for (const id of d.codice?.lugares || []) this.codice.lugares.add(id);
       }
@@ -265,7 +308,7 @@ export class Partida {
       if (obra.procesa) {
         this.fundicion?.hornos.push({
           def: { id: obra.id, nombre: obra.nombre, descripcion: obra.descripcion, temperaturaC: null },
-          x: g.x, z: g.z, y: g.y, trabajo: null,
+          x: g.x, z: g.z, y: g.y, trabajo: this._reponerTrabajo(g.trabajo),
         });
       }
     }
@@ -277,7 +320,7 @@ export class Partida {
     for (const g of lista) {
       const def = catalogo.get(g.id);
       if (!def) continue;
-      const horno = { def, x: g.x, y: g.y, z: g.z, trabajo: null };
+      const horno = { def, x: g.x, y: g.y, z: g.z, trabajo: this._reponerTrabajo(g.trabajo) };
       this.fundicion.hornos.push(horno);
       this.hornos?.agregar(horno);
     }

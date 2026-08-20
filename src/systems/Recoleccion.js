@@ -33,8 +33,15 @@ export class Recoleccion {
   quePuedoHacer(ahora) {
     const p = this.jugador.posicion;
 
+    // Sólo el animal sin identificar se queda con la tecla. Con 52 animales
+    // vivos en el mapa, darle prioridad absoluta a cualquiera de ellos hacía
+    // que una liebre parada al lado del agua impidiera beber, y la sed mata.
+    // Al que ya está en el códice se lo mira más abajo, cuando no hay nada
+    // mejor que hacer con la tecla.
     const animal = this.fauna.masCercano(p, 22);
-    if (animal) return { tipo: 'identificar', etiqueta: `Identificar ${animal.esp.nombreComun.toLowerCase()}`, animal };
+    if (animal && !this.codice?.identificadas.has(animal.esp.id)) {
+      return { tipo: 'identificar', etiqueta: `Identificar ${animal.esp.nombreComun.toLowerCase()}`, animal };
+    }
 
     const resto = this.sotobosque.masCercano(p, 5);
     if (resto?.tipo.id === 'carronia' && !this._enDescanso(resto.x, resto.z, ahora)) {
@@ -51,9 +58,12 @@ export class Recoleccion {
     if (this.jugador.enAgua || this._aguaCerca()) {
       // Si además hay un cardumen a mano, se avisa: pescar tiene tecla propia
       const hay = this.pesca?.loQueHayCerca();
+      const sinPermiso = hay && !this.pesca?.tienePermiso;
       return {
         tipo: 'beber',
-        etiqueta: hay ? 'Beber agua · P para tirar la línea' : 'Beber agua',
+        etiqueta: hay
+          ? (sinPermiso ? 'Beber agua · P para pescar (hace falta permiso)' : 'Beber agua · P para tirar la línea')
+          : 'Beber agua',
       };
     }
 
@@ -65,6 +75,12 @@ export class Recoleccion {
     const mata = this.sotobosque.masCercano(p, 5);
     if (mata && mata.tipo.id !== 'carronia' && COSECHA_SOTOBOSQUE[mata.tipo.id] && !this._enDescanso(mata.x, mata.z, ahora)) {
       return { tipo: 'sotobosque', etiqueta: `Juntar ${mata.tipo.nombre.toLowerCase()}`, mata };
+    }
+
+    // El animal ya conocido: volver a mirarlo muestra la ficha otra vez, que es
+    // informativo, pero no da puntos ni le saca la tecla a nada.
+    if (animal) {
+      return { tipo: 'ficha', etiqueta: `Repasar ${animal.esp.nombreComun.toLowerCase()}`, animal };
     }
 
     if (planta) return { tipo: 'espera', etiqueta: `${planta.esp.nombreComun}: dale un descanso` };
@@ -99,10 +115,23 @@ export class Recoleccion {
     }
 
     switch (acc.tipo) {
-      case 'identificar':
-        this.codice.registrarFauna(acc.animal.esp, true);
-        this._puntosPorEspecie(acc.animal.esp);
+      case 'identificar': {
+        // Los puntos son por conocer, no por apretar: sólo la primera vez.
+        const esp = acc.animal.esp;
+        const nueva = !this.codice.identificadas.has(esp.id);
+        this.codice.registrarFauna(esp, true);
+        if (nueva) this._puntosPorEspecie(esp);
         return;
+      }
+
+      case 'ficha': {
+        const esp = acc.animal.esp;
+        const det = [esp.nombreCientifico, esp.datoCurioso || esp.descripcionEducativa || '']
+          .filter(Boolean).join(' · ');
+        this.hud.aviso(`${esp.nombreComun}, ya identificado`,
+          det || 'Ya está en el códice: la ficha completa está en Tab.');
+        return;
+      }
 
       case 'beber': {
         const antes = this.jugador.sed;

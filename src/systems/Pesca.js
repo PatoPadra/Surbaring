@@ -62,6 +62,8 @@ export class Pesca {
     /** @type {{tipo:string, anio:number}|null} */
     this.permiso = null;
     this.capturas = 0;
+    /** Veces que se tiró la línea sin permiso: la primera no se cobra. */
+    this.intentosSinPermiso = 0;
     this.devoluciones = 0;
     this.infracciones = 0;
 
@@ -73,6 +75,28 @@ export class Pesca {
 
   enIntendencia(x, z) {
     return Math.hypot(this.intendencia.x - x, this.intendencia.z - z) < INTENDENCIA.radioM;
+  }
+
+  /** A cuántos metros está la intendencia del jugador, ahora mismo. */
+  distanciaAIntendencia() {
+    const { x, z } = this.jugador.posicion;
+    return Math.hypot(this.intendencia.x - x, this.intendencia.z - z);
+  }
+
+  /**
+   * Cómo llegar al permiso, dicho con precisión: dónde queda, para qué lado y
+   * a cuánto. Sin esto la intendencia es una pared invisible a once kilómetros;
+   * con esto es una meta.
+   */
+  comoLlegarAlPermiso() {
+    const { x, z } = this.jugador.posicion;
+    const dx = this.intendencia.x - x, dz = this.intendencia.z - z;
+    const d = Math.hypot(dx, dz);
+    const rumbo = (Math.atan2(dx, -dz) * 180 / Math.PI + 360) % 360;
+    const puntos = ['norte', 'noreste', 'este', 'sureste', 'sur', 'suroeste', 'oeste', 'noroeste'];
+    const hacia = puntos[Math.round(rumbo / 45) % 8];
+    const dist = d >= 1000 ? `${(d / 1000).toFixed(1)} km` : `${Math.round(d)} m`;
+    return { distancia: d, texto: `La intendencia del Parque está en el Centro Cívico de Bariloche, frente al lago: ${dist} al ${hacia} de acá. Marcala en el mapa (M) y pulsá E cuando llegues.` };
   }
 
   get tienePermiso() {
@@ -185,10 +209,17 @@ export class Pesca {
       };
     }
     if (!this.tienePermiso) {
+      // La primera vez no se cobra: el juego enseña la tecla P y sería absurdo
+      // castigar por probarla antes de saber que el permiso existe. La negativa
+      // explica dónde conseguirlo y avisa que la próxima sí cuesta.
+      const primera = this.intentosSinPermiso === 0;
+      const camino = this.comoLlegarAlPermiso();
       return {
-        puede: false, infraccion: true, castigo: 6,
-        titulo: 'Pesca sin permiso',
-        detalle: `${this.n.permiso?.donde || 'El permiso se saca en la intendencia del parque.'} Sin permiso no se pesca: es la infracción más común y la más fácil de evitar.`,
+        puede: false, infraccion: true, castigo: primera ? 0 : 6, primera,
+        titulo: primera ? 'Todavía no tenés permiso de pesca' : 'Pesca sin permiso',
+        detalle: primera
+          ? `${camino.texto} Sin permiso no se pesca: es la infracción más común y la más fácil de evitar. Esta vez no te cuesta nada; volver a tirar la línea sin permiso sí resta 6 de saber.`
+          : `${camino.texto} Ya sabías: pescar sin permiso es infracción y cuesta 6 de saber.`,
       };
     }
 
@@ -214,9 +245,10 @@ export class Pesca {
   intentar(mes) {
     const v = this.evaluar(mes);
     if (!v.puede) {
-      if (v.infraccion) {
+      if (!this.tienePermiso) this.intentosSinPermiso++;
+      if (v.infraccion && (v.castigo || 0) > 0) {
         this.infracciones++;
-        this.saberes.puntos = Math.max(0, this.saberes.puntos - (v.castigo || 0));
+        this.saberes.puntos = Math.max(0, this.saberes.puntos - v.castigo);
       }
       this.hud.aviso(v.titulo, v.detalle);
       return null;
