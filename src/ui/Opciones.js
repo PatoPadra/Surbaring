@@ -64,6 +64,7 @@ const CONTROLES = [
 
 const PESTANAS = [
   { id: 'controles', nombre: 'Controles' },
+  { id: 'aspecto', nombre: 'Aspecto' },
   { id: 'video', nombre: 'Video' },
   { id: 'audio', nombre: 'Audio' },
   { id: 'partida', nombre: 'Partida' },
@@ -155,7 +156,12 @@ export class Opciones {
       const r = ev.target.closest('input[data-accion]');
       if (!r) return;
       this._accion(r.dataset.accion, r.value);
-      this.pintar();
+      // Repintar la pestaña entera acá reemplazaría el propio deslizador en
+      // pleno arrastre, y el arrastre se corta en el primer movimiento: hay que
+      // volver a apretar el botón por cada paso de la barra. Se actualiza sólo
+      // el número que está al lado.
+      const valor = r.nextElementSibling;
+      if (valor?.classList.contains('op-valor')) valor.textContent = this._texto(r.dataset.accion);
     });
   }
 
@@ -188,6 +194,22 @@ export class Opciones {
       case 'invertirY':
         this.entrada.invertirY = !this.entrada.invertirY;
         break;
+      case 'balanceo':
+        this.jugador.balanceo = v;
+        break;
+      case 'distanciaCamara':
+        this.jugador.distanciaCamara = v;
+        break;
+      case 'hombro':
+        this.jugador.hombroCamara = v;
+        break;
+      case 'tercerPersona':
+        this.jugador.tercerPersona = !this.jugador.tercerPersona;
+        break;
+      case 'editarAspecto':
+        this.cerrar();
+        this.editarAspecto?.();
+        break;
       case 'fov':
         this.camara.fov = v;
         this.camara.updateProjectionMatrix();
@@ -212,6 +234,24 @@ export class Opciones {
     }
   }
 
+  /** El texto que acompaña a cada deslizador, sin repintar la pestaña. */
+  _texto(accion) {
+    const j = this.jugador;
+    switch (accion) {
+      case 'calidad': {
+        const fps = this.fps ? Math.round(this.fps()) : null;
+        return `${this.calidad.preset.nombre}${fps != null ? ` · ${fps} fps` : ''}`;
+      }
+      case 'fov': return `${Math.round(this.camara.fov)}°`;
+      case 'volumen': return `${Math.round(this.audio.volumen * 100)} %`;
+      case 'sensibilidad': return this.entrada.sensibilidad.toFixed(1);
+      case 'distanciaCamara': return `${j.distanciaCamara.toFixed(1)} m`;
+      case 'hombro': return j.hombroCamara.toFixed(2);
+      case 'balanceo': return j.balanceo === 0 ? 'apagado' : `${Math.round(j.balanceo * 100)} %`;
+      default: return '';
+    }
+  }
+
   // ── Pintado ───────────────────────────────────────────────────────────────
 
   _botones(accion, opciones, activo) {
@@ -233,6 +273,35 @@ export class Opciones {
         y reconocer fenómenos, y con ellos se desbloquean tecnologías en el códice.
         Casi todo lo que la ley del parque no permite tiene una explicación cuando lo
         intentás: la negativa es el contenido, no un obstáculo.</p>`;
+  }
+
+  /**
+   * Aspecto y cámara juntos, y no por falta de lugar: son la misma decisión.
+   * Cuánto se aleja la cámara y de qué lado del hombro sólo importan cuando hay
+   * un cuerpo que mirar, y el cuerpo sólo se entiende viéndolo desde ahí.
+   */
+  _aspecto() {
+    const j = this.jugador;
+    const a = this.aspecto;
+    return `
+      <h3>Personaje</h3>
+      <div class="op-fila"><span>${a ? a.resumen : 'Sin definir'}</span>
+        <button data-accion="editarAspecto">Cambiar aspecto</button></div>
+      <h3>Cámara</h3>
+      <div class="op-fila"><span>Vista</span>
+        <span class="op-valor">${j.tercerPersona ? 'tercera' : 'primera'}</span>
+        <button data-accion="tercerPersona">Cambiar (F)</button></div>
+      <div class="op-fila"><span>Distancia en tercera persona</span>
+        ${this._rango('distanciaCamara', 2, 8, 0.1, j.distanciaCamara,
+          `${j.distanciaCamara.toFixed(1)} m`)}</div>
+      <div class="op-fila"><span>Corrimiento al hombro</span>
+        ${this._rango('hombro', 0, 1, 0.05, j.hombroCamara, j.hombroCamara.toFixed(2))}</div>
+      <div class="op-fila"><span>Balanceo al caminar</span>
+        ${this._rango('balanceo', 0, 1, 0.05, j.balanceo,
+          j.balanceo === 0 ? 'apagado' : `${Math.round(j.balanceo * 100)} %`)}</div>
+      <p class="op-nota">El cuerpo se dibuja también en primera persona —mirá para
+        abajo— y por eso proyecta sombra. Si el cabeceo de la cámara te marea,
+        bajá el balanceo a cero: el juego no pierde nada.</p>`;
   }
 
   _video() {
@@ -308,6 +377,7 @@ export class Opciones {
     }
     const cuerpo = {
       controles: () => this._controles(),
+      aspecto: () => this._aspecto(),
       video: () => this._video(),
       audio: () => this._audio(),
       partida: () => this._partida(),

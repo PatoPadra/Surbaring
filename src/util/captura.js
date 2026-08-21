@@ -56,6 +56,22 @@ export function instalarCapturas(S) {
     if (o.cabeceo !== undefined) jugador.cabeceo = o.cabeceo * Math.PI / 180;
     jugador.actualizar(1 / 60, ENTRADA_NULA);
 
+    // El cuerpo del jugador se coloca a mano: en una captura no corre el bucle,
+    // y sin esto una revisión de tercera persona miraría el lugar donde el
+    // personaje todavía no está. `o.paso` fija el momento de la caminata para
+    // poder revisar la pose con las piernas abiertas y no siempre en descanso.
+    if (S.cuerpo) {
+      if (o.paso !== undefined) {
+        S.cuerpo.fase = o.paso;
+        // La amplitud del paso sale de la velocidad, y en una captura el
+        // jugador está quieto: se le presta una velocidad de caminata para el
+        // cuadro y se la devuelve enseguida.
+        jugador.velocidad.x = 3.4;
+      }
+      S.cuerpo.actualizar(1 / 60, jugador);
+      jugador.velocidad.x = 0;
+    }
+
     const est = tiempo.estado();
 
     // Eventos naturales: se puede forzar uno para poder mirarlo. Sin esto, una

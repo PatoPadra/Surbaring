@@ -52,6 +52,9 @@ import { Opciones } from './ui/Opciones.js';
 import { Bolso } from './ui/Bolso.js';
 import { Fin } from './ui/Fin.js';
 import { Partida } from './systems/Partida.js';
+import { Aspecto } from './systems/Aspecto.js';
+import { Cuerpo } from './entities/Cuerpo.js';
+import { Personaje } from './ui/Personaje.js';
 
 const elCarga = document.getElementById('carga');
 const elBarra = document.querySelector('#barra i');
@@ -145,6 +148,10 @@ async function iniciar() {
     buscarCosta(mundo, jugador);
   }
   jugador.giro = Math.PI * 0.92;
+  // Quién es el que camina. Se lee de lo guardado; si nunca se eligió, la
+  // pantalla de creación se abre más abajo, cuando el mundo ya está listo.
+  const aspecto = Aspecto.cargar();
+  jugador.aspecto = aspecto;
 
   progreso(0.76, 'Plantando el bosque andino-patagónico…');
   const vegetacion = new Vegetacion(mundo, flora, render);
@@ -417,9 +424,23 @@ async function iniciar() {
       `${calidad.anchoPx}×${calidad.altoPx} · ${calidad.placa.slice(0, 46)}`);
   };
 
+  // ── Cuerpo del jugador ────────────────────────────────────────────────────
+  // Hasta acá la tercera persona alejaba la cámara de un jugador que no
+  // existía: se veía el bosque desde un punto flotante. El cuerpo se dibuja
+  // siempre —en primera persona sólo se le apaga la cabeza— así que además
+  // aparece la sombra propia, que es lo que termina de plantar a alguien en el
+  // paisaje.
+  const cuerpo = new Cuerpo(aspecto, (mat) => conCSM(csm, mat));
+  escena.add(cuerpo.grupo);
+  const personaje = new Personaje({ aspecto });
+  // Rehacer el modelo alcanza: `aplicar` vuelve a crear los materiales y cada
+  // uno pasa solo por el enganche de las cascadas.
+  const reconstruirCuerpo = () => cuerpo.aplicar(aspecto);
+
   const opciones = new Opciones({
     calidad, audio, entrada, camara, jugador, tiempo, exploracion, hud, render,
-    partida,
+    partida, aspecto,
+    editarAspecto: () => personaje.abrir().then(reconstruirCuerpo),
     fps: () => fps,
     modoPosproceso: () => modoPosproceso,
     posproceso: (modo) => aplicarPosproceso(modo),
@@ -465,8 +486,17 @@ async function iniciar() {
   progreso(1, 'Listo.');
   await new Promise(r => setTimeout(r, 420));
   elCarga.classList.add('oculto');
-  document.getElementById('hud').classList.add('visible');
   setTimeout(() => elCarga.remove(), 1100);
+
+  // Creación de personaje. Sólo la primera vez: quien ya eligió entra directo,
+  // y puede volver a elegir cuando quiera desde el panel. Va después de cargar
+  // el mundo a propósito —así el «Entrar al parque» entra de verdad, sin una
+  // barra de progreso en el medio— y antes de que arranque el bucle.
+  if (!aspecto.elegido) {
+    await personaje.abrir();
+    reconstruirCuerpo();
+  }
+  document.getElementById('hud').classList.add('visible');
 
   // Bienvenida. El juego tenía diecisiete teclas y no decía ninguna: quien lo
   // abría por primera vez caía en un bosque sin saber siquiera que hay que
@@ -509,7 +539,8 @@ async function iniciar() {
   function fuegoCercano(est) {
     let f = 0;
     for (const h of fundicion.hornos) {
-      if (!h.trabajo) continue;
+      // Un horno apagado por la lluvia no calienta a nadie
+      if (!h.trabajo || h.trabajo.apagado) continue;
       const d = Math.hypot(h.x - jugador.posicion.x, h.z - jugador.posicion.z);
       f = Math.max(f, Math.max(0, 1 - d / 16));
     }
@@ -619,7 +650,7 @@ async function iniciar() {
     calidad.recortarInstancias();
     bichos.actualizar(dt, jugador, est, tiempo.segundosTotales);
     peces.actualizar(jugador.posicion, tiempo.segundosTotales);
-    fundicion.actualizar();
+    fundicion.actualizar(est);
     hornos.actualizar(tiempo.segundosTotales);
     for (const caida of construccion.actualizar()) obras.quitar(caida);
     // Lo que abriga alrededor entra en el modelo térmico del jugador
@@ -674,6 +705,10 @@ async function iniciar() {
       hud.pintarFenomenos(eventos.resumen());
     }
 
+    // El cuerpo se anima una vez por cuadro, no una por paso de física: la
+    // caminata se lee con el cuadro que se dibuja, no con el que se simula.
+    cuerpo.actualizar(dt, jugador);
+
     // El domo del cielo acompaña a la cámara
     cielo.malla.position.copy(camara.position);
 
@@ -702,7 +737,7 @@ async function iniciar() {
   // Exponer para inspección y para los subagentes de revisión visual
   window.SurviBar = {
     escena, camara, render, mundo, terreno, cielo, agua, vegetacion, sotobosque,
-    fauna: bichos, jugador, tiempo, compositor, csm, hud, codice, entrada,
+    fauna: bichos, jugador, cuerpo, aspecto, personaje, tiempo, compositor, csm, hud, codice, entrada,
     inventario, saberes, recoleccion, caza, audio,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima, oclusion, color, calidad,

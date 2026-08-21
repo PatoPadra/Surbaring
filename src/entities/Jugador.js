@@ -13,6 +13,10 @@ const ALTURA_OJOS = 1.68;
 const RADIO = 0.38;
 const PENDIENTE_MAX = 48 * Math.PI / 180;
 const PASO_MAX = 0.55;
+/** Cuánto adelante del eje del cuerpo están los ojos, en metros. */
+const OJOS_ADELANTE = 0.12;
+/** Tope de retraso de la cámara respecto de la cota real del cuerpo. */
+const RETRASO_VERTICAL = 0.5;
 
 export class Jugador {
   constructor(mundo, camara) {
@@ -31,6 +35,20 @@ export class Jugador {
     this.cabeceo = 0;     // vertical
     this.tercerPersona = false;
     this.distanciaCamara = 4.2;
+    /**
+     * Distancia efectiva del brazo de cámara. La deseada y la real son dos
+     * cosas distintas: el relieve empuja la cámara hacia adelante, y hacerlo de
+     * golpe —que era lo que pasaba— produce un salto en cada arbusto y en cada
+     * cambio de pendiente. Acá se persigue el objetivo, rápido al acercarse
+     * (si no, la cámara se hunde en el cerro) y lento al alejarse.
+     */
+    this._distanciaReal = this.distanciaCamara;
+    /** Corrimiento sobre el hombro, para no tener el propio cuerpo tapando la mira. */
+    this.hombroCamara = 0.42;
+    /** Cuánto se balancea la cámara al caminar, de 0 a 1. Se ajusta en opciones. */
+    this.balanceo = 1;
+    /** Aspecto elegido en la creación de personaje. Lo escribe main. */
+    this.aspecto = null;
 
     // Estado de supervivencia
     this.salud = 100;
@@ -52,6 +70,10 @@ export class Jugador {
 
     this._balanceo = 0;
     this._normalSuelo = new THREE.Vector3(0, 1, 0);
+    this._normalMuro = new THREE.Vector3(0, 1, 0);
+    /** Altura suavizada de la cámara. Ver `_colocarCamara`. */
+    this._ySuave = null;
+    this._antesX = 0; this._antesZ = 0;
     this._tmp = new THREE.Vector3();
     this._distanciaRecorrida = 0;
   }
@@ -70,6 +92,7 @@ export class Jugador {
     this.temperatura = 36.6;
     this.horasVividas = 0;
     this.velocidad.set(0, 0, 0);
+    this._ySuave = null;
     return this;
   }
 
@@ -78,6 +101,9 @@ export class Jugador {
     const { x, z } = this.mundo.aMundo(lat, lon);
     this.posicion.set(x, this.mundo.alturaEn(x, z) + 2, z);
     this.velocidad.set(0, 0, 0);
+    // Aparecer en otro lado no es caerse: la cámara arranca donde está el
+    // cuerpo, sin perseguirlo desde el punto anterior.
+    this._ySuave = null;
     return this;
   }
 
@@ -157,6 +183,11 @@ export class Jugador {
       this.velocidad.y += GRAVEDAD * dt;
     }
 
+    // De dónde se venía. Lo necesita el rechazo contra paredes: para deshacer un
+    // avance hay que saber dónde estaba el cuerpo antes de hacerlo.
+    this._antesX = this.posicion.x;
+    this._antesZ = this.posicion.z;
+
     this.posicion.addScaledVector(this.velocidad, dt);
     this._distanciaRecorrida += Math.hypot(this.velocidad.x, this.velocidad.z) * dt;
 
@@ -165,8 +196,88 @@ export class Jugador {
     this.energia = Math.max(0, Math.min(100, this.energia - gasto * dt + (gasto === 0 ? 7.5 * dt : 0)));
   }
 
+  /**
+   * ¿Este punto es pared, o sea algo que no se sube caminando?
+   *
+   * La primera versión preguntaba si la cota subía más que `PASO_MAX`, y estaba
+   * mal por una razón que no se ve leyendo: `PASO_MAX` es lo que se sube de un
+   * paso, y esto se evalúa una vez por cuadro. A 2,3 m/s un cuadro avanza menos
+   * de cuatro centímetros, así que el umbral daba permiso para subir medio metro
+   * cada cuatro centímetros —una pared vertical— y la comprobación no se
+   * disparaba nunca. Medido: contra un pedrero de 50°, con el rechazo puesto y
+   * sacado, el mismo número hasta el tercer decimal.
+   *
+   * Lo que define una pared es la pendiente, que es justo lo que ya declara
+   * `PENDIENTE_MAX`. La cota sólo hace falta para saber si vamos hacia arriba:
+   * de una pared siempre se tiene que poder salir bajando o de costado.
+   */
+  _esMuro(x, z) {
+    const m = this.mundo;
+    return m.pendienteEn(x, z) > PENDIENTE_MAX
+      && m.alturaEn(x, z) > this.posicion.y + 0.02;
+  }
+
+  /**
+   * Rechazo contra paredes de roca.
+   *
+   * Acá estaba el temblor al chocar. El cuadro metía el cuerpo dentro de la
+   * cara empinada; el ajuste de altura de más abajo lo pegaba a la cota del
+   * terreno, o sea que lo TREPABA de un salto por un pedrero que la propia
+   * pendiente máxima declara insubible; y el deslizamiento por pendiente lo
+   * devolvía abajo. Sesenta veces por segundo. Lo que se ve de eso es la cámara
+   * vibrando contra la piedra.
+   *
+   * La pared se detecta ahora ANTES de tocar la altura: se deshace el avance
+   * del cuadro y se vuelve a aplicar sólo su componente tangencial. Eso es
+   * caminar pegado a la pared, que es lo que hace un cuerpo, en vez de rebotar
+   * contra ella.
+   */
+  _resolverMuro() {
+    const m = this.mundo;
+    const dx = this.posicion.x - this._antesX;
+    const dz = this.posicion.z - this._antesZ;
+    if (Math.hypot(dx, dz) < 1e-5) return;
+    if (!this._esMuro(this.posicion.x, this.posicion.z)) return;
+
+    // Normal del terreno: su parte horizontal apunta cuesta abajo, o sea hacia
+    // afuera de la pared. Es la dirección contra la que no se puede avanzar.
+    m.normalEn(this.posicion.x, this.posicion.z, this._normalMuro);
+    let nx = this._normalMuro.x, nz = this._normalMuro.z;
+    const largo = Math.hypot(nx, nz);
+    if (largo < 1e-4) {                       // pared vertical sin gradiente útil
+      this.posicion.x = this._antesX;
+      this.posicion.z = this._antesZ;
+      return;
+    }
+    nx /= largo; nz /= largo;
+
+    const entra = dx * nx + dz * nz;
+    if (entra >= 0) return;                   // se está yendo de la pared, no entrando
+
+    // Sólo la parte del avance que corre a lo largo de la pared
+    const tx = this._antesX + (dx - nx * entra);
+    const tz = this._antesZ + (dz - nz * entra);
+    if (this._esMuro(tx, tz)) {               // rincón: no hay por dónde
+      this.posicion.x = this._antesX;
+      this.posicion.z = this._antesZ;
+    } else {
+      this.posicion.x = tx;
+      this.posicion.z = tz;
+    }
+
+    // La velocidad pierde lo mismo que perdió el avance. Sin esto se sigue
+    // acumulando contra la pared y salta en cuanto la pared se termina.
+    const ve = this.velocidad.x * nx + this.velocidad.z * nz;
+    if (ve < 0) {
+      this.velocidad.x -= nx * ve;
+      this.velocidad.z -= nz * ve;
+    }
+  }
+
   _resolverTerreno(dt) {
     const m = this.mundo;
+
+    this._resolverMuro();
 
     // Mantener dentro del mundo
     const lim = m.mitad - 30;
@@ -231,20 +342,50 @@ export class Jugador {
     if (this.salud <= 0) this.salud = 0;
   }
 
+  /**
+   * Cota a la que se dibuja el cuerpo. Es la suavizada, no la de la física: si
+   * el cuerpo usara la cota cruda mientras la cámara usa la suave, en tercera
+   * persona el personaje daría saltitos dentro del encuadre.
+   */
+  get alturaVisual() {
+    return this._ySuave ?? this.posicion.y;
+  }
+
+  /** Altura de los ojos, que sale de la estatura elegida al crear el personaje. */
+  get alturaOjos() {
+    return this.aspecto?.alturaOjos ?? ALTURA_OJOS;
+  }
+
   _colocarCamara(dt, entrada) {
     const m = this.mundo;
-    const alturaOjos = this.agachado ? ALTURA_OJOS * 0.62 : ALTURA_OJOS;
+    const alturaOjos = this.alturaOjos * (this.agachado ? 0.62 : 1);
 
-    // Balanceo al caminar: sutil, sólo para dar peso al paso
+    // Balanceo al caminar: sutil, sólo para dar peso al paso. Quien lo sienta
+    // como temblor lo puede bajar a cero desde las opciones; hay gente a la que
+    // el cabeceo de cámara le da mareo de verdad, y no es un capricho.
     const rapidez = Math.hypot(this.velocidad.x, this.velocidad.z);
     this._balanceo += rapidez * dt * 2.1;
-    const amplitud = Math.min(rapidez / 6.2, 1) * (this.enSuelo ? 1 : 0);
+    const amplitud = Math.min(rapidez / 6.2, 1) * (this.enSuelo ? 1 : 0) * this.balanceo;
     const bobY = Math.sin(this._balanceo * 2) * 0.045 * amplitud;
     const bobX = Math.cos(this._balanceo) * 0.032 * amplitud;
 
+    // Suavizado vertical de la vista.
+    //
+    // El relieve es un campo de alturas muestreado y el cuerpo se pega a él en
+    // cada cuadro: cada escalón, cada piedra y cada cambio de nodo del terreno
+    // es un salto instantáneo de la cota. En los pies no se nota; en los ojos
+    // es un tirón. Se persigue la cota real en vez de copiarla, rápido en el
+    // aire —una caída tiene que sentirse caída— y con un tope de medio metro de
+    // retraso para que un barranco no deje la cámara flotando atrás.
+    if (this._ySuave === null) this._ySuave = this.posicion.y;
+    const kY = this.enSuelo ? 16 : 90;
+    this._ySuave += (this.posicion.y - this._ySuave) * (1 - Math.exp(-kY * dt));
+    this._ySuave = Math.max(this.posicion.y - RETRASO_VERTICAL,
+      Math.min(this.posicion.y + RETRASO_VERTICAL, this._ySuave));
+
     const ojo = this._tmp.set(
       this.posicion.x + bobX * Math.cos(this.giro),
-      this.posicion.y + alturaOjos + bobY,
+      this._ySuave + alturaOjos + bobY,
       this.posicion.z - bobX * Math.sin(this.giro)
     );
 
@@ -258,15 +399,38 @@ export class Jugador {
         -Math.sin(this.cabeceo),
         Math.cos(this.giro) * Math.cos(this.cabeceo)
       );
-      let d = this.distanciaCamara;
-      for (let paso = 0.4; paso <= d; paso += 0.35) {
-        const px = ojo.x + dir.x * paso, pz = ojo.z + dir.z * paso;
+      // Sobre el hombro: la cámara al eje deja al propio personaje tapando
+      // justo el lugar donde uno está mirando.
+      const hombroX = Math.cos(this.giro) * this.hombroCamara;
+      const hombroZ = -Math.sin(this.giro) * this.hombroCamara;
+      const baseX = ojo.x + hombroX, baseZ = ojo.z + hombroZ;
+
+      // Se busca el primer punto donde el brazo entra en el terreno, con un
+      // muestreo más fino que antes: con pasos de 35 cm la cámara se metía
+      // medio metro dentro de la ladera antes de enterarse.
+      let deseada = this.distanciaCamara;
+      for (let paso = 0.4; paso <= deseada; paso += 0.18) {
+        const px = baseX + dir.x * paso, pz = baseZ + dir.z * paso;
         const py = ojo.y + dir.y * paso;
-        if (py < m.alturaEn(px, pz) + 0.45) { d = Math.max(1.1, paso - 0.35); break; }
+        if (py < m.alturaEn(px, pz) + 0.5) { deseada = Math.max(0.9, paso - 0.25); break; }
       }
-      this.camara.position.set(ojo.x + dir.x * d, ojo.y + dir.y * d, ojo.z + dir.z * d);
+      // Acercarse tiene que ser inmediato o se ve a través del cerro; alejarse
+      // puede tomarse su tiempo, y así el salir de un pasillo de árboles no es
+      // un tirón hacia atrás.
+      const respuesta = deseada < this._distanciaReal ? 26 : 5;
+      this._distanciaReal += (deseada - this._distanciaReal) * (1 - Math.exp(-respuesta * dt));
+      const d = this._distanciaReal;
+      this.camara.position.set(baseX + dir.x * d, ojo.y + dir.y * d, baseZ + dir.z * d);
     } else {
-      this.camara.position.copy(ojo);
+      this._distanciaReal = this.distanciaCamara;
+      // Los ojos están en la cara, no en el eje del cuello. Doce centímetros
+      // hacia adelante es lo que hace que mirar al piso muestre el pecho y las
+      // piernas —que es lo que uno espera ver— en vez de los hombros pegados a
+      // la lente.
+      this.camara.position.set(
+        ojo.x - Math.sin(this.giro) * OJOS_ADELANTE,
+        ojo.y,
+        ojo.z - Math.cos(this.giro) * OJOS_ADELANTE);
     }
 
     // Bajo el agua se corrige la profundidad de la cámara

@@ -361,7 +361,14 @@ function construirGrillaRadial(radioMin, radioMax, anillos, sectores) {
   return geo;
 }
 
+// AVISO: el render usa logarithmicDepthBuffer. Un ShaderMaterial propio que no
+// incluya los chunks de log-depth escribe una profundidad que NO se compara con
+// la del resto de la escena, y el resultado es que la superficie entra y sale
+// contra el terreno a medida que se mueve la cámara. No hay error en consola:
+// sólo parpadea. Es el mismo defecto que ya estaba documentado en Clima.js.
 const VERT = /* glsl */`
+#include <common>
+#include <logdepthbuf_pars_vertex>
 uniform float uTiempo;
 uniform float uCota;
 uniform vec2 uViento;
@@ -421,11 +428,14 @@ void main() {
   // Posición final en el mundo; la cota del lago la fija la matriz del objeto.
   vMundo = vec3(mundoXZ.x + desp.x, uCota + desp.y, mundoXZ.y + desp.z);
   gl_Position = projectionMatrix * viewMatrix * vec4(vMundo, 1.0);
+  #include <logdepthbuf_vertex>
 }
 `;
 
 const FRAG = /* glsl */`
 precision highp float;
+#include <common>
+#include <logdepthbuf_pars_fragment>
 
 uniform float uTiempo;
 uniform float uCota;

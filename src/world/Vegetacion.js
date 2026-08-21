@@ -534,7 +534,14 @@ function hornearImpostor(render, geometria, mapaFollaje) {
   return { textura: objetivo.texture, ancho, alto, objetivo, vistas: VISTAS, cols: COLS, filas: FILAS };
 }
 
+// AVISO: el render usa logarithmicDepthBuffer. Un ShaderMaterial propio que no
+// incluya los chunks de log-depth escribe una profundidad que NO se compara con
+// la del resto de la escena, y el resultado es que la superficie entra y sale
+// contra el terreno a medida que se mueve la cámara. No hay error en consola:
+// sólo parpadea. Es el mismo defecto que ya estaba documentado en Clima.js.
 const VERT_IMPOSTOR = /* glsl */`
+#include <common>
+#include <logdepthbuf_pars_vertex>
 attribute vec3 iTinte;
 uniform float uAncho;
 uniform float uAlto;
@@ -571,10 +578,13 @@ void main() {
   vec4 vista = viewMatrix * vec4(mundo, 1.0);
   vDist = -vista.z;
   gl_Position = projectionMatrix * vista;
+  #include <logdepthbuf_vertex>
 }
 `;
 
 const FRAG_IMPOSTOR = /* glsl */`
+#include <common>
+#include <logdepthbuf_pars_fragment>
 uniform sampler2D uMapa;
 uniform vec3 uColorSol;
 uniform float uIntensidadSol;
@@ -607,6 +617,7 @@ vec2 uvDeVista(float i, vec2 local) {
 }
 
 void main() {
+  #include <logdepthbuf_fragment>
   // Vista continua correspondiente al ángulo de cámara
   float t = (mod(vAzimut, TAU) / TAU) * uVistas;
   float i0 = floor(t);
