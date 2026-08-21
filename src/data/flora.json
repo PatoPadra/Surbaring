@@ -1810,10 +1810,10 @@
       "usoMedicinal": "Contiene ácido úsnico, con propiedades antibacterianas reconocidas; se usó en cataplasmas para heridas.",
       "usoMapuche": null,
       "nombreMapuzugun": null,
-      "recursoJuego": "fibra",
-      "rendimientoRecurso": 5,
+      "recursoJuego": "yesca",
+      "rendimientoRecurso": 14,
       "descripcionEducativa": "No es una planta sino un liquen: la asociación simbiótica de un hongo con un alga. Cuelga en mechones grisáceos de las ramas del coihue y la lenga, y usa al árbol solamente como soporte, ya que toma agua y nutrientes del aire. Su abundancia es señal de aire limpio, porque es muy sensible al dióxido de azufre y a los óxidos de nitrógeno.",
-      "datoCurioso": "En algunas ramas del bosque húmedo hay tanto liquen colgando que la corteza del árbol ni se ve."
+      "datoCurioso": "En algunas ramas del bosque húmedo hay tanto liquen colgando que la corteza del árbol ni se ve. Seca es la mejor yesca del bosque: agarra chispa con humedad en el aire, y crece tan despacio que conviene juntar poca y en un día bueno, para el día malo."
     },
     {
       "id": "llao_llao",
@@ -1977,6 +1977,7 @@
       "nombreMapuzugun": null,
       "recursoJuego": "madera_blanda",
       "rendimientoRecurso": 35,
+      "recursoExtra": { "recurso": "pinocha", "cantidad": 4 },
       "descripcionEducativa": "Conífera norteamericana plantada con fines forestales en la Patagonia andina, donde representa alrededor del 4% de la superficie forestada. Es tolerante a la sombra, lo que le permite instalarse bajo el dosel del bosque nativo y desplazarlo desde adentro. Se la considera invasora por su capacidad de regenerar fuera de las plantaciones.",
       "datoCurioso": "Sus piñas se reconocen al instante por las brácteas de tres puntas que asoman entre las escamas, como patitas de ratón."
     },
@@ -2010,6 +2011,7 @@
       "nombreMapuzugun": null,
       "recursoJuego": "madera_blanda",
       "rendimientoRecurso": 28,
+      "recursoExtra": { "recurso": "pinocha", "cantidad": 4 },
       "descripcionEducativa": "Pino norteamericano que constituye cerca del 7,5% de las plantaciones de la Patagonia andina y es considerado el más invasor de todos. Produce cantidades enormes de semillas livianas que el viento dispersa a gran distancia, colonizando estepa, cipresales y hasta la franja del matorral de altura. Su avance modifica el régimen de fuego y la disponibilidad de agua de las cuencas.",
       "datoCurioso": "Figura entre las cien especies exóticas más invasoras del mundo y en la Patagonia avanza a kilómetros de la plantación original."
     },
@@ -2043,6 +2045,7 @@
       "nombreMapuzugun": null,
       "recursoJuego": "madera_blanda",
       "rendimientoRecurso": 32,
+      "recursoExtra": { "recurso": "pinocha", "cantidad": 4 },
       "descripcionEducativa": "Es la especie forestada más plantada de la Patagonia andina, con cerca del 87% de la superficie de plantaciones. Sus agujas largas agrupadas de a tres y su corteza anaranjada en placas la hacen fácil de reconocer. Regenera espontáneamente fuera de los rodales, sobre todo en la estepa y en los cipresales, y se la clasifica como invasora.",
       "datoCurioso": "Las plantaciones de pinos consumen mucha más agua que la estepa que reemplazan, lo que reduce el caudal de los arroyos de la cuenca."
     },

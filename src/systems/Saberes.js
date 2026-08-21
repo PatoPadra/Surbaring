@@ -75,6 +75,44 @@ export class Saberes {
     };
   }
 
+  /**
+   * ¿Hay alguna tecnología —aprendida o no— que sea requisito de esto?
+   *
+   * Acá se cierra el agujero más grande del proyecto: de las 47 tecnologías, el
+   * único lugar de todo el código que consultaba `desbloqueadas` para permitir o
+   * negar algo era la construcción de obras. Las otras 41 eran texto histórico
+   * con precio: se cazaba a mano limpia con el arco comprado, se levantaba la
+   * fragua sin saber herrería, y el árbol entero podía quedar apagado sin que
+   * cambiara nada. Un juego cuya tesis es que el conocimiento es el progreso no
+   * puede tener el conocimiento desconectado de las reglas.
+   *
+   * El enganche es un campo `efecto` en el dataset y esta consulta: los sistemas
+   * preguntan "¿esto pide saber algo?" y el árbol contesta.
+   */
+  requisitoPara(clave, valor) {
+    for (const t of this.porId.values()) {
+      const v = t.efecto?.[clave];
+      if (v === undefined) continue;
+      const coincide = valor === undefined ? !!v
+        : Array.isArray(v) ? v.includes(valor) : v === valor;
+      if (coincide) return t;
+    }
+    return null;
+  }
+
+  /** Igual que el anterior, pero devuelve null si ya está aprendida. */
+  faltaPara(clave, valor) {
+    const t = this.requisitoPara(clave, valor);
+    return t && !this.desbloqueadas.has(t.id) ? t : null;
+  }
+
+  /** Suma de un efecto numérico entre todo lo que ya se aprendió. */
+  suma(clave) {
+    let n = 0;
+    for (const id of this.desbloqueadas) n += this.porId.get(id)?.efecto?.[clave] || 0;
+    return n;
+  }
+
   desbloquear(tec) {
     const e = this.estado(tec);
     if (e.estado !== 'lista') return e;

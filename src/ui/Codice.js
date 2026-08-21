@@ -162,10 +162,42 @@ export class Codice {
       this.lugares.add(l.id);
       const detalle = l.altura ? `${l.altura} m s. n. m.`
         : l.cota ? `Cota ${l.cota} m` : (l.anio ? `${l.anio}` : '');
-      this.hud?.aviso(`Descubriste ${l.nombre}`, detalle);
+      const topo = this.toponimoDe(l.nombre);
+      // "Descubriste" es una palabra prestada de los relevamientos, y conviene
+      // devolverla con su contexto: el lugar ya tenía nombre.
+      const conNombre = topo && topo.lengua === 'mapuzugun'
+        ? `${detalle}${detalle ? ' · ' : ''}Ya tenía nombre: ${topo.termino}, ${(topo.significado || '').toLowerCase()}.`
+        : detalle;
+      this.hud?.aviso(`Descubriste ${l.nombre}`, conNombre, topo ? 7000 : 4200);
       this._actualizarCuenta();
       if (this.abierto) this._pintar();
     }
+  }
+
+  /**
+   * El nombre que el lugar ya tenía.
+   *
+   * Casi todo el mapa de Bariloche está escrito en mapuzugun, y el juego tenía
+   * los treinta topónimos investigados en una pestaña y los cuarenta y cinco
+   * lugares descubribles en otra, sin tocarse nunca. Engancharlos es la
+   * corrección más barata que este proyecto puede hacer sobre sí mismo: que
+   * cada "descubrimiento" venga con el recordatorio de que el lugar ya estaba
+   * nombrado, y de que descubrir, acá, quiso decir muchas veces renombrar.
+   *
+   * Se busca el término más largo contenido en el nombre —"Nahuel Huapi" antes
+   * que "Nahuel"— para no quedarse con la coincidencia trivial.
+   */
+  toponimoDe(nombre) {
+    const limpiar = (t) => (t || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const n = limpiar(nombre);
+    let mejor = null;
+    for (const t of this.historia.toponimia || []) {
+      const term = limpiar(t.termino);
+      if (!term || !n.includes(term)) continue;
+      if (!mejor || term.length > limpiar(mejor.termino).length) mejor = t;
+    }
+    return mejor;
   }
 
   /** Eventos históricos ocurridos cerca de un lugar ya descubierto. */
@@ -175,8 +207,23 @@ export class Codice {
     for (const l of this.listaLugares) if (this.lugares.has(l.id)) cerca.push(l);
 
     for (const e of this.historia.eventos || []) {
-      if (e.latitud == null || e.longitud == null) { abiertos.add(e.id); continue; }
-      const p = this.mundo.aMundo(e.latitud, e.longitud);
+      // El ancla manda sobre la coordenada del hecho.
+      //
+      // Un evento se desbloqueaba estando a menos de cinco kilómetros de DONDE
+      // PASÓ, y eso dejaba doce de los treinta y dos fuera del alcance para
+      // siempre: la Campaña del Desierto a 115 km, Sayhueque a 78, el arte
+      // rupestre a 80. El recorte no era neutro —se llevaba puesta casi toda la
+      // historia indígena y de la conquista, que son las entradas mejor escritas
+      // del archivo— y dejaba accesible la capa del turismo. El juego terminaba
+      // contando, sin querer, la versión de folleto.
+      //
+      // Un hecho que ocurrió en otro lado se aprende igual parado en el lugar
+      // desde donde se lo explica, y por eso cada uno de esos doce lleva ahora
+      // un ancla con su propia razón de estar ahí.
+      const lat = e.ancla?.latitud ?? e.latitud;
+      const lon = e.ancla?.longitud ?? e.longitud;
+      if (lat == null || lon == null) { abiertos.add(e.id); continue; }
+      const p = this.mundo.aMundo(lat, lon);
       for (const l of cerca) {
         if (Math.hypot(p.x - l.x, p.z - l.z) < 5000) { abiertos.add(e.id); break; }
       }
@@ -205,6 +252,7 @@ export class Codice {
           <button data-p="geografia">Geografía</button>
           <button data-p="historia">Historia</button>
           <button data-p="mitologia">Mitología</button>
+          <button data-p="normativa">Normativa</button>
           <button data-p="saberes">Saberes</button>
         </nav>
         <div class="cx-lista" id="cx-lista"></div>
@@ -297,6 +345,9 @@ export class Codice {
       case 'mitologia':
         html = this._pintarMitologia();
         ayuda = 'Relatos y topónimos del pueblo mapuche, disponibles desde el inicio';
+        break;
+      case 'normativa':
+        html = this._pintarNormativa();
         break;
       case 'saberes':
         html = this._pintarSaberes();
@@ -394,6 +445,7 @@ export class Codice {
       if (l.transparencia) det.push(`${l.transparencia} m de transparencia`);
       if (l.anio) det.push(`${l.anio}`);
       det.push(`${l.lat.toFixed(3)}°, ${l.lon.toFixed(3)}°`);
+      const topo = this.toponimoDe(l.nombre);
 
       const ins = [];
       if (l.cuenca) ins.push(tag(`Cuenca ${l.cuenca}`, '#4a8fb5'));
@@ -408,6 +460,7 @@ export class Codice {
           <p class="cx-cient">${(l.tipos || [l.tipo]).map(t => NOMBRE_TIPO[t] || cap(t)).join(' · ')}</p>
           <div class="cx-tags">${ins.join('')}</div>
           <p class="cx-desc">${l.descripcion || ''}</p>
+          ${topo ? `<p class="cx-uso"><b>Ya tenía nombre:</b> ${topo.termino}, ${topo.lengua === 'mapuzugun' ? 'en mapuzugun' : `en ${topo.lengua}`}: ${(topo.significado || '').toLowerCase()}.${topo.notas ? ` ${topo.notas}` : ''}</p>` : ''}
           ${l.origenNombre ? `<p class="cx-uso"><b>Origen del nombre:</b> ${l.origenNombre}</p>` : ''}
           ${l.retroceso ? `<p class="cx-uso"><b>Retroceso:</b> ${l.retroceso}</p>` : ''}
           ${l.brazos?.length ? `<p class="cx-uso"><b>Brazos:</b> ${l.brazos.join(', ')}</p>` : ''}
@@ -442,7 +495,11 @@ export class Codice {
 
     for (const era of this.historia.eras || []) {
       const suyos = eventos.filter(e =>
-        e.anio != null && e.anio >= era.anioDesde && e.anio <= era.anioHasta);
+        // Un evento sin año no es un evento sin época: el arte rupestre no tiene
+        // fecha y por este filtro no se dibujaba en NINGUNA era, aunque se
+        // desbloqueara. Los sin fecha caen en la primera, que es donde están.
+        e.anio == null ? era === this.historia.eras[0]
+          : (e.anio >= era.anioDesde && e.anio <= era.anioHasta));
 
       html += `<article class="cx-bloque" style="--c:${era.colorTema || '#8a5a3b'}">
         <h3>${era.nombre} <em>${anio(era.anioDesde)} – ${anio(era.anioHasta)}</em></h3>
@@ -457,6 +514,9 @@ export class Codice {
             ${visible
               ? `<h3>${e.titulo}</h3>
                  <p class="cx-desc">${e.descripcion || ''}</p>
+                 ${e.ancla?.porQueAca
+                   ? `<p class="cx-uso"><b>Por qué se cuenta desde ${e.ancla.lugar}:</b> ${e.ancla.porQueAca}</p>`
+                   : ''}
                  <p class="cx-meta">${e.lugar || ''}${'★'.repeat(e.importancia || 0)}</p>`
               : `<h3>Hecho sin revelar</h3>
                  <p class="cx-parcial">Ocurrió en un lugar que todavía no visitaste.</p>`}
@@ -510,6 +570,77 @@ export class Codice {
       </div>`;
     }
     html += `</div>`;
+    return html;
+  }
+
+  /**
+   * La ley del parque, entera y desde el principio.
+   *
+   * No es un coleccionable: la normativa no se descubre caminando, se consulta.
+   * Y hasta acá no se podía consultar en ningún lado —los dos archivos que
+   * sostienen la tesis del juego, `caza.json` y `mineria.json`, no tenían
+   * pantalla— así que la única forma de leer una explicación de quinientos
+   * caracteres era alcanzar a leerla en los 4,2 segundos del cartel.
+   *
+   * Abajo de todo va el registro de lo que el jugador intentó y no pudo. Ése sí
+   * es suyo: es su historial de haber chocado contra la ley, con lo que le
+   * costó, y es lo que convierte la negativa en algo que se relee.
+   */
+  _pintarNormativa() {
+    const n = this.normativa || {};
+    let html = `<article class="cx-bloque"><h3>Por qué esta pestaña no se desbloquea</h3>
+      <p class="cx-desc">Todo lo que sigue está disponible desde el primer minuto.
+      La ley no es un coleccionable: rige sepas o no sepas, y ésa es justamente la
+      parte que conviene saber antes y no después.</p></article>`;
+
+    if (n.caza?.marcoLegal?.resumen) {
+      html += `<article class="cx-linea">
+        <div class="cx-anio">Marco</div>
+        <div class="cx-datos"><h3>Fauna y caza</h3>
+          <p class="cx-desc">${n.caza.marcoLegal.resumen}</p></div>
+      </article>`;
+    }
+
+    for (const c of n.caza?.categorias || []) {
+      html += `<article class="cx-linea">
+        <div class="cx-anio" style="color:${c.colorAviso || '#c8503f'}">${cap(c.nombre || c.id)}</div>
+        <div class="cx-datos"><h3>${cap(c.nombre || c.id)}</h3>
+          <p class="cx-desc">${c.explicacion || ''}</p></div>
+      </article>`;
+    }
+
+    const normas = [
+      ...(n.caza?.marcoLegal?.normas || []),
+      ...(n.mineria?.normas || []),
+      ...(n.construccion?.normas || []),
+    ];
+    if (normas.length) {
+      html += `<article class="cx-bloque"><h3>Las normas citadas</h3></article>`;
+      for (const x of normas) {
+        const titulo = x.norma || x.nombre || x.id || '';
+        html += `<article class="cx-linea">
+          <div class="cx-anio">${x.anio || ''}</div>
+          <div class="cx-datos"><h3>${titulo}</h3>
+            <p class="cx-desc">${x.detalle || x.descripcion || x.resumen || ''}</p></div>
+        </article>`;
+      }
+    }
+
+    const reg = this.norma?.registro || [];
+    html += `<article class="cx-bloque"><h3>Lo que intentaste</h3>
+      <p class="cx-desc">${reg.length
+        ? 'Cada vez que la ley dijo que no, y lo que costó. Se conserva aunque te mueras: es de lo poco que el cuerpo no se lleva.'
+        : 'Todavía no chocaste con ninguna norma. Cuando pase, la explicación queda acá para releerla con tiempo.'}</p></article>`;
+    for (const r of reg) {
+      html += `<article class="cx-linea">
+        <div class="cx-anio">${r.fecha || ''}</div>
+        <div class="cx-datos"><h3>${r.titulo}</h3>
+          <p class="cx-desc">${r.detalle}</p>
+          ${r.nota ? `<p class="cx-curioso">${r.nota}</p>` : ''}
+          <p class="cx-meta">${[r.lugar, r.castigo ? `−${r.castigo} de saber` : ''].filter(Boolean).join(' · ')}</p>
+        </div>
+      </article>`;
+    }
     return html;
   }
 

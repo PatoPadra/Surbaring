@@ -224,6 +224,25 @@ export class Recoleccion {
   comer() {
     const opciones = this.inventario.comestibles();
 
+    // Primero la herida. Un cuerpo con la salud por el piso y el estómago lleno
+    // no necesita otra fruta: necesita el emplasto que viene juntando desde que
+    // aprendió a reconocer el maqui. Los remedios no son comida —el emplasto se
+    // ata sobre la herida— así que no salen por `comestibles()`.
+    const remedios = this.inventario.listar()
+      .filter(i => (RECURSOS[i.id]?.cura || 0) > 0)
+      .sort((a, b) => (RECURSOS[b.id].cura || 0) - (RECURSOS[a.id].cura || 0));
+    if (remedios.length && this.jugador.salud < 65) {
+      const r = remedios[0];
+      const d = RECURSOS[r.id];
+      this.inventario.quitar(r.id, 1);
+      this.jugador.salud = Math.min(100, this.jugador.salud + (d.cura || 0));
+      if (d.hidrata) this.jugador.sed = Math.min(100, this.jugador.sed + d.hidrata);
+      if (d.nutre) this.jugador.hambre = Math.min(100, this.jugador.hambre + d.nutre);
+      this.hud.aviso(`Te curaste con ${r.nombre.toLowerCase()}`,
+        `Salud ${this.jugador.salud.toFixed(0)} · lo aprendiste identificando la planta, y eso no se pierde`);
+      return;
+    }
+
     // Q atiende lo que más falta. Antes sólo miraba el alimento, así que el
     // agua cargada en el bolso —la hervida, sobre todo, que cuesta leña y una
     // hornada— no se podía tomar con ninguna tecla: había que volver a la

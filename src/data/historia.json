@@ -6,7 +6,18 @@
       "anioDesde": -11000,
       "anioHasta": 1520,
       "descripcion": "Desde el retroceso de los glaciares, cazadores recolectores ocuparon los bosques y estepas del Nahuel Huapi siguiendo los guanacos y los frutos del ciclo anual. Los aleros y cuevas de la región conservan pinturas rupestres, puntas líticas y restos de fogones que documentan miles de años de ocupación continua. Poyas, puelches y vuriloches habitaban los valles cordilleranos, mientras los tehuelches septentrionales recorrían la estepa hacia el este. El intercambio a través de los pasos cordilleranos con las poblaciones del actual Chile fue constante mucho antes de cualquier frontera estatal.",
-      "tecnologiasDesbloqueadas": ["lasca_obsidiana", "punta_proyectil", "boleadora", "arco_colihue", "fuego_friccion", "cesteria_junco", "alfareria_bicroma", "curtido_cuero", "toldo_cuero", "canoa_troncos"],
+      "tecnologiasDesbloqueadas": [
+        "lasca_obsidiana",
+        "punta_proyectil",
+        "boleadora",
+        "arco_colihue",
+        "fuego_friccion",
+        "cesteria_junco",
+        "alfareria_bicroma",
+        "curtido_cuero",
+        "toldo_cuero",
+        "canoa_troncos"
+      ],
       "colorTema": "#8a5a3b"
     },
     {
@@ -15,7 +26,14 @@
       "anioDesde": 1520,
       "anioHasta": 1810,
       "descripcion": "El contacto indirecto llegó primero con el caballo y las ovejas, que transformaron la economía y la movilidad de los pueblos de la región mucho antes que los europeos. Desde Chiloé y Valdivia, jesuitas y expedicionarios cruzaron la cordillera buscando almas y la mítica Ciudad de los Césares. El padre Nicolás Mascardi fundó hacia 1670 una misión junto al lago Nahuel Huapi, reabierta y destruida varias veces a lo largo del siglo siguiente. En este período se consolidó el proceso de mapuchización: la lengua mapuzugun y la organización social mapuche se extendieron sobre los pueblos del este cordillerano.",
-      "tecnologiasDesbloqueadas": ["telar_witral", "plateria_mapuche", "herreria_colonial", "cria_caballar", "huerta_misional", "capilla_troncos"],
+      "tecnologiasDesbloqueadas": [
+        "telar_witral",
+        "plateria_mapuche",
+        "herreria_colonial",
+        "cria_caballar",
+        "huerta_misional",
+        "capilla_troncos"
+      ],
       "colorTema": "#6b4f8a"
     },
     {
@@ -24,7 +42,13 @@
       "anioDesde": 1810,
       "anioHasta": 1895,
       "descripcion": "Tras la independencia, la región permaneció fuera del control efectivo del Estado argentino durante décadas, bajo gobierno de linajes mapuche y tehuelche. Viajeros, naturalistas y militares recorrieron la zona levantando cartografía y reclamando soberanía frente a Chile. Francisco P. Moreno llegó al Nahuel Huapi en 1876 y volvió luego como perito en la demarcación limítrofe. Entre 1878 y 1885 el Estado ejecutó la llamada Campaña del Desierto, una campaña militar de conquista que provocó matanzas, desplazamientos forzados, separación de familias y reparto de tierras indígenas entre particulares y sociedades anónimas.",
-      "tecnologiasDesbloqueadas": ["teodolito", "cartografia_expedicion", "carreta_bueyes", "alambrado", "telegrafo"],
+      "tecnologiasDesbloqueadas": [
+        "teodolito",
+        "cartografia_expedicion",
+        "carreta_bueyes",
+        "alambrado",
+        "telegrafo"
+      ],
       "colorTema": "#8a2f2f"
     },
     {
@@ -33,7 +57,14 @@
       "anioDesde": 1895,
       "anioHasta": 1934,
       "descripcion": "Colonos llegados desde Chile y familias de origen alemán, suizo, esloveno e italiano se instalaron en las costas del lago y en los valles del Ñirihuau y el Manso. En 1895 Carlos Wiederhold abrió el almacén de ramos generales que llamó San Carlos, núcleo del futuro pueblo. La economía dependía del ganado, la madera y el comercio a través del paso Pérez Rosales hacia Puerto Montt. La fecha de fundación de San Carlos de Bariloche se fija en el 3 de mayo de 1902, cuando se creó la comisión de fomento.",
-      "tecnologiasDesbloqueadas": ["aserradero_hidraulico", "construccion_troncos", "vapor_lacustre", "molino_harinero", "ahumadero", "quesera_alpina"],
+      "tecnologiasDesbloqueadas": [
+        "aserradero_hidraulico",
+        "construccion_troncos",
+        "vapor_lacustre",
+        "molino_harinero",
+        "ahumadero",
+        "quesera_alpina"
+      ],
       "colorTema": "#3f6b8a"
     },
     {
@@ -42,7 +73,16 @@
       "anioDesde": 1934,
       "anioHasta": 1955,
       "descripcion": "La donación de tierras de Francisco P. Moreno en 1903 fue la semilla del primer parque nacional del país. En 1934 la ley 12.103 creó la Dirección de Parques Nacionales y el Parque Nacional Nahuel Huapi. Bajo la presidencia de Exequiel Bustillo se construyeron caminos, hoteles, escuelas y el Centro Cívico, con un lenguaje arquitectónico de piedra y madera diseñado por Alejandro Bustillo. La llegada del ferrocarril en 1934 y la inauguración del Hotel Llao Llao consolidaron a Bariloche como destino turístico nacional.",
-      "tecnologiasDesbloqueadas": ["estilo_bustillo", "refugio_montana", "esqui_alpino", "andarivel", "radio_onda_corta", "estacion_meteorologica", "vivero_forestal", "guardaparque"],
+      "tecnologiasDesbloqueadas": [
+        "estilo_bustillo",
+        "refugio_montana",
+        "esqui_alpino",
+        "andarivel",
+        "radio_onda_corta",
+        "estacion_meteorologica",
+        "vivero_forestal",
+        "guardaparque"
+      ],
       "colorTema": "#2f6b4f"
     },
     {
@@ -51,7 +91,18 @@
       "anioDesde": 1955,
       "anioHasta": 2025,
       "descripcion": "La ciudad creció como polo científico y turístico a la vez, con el Instituto Balseiro y el Centro Atómico junto a la industria del chocolate y el esquí en el cerro Catedral. El turismo estudiantil, la montaña y la gastronomía definieron su identidad económica. Las erupciones volcánicas, los incendios forestales y la expansión urbana marcaron los desafíos ambientales del período. En paralelo, las comunidades mapuche de la región recuperaron visibilidad pública y reclamos territoriales dentro y fuera del parque.",
-      "tecnologiasDesbloqueadas": ["reactor_investigacion", "chocolateria_artesanal", "camara_trampa", "anillado_aves", "gps_navegacion", "drone_relevamiento", "panel_solar", "brigada_incendios", "sensor_sismico", "cerveceria_artesanal"],
+      "tecnologiasDesbloqueadas": [
+        "reactor_investigacion",
+        "chocolateria_artesanal",
+        "camara_trampa",
+        "anillado_aves",
+        "gps_navegacion",
+        "drone_relevamiento",
+        "panel_solar",
+        "brigada_incendios",
+        "sensor_sismico",
+        "cerveceria_artesanal"
+      ],
       "colorTema": "#8a7a2f"
     }
   ],
@@ -74,7 +125,13 @@
       "lugar": "Valle del río Limay y estepa norpatagónica",
       "latitud": -40.6,
       "longitud": -70.6,
-      "importancia": 3
+      "importancia": 3,
+      "ancla": {
+        "latitud": -41.25,
+        "longitud": -71.3,
+        "lugar": "Cerro Challhuaco",
+        "porQueAca": "Los aleros y cuevas con pinturas están en los afloramientos de roca del borde de la estepa, como los que se ven desde acá. No hay que buscarlos en el bosque cerrado: se ocupaban los reparos secos con buena vista, que es exactamente lo que uno elegiría hoy para pasar la noche."
+      }
     },
     {
       "id": "llegada_caballo",
@@ -84,7 +141,13 @@
       "lugar": "Norpatagonia",
       "latitud": -41.0,
       "longitud": -70.5,
-      "importancia": 4
+      "importancia": 4,
+      "ancla": {
+        "latitud": -41.2,
+        "longitud": -71.37,
+        "lugar": "Cerro Ventana",
+        "porQueAca": "Mirando al este desde acá empieza la estepa, y es ahí donde el caballo cambió todo. Llegado con los españoles y asilvestrado antes que ellos, en pocas generaciones rehízo la manera de moverse, de cazar y de comerciar de los pueblos de la Patagonia. El bosque quedó de este lado; la revolución del caballo pasó del otro."
+      }
     },
     {
       "id": "mision_mascardi",
@@ -104,7 +167,13 @@
       "lugar": "Paso Vuriloche, cordón cordillerano",
       "latitud": -41.65,
       "longitud": -71.85,
-      "importancia": 4
+      "importancia": 4,
+      "ancla": {
+        "latitud": -41.1567,
+        "longitud": -71.8853,
+        "lugar": "Cerro Tronador",
+        "porQueAca": "El paso Vuriloche cruza la cordillera por el faldeo sur de este cerro. Los jesuitas lo usaron para llegar desde Chiloé, y cuando en 1717 la misión terminó en muerte, los baqueanos que lo conocían lo ocultaron: durante más de un siglo nadie de afuera pudo volver a encontrarlo. Un camino se olvida cuando conviene que se olvide."
+      }
     },
     {
       "id": "destruccion_mision",
@@ -124,7 +193,13 @@
       "lugar": "Río Limay",
       "latitud": -40.4,
       "longitud": -70.3,
-      "importancia": 3
+      "importancia": 3,
+      "ancla": {
+        "latitud": -41.1305,
+        "longitud": -71.2903,
+        "lugar": "Salida del Limay",
+        "porQueAca": "Villarino no llegó por la cordillera: llegó por el agua, remontando el río Negro y el Limay desde el Atlántico con cuatro embarcaciones. El desagüe del lago queda unos kilómetros al este de acá, y por ahí entró. Fue la primera vez que alguien unió el mar con estos lagos por un camino navegable, y tardó siete meses."
+      }
     },
     {
       "id": "moreno_1876",
@@ -134,7 +209,13 @@
       "lugar": "Lago Nahuel Huapi",
       "latitud": -41.05,
       "longitud": -71.3,
-      "importancia": 5
+      "importancia": 5,
+      "ancla": {
+        "latitud": -41.03,
+        "longitud": -71.82,
+        "lugar": "Puerto Blest",
+        "porQueAca": "Moreno llegó al lago en 1876 y volvió muchas veces; en 1903 donó al Estado tres leguas cuadradas justamente acá, en el brazo Blest, con la condición de que se conservaran en su estado natural. De esa donación salió, treinta y un años después, el primer parque nacional del país. Estás parado en el pedazo de tierra donde empezó todo esto."
+      }
     },
     {
       "id": "campania_desierto",
@@ -144,7 +225,13 @@
       "lugar": "Norpatagonia",
       "latitud": -40.8,
       "longitud": -70.0,
-      "importancia": 5
+      "importancia": 5,
+      "ancla": {
+        "latitud": -41.15,
+        "longitud": -71.37,
+        "lugar": "Cerro Otto",
+        "porQueAca": "Desde este filo se ve la estepa hacia el este, y por ahí entraron las columnas del Ejército en 1879. El bosque no fue el escenario del avance militar: fue donde se refugiaron los que huían de él, y el límite donde la persecución terminó. La cordillera que estás recorriendo era, para mucha gente, el último lugar adonde ir."
+      }
     },
     {
       "id": "sayhueque_rendicion",
@@ -154,7 +241,13 @@
       "lugar": "Junín de los Andes",
       "latitud": -39.95,
       "longitud": -71.07,
-      "importancia": 5
+      "importancia": 5,
+      "ancla": {
+        "latitud": -40.9333,
+        "longitud": -71.55,
+        "lugar": "Isla Victoria",
+        "porQueAca": "El País de las Manzanas —el territorio que Sayhueque gobernó hasta 1885— empezaba al norte de este brazo del lago y se extendía hasta el Limay y el Collón Curá. Fue el último en entregarse, seis años después de que la campaña se diera oficialmente por terminada. Desde acá se mira hacia el territorio que aguantó más tiempo."
+      }
     },
     {
       "id": "wiederhold_san_carlos",
@@ -284,7 +377,13 @@
       "lugar": "Sur de Chile y cordillera",
       "latitud": -39.5,
       "longitud": -73.0,
-      "importancia": 5
+      "importancia": 5,
+      "ancla": {
+        "latitud": -41.113,
+        "longitud": -71.55,
+        "lugar": "Cerro López",
+        "porQueAca": "Desde esta cumbre, con el día limpio, se ven los volcanes chilenos. Son la parte visible del mismo borde de placas que el 22 de mayo de 1960 produjo, a unos ciento setenta kilómetros al oeste, el terremoto más grande jamás registrado: magnitud 9,5. Se sintió de este lado de la cordillera, y dos días después el Cordón Caulle entró en erupción."
+      }
     },
     {
       "id": "erupcion_puyehue_1960",
@@ -294,7 +393,13 @@
       "lugar": "Complejo Puyehue-Cordón Caulle",
       "latitud": -40.59,
       "longitud": -72.12,
-      "importancia": 4
+      "importancia": 4,
+      "ancla": {
+        "latitud": -40.83,
+        "longitud": -71.63,
+        "lugar": "Lago Escondido",
+        "porQueAca": "El Cordón Caulle está al noroeste, del lado chileno, y cuando entra en erupción el viento del oeste trae la ceniza para este lado. Esta punta norte del parque es la que más recibe: en 2011 la comarca quedó bajo ceniza durante meses, con los techos cediendo y el lago gris. La erupción de 1960, disparada dos días después del terremoto de Valdivia, siguió el mismo camino."
+      }
     },
     {
       "id": "erupcion_puyehue_2011",
@@ -304,7 +409,13 @@
       "lugar": "Villa La Angostura y Bariloche",
       "latitud": -40.75,
       "longitud": -71.64,
-      "importancia": 5
+      "importancia": 5,
+      "ancla": {
+        "latitud": -40.83,
+        "longitud": -71.63,
+        "lugar": "Lago Escondido",
+        "porQueAca": "La misma ruta que la de 1960, cincuenta y un años después y con gente mirando: la pluma cruzó la cordillera en horas y la ceniza dio la vuelta al hemisferio sur. Acá abajo cerró el aeropuerto de Bariloche por meses, mató animales que comieron pasto con ceniza y cambió el color del agua. Un volcán del otro lado de la frontera es igual de tuyo que uno propio."
+      }
     },
     {
       "id": "erupcion_calbuco_2015",
@@ -314,7 +425,13 @@
       "lugar": "Volcán Calbuco y región del Nahuel Huapi",
       "latitud": -41.33,
       "longitud": -72.61,
-      "importancia": 4
+      "importancia": 4,
+      "ancla": {
+        "latitud": -41.1335,
+        "longitud": -71.3103,
+        "lugar": "Centro Cívico",
+        "porQueAca": "En abril de 2015 el Calbuco largó tres columnas en dos días y la ceniza llegó hasta acá: la ciudad quedó a oscuras al mediodía, el aeropuerto cerró y hubo que barrer las calles con palas. El volcán está a más de sesenta kilómetros y del otro lado de la frontera. La distancia no protege de la ceniza; sólo el viento decide."
+      }
     },
     {
       "id": "incendio_1996_puerto_blest",
@@ -334,7 +451,13 @@
       "lugar": "Comarca andina y región andina de Río Negro y Chubut",
       "latitud": -42.06,
       "longitud": -71.55,
-      "importancia": 4
+      "importancia": 4,
+      "ancla": {
+        "latitud": -41.3167,
+        "longitud": -71.55,
+        "lugar": "Lago Mascardi",
+        "porQueAca": "Por el camino que sale hacia el sur desde acá se llega a la comarca andina, donde en el verano de 2021 el fuego quemó miles de hectáreas y varios pueblos. Este extremo del parque es el borde de esa cuenca: el mismo bosque, el mismo viento del oeste y el mismo verano seco que todos los años vuelve a poner la cuestión."
+      }
     },
     {
       "id": "chocolate_bariloche",
@@ -364,7 +487,13 @@
       "lugar": "Región andina de Río Negro, Neuquén y Chubut",
       "latitud": -41.5,
       "longitud": -71.6,
-      "importancia": 3
+      "importancia": 3,
+      "ancla": {
+        "latitud": -40.8,
+        "longitud": -71.63,
+        "lugar": "Bosque de Arrayanes",
+        "porQueAca": "Un bosque como éste es la razón por la que la figura de reserva de biosfera existe: no alcanza con cercar lo excepcional, hay que ordenar también lo que lo rodea. La Reserva Andino Norpatagónica no reemplazó al parque; le agregó alrededor una zona donde la gente vive y trabaja, con reglas propias."
+      }
     },
     {
       "id": "reconocimiento_comunidades",
@@ -638,106 +767,1489 @@
     }
   ],
   "toponimia": [
-    { "termino": "Nahuel Huapi", "lengua": "mapuzugun", "significado": "Isla del tigre o isla del yaguareté", "notas": "De nawel, felino grande, y wapi, isla. Grafía tradicional castellanizada; en escritura mapuzugun actual, Nawel Wapi." },
-    { "termino": "Bariloche", "lengua": "mapuzugun", "significado": "Gente del otro lado de la montaña", "notas": "Del término vuriloche o furiloche: furi, atrás o el otro lado, y che, gente. Designaba a los grupos que usaban el paso cordillerano." },
-    { "termino": "Limay", "lengua": "mapuzugun", "significado": "Claro, transparente", "notas": "Nombre del río que desagua el lago Nahuel Huapi hacia el Atlántico." },
-    { "termino": "Llao Llao", "lengua": "mapuzugun", "significado": "Hongo comestible del ñire y el coihue", "notas": "Llao llao designa al hongo Cyttaria, esfera anaranjada que crece en los nothofagus y era alimento tradicional." },
-    { "termino": "Catedral", "lengua": "castellano", "significado": "Por la forma de agujas de sus cumbres", "notas": "Nombre descriptivo dado por su semejanza con torres góticas; no es topónimo indígena." },
-    { "termino": "Tronador", "lengua": "castellano", "significado": "El que truena", "notas": "Por el estruendo de los desprendimientos de hielo de sus glaciares colgantes. En mapuzugun se lo asocia a la noción de pillán." },
-    { "termino": "Ñirihuau", "lengua": "mapuzugun", "significado": "Aguada o lugar del ñire", "notas": "De ñire, el árbol Nothofagus antarctica. Río y valle al este de Bariloche." },
-    { "termino": "Challhuaco", "lengua": "mapuzugun", "significado": "Agua de peces", "notas": "De challwa, pez, y ko, agua. Valle y arroyo al sur de la ciudad." },
-    { "termino": "Gutiérrez", "lengua": "castellano", "significado": "Apellido de un poblador", "notas": "Lago al sur de Bariloche; topónimo de origen colonizador reciente." },
-    { "termino": "Mascardi", "lengua": "italiano", "significado": "Apellido del misionero jesuita", "notas": "Lago nombrado en honor a Nicolás Mascardi, fundador de la misión de 1670." },
-    { "termino": "Traful", "lengua": "mapuzugun", "significado": "Confluencia o junta de aguas", "notas": "Lago y río del norte del parque nacional." },
-    { "termino": "Correntoso", "lengua": "castellano", "significado": "De corriente fuerte", "notas": "Río muy corto entre el lago Correntoso y el Nahuel Huapi, en Villa La Angostura." },
-    { "termino": "Quetrihué", "lengua": "mapuzugun", "significado": "Lugar de arrayanes", "notas": "De ketri, arrayán, y we, lugar de. Península donde está el bosque de arrayanes." },
-    { "termino": "Colihue", "lengua": "mapuzugun", "significado": "Caña del bosque andino", "notas": "Chusquea culeou, caña usada para armar arcos, flechas, cestos y quinchos." },
-    { "termino": "Coihue", "lengua": "mapuzugun", "significado": "Árbol del bosque húmedo", "notas": "Nothofagus dombeyi, especie dominante del bosque del Nahuel Huapi." },
-    { "termino": "Pehuén", "lengua": "mapuzugun", "significado": "Araucaria", "notas": "Araucaria araucana; su piñón es alimento central de las comunidades pewenche del norte neuquino." },
-    { "termino": "Huemul", "lengua": "mapuzugun", "significado": "Ciervo andino", "notas": "Hippocamelus bisulcus, especie en peligro crítico; da nombre a la isla y a la península del lago." },
-    { "termino": "Pilcaniyeu", "lengua": "mapuzugun", "significado": "Lugar de aguas o vertiente", "notas": "El significado exacto es discutido entre distintas fuentes lingüísticas." },
-    { "termino": "Comallo", "lengua": "mapuzugun", "significado": "Agua de mallines o agua turbia", "notas": "De ko, agua. La segunda parte admite varias interpretaciones." },
-    { "termino": "Collón Curá", "lengua": "mapuzugun", "significado": "Piedra máscara", "notas": "De kollon, máscara ceremonial, y kura, piedra. Río del norte de la región." },
-    { "termino": "Currumahuida", "lengua": "mapuzugun", "significado": "Montaña negra", "notas": "De kurü, negro, y mawida, montaña o monte." },
-    { "termino": "Cerro Otto", "lengua": "alemán", "significado": "Por Otto Goedecke, poblador alemán", "notas": "Ejemplo de la capa toponímica dejada por la colonización europea." },
-    { "termino": "Puerto Blest", "lengua": "castellano", "significado": "Por el apellido de una familia", "notas": "Extremo oeste del lago; punto de partida del cruce andino hacia Chile." },
-    { "termino": "Pichi Traful", "lengua": "mapuzugun", "significado": "Confluencia pequeña", "notas": "De pichi, pequeño. El prefijo aparece en muchos topónimos de la región." },
-    { "termino": "Futalaufquen", "lengua": "mapuzugun", "significado": "Lago grande", "notas": "De futa, grande, y lafken, lago o mar. Aunque está en el Parque Nacional Los Alerces, ilustra la formación de topónimos lacustres." },
-    { "termino": "Meliquina", "lengua": "mapuzugun", "significado": "Cuatro cumbres o cuatro alturas", "notas": "De meli, cuatro. El segundo componente admite lecturas distintas." },
-    { "termino": "Lanín", "lengua": "mapuzugun", "significado": "Se hundió o murió, en referencia al volcán", "notas": "El significado es discutido; algunas fuentes lo asocian a la idea de haberse ahogado o apagado." },
-    { "termino": "Manso", "lengua": "castellano", "significado": "De corriente suave en su tramo superior", "notas": "Río que nace en el Tronador y desemboca en el Pacífico." },
-    { "termino": "Wall Mapu", "lengua": "mapuzugun", "significado": "Territorio que rodea, la tierra toda", "notas": "Nombre del territorio mapuche en su conjunto, a ambos lados de la cordillera." },
-    { "termino": "Puel Mapu", "lengua": "mapuzugun", "significado": "Tierra del este", "notas": "De puel, este. Designa la porción del territorio mapuche del lado argentino." }
+    {
+      "termino": "Nahuel Huapi",
+      "lengua": "mapuzugun",
+      "significado": "Isla del tigre o isla del yaguareté",
+      "notas": "De nawel, felino grande, y wapi, isla. Grafía tradicional castellanizada; en escritura mapuzugun actual, Nawel Wapi."
+    },
+    {
+      "termino": "Bariloche",
+      "lengua": "mapuzugun",
+      "significado": "Gente del otro lado de la montaña",
+      "notas": "Del término vuriloche o furiloche: furi, atrás o el otro lado, y che, gente. Designaba a los grupos que usaban el paso cordillerano."
+    },
+    {
+      "termino": "Limay",
+      "lengua": "mapuzugun",
+      "significado": "Claro, transparente",
+      "notas": "Nombre del río que desagua el lago Nahuel Huapi hacia el Atlántico."
+    },
+    {
+      "termino": "Llao Llao",
+      "lengua": "mapuzugun",
+      "significado": "Hongo comestible del ñire y el coihue",
+      "notas": "Llao llao designa al hongo Cyttaria, esfera anaranjada que crece en los nothofagus y era alimento tradicional."
+    },
+    {
+      "termino": "Catedral",
+      "lengua": "castellano",
+      "significado": "Por la forma de agujas de sus cumbres",
+      "notas": "Nombre descriptivo dado por su semejanza con torres góticas; no es topónimo indígena."
+    },
+    {
+      "termino": "Tronador",
+      "lengua": "castellano",
+      "significado": "El que truena",
+      "notas": "Por el estruendo de los desprendimientos de hielo de sus glaciares colgantes. En mapuzugun se lo asocia a la noción de pillán."
+    },
+    {
+      "termino": "Ñirihuau",
+      "lengua": "mapuzugun",
+      "significado": "Aguada o lugar del ñire",
+      "notas": "De ñire, el árbol Nothofagus antarctica. Río y valle al este de Bariloche."
+    },
+    {
+      "termino": "Challhuaco",
+      "lengua": "mapuzugun",
+      "significado": "Agua de peces",
+      "notas": "De challwa, pez, y ko, agua. Valle y arroyo al sur de la ciudad."
+    },
+    {
+      "termino": "Gutiérrez",
+      "lengua": "castellano",
+      "significado": "Apellido de un poblador",
+      "notas": "Lago al sur de Bariloche; topónimo de origen colonizador reciente."
+    },
+    {
+      "termino": "Mascardi",
+      "lengua": "italiano",
+      "significado": "Apellido del misionero jesuita",
+      "notas": "Lago nombrado en honor a Nicolás Mascardi, fundador de la misión de 1670."
+    },
+    {
+      "termino": "Traful",
+      "lengua": "mapuzugun",
+      "significado": "Confluencia o junta de aguas",
+      "notas": "Lago y río del norte del parque nacional."
+    },
+    {
+      "termino": "Correntoso",
+      "lengua": "castellano",
+      "significado": "De corriente fuerte",
+      "notas": "Río muy corto entre el lago Correntoso y el Nahuel Huapi, en Villa La Angostura."
+    },
+    {
+      "termino": "Quetrihué",
+      "lengua": "mapuzugun",
+      "significado": "Lugar de arrayanes",
+      "notas": "De ketri, arrayán, y we, lugar de. Península donde está el bosque de arrayanes."
+    },
+    {
+      "termino": "Colihue",
+      "lengua": "mapuzugun",
+      "significado": "Caña del bosque andino",
+      "notas": "Chusquea culeou, caña usada para armar arcos, flechas, cestos y quinchos."
+    },
+    {
+      "termino": "Coihue",
+      "lengua": "mapuzugun",
+      "significado": "Árbol del bosque húmedo",
+      "notas": "Nothofagus dombeyi, especie dominante del bosque del Nahuel Huapi."
+    },
+    {
+      "termino": "Pehuén",
+      "lengua": "mapuzugun",
+      "significado": "Araucaria",
+      "notas": "Araucaria araucana; su piñón es alimento central de las comunidades pewenche del norte neuquino."
+    },
+    {
+      "termino": "Huemul",
+      "lengua": "mapuzugun",
+      "significado": "Ciervo andino",
+      "notas": "Hippocamelus bisulcus, especie en peligro crítico; da nombre a la isla y a la península del lago."
+    },
+    {
+      "termino": "Pilcaniyeu",
+      "lengua": "mapuzugun",
+      "significado": "Lugar de aguas o vertiente",
+      "notas": "El significado exacto es discutido entre distintas fuentes lingüísticas."
+    },
+    {
+      "termino": "Comallo",
+      "lengua": "mapuzugun",
+      "significado": "Agua de mallines o agua turbia",
+      "notas": "De ko, agua. La segunda parte admite varias interpretaciones."
+    },
+    {
+      "termino": "Collón Curá",
+      "lengua": "mapuzugun",
+      "significado": "Piedra máscara",
+      "notas": "De kollon, máscara ceremonial, y kura, piedra. Río del norte de la región."
+    },
+    {
+      "termino": "Currumahuida",
+      "lengua": "mapuzugun",
+      "significado": "Montaña negra",
+      "notas": "De kurü, negro, y mawida, montaña o monte."
+    },
+    {
+      "termino": "Cerro Otto",
+      "lengua": "alemán",
+      "significado": "Por Otto Goedecke, poblador alemán",
+      "notas": "Ejemplo de la capa toponímica dejada por la colonización europea."
+    },
+    {
+      "termino": "Puerto Blest",
+      "lengua": "castellano",
+      "significado": "Por el apellido de una familia",
+      "notas": "Extremo oeste del lago; punto de partida del cruce andino hacia Chile."
+    },
+    {
+      "termino": "Pichi Traful",
+      "lengua": "mapuzugun",
+      "significado": "Confluencia pequeña",
+      "notas": "De pichi, pequeño. El prefijo aparece en muchos topónimos de la región."
+    },
+    {
+      "termino": "Futalaufquen",
+      "lengua": "mapuzugun",
+      "significado": "Lago grande",
+      "notas": "De futa, grande, y lafken, lago o mar. Aunque está en el Parque Nacional Los Alerces, ilustra la formación de topónimos lacustres."
+    },
+    {
+      "termino": "Meliquina",
+      "lengua": "mapuzugun",
+      "significado": "Cuatro cumbres o cuatro alturas",
+      "notas": "De meli, cuatro. El segundo componente admite lecturas distintas."
+    },
+    {
+      "termino": "Lanín",
+      "lengua": "mapuzugun",
+      "significado": "Se hundió o murió, en referencia al volcán",
+      "notas": "El significado es discutido; algunas fuentes lo asocian a la idea de haberse ahogado o apagado."
+    },
+    {
+      "termino": "Manso",
+      "lengua": "castellano",
+      "significado": "De corriente suave en su tramo superior",
+      "notas": "Río que nace en el Tronador y desemboca en el Pacífico."
+    },
+    {
+      "termino": "Wall Mapu",
+      "lengua": "mapuzugun",
+      "significado": "Territorio que rodea, la tierra toda",
+      "notas": "Nombre del territorio mapuche en su conjunto, a ambos lados de la cordillera."
+    },
+    {
+      "termino": "Puel Mapu",
+      "lengua": "mapuzugun",
+      "significado": "Tierra del este",
+      "notas": "De puel, este. Designa la porción del territorio mapuche del lado argentino."
+    }
   ],
   "tecnologias": [
-    { "id": "lasca_obsidiana", "nombre": "Talla de obsidiana", "era": "pueblos_originarios", "descripcion": "Talla por percusión y presión de vidrio volcánico para obtener filos cortantes.", "contextoHistorico": "La obsidiana de fuentes del norte neuquino circulaba cientos de kilómetros por redes de intercambio prehispánicas. Su análisis geoquímico permite hoy reconstruir esas rutas.", "materiales": [{"recurso":"obsidiana","cantidad":2},{"recurso":"piedra","cantidad":1}], "requiere": [], "costoSaber": 8 },
-    { "id": "punta_proyectil", "nombre": "Punta de proyectil", "era": "pueblos_originarios", "descripcion": "Punta lítica con pedúnculo o base cóncava para enmangar en dardo o flecha.", "contextoHistorico": "Las secuencias de puntas de la región permiten datar ocupaciones desde hace más de diez mil años. Los cambios de forma marcan la transición del dardo al arco.", "materiales": [{"recurso":"obsidiana","cantidad":1},{"recurso":"madera","cantidad":1},{"recurso":"tendon","cantidad":1}], "requiere": ["lasca_obsidiana"], "costoSaber": 12 },
-    { "id": "boleadora", "nombre": "Boleadora", "era": "pueblos_originarios", "descripcion": "Dos o tres piedras forradas en cuero unidas por tientos, arrojadas para trabar las patas de la presa.", "contextoHistorico": "Fue el arma característica de la caza del guanaco y el ñandú en la estepa norpatagónica. Su eficacia aumentó enormemente con la incorporación del caballo.", "materiales": [{"recurso":"piedra","cantidad":3},{"recurso":"cuero","cantidad":2}], "requiere": ["curtido_cuero"], "costoSaber": 14 },
-    { "id": "arco_colihue", "nombre": "Arco de colihue", "era": "pueblos_originarios", "descripcion": "Arco simple de caña colihue curada, con cuerda de tendón o fibra vegetal trenzada.", "contextoHistorico": "La caña colihue del sotobosque andino ofrecía varas rectas, elásticas y abundantes. Fue el material de arcos, flechas y astiles en toda la región cordillerana.", "materiales": [{"recurso":"cana","cantidad":3},{"recurso":"tendon","cantidad":1}], "requiere": [], "costoSaber": 12 },
-    { "id": "fuego_friccion", "nombre": "Fuego por fricción", "era": "pueblos_originarios", "descripcion": "Encendido con arco de fricción o taladro sobre madera blanda seca.", "contextoHistorico": "En un clima húmedo y frío, mantener el fuego era tarea permanente y a menudo se trasladaba brasa en recipientes. Los fogones son el rastro arqueológico más frecuente de la región.", "materiales": [{"recurso":"madera","cantidad":2},{"recurso":"fibra","cantidad":1}], "requiere": [], "costoSaber": 6 },
-    { "id": "cesteria_junco", "nombre": "Cestería de junco y colihue", "era": "pueblos_originarios", "descripcion": "Tejido en espiral o cruzado con juncos, colihue partido y fibras de ñocha.", "contextoHistorico": "Los cestos servían para recolectar piñones, frutos del bosque y para almacenar grano. Algunos tejidos apretados podían contener líquidos.", "materiales": [{"recurso":"junco","cantidad":4},{"recurso":"fibra","cantidad":2}], "requiere": [], "costoSaber": 10 },
-    { "id": "alfareria_bicroma", "nombre": "Alfarería", "era": "pueblos_originarios", "descripcion": "Vasijas modeladas por rollos y cocidas a fuego abierto, algunas con decoración pintada.", "contextoHistorico": "La cerámica aparece en la región de manera relativamente tardía y en cantidades modestas. Los estilos del Nahuel Huapi muestran vínculos con el sur chileno.", "materiales": [{"recurso":"arcilla","cantidad":4},{"recurso":"lena","cantidad":3}], "requiere": ["fuego_friccion"], "costoSaber": 16 },
-    { "id": "curtido_cuero", "nombre": "Curtido de cuero", "era": "pueblos_originarios", "descripcion": "Descarnado, raspado y ablandado del cuero de guanaco con sesos y grasa.", "contextoHistorico": "El quillango de cuero de guanaco fue la prenda de abrigo característica de la Patagonia. Los raspadores líticos asociados abundan en los sitios de la estepa.", "materiales": [{"recurso":"cuero","cantidad":3},{"recurso":"grasa","cantidad":2}], "requiere": ["lasca_obsidiana"], "costoSaber": 14 },
-    { "id": "toldo_cuero", "nombre": "Toldo de cuero", "era": "pueblos_originarios", "descripcion": "Vivienda desmontable de armazón de varas cubierto con cueros cosidos.", "contextoHistorico": "El toldo permitía la movilidad estacional entre la estepa y el bosque. Su tamaño crecía según la importancia del grupo familiar.", "materiales": [{"recurso":"cuero","cantidad":8},{"recurso":"madera","cantidad":6},{"recurso":"tendon","cantidad":3}], "requiere": ["curtido_cuero"], "costoSaber": 20 },
-    { "id": "canoa_troncos", "nombre": "Canoa monóxila", "era": "pueblos_originarios", "descripcion": "Embarcación excavada en un tronco único mediante fuego controlado y azuelas.", "contextoHistorico": "La navegación de los grandes lagos era esencial para el intercambio y la pesca. Se han hallado canoas monóxilas en lagos de la región.", "materiales": [{"recurso":"tronco","cantidad":1},{"recurso":"lena","cantidad":4}], "requiere": ["fuego_friccion"], "costoSaber": 22 },
-    { "id": "telar_witral", "nombre": "Telar mapuche (witral)", "era": "contacto_colonial", "descripcion": "Telar vertical de dos lizos para tejer con lana de oveja hilada y teñida con plantas.", "contextoHistorico": "El witral produce mantas, fajas y ponchos con diseños que codifican identidad territorial y familiar. El tejido mapuche fue además una mercancía clave del comercio transcordillerano.", "materiales": [{"recurso":"madera","cantidad":4},{"recurso":"lana","cantidad":6}], "requiere": [], "costoSaber": 24 },
-    { "id": "plateria_mapuche", "nombre": "Platería mapuche (retrafe)", "era": "contacto_colonial", "descripcion": "Trabajo de la plata en trapelakucha, sikil, trarilonko y aros, mediante fundición, martillado y calado.", "contextoHistorico": "La platería se desarrolló desde el siglo XVIII fundiendo monedas de plata obtenidas en el comercio. Las joyas señalan pertenencia, linaje y posición dentro de la comunidad.", "materiales": [{"recurso":"plata","cantidad":3},{"recurso":"carbon","cantidad":2}], "requiere": ["herreria_colonial"], "costoSaber": 30 },
-    { "id": "herreria_colonial", "nombre": "Herrería", "era": "contacto_colonial", "descripcion": "Fragua, yunque y martillo para forjar herramientas, herrajes y clavos.", "contextoHistorico": "Llegó con misioneros y comerciantes y transformó la producción de herramientas locales. Fue base técnica de la posterior platería mapuche.", "materiales": [{"recurso":"hierro","cantidad":4},{"recurso":"carbon","cantidad":4},{"recurso":"piedra","cantidad":3}], "requiere": [], "costoSaber": 26 },
-    { "id": "cria_caballar", "nombre": "Cría y doma de caballos", "era": "contacto_colonial", "descripcion": "Manejo, doma y aperos para el uso del caballo en caza, traslado y guerra.", "contextoHistorico": "El caballo reorganizó la economía y la política de los pueblos de la Patagonia desde el siglo XVII. Los grandes arreos transcordilleranos definieron la riqueza de los linajes.", "materiales": [{"recurso":"cuero","cantidad":5},{"recurso":"madera","cantidad":2}], "requiere": ["curtido_cuero"], "costoSaber": 25 },
-    { "id": "huerta_misional", "nombre": "Huerta y frutales", "era": "contacto_colonial", "descripcion": "Cultivo de trigo, papa, habas y manzanos en valles protegidos.", "contextoHistorico": "Los manzanares del área del Collón Curá dieron nombre al País de las Manzanas de Sayhueque. La manzana se naturalizó y sostuvo la economía de la región durante siglos.", "materiales": [{"recurso":"semilla","cantidad":4},{"recurso":"herramienta","cantidad":2}], "requiere": [], "costoSaber": 18 },
-    { "id": "capilla_troncos", "nombre": "Capilla de troncos", "era": "contacto_colonial", "descripcion": "Construcción misional simple de troncos escuadrados y techo de tablillas.", "contextoHistorico": "La misión del Nahuel Huapi levantó una capilla de este tipo hacia 1670. Fue el primer edificio europeo de la región.", "materiales": [{"recurso":"tronco","cantidad":10},{"recurso":"clavo","cantidad":6}], "requiere": ["herreria_colonial"], "costoSaber": 28 },
-    { "id": "teodolito", "nombre": "Teodolito y medición angular", "era": "expediciones_estado", "descripcion": "Instrumento óptico para medir ángulos horizontales y verticales en trabajos de triangulación.", "contextoHistorico": "Fue la herramienta central de la demarcación limítrofe entre Argentina y Chile. Moreno y sus equipos lo usaron para fijar posiciones en la cordillera.", "materiales": [{"recurso":"bronce","cantidad":3},{"recurso":"vidrio","cantidad":2}], "requiere": ["herreria_colonial"], "costoSaber": 34 },
-    { "id": "cartografia_expedicion", "nombre": "Cartografía de expedición", "era": "expediciones_estado", "descripcion": "Levantamiento de croquis, perfiles y cuadernos de campo con posiciones astronómicas.", "contextoHistorico": "Los mapas producidos en estas campañas fueron argumento jurídico en el arbitraje limítrofe. Muchos se apoyaron en información aportada por baqueanos indígenas.", "materiales": [{"recurso":"papel","cantidad":4},{"recurso":"tinta","cantidad":1}], "requiere": ["teodolito"], "costoSaber": 30 },
-    { "id": "carreta_bueyes", "nombre": "Carreta de bueyes", "era": "expediciones_estado", "descripcion": "Vehículo de dos ruedas altas de madera para transporte pesado en terreno sin caminos.", "contextoHistorico": "Fue el medio de carga de la colonización antes de los caminos de Parques Nacionales. Podía tardar semanas en cubrir distancias hoy de un par de horas.", "materiales": [{"recurso":"madera","cantidad":8},{"recurso":"hierro","cantidad":3}], "requiere": ["herreria_colonial"], "costoSaber": 26 },
-    { "id": "alambrado", "nombre": "Alambrado", "era": "expediciones_estado", "descripcion": "Cerco de postes y alambre para delimitar campos y manejar hacienda.", "contextoHistorico": "El alambrado materializó el reparto de tierras posterior a la campaña militar. Cortó rutas de trashumancia usadas durante siglos.", "materiales": [{"recurso":"alambre","cantidad":6},{"recurso":"poste","cantidad":8}], "requiere": ["herreria_colonial"], "costoSaber": 22 },
-    { "id": "telegrafo", "nombre": "Telégrafo", "era": "expediciones_estado", "descripcion": "Línea de postes y cable para transmitir mensajes en clave Morse.", "contextoHistorico": "La línea telegráfica fue instrumento de control estatal sobre los territorios nacionales. Conectó puestos militares y luego pueblos de la Norpatagonia.", "materiales": [{"recurso":"alambre","cantidad":5},{"recurso":"poste","cantidad":6},{"recurso":"bateria","cantidad":2}], "requiere": ["alambrado"], "costoSaber": 30 },
-    { "id": "aserradero_hidraulico", "nombre": "Aserradero", "era": "colonizacion", "descripcion": "Sierra accionada por rueda hidráulica o motor a vapor para producir tablas.", "contextoHistorico": "Los aserraderos de Primo Capraro y otros abastecieron la construcción del pueblo. La explotación de ciprés y coihue fue intensa antes de la creación del parque.", "materiales": [{"recurso":"hierro","cantidad":6},{"recurso":"madera","cantidad":8}], "requiere": ["herreria_colonial"], "costoSaber": 32 },
-    { "id": "construccion_troncos", "nombre": "Construcción en troncos", "era": "colonizacion", "descripcion": "Casas de troncos encastrados o de tablas de ciprés con techo a dos aguas.", "contextoHistorico": "Los colonos chilenos, alemanes y eslovenos trajeron técnicas de carpintería adaptadas al clima frío y nevado. Varias de estas casas sobreviven en el ejido de Bariloche.", "materiales": [{"recurso":"tronco","cantidad":12},{"recurso":"clavo","cantidad":10},{"recurso":"tabla","cantidad":8}], "requiere": ["aserradero_hidraulico"], "costoSaber": 30 },
-    { "id": "vapor_lacustre", "nombre": "Vapor lacustre", "era": "colonizacion", "descripcion": "Embarcación a vapor para carga y pasajeros entre puertos del Nahuel Huapi.", "contextoHistorico": "Antes de los caminos, el lago era la ruta principal hacia Puerto Blest y el paso a Chile. Vapores como el Cóndor y el Modesta Victoria marcaron la época.", "materiales": [{"recurso":"hierro","cantidad":10},{"recurso":"madera","cantidad":12},{"recurso":"carbon","cantidad":6}], "requiere": ["aserradero_hidraulico"], "costoSaber": 38 },
-    { "id": "molino_harinero", "nombre": "Molino harinero", "era": "colonizacion", "descripcion": "Molienda de trigo con piedras movidas por rueda hidráulica.", "contextoHistorico": "Los valles del Ñirihuau y el Manso tuvieron molinos que abastecían a los colonos. La harina local reducía la dependencia del abastecimiento chileno.", "materiales": [{"recurso":"piedra","cantidad":4},{"recurso":"madera","cantidad":8},{"recurso":"hierro","cantidad":2}], "requiere": ["construccion_troncos"], "costoSaber": 26 },
-    { "id": "ahumadero", "nombre": "Ahumadero", "era": "colonizacion", "descripcion": "Cámara de humo frío para conservar carne, embutidos y pescado.", "contextoHistorico": "Los colonos alemanes y eslovenos introdujeron el ahumado de cerdo y ciervo. Es el origen de la tradición de ahumados de la región.", "materiales": [{"recurso":"tabla","cantidad":6},{"recurso":"lena","cantidad":5}], "requiere": ["construccion_troncos"], "costoSaber": 20 },
-    { "id": "quesera_alpina", "nombre": "Quesería alpina", "era": "colonizacion", "descripcion": "Elaboración de quesos de pasta dura con cuajo y maduración en cava fresca.", "contextoHistorico": "Familias suizas e italianas replicaron técnicas alpinas en los valles del Nahuel Huapi. La producción abasteció al mercado local y luego al turismo.", "materiales": [{"recurso":"leche","cantidad":10},{"recurso":"sal","cantidad":2}], "requiere": ["construccion_troncos"], "costoSaber": 22 },
-    { "id": "estilo_bustillo", "nombre": "Estilo Bustillo en piedra y madera", "era": "parque_nacional", "descripcion": "Mampostería de piedra local con carpintería de ciprés, techos empinados y galerías.", "contextoHistorico": "Alejandro Bustillo y el equipo de Parques Nacionales lo aplicaron en hoteles, escuelas y el Centro Cívico. Se convirtió en la imagen arquitectónica reconocible de la Patagonia andina.", "materiales": [{"recurso":"piedra","cantidad":20},{"recurso":"tabla","cantidad":15},{"recurso":"cal","cantidad":6}], "requiere": ["construccion_troncos"], "costoSaber": 45 },
-    { "id": "refugio_montana", "nombre": "Refugio de montaña", "era": "parque_nacional", "descripcion": "Construcción compacta de piedra o madera en alta montaña, con estufa y capacidad para pernocte.", "contextoHistorico": "El Club Andino Bariloche levantó refugios en el Frey, el Jakob, el López y el Tronador desde los años treinta. Hicieron posible el montañismo y el esquí de travesía en la región.", "materiales": [{"recurso":"piedra","cantidad":12},{"recurso":"tabla","cantidad":8},{"recurso":"chapa","cantidad":6}], "requiere": ["estilo_bustillo"], "costoSaber": 36 },
-    { "id": "esqui_alpino", "nombre": "Esquí", "era": "parque_nacional", "descripcion": "Esquíes de madera laminada con fijaciones de cable y focas de piel para el ascenso.", "contextoHistorico": "Otto Meiling fabricó esquíes en Bariloche y difundió su uso entre los socios del Club Andino. El cerro Catedral se convirtió en el primer centro de esquí organizado del país.", "materiales": [{"recurso":"tabla","cantidad":2},{"recurso":"cuero","cantidad":2},{"recurso":"hierro","cantidad":1}], "requiere": ["aserradero_hidraulico"], "costoSaber": 28 },
-    { "id": "andarivel", "nombre": "Medio de elevación", "era": "parque_nacional", "descripcion": "Cable tractor con sillas o telesquí accionado por motor para subir esquiadores.", "contextoHistorico": "Los primeros medios del Catedral transformaron el esquí de una actividad de montañistas en un deporte masivo. Definieron la estacionalidad económica de Bariloche.", "materiales": [{"recurso":"cable","cantidad":10},{"recurso":"hierro","cantidad":12},{"recurso":"motor","cantidad":1}], "requiere": ["esqui_alpino"], "costoSaber": 48 },
-    { "id": "radio_onda_corta", "nombre": "Radio de onda corta", "era": "parque_nacional", "descripcion": "Equipo transmisor y receptor para comunicación a distancia entre seccionales y refugios.", "contextoHistorico": "Guardaparques y andinistas dependieron de la radio para coordinar rescates y reportar incendios. Sigue siendo el respaldo cuando falla la telefonía celular.", "materiales": [{"recurso":"cobre","cantidad":3},{"recurso":"valvula","cantidad":2},{"recurso":"bateria","cantidad":2}], "requiere": ["telegrafo"], "costoSaber": 36 },
-    { "id": "estacion_meteorologica", "nombre": "Estación meteorológica", "era": "parque_nacional", "descripcion": "Abrigo con termómetros, pluviómetro, anemómetro y registro diario de datos.", "contextoHistorico": "Las series meteorológicas de Bariloche son fundamentales para estudiar el clima andino y el retroceso de glaciares. Los datos alimentan hoy los pronósticos de riesgo de incendio.", "materiales": [{"recurso":"tabla","cantidad":4},{"recurso":"vidrio","cantidad":3},{"recurso":"hierro","cantidad":2}], "requiere": ["radio_onda_corta"], "costoSaber": 34 },
-    { "id": "vivero_forestal", "nombre": "Vivero forestal", "era": "parque_nacional", "descripcion": "Producción de plantines nativos y exóticos para forestación y restauración.", "contextoHistorico": "Parques Nacionales instaló viveros que en su primera etapa plantaron coníferas exóticas, hoy consideradas invasoras. La producción actual prioriza especies nativas para restaurar áreas quemadas.", "materiales": [{"recurso":"semilla","cantidad":6},{"recurso":"tabla","cantidad":4},{"recurso":"agua","cantidad":8}], "requiere": ["huerta_misional"], "costoSaber": 28 },
-    { "id": "guardaparque", "nombre": "Cuerpo de guardaparques", "era": "parque_nacional", "descripcion": "Formación y equipamiento para control, rescate, educación ambiental y manejo de fauna.", "contextoHistorico": "El cuerpo se creó junto con la institución en la década de 1930 y se profesionalizó con una escuela propia. Es la presencia efectiva del Estado en el territorio del parque.", "materiales": [{"recurso":"radio","cantidad":1},{"recurso":"botiquin","cantidad":1},{"recurso":"mapa","cantidad":1}], "requiere": ["radio_onda_corta", "cartografia_expedicion"], "costoSaber": 40 },
-    { "id": "sendero_marcado", "nombre": "Sendero señalizado", "era": "parque_nacional", "descripcion": "Traza, drenaje y marcación de senderos de montaña con señalética normalizada.", "contextoHistorico": "La red de senderos del Nahuel Huapi combina huellas de arrieros con trazas abiertas por el Club Andino. La marcación reduce accidentes y erosión por atajos.", "materiales": [{"recurso":"pintura","cantidad":2},{"recurso":"poste","cantidad":6},{"recurso":"piedra","cantidad":8}], "requiere": ["refugio_montana"], "costoSaber": 24 },
-    { "id": "reactor_investigacion", "nombre": "Reactor de investigación", "era": "bariloche_moderna", "descripcion": "Reactor nuclear de baja potencia para formación, investigación y producción de radioisótopos.", "contextoHistorico": "El Centro Atómico Bariloche desarrolló capacidades que llevaron a Argentina a exportar reactores de investigación. El Instituto Balseiro forma allí físicos e ingenieros nucleares.", "materiales": [{"recurso":"hormigon","cantidad":30},{"recurso":"acero","cantidad":20},{"recurso":"combustible_nuclear","cantidad":1}], "requiere": ["estacion_meteorologica"], "costoSaber": 80 },
-    { "id": "chocolateria_artesanal", "nombre": "Chocolatería artesanal", "era": "bariloche_moderna", "descripcion": "Temperado, moldeado y relleno de chocolate en pequeña escala.", "contextoHistorico": "Familias italianas y suizas fundaron el rubro a mediados del siglo XX sobre la calle Mitre. Hoy es una de las industrias identitarias de la ciudad.", "materiales": [{"recurso":"cacao","cantidad":6},{"recurso":"leche","cantidad":4},{"recurso":"azucar","cantidad":4}], "requiere": ["quesera_alpina"], "costoSaber": 26 },
-    { "id": "cerveceria_artesanal", "nombre": "Cervecería artesanal", "era": "bariloche_moderna", "descripcion": "Maceración, cocción y fermentación controlada de cerveza en pequeños lotes.", "contextoHistorico": "La tradición cervecera llegó con la inmigración centroeuropea y se expandió desde los años noventa. El lúpulo del valle de El Bolsón abastece a buena parte del país.", "materiales": [{"recurso":"cebada","cantidad":8},{"recurso":"lupulo","cantidad":2},{"recurso":"agua","cantidad":10}], "requiere": ["molino_harinero"], "costoSaber": 24 },
-    { "id": "camara_trampa", "nombre": "Cámara trampa", "era": "bariloche_moderna", "descripcion": "Cámara con sensor infrarrojo que fotografía fauna sin presencia humana.", "contextoHistorico": "Es la herramienta principal del monitoreo de huemul, puma y especies exóticas invasoras en el parque. Permite estimar abundancias sin capturar animales.", "materiales": [{"recurso":"sensor","cantidad":1},{"recurso":"bateria","cantidad":2},{"recurso":"carcasa","cantidad":1}], "requiere": ["guardaparque"], "costoSaber": 34 },
-    { "id": "anillado_aves", "nombre": "Anillado de aves", "era": "bariloche_moderna", "descripcion": "Captura con redes de niebla, marcación con anillos numerados y registro de datos biométricos.", "contextoHistorico": "Permite estudiar migración, longevidad y uso del hábitat de aves del bosque andino patagónico. Requiere permisos y formación específica para no dañar a los ejemplares.", "materiales": [{"recurso":"red","cantidad":2},{"recurso":"anillo","cantidad":20},{"recurso":"planilla","cantidad":1}], "requiere": ["guardaparque"], "costoSaber": 30 },
-    { "id": "gps_navegacion", "nombre": "GPS y navegación satelital", "era": "bariloche_moderna", "descripcion": "Receptor de posición satelital con registro de tracks y waypoints.", "contextoHistorico": "Reemplazó a la brújula y el mapa como herramienta primaria en relevamientos y rescates. Los tracks alimentan los sistemas de información geográfica del parque.", "materiales": [{"recurso":"receptor","cantidad":1},{"recurso":"bateria","cantidad":2}], "requiere": ["cartografia_expedicion"], "costoSaber": 32 },
-    { "id": "drone_relevamiento", "nombre": "Dron de relevamiento", "era": "bariloche_moderna", "descripcion": "Aeronave no tripulada con cámara para mapeo aéreo y evaluación de daños.", "contextoHistorico": "Se usa para evaluar superficie quemada tras incendios y monitorear glaciares. Su vuelo dentro del parque está regulado para no afectar la fauna.", "materiales": [{"recurso":"motor","cantidad":4},{"recurso":"bateria","cantidad":2},{"recurso":"camara","cantidad":1}], "requiere": ["gps_navegacion"], "costoSaber": 44 },
-    { "id": "panel_solar", "nombre": "Panel solar", "era": "bariloche_moderna", "descripcion": "Módulo fotovoltaico con regulador y batería para abastecer refugios y seccionales aisladas.", "contextoHistorico": "Reemplazó a los grupos electrógenos a combustible en muchos refugios de montaña. Reduce ruido, riesgo de incendio y transporte de combustible.", "materiales": [{"recurso":"panel","cantidad":2},{"recurso":"bateria","cantidad":2},{"recurso":"cable","cantidad":4}], "requiere": ["refugio_montana"], "costoSaber": 36 },
-    { "id": "brigada_incendios", "nombre": "Brigada de incendios forestales", "era": "bariloche_moderna", "descripcion": "Equipo entrenado con herramientas manuales, motobombas y apoyo aéreo para combatir fuego de vegetación.", "contextoHistorico": "El Nahuel Huapi cuenta con brigadas propias e integra el sistema nacional de manejo del fuego. Los bosques de ciprés quemados tardan más de un siglo en recuperarse.", "materiales": [{"recurso":"herramienta","cantidad":8},{"recurso":"motobomba","cantidad":1},{"recurso":"radio","cantidad":2}], "requiere": ["guardaparque"], "costoSaber": 42 },
-    { "id": "sensor_sismico", "nombre": "Sensor sísmico y monitoreo volcánico", "era": "bariloche_moderna", "descripcion": "Sismómetro y estación de transmisión para vigilar la actividad de volcanes cercanos.", "contextoHistorico": "Tras las erupciones de 2011 y 2015 se reforzó la red de monitoreo del arco volcánico sur. Los datos permiten emitir alertas de ceniza para la aviación y la población.", "materiales": [{"recurso":"sensor","cantidad":1},{"recurso":"panel","cantidad":1},{"recurso":"radio","cantidad":1}], "requiere": ["estacion_meteorologica"], "costoSaber": 46 },
-    { "id": "restauracion_nativa", "nombre": "Restauración de bosque nativo", "era": "bariloche_moderna", "descripcion": "Plantación de nativas, control de exóticas invasoras y protección de renovales tras el fuego.", "contextoHistorico": "Se aplica en áreas quemadas del parque y en zonas invadidas por pinos y retama. Involucra a voluntarios, escuelas y comunidades locales.", "materiales": [{"recurso":"plantin","cantidad":20},{"recurso":"herramienta","cantidad":4},{"recurso":"agua","cantidad":10}], "requiere": ["vivero_forestal"], "costoSaber": 38 }
+    {
+      "id": "lasca_obsidiana",
+      "nombre": "Talla de obsidiana",
+      "era": "pueblos_originarios",
+      "descripcion": "Talla por percusión y presión de vidrio volcánico para obtener filos cortantes.",
+      "contextoHistorico": "La obsidiana de fuentes del norte neuquino circulaba cientos de kilómetros por redes de intercambio prehispánicas. Su análisis geoquímico permite hoy reconstruir esas rutas.",
+      "materiales": [
+        {
+          "recurso": "obsidiana",
+          "cantidad": 2
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [],
+      "costoSaber": 8
+    },
+    {
+      "id": "punta_proyectil",
+      "nombre": "Punta de proyectil",
+      "era": "pueblos_originarios",
+      "descripcion": "Punta lítica con pedúnculo o base cóncava para enmangar en dardo o flecha.",
+      "contextoHistorico": "Las secuencias de puntas de la región permiten datar ocupaciones desde hace más de diez mil años. Los cambios de forma marcan la transición del dardo al arco.",
+      "materiales": [
+        {
+          "recurso": "obsidiana",
+          "cantidad": 1
+        },
+        {
+          "recurso": "madera",
+          "cantidad": 1
+        },
+        {
+          "recurso": "tendon",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [
+        "lasca_obsidiana"
+      ],
+      "costoSaber": 12
+    },
+    {
+      "id": "boleadora",
+      "nombre": "Boleadora",
+      "era": "pueblos_originarios",
+      "descripcion": "Dos o tres piedras forradas en cuero unidas por tientos, arrojadas para trabar las patas de la presa.",
+      "contextoHistorico": "Fue el arma característica de la caza del guanaco y el ñandú en la estepa norpatagónica. Su eficacia aumentó enormemente con la incorporación del caballo.",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 3
+        },
+        {
+          "recurso": "cuero",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [
+        "curtido_cuero"
+      ],
+      "costoSaber": 14
+    },
+    {
+      "id": "arco_colihue",
+      "nombre": "Arco de colihue",
+      "era": "pueblos_originarios",
+      "descripcion": "Arco simple de caña colihue curada, con cuerda de tendón o fibra vegetal trenzada.",
+      "contextoHistorico": "La caña colihue del sotobosque andino ofrecía varas rectas, elásticas y abundantes. Fue el material de arcos, flechas y astiles en toda la región cordillerana.",
+      "materiales": [
+        {
+          "recurso": "cana",
+          "cantidad": 3
+        },
+        {
+          "recurso": "tendon",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [],
+      "costoSaber": 12,
+      "efecto": {
+        "caza": true
+      }
+    },
+    {
+      "id": "fuego_friccion",
+      "nombre": "Fuego por fricción",
+      "era": "pueblos_originarios",
+      "descripcion": "Encendido con arco de fricción o taladro sobre madera blanda seca.",
+      "contextoHistorico": "En un clima húmedo y frío, mantener el fuego era tarea permanente y a menudo se trasladaba brasa en recipientes. Los fogones son el rastro arqueológico más frecuente de la región.",
+      "materiales": [
+        {
+          "recurso": "madera",
+          "cantidad": 2
+        },
+        {
+          "recurso": "fibra",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [],
+      "costoSaber": 6
+    },
+    {
+      "id": "cesteria_junco",
+      "nombre": "Cestería de junco y colihue",
+      "era": "pueblos_originarios",
+      "descripcion": "Tejido en espiral o cruzado con juncos, colihue partido y fibras de ñocha.",
+      "contextoHistorico": "Los cestos servían para recolectar piñones, frutos del bosque y para almacenar grano. Algunos tejidos apretados podían contener líquidos.",
+      "materiales": [
+        {
+          "recurso": "junco",
+          "cantidad": 4
+        },
+        {
+          "recurso": "fibra",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [],
+      "costoSaber": 10,
+      "efecto": {
+        "capacidadExtraKg": 6
+      }
+    },
+    {
+      "id": "alfareria_bicroma",
+      "nombre": "Alfarería",
+      "era": "pueblos_originarios",
+      "descripcion": "Vasijas modeladas por rollos y cocidas a fuego abierto, algunas con decoración pintada.",
+      "contextoHistorico": "La cerámica aparece en la región de manera relativamente tardía y en cantidades modestas. Los estilos del Nahuel Huapi muestran vínculos con el sur chileno.",
+      "materiales": [
+        {
+          "recurso": "arcilla",
+          "cantidad": 4
+        },
+        {
+          "recurso": "lena",
+          "cantidad": 3
+        }
+      ],
+      "requiere": [
+        "fuego_friccion"
+      ],
+      "costoSaber": 16,
+      "efecto": {
+        "horno": "horno_barro"
+      }
+    },
+    {
+      "id": "botica_bosque",
+      "nombre": "Botica del bosque",
+      "era": "pueblos_originarios",
+      "descripcion": "Reconocer, juntar y secar corteza, hojas y frutos con uso medicinal, y preparar con ellos infusiones, emplastos y lavados.",
+      "contextoHistorico": "La machi mapuche es autoridad ritual y sanitaria a la vez, y su conocimiento de las plantas del bosque andino es un cuerpo de saber transmitido oralmente durante siglos. El canelo —foye— es el árbol sagrado del pueblo mapuche y a la vez un antiescorbútico: la misma planta sostiene la ceremonia y la salud, y separarlas en dos categorías es una manera occidental de mirar que el mapuzugun no necesita. Buena parte de lo que hoy se investiga en farmacología del maqui y del michay entró a la literatura científica por esta vía.",
+      "materiales": [
+        {
+          "recurso": "corteza",
+          "cantidad": 4
+        },
+        {
+          "recurso": "fibra",
+          "cantidad": 3
+        }
+      ],
+      "requiere": [
+        "fuego_friccion"
+      ],
+      "costoSaber": 14,
+      "efecto": {
+        "recetas": [
+          "infusion_canelo",
+          "emplasto_maqui",
+          "lavado_michay"
+        ]
+      }
+    },
+    {
+      "id": "curtido_cuero",
+      "nombre": "Curtido de cuero",
+      "era": "pueblos_originarios",
+      "descripcion": "Descarnado, raspado y ablandado del cuero de guanaco con sesos y grasa.",
+      "contextoHistorico": "El quillango de cuero de guanaco fue la prenda de abrigo característica de la Patagonia. Los raspadores líticos asociados abundan en los sitios de la estepa.",
+      "materiales": [
+        {
+          "recurso": "cuero",
+          "cantidad": 3
+        },
+        {
+          "recurso": "grasa",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [
+        "lasca_obsidiana"
+      ],
+      "costoSaber": 14
+    },
+    {
+      "id": "toldo_cuero",
+      "nombre": "Toldo de cuero",
+      "era": "pueblos_originarios",
+      "descripcion": "Vivienda desmontable de armazón de varas cubierto con cueros cosidos.",
+      "contextoHistorico": "El toldo permitía la movilidad estacional entre la estepa y el bosque. Su tamaño crecía según la importancia del grupo familiar.",
+      "materiales": [
+        {
+          "recurso": "cuero",
+          "cantidad": 8
+        },
+        {
+          "recurso": "madera",
+          "cantidad": 6
+        },
+        {
+          "recurso": "tendon",
+          "cantidad": 3
+        }
+      ],
+      "requiere": [
+        "curtido_cuero"
+      ],
+      "costoSaber": 20
+    },
+    {
+      "id": "canoa_troncos",
+      "nombre": "Canoa monóxila",
+      "era": "pueblos_originarios",
+      "descripcion": "Embarcación excavada en un tronco único mediante fuego controlado y azuelas.",
+      "contextoHistorico": "La navegación de los grandes lagos era esencial para el intercambio y la pesca. Se han hallado canoas monóxilas en lagos de la región.",
+      "materiales": [
+        {
+          "recurso": "tronco",
+          "cantidad": 1
+        },
+        {
+          "recurso": "lena",
+          "cantidad": 4
+        }
+      ],
+      "requiere": [
+        "fuego_friccion"
+      ],
+      "costoSaber": 22
+    },
+    {
+      "id": "telar_witral",
+      "nombre": "Telar mapuche (witral)",
+      "era": "contacto_colonial",
+      "descripcion": "Telar vertical de dos lizos para tejer con lana de oveja hilada y teñida con plantas.",
+      "contextoHistorico": "El witral produce mantas, fajas y ponchos con diseños que codifican identidad territorial y familiar. El tejido mapuche fue además una mercancía clave del comercio transcordillerano.",
+      "materiales": [
+        {
+          "recurso": "madera",
+          "cantidad": 4
+        },
+        {
+          "recurso": "lana",
+          "cantidad": 6
+        }
+      ],
+      "requiere": [],
+      "costoSaber": 24
+    },
+    {
+      "id": "plateria_mapuche",
+      "nombre": "Platería mapuche (retrafe)",
+      "era": "contacto_colonial",
+      "descripcion": "Trabajo de la plata en trapelakucha, sikil, trarilonko y aros, mediante fundición, martillado y calado.",
+      "contextoHistorico": "La platería se desarrolló desde el siglo XVIII fundiendo monedas de plata obtenidas en el comercio. Las joyas señalan pertenencia, linaje y posición dentro de la comunidad.",
+      "materiales": [
+        {
+          "recurso": "plata",
+          "cantidad": 3
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [
+        "herreria_colonial"
+      ],
+      "costoSaber": 30
+    },
+    {
+      "id": "herreria_colonial",
+      "nombre": "Herrería",
+      "era": "contacto_colonial",
+      "descripcion": "Fragua, yunque y martillo para forjar herramientas, herrajes y clavos.",
+      "contextoHistorico": "Llegó con misioneros y comerciantes y transformó la producción de herramientas locales. Fue base técnica de la posterior platería mapuche.",
+      "materiales": [
+        {
+          "recurso": "hierro",
+          "cantidad": 4
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 4
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 3
+        }
+      ],
+      "requiere": [],
+      "costoSaber": 26,
+      "efecto": {
+        "recetas": [
+          "herramienta"
+        ]
+      }
+    },
+    {
+      "id": "cria_caballar",
+      "nombre": "Cría y doma de caballos",
+      "era": "contacto_colonial",
+      "descripcion": "Manejo, doma y aperos para el uso del caballo en caza, traslado y guerra.",
+      "contextoHistorico": "El caballo reorganizó la economía y la política de los pueblos de la Patagonia desde el siglo XVII. Los grandes arreos transcordilleranos definieron la riqueza de los linajes.",
+      "materiales": [
+        {
+          "recurso": "cuero",
+          "cantidad": 5
+        },
+        {
+          "recurso": "madera",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [
+        "curtido_cuero"
+      ],
+      "costoSaber": 25
+    },
+    {
+      "id": "huerta_misional",
+      "nombre": "Huerta y frutales",
+      "era": "contacto_colonial",
+      "descripcion": "Cultivo de trigo, papa, habas y manzanos en valles protegidos.",
+      "contextoHistorico": "Los manzanares del área del Collón Curá dieron nombre al País de las Manzanas de Sayhueque. La manzana se naturalizó y sostuvo la economía de la región durante siglos.",
+      "materiales": [
+        {
+          "recurso": "semilla",
+          "cantidad": 4
+        },
+        {
+          "recurso": "herramienta",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [],
+      "costoSaber": 18
+    },
+    {
+      "id": "capilla_troncos",
+      "nombre": "Capilla de troncos",
+      "era": "contacto_colonial",
+      "descripcion": "Construcción misional simple de troncos escuadrados y techo de tablillas.",
+      "contextoHistorico": "La misión del Nahuel Huapi levantó una capilla de este tipo hacia 1670. Fue el primer edificio europeo de la región.",
+      "materiales": [
+        {
+          "recurso": "tronco",
+          "cantidad": 10
+        },
+        {
+          "recurso": "clavo",
+          "cantidad": 6
+        }
+      ],
+      "requiere": [
+        "herreria_colonial"
+      ],
+      "costoSaber": 28
+    },
+    {
+      "id": "teodolito",
+      "nombre": "Teodolito y medición angular",
+      "era": "expediciones_estado",
+      "descripcion": "Instrumento óptico para medir ángulos horizontales y verticales en trabajos de triangulación.",
+      "contextoHistorico": "Fue la herramienta central de la demarcación limítrofe entre Argentina y Chile. Moreno y sus equipos lo usaron para fijar posiciones en la cordillera.",
+      "materiales": [
+        {
+          "recurso": "bronce",
+          "cantidad": 3
+        },
+        {
+          "recurso": "vidrio",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [
+        "herreria_colonial"
+      ],
+      "costoSaber": 34
+    },
+    {
+      "id": "cartografia_expedicion",
+      "nombre": "Cartografía de expedición",
+      "era": "expediciones_estado",
+      "descripcion": "Levantamiento de croquis, perfiles y cuadernos de campo con posiciones astronómicas.",
+      "contextoHistorico": "Los mapas producidos en estas campañas fueron argumento jurídico en el arbitraje limítrofe. Muchos se apoyaron en información aportada por baqueanos indígenas.",
+      "materiales": [
+        {
+          "recurso": "papel",
+          "cantidad": 4
+        },
+        {
+          "recurso": "tinta",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [
+        "teodolito"
+      ],
+      "costoSaber": 30
+    },
+    {
+      "id": "carreta_bueyes",
+      "nombre": "Carreta de bueyes",
+      "era": "expediciones_estado",
+      "descripcion": "Vehículo de dos ruedas altas de madera para transporte pesado en terreno sin caminos.",
+      "contextoHistorico": "Fue el medio de carga de la colonización antes de los caminos de Parques Nacionales. Podía tardar semanas en cubrir distancias hoy de un par de horas.",
+      "materiales": [
+        {
+          "recurso": "madera",
+          "cantidad": 8
+        },
+        {
+          "recurso": "hierro",
+          "cantidad": 3
+        }
+      ],
+      "requiere": [
+        "herreria_colonial"
+      ],
+      "costoSaber": 26
+    },
+    {
+      "id": "alambrado",
+      "nombre": "Alambrado",
+      "era": "expediciones_estado",
+      "descripcion": "Cerco de postes y alambre para delimitar campos y manejar hacienda.",
+      "contextoHistorico": "El alambrado materializó el reparto de tierras posterior a la campaña militar. Cortó rutas de trashumancia usadas durante siglos.",
+      "materiales": [
+        {
+          "recurso": "alambre",
+          "cantidad": 6
+        },
+        {
+          "recurso": "poste",
+          "cantidad": 8
+        }
+      ],
+      "requiere": [
+        "herreria_colonial"
+      ],
+      "costoSaber": 22
+    },
+    {
+      "id": "telegrafo",
+      "nombre": "Telégrafo",
+      "era": "expediciones_estado",
+      "descripcion": "Línea de postes y cable para transmitir mensajes en clave Morse.",
+      "contextoHistorico": "La línea telegráfica fue instrumento de control estatal sobre los territorios nacionales. Conectó puestos militares y luego pueblos de la Norpatagonia.",
+      "materiales": [
+        {
+          "recurso": "alambre",
+          "cantidad": 5
+        },
+        {
+          "recurso": "poste",
+          "cantidad": 6
+        },
+        {
+          "recurso": "bateria",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [
+        "alambrado"
+      ],
+      "costoSaber": 30
+    },
+    {
+      "id": "aserradero_hidraulico",
+      "nombre": "Aserradero",
+      "era": "colonizacion",
+      "descripcion": "Sierra accionada por rueda hidráulica o motor a vapor para producir tablas.",
+      "contextoHistorico": "Los aserraderos de Primo Capraro y otros abastecieron la construcción del pueblo. La explotación de ciprés y coihue fue intensa antes de la creación del parque.",
+      "materiales": [
+        {
+          "recurso": "hierro",
+          "cantidad": 6
+        },
+        {
+          "recurso": "madera",
+          "cantidad": 8
+        }
+      ],
+      "requiere": [
+        "herreria_colonial"
+      ],
+      "costoSaber": 32
+    },
+    {
+      "id": "construccion_troncos",
+      "nombre": "Construcción en troncos",
+      "era": "colonizacion",
+      "descripcion": "Casas de troncos encastrados o de tablas de ciprés con techo a dos aguas.",
+      "contextoHistorico": "Los colonos chilenos, alemanes y eslovenos trajeron técnicas de carpintería adaptadas al clima frío y nevado. Varias de estas casas sobreviven en el ejido de Bariloche.",
+      "materiales": [
+        {
+          "recurso": "tronco",
+          "cantidad": 12
+        },
+        {
+          "recurso": "clavo",
+          "cantidad": 10
+        },
+        {
+          "recurso": "tabla",
+          "cantidad": 8
+        }
+      ],
+      "requiere": [
+        "aserradero_hidraulico"
+      ],
+      "costoSaber": 30
+    },
+    {
+      "id": "vapor_lacustre",
+      "nombre": "Vapor lacustre",
+      "era": "colonizacion",
+      "descripcion": "Embarcación a vapor para carga y pasajeros entre puertos del Nahuel Huapi.",
+      "contextoHistorico": "Antes de los caminos, el lago era la ruta principal hacia Puerto Blest y el paso a Chile. Vapores como el Cóndor y el Modesta Victoria marcaron la época.",
+      "materiales": [
+        {
+          "recurso": "hierro",
+          "cantidad": 10
+        },
+        {
+          "recurso": "madera",
+          "cantidad": 12
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 6
+        }
+      ],
+      "requiere": [
+        "aserradero_hidraulico"
+      ],
+      "costoSaber": 38
+    },
+    {
+      "id": "molino_harinero",
+      "nombre": "Molino harinero",
+      "era": "colonizacion",
+      "descripcion": "Molienda de trigo con piedras movidas por rueda hidráulica.",
+      "contextoHistorico": "Los valles del Ñirihuau y el Manso tuvieron molinos que abastecían a los colonos. La harina local reducía la dependencia del abastecimiento chileno.",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 4
+        },
+        {
+          "recurso": "madera",
+          "cantidad": 8
+        },
+        {
+          "recurso": "hierro",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [
+        "construccion_troncos"
+      ],
+      "costoSaber": 26
+    },
+    {
+      "id": "ahumadero",
+      "nombre": "Ahumadero",
+      "era": "colonizacion",
+      "descripcion": "Cámara de humo frío para conservar carne, embutidos y pescado.",
+      "contextoHistorico": "Los colonos alemanes y eslovenos introdujeron el ahumado de cerdo y ciervo. Es el origen de la tradición de ahumados de la región.",
+      "materiales": [
+        {
+          "recurso": "tabla",
+          "cantidad": 6
+        },
+        {
+          "recurso": "lena",
+          "cantidad": 5
+        }
+      ],
+      "requiere": [
+        "construccion_troncos"
+      ],
+      "costoSaber": 20
+    },
+    {
+      "id": "quesera_alpina",
+      "nombre": "Quesería alpina",
+      "era": "colonizacion",
+      "descripcion": "Elaboración de quesos de pasta dura con cuajo y maduración en cava fresca.",
+      "contextoHistorico": "Familias suizas e italianas replicaron técnicas alpinas en los valles del Nahuel Huapi. La producción abasteció al mercado local y luego al turismo.",
+      "materiales": [
+        {
+          "recurso": "leche",
+          "cantidad": 10
+        },
+        {
+          "recurso": "sal",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [
+        "construccion_troncos"
+      ],
+      "costoSaber": 22
+    },
+    {
+      "id": "estilo_bustillo",
+      "nombre": "Estilo Bustillo en piedra y madera",
+      "era": "parque_nacional",
+      "descripcion": "Mampostería de piedra local con carpintería de ciprés, techos empinados y galerías.",
+      "contextoHistorico": "Alejandro Bustillo y el equipo de Parques Nacionales lo aplicaron en hoteles, escuelas y el Centro Cívico. Se convirtió en la imagen arquitectónica reconocible de la Patagonia andina.",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 20
+        },
+        {
+          "recurso": "tabla",
+          "cantidad": 15
+        },
+        {
+          "recurso": "cal",
+          "cantidad": 6
+        }
+      ],
+      "requiere": [
+        "construccion_troncos"
+      ],
+      "costoSaber": 45
+    },
+    {
+      "id": "refugio_montana",
+      "nombre": "Refugio de montaña",
+      "era": "parque_nacional",
+      "descripcion": "Construcción compacta de piedra o madera en alta montaña, con estufa y capacidad para pernocte.",
+      "contextoHistorico": "El Club Andino Bariloche levantó refugios en el Frey, el Jakob, el López y el Tronador desde los años treinta. Hicieron posible el montañismo y el esquí de travesía en la región.",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 12
+        },
+        {
+          "recurso": "tabla",
+          "cantidad": 8
+        },
+        {
+          "recurso": "chapa",
+          "cantidad": 6
+        }
+      ],
+      "requiere": [
+        "estilo_bustillo"
+      ],
+      "costoSaber": 36
+    },
+    {
+      "id": "esqui_alpino",
+      "nombre": "Esquí",
+      "era": "parque_nacional",
+      "descripcion": "Esquíes de madera laminada con fijaciones de cable y focas de piel para el ascenso.",
+      "contextoHistorico": "Otto Meiling fabricó esquíes en Bariloche y difundió su uso entre los socios del Club Andino. El cerro Catedral se convirtió en el primer centro de esquí organizado del país.",
+      "materiales": [
+        {
+          "recurso": "tabla",
+          "cantidad": 2
+        },
+        {
+          "recurso": "cuero",
+          "cantidad": 2
+        },
+        {
+          "recurso": "hierro",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [
+        "aserradero_hidraulico"
+      ],
+      "costoSaber": 28
+    },
+    {
+      "id": "andarivel",
+      "nombre": "Medio de elevación",
+      "era": "parque_nacional",
+      "descripcion": "Cable tractor con sillas o telesquí accionado por motor para subir esquiadores.",
+      "contextoHistorico": "Los primeros medios del Catedral transformaron el esquí de una actividad de montañistas en un deporte masivo. Definieron la estacionalidad económica de Bariloche.",
+      "materiales": [
+        {
+          "recurso": "cable",
+          "cantidad": 10
+        },
+        {
+          "recurso": "hierro",
+          "cantidad": 12
+        },
+        {
+          "recurso": "motor",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [
+        "esqui_alpino"
+      ],
+      "costoSaber": 48
+    },
+    {
+      "id": "radio_onda_corta",
+      "nombre": "Radio de onda corta",
+      "era": "parque_nacional",
+      "descripcion": "Equipo transmisor y receptor para comunicación a distancia entre seccionales y refugios.",
+      "contextoHistorico": "Guardaparques y andinistas dependieron de la radio para coordinar rescates y reportar incendios. Sigue siendo el respaldo cuando falla la telefonía celular.",
+      "materiales": [
+        {
+          "recurso": "cobre",
+          "cantidad": 3
+        },
+        {
+          "recurso": "valvula",
+          "cantidad": 2
+        },
+        {
+          "recurso": "bateria",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [
+        "telegrafo"
+      ],
+      "costoSaber": 36
+    },
+    {
+      "id": "estacion_meteorologica",
+      "nombre": "Estación meteorológica",
+      "era": "parque_nacional",
+      "descripcion": "Abrigo con termómetros, pluviómetro, anemómetro y registro diario de datos.",
+      "contextoHistorico": "Las series meteorológicas de Bariloche son fundamentales para estudiar el clima andino y el retroceso de glaciares. Los datos alimentan hoy los pronósticos de riesgo de incendio.",
+      "materiales": [
+        {
+          "recurso": "tabla",
+          "cantidad": 4
+        },
+        {
+          "recurso": "vidrio",
+          "cantidad": 3
+        },
+        {
+          "recurso": "hierro",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [
+        "radio_onda_corta"
+      ],
+      "costoSaber": 34
+    },
+    {
+      "id": "vivero_forestal",
+      "nombre": "Vivero forestal",
+      "era": "parque_nacional",
+      "descripcion": "Producción de plantines nativos y exóticos para forestación y restauración.",
+      "contextoHistorico": "Parques Nacionales instaló viveros que en su primera etapa plantaron coníferas exóticas, hoy consideradas invasoras. La producción actual prioriza especies nativas para restaurar áreas quemadas.",
+      "materiales": [
+        {
+          "recurso": "semilla",
+          "cantidad": 6
+        },
+        {
+          "recurso": "tabla",
+          "cantidad": 4
+        },
+        {
+          "recurso": "agua",
+          "cantidad": 8
+        }
+      ],
+      "requiere": [
+        "huerta_misional"
+      ],
+      "costoSaber": 28
+    },
+    {
+      "id": "guardaparque",
+      "nombre": "Cuerpo de guardaparques",
+      "era": "parque_nacional",
+      "descripcion": "Formación y equipamiento para control, rescate, educación ambiental y manejo de fauna.",
+      "contextoHistorico": "El cuerpo se creó junto con la institución en la década de 1930 y se profesionalizó con una escuela propia. Es la presencia efectiva del Estado en el territorio del parque.",
+      "materiales": [
+        {
+          "recurso": "radio",
+          "cantidad": 1
+        },
+        {
+          "recurso": "botiquin",
+          "cantidad": 1
+        },
+        {
+          "recurso": "mapa",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [
+        "radio_onda_corta",
+        "cartografia_expedicion"
+      ],
+      "costoSaber": 40
+    },
+    {
+      "id": "sendero_marcado",
+      "nombre": "Sendero señalizado",
+      "era": "parque_nacional",
+      "descripcion": "Traza, drenaje y marcación de senderos de montaña con señalética normalizada.",
+      "contextoHistorico": "La red de senderos del Nahuel Huapi combina huellas de arrieros con trazas abiertas por el Club Andino. La marcación reduce accidentes y erosión por atajos.",
+      "materiales": [
+        {
+          "recurso": "pintura",
+          "cantidad": 2
+        },
+        {
+          "recurso": "poste",
+          "cantidad": 6
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 8
+        }
+      ],
+      "requiere": [
+        "refugio_montana"
+      ],
+      "costoSaber": 24
+    },
+    {
+      "id": "reactor_investigacion",
+      "nombre": "Reactor de investigación",
+      "era": "bariloche_moderna",
+      "descripcion": "Reactor nuclear de baja potencia para formación, investigación y producción de radioisótopos.",
+      "contextoHistorico": "El Centro Atómico Bariloche desarrolló capacidades que llevaron a Argentina a exportar reactores de investigación. El Instituto Balseiro forma allí físicos e ingenieros nucleares.",
+      "materiales": [
+        {
+          "recurso": "hormigon",
+          "cantidad": 30
+        },
+        {
+          "recurso": "acero",
+          "cantidad": 20
+        },
+        {
+          "recurso": "combustible_nuclear",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [
+        "estacion_meteorologica"
+      ],
+      "costoSaber": 80
+    },
+    {
+      "id": "chocolateria_artesanal",
+      "nombre": "Chocolatería artesanal",
+      "era": "bariloche_moderna",
+      "descripcion": "Temperado, moldeado y relleno de chocolate en pequeña escala.",
+      "contextoHistorico": "Familias italianas y suizas fundaron el rubro a mediados del siglo XX sobre la calle Mitre. Hoy es una de las industrias identitarias de la ciudad.",
+      "materiales": [
+        {
+          "recurso": "cacao",
+          "cantidad": 6
+        },
+        {
+          "recurso": "leche",
+          "cantidad": 4
+        },
+        {
+          "recurso": "azucar",
+          "cantidad": 4
+        }
+      ],
+      "requiere": [
+        "quesera_alpina"
+      ],
+      "costoSaber": 26
+    },
+    {
+      "id": "cerveceria_artesanal",
+      "nombre": "Cervecería artesanal",
+      "era": "bariloche_moderna",
+      "descripcion": "Maceración, cocción y fermentación controlada de cerveza en pequeños lotes.",
+      "contextoHistorico": "La tradición cervecera llegó con la inmigración centroeuropea y se expandió desde los años noventa. El lúpulo del valle de El Bolsón abastece a buena parte del país.",
+      "materiales": [
+        {
+          "recurso": "cebada",
+          "cantidad": 8
+        },
+        {
+          "recurso": "lupulo",
+          "cantidad": 2
+        },
+        {
+          "recurso": "agua",
+          "cantidad": 10
+        }
+      ],
+      "requiere": [
+        "molino_harinero"
+      ],
+      "costoSaber": 24
+    },
+    {
+      "id": "camara_trampa",
+      "nombre": "Cámara trampa",
+      "era": "bariloche_moderna",
+      "descripcion": "Cámara con sensor infrarrojo que fotografía fauna sin presencia humana.",
+      "contextoHistorico": "Es la herramienta principal del monitoreo de huemul, puma y especies exóticas invasoras en el parque. Permite estimar abundancias sin capturar animales.",
+      "materiales": [
+        {
+          "recurso": "sensor",
+          "cantidad": 1
+        },
+        {
+          "recurso": "bateria",
+          "cantidad": 2
+        },
+        {
+          "recurso": "carcasa",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [
+        "guardaparque"
+      ],
+      "costoSaber": 34
+    },
+    {
+      "id": "anillado_aves",
+      "nombre": "Anillado de aves",
+      "era": "bariloche_moderna",
+      "descripcion": "Captura con redes de niebla, marcación con anillos numerados y registro de datos biométricos.",
+      "contextoHistorico": "Permite estudiar migración, longevidad y uso del hábitat de aves del bosque andino patagónico. Requiere permisos y formación específica para no dañar a los ejemplares.",
+      "materiales": [
+        {
+          "recurso": "red",
+          "cantidad": 2
+        },
+        {
+          "recurso": "anillo",
+          "cantidad": 20
+        },
+        {
+          "recurso": "planilla",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [
+        "guardaparque"
+      ],
+      "costoSaber": 30
+    },
+    {
+      "id": "gps_navegacion",
+      "nombre": "GPS y navegación satelital",
+      "era": "bariloche_moderna",
+      "descripcion": "Receptor de posición satelital con registro de tracks y waypoints.",
+      "contextoHistorico": "Reemplazó a la brújula y el mapa como herramienta primaria en relevamientos y rescates. Los tracks alimentan los sistemas de información geográfica del parque.",
+      "materiales": [
+        {
+          "recurso": "receptor",
+          "cantidad": 1
+        },
+        {
+          "recurso": "bateria",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [
+        "cartografia_expedicion"
+      ],
+      "costoSaber": 32
+    },
+    {
+      "id": "drone_relevamiento",
+      "nombre": "Dron de relevamiento",
+      "era": "bariloche_moderna",
+      "descripcion": "Aeronave no tripulada con cámara para mapeo aéreo y evaluación de daños.",
+      "contextoHistorico": "Se usa para evaluar superficie quemada tras incendios y monitorear glaciares. Su vuelo dentro del parque está regulado para no afectar la fauna.",
+      "materiales": [
+        {
+          "recurso": "motor",
+          "cantidad": 4
+        },
+        {
+          "recurso": "bateria",
+          "cantidad": 2
+        },
+        {
+          "recurso": "camara",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [
+        "gps_navegacion"
+      ],
+      "costoSaber": 44
+    },
+    {
+      "id": "panel_solar",
+      "nombre": "Panel solar",
+      "era": "bariloche_moderna",
+      "descripcion": "Módulo fotovoltaico con regulador y batería para abastecer refugios y seccionales aisladas.",
+      "contextoHistorico": "Reemplazó a los grupos electrógenos a combustible en muchos refugios de montaña. Reduce ruido, riesgo de incendio y transporte de combustible.",
+      "materiales": [
+        {
+          "recurso": "panel",
+          "cantidad": 2
+        },
+        {
+          "recurso": "bateria",
+          "cantidad": 2
+        },
+        {
+          "recurso": "cable",
+          "cantidad": 4
+        }
+      ],
+      "requiere": [
+        "refugio_montana"
+      ],
+      "costoSaber": 36
+    },
+    {
+      "id": "brigada_incendios",
+      "nombre": "Brigada de incendios forestales",
+      "era": "bariloche_moderna",
+      "descripcion": "Equipo entrenado con herramientas manuales, motobombas y apoyo aéreo para combatir fuego de vegetación.",
+      "contextoHistorico": "El Nahuel Huapi cuenta con brigadas propias e integra el sistema nacional de manejo del fuego. Los bosques de ciprés quemados tardan más de un siglo en recuperarse.",
+      "materiales": [
+        {
+          "recurso": "herramienta",
+          "cantidad": 8
+        },
+        {
+          "recurso": "motobomba",
+          "cantidad": 1
+        },
+        {
+          "recurso": "radio",
+          "cantidad": 2
+        }
+      ],
+      "requiere": [
+        "guardaparque"
+      ],
+      "costoSaber": 42
+    },
+    {
+      "id": "sensor_sismico",
+      "nombre": "Sensor sísmico y monitoreo volcánico",
+      "era": "bariloche_moderna",
+      "descripcion": "Sismómetro y estación de transmisión para vigilar la actividad de volcanes cercanos.",
+      "contextoHistorico": "Tras las erupciones de 2011 y 2015 se reforzó la red de monitoreo del arco volcánico sur. Los datos permiten emitir alertas de ceniza para la aviación y la población.",
+      "materiales": [
+        {
+          "recurso": "sensor",
+          "cantidad": 1
+        },
+        {
+          "recurso": "panel",
+          "cantidad": 1
+        },
+        {
+          "recurso": "radio",
+          "cantidad": 1
+        }
+      ],
+      "requiere": [
+        "estacion_meteorologica"
+      ],
+      "costoSaber": 46
+    },
+    {
+      "id": "restauracion_nativa",
+      "nombre": "Restauración de bosque nativo",
+      "era": "bariloche_moderna",
+      "descripcion": "Plantación de nativas, control de exóticas invasoras y protección de renovales tras el fuego.",
+      "contextoHistorico": "Se aplica en áreas quemadas del parque y en zonas invadidas por pinos y retama. Involucra a voluntarios, escuelas y comunidades locales.",
+      "materiales": [
+        {
+          "recurso": "plantin",
+          "cantidad": 20
+        },
+        {
+          "recurso": "herramienta",
+          "cantidad": 4
+        },
+        {
+          "recurso": "agua",
+          "cantidad": 10
+        }
+      ],
+      "requiere": [
+        "vivero_forestal"
+      ],
+      "costoSaber": 38
+    }
   ],
   "sitios": [
-    { "id": "centro_civico", "nombre": "Centro Cívico", "latitud": -41.1335, "longitud": -71.3103, "anio": 1940, "descripcion": "Conjunto de piedra y madera frente al lago, Monumento Histórico Nacional, corazón institucional de la ciudad.", "tipo": "hito" },
-    { "id": "catedral_bariloche", "nombre": "Catedral Nuestra Señora del Nahuel Huapi", "latitud": -41.1375, "longitud": -71.3053, "anio": 1947, "descripcion": "Templo neogótico proyectado por Alejandro Bustillo, con vitrales que aluden a la historia regional. Su torre se completó décadas después.", "tipo": "hito" },
-    { "id": "hotel_llao_llao", "nombre": "Hotel Llao Llao", "latitud": -41.0575, "longitud": -71.535, "anio": 1938, "descripcion": "Hotel emblemático sobre el istmo entre los lagos Nahuel Huapi y Moreno, obra de Alejandro Bustillo.", "tipo": "hito" },
-    { "id": "cerro_catedral", "nombre": "Cerro Catedral", "latitud": -41.1667, "longitud": -71.4417, "anio": null, "descripcion": "Centro de esquí y montaña más extenso de Sudamérica, con agujas de granito que dan nombre al cerro.", "tipo": "montana" },
-    { "id": "cerro_tronador", "nombre": "Cerro Tronador", "latitud": -41.1558, "longitud": -71.8853, "anio": null, "descripcion": "Estratovolcán extinto de 3478 metros con glaciares colgantes, compartido entre Argentina y Chile.", "tipo": "montana" },
-    { "id": "cerro_otto", "nombre": "Cerro Otto", "latitud": -41.1417, "longitud": -71.3583, "anio": null, "descripcion": "Cerro sobre la ciudad, con teleférico y vistas panorámicas del lago y la cordillera.", "tipo": "montana" },
-    { "id": "cerro_lopez", "nombre": "Cerro López", "latitud": -41.1042, "longitud": -71.5289, "anio": null, "descripcion": "Cumbre clásica del andinismo local, con refugio del Club Andino en su ladera.", "tipo": "montana" },
-    { "id": "isla_victoria", "nombre": "Isla Victoria", "latitud": -40.9333, "longitud": -71.55, "anio": null, "descripcion": "Mayor isla del lago, sede de un vivero histórico de Parques Nacionales y de sitios arqueológicos.", "tipo": "natural" },
-    { "id": "bosque_arrayanes", "nombre": "Bosque de Arrayanes", "latitud": -40.8, "longitud": -71.63, "anio": 1971, "descripcion": "Bosque puro de arrayanes en la península Quetrihué, protegido como parque nacional propio dentro del área.", "tipo": "natural" },
-    { "id": "puerto_blest", "nombre": "Puerto Blest", "latitud": -41.03, "longitud": -71.82, "anio": null, "descripcion": "Extremo oeste del lago, zona de bosque valdiviano lluvioso y punto del cruce andino a Chile.", "tipo": "natural" },
-    { "id": "isla_centinela", "nombre": "Isla Centinela", "latitud": -40.93, "longitud": -71.5, "anio": 1944, "descripcion": "Isla donde descansan los restos de Francisco P. Moreno, trasladados allí años después de su muerte.", "tipo": "memorial" },
-    { "id": "isla_huemul", "nombre": "Isla Huemul", "latitud": -41.1, "longitud": -71.42, "anio": 1949, "descripcion": "Sede del Proyecto Huemul; conserva ruinas de los laboratorios del fallido programa de fusión nuclear.", "tipo": "hito" },
-    { "id": "centro_atomico", "nombre": "Centro Atómico Bariloche e Instituto Balseiro", "latitud": -41.1417, "longitud": -71.4283, "anio": 1955, "descripcion": "Complejo científico al pie del cerro Otto, sede de investigación en física y de la formación del Instituto Balseiro.", "tipo": "institucion" },
-    { "id": "estacion_ferrocarril", "nombre": "Estación de ferrocarril", "latitud": -41.1305, "longitud": -71.2903, "anio": 1934, "descripcion": "Terminal del ramal desde Ingeniero Jacobacci, construida en piedra y madera según el lenguaje de Parques Nacionales.", "tipo": "hito" },
-    { "id": "museo_patagonia", "nombre": "Museo de la Patagonia Francisco P. Moreno", "latitud": -41.1337, "longitud": -71.3105, "anio": 1940, "descripcion": "Museo del Centro Cívico dedicado a la naturaleza, arqueología e historia de la región.", "tipo": "institucion" },
-    { "id": "lago_gutierrez", "nombre": "Lago Gutiérrez", "latitud": -41.1833, "longitud": -71.4, "anio": null, "descripcion": "Lago de origen glaciar al sur de la ciudad, encajonado entre el Catedral y el cordón del Otto.", "tipo": "natural" },
-    { "id": "lago_mascardi", "nombre": "Lago Mascardi", "latitud": -41.3167, "longitud": -71.55, "anio": null, "descripcion": "Lago de aguas turquesas en el camino al Tronador, nombrado en honor al misionero jesuita.", "tipo": "natural" },
-    { "id": "colonia_suiza", "nombre": "Colonia Suiza", "latitud": -41.1, "longitud": -71.5, "anio": 1895, "descripcion": "Asentamiento fundado por familias suizas en la península de Llao Llao, con casas y feria tradicionales.", "tipo": "poblado" },
-    { "id": "villa_la_angostura", "nombre": "Villa La Angostura", "latitud": -40.7583, "longitud": -71.6417, "anio": 1932, "descripcion": "Poblado del norte del parque, en el istmo de la península Quetrihué, muy afectado por la ceniza de 2011.", "tipo": "poblado" },
-    { "id": "refugio_frey", "nombre": "Refugio Emilio Frey", "latitud": -41.1833, "longitud": -71.4833, "anio": 1957, "descripcion": "Refugio de piedra junto a la laguna Toncek, centro de la escalada en roca del cerro Catedral.", "tipo": "refugio" }
+    {
+      "id": "centro_civico",
+      "nombre": "Centro Cívico",
+      "latitud": -41.1335,
+      "longitud": -71.3103,
+      "anio": 1940,
+      "descripcion": "Conjunto de piedra y madera frente al lago, Monumento Histórico Nacional, corazón institucional de la ciudad.",
+      "tipo": "hito"
+    },
+    {
+      "id": "catedral_bariloche",
+      "nombre": "Catedral Nuestra Señora del Nahuel Huapi",
+      "latitud": -41.1375,
+      "longitud": -71.3053,
+      "anio": 1947,
+      "descripcion": "Templo neogótico proyectado por Alejandro Bustillo, con vitrales que aluden a la historia regional. Su torre se completó décadas después.",
+      "tipo": "hito"
+    },
+    {
+      "id": "hotel_llao_llao",
+      "nombre": "Hotel Llao Llao",
+      "latitud": -41.0575,
+      "longitud": -71.535,
+      "anio": 1938,
+      "descripcion": "Hotel emblemático sobre el istmo entre los lagos Nahuel Huapi y Moreno, obra de Alejandro Bustillo.",
+      "tipo": "hito"
+    },
+    {
+      "id": "cerro_catedral",
+      "nombre": "Cerro Catedral",
+      "latitud": -41.1667,
+      "longitud": -71.4417,
+      "anio": null,
+      "descripcion": "Centro de esquí y montaña más extenso de Sudamérica, con agujas de granito que dan nombre al cerro.",
+      "tipo": "montana"
+    },
+    {
+      "id": "cerro_tronador",
+      "nombre": "Cerro Tronador",
+      "latitud": -41.1558,
+      "longitud": -71.8853,
+      "anio": null,
+      "descripcion": "Estratovolcán extinto de 3478 metros con glaciares colgantes, compartido entre Argentina y Chile.",
+      "tipo": "montana"
+    },
+    {
+      "id": "cerro_otto",
+      "nombre": "Cerro Otto",
+      "latitud": -41.1417,
+      "longitud": -71.3583,
+      "anio": null,
+      "descripcion": "Cerro sobre la ciudad, con teleférico y vistas panorámicas del lago y la cordillera.",
+      "tipo": "montana"
+    },
+    {
+      "id": "cerro_lopez",
+      "nombre": "Cerro López",
+      "latitud": -41.1042,
+      "longitud": -71.5289,
+      "anio": null,
+      "descripcion": "Cumbre clásica del andinismo local, con refugio del Club Andino en su ladera.",
+      "tipo": "montana"
+    },
+    {
+      "id": "isla_victoria",
+      "nombre": "Isla Victoria",
+      "latitud": -40.9333,
+      "longitud": -71.55,
+      "anio": null,
+      "descripcion": "Mayor isla del lago, sede de un vivero histórico de Parques Nacionales y de sitios arqueológicos.",
+      "tipo": "natural"
+    },
+    {
+      "id": "bosque_arrayanes",
+      "nombre": "Bosque de Arrayanes",
+      "latitud": -40.8,
+      "longitud": -71.63,
+      "anio": 1971,
+      "descripcion": "Bosque puro de arrayanes en la península Quetrihué, protegido como parque nacional propio dentro del área.",
+      "tipo": "natural"
+    },
+    {
+      "id": "puerto_blest",
+      "nombre": "Puerto Blest",
+      "latitud": -41.03,
+      "longitud": -71.82,
+      "anio": null,
+      "descripcion": "Extremo oeste del lago, zona de bosque valdiviano lluvioso y punto del cruce andino a Chile.",
+      "tipo": "natural"
+    },
+    {
+      "id": "isla_centinela",
+      "nombre": "Isla Centinela",
+      "latitud": -40.93,
+      "longitud": -71.5,
+      "anio": 1944,
+      "descripcion": "Isla donde descansan los restos de Francisco P. Moreno, trasladados allí años después de su muerte.",
+      "tipo": "memorial"
+    },
+    {
+      "id": "isla_huemul",
+      "nombre": "Isla Huemul",
+      "latitud": -41.1,
+      "longitud": -71.42,
+      "anio": 1949,
+      "descripcion": "Sede del Proyecto Huemul; conserva ruinas de los laboratorios del fallido programa de fusión nuclear.",
+      "tipo": "hito"
+    },
+    {
+      "id": "centro_atomico",
+      "nombre": "Centro Atómico Bariloche e Instituto Balseiro",
+      "latitud": -41.1417,
+      "longitud": -71.4283,
+      "anio": 1955,
+      "descripcion": "Complejo científico al pie del cerro Otto, sede de investigación en física y de la formación del Instituto Balseiro.",
+      "tipo": "institucion"
+    },
+    {
+      "id": "estacion_ferrocarril",
+      "nombre": "Estación de ferrocarril",
+      "latitud": -41.1305,
+      "longitud": -71.2903,
+      "anio": 1934,
+      "descripcion": "Terminal del ramal desde Ingeniero Jacobacci, construida en piedra y madera según el lenguaje de Parques Nacionales.",
+      "tipo": "hito"
+    },
+    {
+      "id": "museo_patagonia",
+      "nombre": "Museo de la Patagonia Francisco P. Moreno",
+      "latitud": -41.1337,
+      "longitud": -71.3105,
+      "anio": 1940,
+      "descripcion": "Museo del Centro Cívico dedicado a la naturaleza, arqueología e historia de la región.",
+      "tipo": "institucion"
+    },
+    {
+      "id": "lago_gutierrez",
+      "nombre": "Lago Gutiérrez",
+      "latitud": -41.1833,
+      "longitud": -71.4,
+      "anio": null,
+      "descripcion": "Lago de origen glaciar al sur de la ciudad, encajonado entre el Catedral y el cordón del Otto.",
+      "tipo": "natural"
+    },
+    {
+      "id": "lago_mascardi",
+      "nombre": "Lago Mascardi",
+      "latitud": -41.3167,
+      "longitud": -71.55,
+      "anio": null,
+      "descripcion": "Lago de aguas turquesas en el camino al Tronador, nombrado en honor al misionero jesuita.",
+      "tipo": "natural"
+    },
+    {
+      "id": "colonia_suiza",
+      "nombre": "Colonia Suiza",
+      "latitud": -41.1,
+      "longitud": -71.5,
+      "anio": 1895,
+      "descripcion": "Asentamiento fundado por familias suizas en la península de Llao Llao, con casas y feria tradicionales.",
+      "tipo": "poblado"
+    },
+    {
+      "id": "villa_la_angostura",
+      "nombre": "Villa La Angostura",
+      "latitud": -40.7583,
+      "longitud": -71.6417,
+      "anio": 1932,
+      "descripcion": "Poblado del norte del parque, en el istmo de la península Quetrihué, muy afectado por la ceniza de 2011.",
+      "tipo": "poblado"
+    },
+    {
+      "id": "refugio_frey",
+      "nombre": "Refugio Emilio Frey",
+      "latitud": -41.1833,
+      "longitud": -71.4833,
+      "anio": 1957,
+      "descripcion": "Refugio de piedra junto a la laguna Toncek, centro de la escalada en roca del cerro Catedral.",
+      "tipo": "refugio"
+    }
   ]
 }

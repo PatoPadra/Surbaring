@@ -10,7 +10,12 @@
  *    consumieron tanto bosque: seis de leña dan dos de carbón.
  * 2. Acá no se funde mineral, se recupera metal. La comarca no tiene hierro, y
  *    lo que hacía una fragua de puesto era reforjar chatarra.
- * 3. El fuego está regulado. En el Parque Nacional sólo se enciende en sitios
+ * 3. El fuego lo apaga el agua. No es un detalle de ambientación: una fogata al
+ *    descubierto no aguanta una lluvia sostenida, y prender sobre suelo
+ *    empapado cuesta el doble de leña. Lo que decide no es el clima solo sino
+ *    el techo que tenga cada horno, y por eso una carbonera arde días bajo
+ *    llovizna y se muere en un temporal.
+ * 4. El fuego está regulado. En el Parque Nacional sólo se enciende en sitios
  *    habilitados, y una carbonera es un fuego que arde días. La negativa
  *    también enseña.
  *
@@ -23,6 +28,21 @@ import { normalizar, nombreDe } from './Recursos.js';
 
 const MS_HORA = 3600 * 1000;
 const RADIO_HORNO_M = 8;
+
+/** Valores por defecto de la humedad, por si el dataset no los trae. */
+const HUMEDAD = {
+  umbralApagado: 0.72,
+  umbralNoPrende: 0.95,
+  mojadoPorHoraDeLluvia: 0.9,
+  factorNieve: 0.5,
+  secadoPorHora: 0.22,
+  secadoDelPropioFuego: 1.6,
+  leniaExtraMaxima: 3,
+  demoraMaximaPorHumedad: 0.4,
+};
+
+/** Un horno de obra —ahumadero, aserradero— tiene techo pero no es hermético. */
+const RESGUARDO_DE_OBRA = 0.6;
 
 export class Fundicion {
   /**
@@ -38,7 +58,13 @@ export class Fundicion {
     this.alCambiar = null;
     /** Recetas que aportan otros sistemas: el aserradero, el ahumadero, el molino. */
     this.recetasExtra = [];
+    /** Ambiente del cuadro anterior: lo pone `actualizar()`. */
+    this.ambiente = null;
+    this._ultimoMs = null;
   }
+
+  get humedad() { return { ...HUMEDAD, ...(this.d.fuego?.humedad || {}) }; }
+  get encendedores() { return this.d.fuego?.encendedores?.usa || []; }
 
   get definicionesHorno() { return this.d.hornos || []; }
   get recetas() { return [...(this.d.recetas || []), ...this.recetasExtra]; }
@@ -101,7 +127,7 @@ export class Fundicion {
     const fuego = this.evaluarFuego(p.x, p.z);
     if (!fuego.permitido) {
       this.saberes.puntos = Math.max(0, this.saberes.puntos - fuego.castigo);
-      this.hud.aviso(fuego.titulo, fuego.detalle);
+      this.hud.negativa(fuego, { fecha: this.tiempo?.textoFecha });
       return null;
     }
 
@@ -109,6 +135,18 @@ export class Fundicion {
     // inalcanzable: `cercano()` devolvería siempre el mismo.
     if (this.hornos.some(h => Math.hypot(h.x - p.x, h.z - p.z) < 4)) {
       this.hud.aviso('Muy encima de otro horno', 'Correte unos pasos: cada uno necesita su lugar');
+      return null;
+    }
+
+    // ¿Este horno pide saber algo? La bóveda de barro sí: sin alfarería no se
+    // levanta. La fragua NO, y no es un olvido: la herrería pide cuatro de
+    // hierro y el hierro sale de la fragua, así que ponerla detrás sería un
+    // bloqueo circular perfecto. Lo que se aprende para forjar es la
+    // herramienta, y ése es el requisito que lleva.
+    const tec = this.saberes?.faltaPara('horno', def.id);
+    if (tec) {
+      this.hud.aviso(`Todavía no sabés levantar ${def.nombre.toLowerCase()}`,
+        `Hace falta aprender «${tec.nombre}» en el códice (${tec.costoSaber} puntos de saber)`);
       return null;
     }
 
@@ -124,6 +162,8 @@ export class Fundicion {
     }
     const horno = {
       def, x: p.x, z: p.z, y: this.mundo.alturaEn(p.x, p.z), trabajo: null,
+      // Se levanta seco: lo que moja después es la intemperie
+      mojado: 0,
     };
     this.hornos.push(horno);
     this.saberes.otorgar(3, `${def.nombre} en pie`);
@@ -132,15 +172,197 @@ export class Fundicion {
     return horno;
   }
 
+  // ── Humedad ───────────────────────────────────────────────────────────────
+
+  /**
+   * Cuánto techo tiene este horno, de 0 (fuego al descubierto) a 1 (a cubierto).
+   * Los hornos que vienen de una obra construida tienen techo por definición:
+   * un ahumadero sin techo no ahúma nada.
+   */
+  resguardoDe(horno) {
+    const r = horno.def?.resguardo;
+    return typeof r === 'number' ? r : RESGUARDO_DE_OBRA;
+  }
+
+  /** Precipitación efectiva que le llega a este horno, de 0 a 1. */
+  _precipitacionSobre(horno, est) {
+    const cae = (est?.lluvia || 0) + (est?.nieve || 0) * this.humedad.factorNieve;
+    return cae * (1 - this.resguardoDe(horno));
+  }
+
+  /**
+   * Lo que se opone a que prenda: el horno mojado, el agua que está cayendo
+   * ahora y el suelo empapado de los días anteriores. Por encima de 1 no hay
+   * yesca que alcance.
+   */
+  resistenciaAPrender(horno, est = this.ambiente) {
+    const expuesto = 1 - this.resguardoDe(horno);
+    const suelo = (est?.humedadSuelo || 0) * expuesto;
+    return Math.min(1.6,
+      (horno.mojado || 0) * 0.95
+      + this._precipitacionSobre(horno, est) * 1.15
+      + suelo * 0.5);
+  }
+
+  /**
+   * Qué hay en el bolso para ayudar a prender y cuánto descuenta.
+   *
+   * Se gasta de lo mejor a lo peor y sólo lo necesario: si con un pellet
+   * alcanza, no se queman cuatro. Nadie tira yesca de más, porque juntarla
+   * cuesta más que la leña.
+   */
+  _ayudaParaPrender(resistencia) {
+    let falta = resistencia;
+    const usos = [];
+    for (const e of this.encendedores) {
+      if (falta <= 0) break;
+      const hay = this.inventario.disponiblePara(e.recurso);
+      if (hay <= 0) continue;
+      const n = Math.min(hay, e.maximo ?? 99, Math.ceil(falta / e.poder));
+      if (n <= 0) continue;
+      usos.push({ recurso: e.recurso, cantidad: n, nota: e.nota });
+      falta -= n * e.poder;
+    }
+    return { usos, restante: Math.max(0, falta) };
+  }
+
+  /**
+   * Veredicto de encendido: si prende, con qué se prende, con cuánta leña
+   * extra y cuánto más lento. La leña mojada arde igual, sólo que hay que
+   * quemar más para llegar a la misma temperatura; lo que decide si llega a
+   * arder es lo que uno tenga para darle los primeros treinta segundos.
+   */
+  condicionEncendido(horno, est = this.ambiente) {
+    const h = this.humedad;
+    const bruta = this.resistenciaAPrender(horno, est);
+    const ayuda = this._ayudaParaPrender(bruta);
+    const r = ayuda.restante;
+
+    if (r >= h.umbralNoPrende) {
+      const conYesca = bruta - r > 0.01;
+      return {
+        prende: false, resistencia: r, resistenciaBruta: bruta,
+        usos: [], leniaExtra: 0, demora: 0,
+        motivo: this._precipitacionSobre(horno, est) > 0.2
+          ? (conYesca
+              ? 'Cae demasiada agua: ni con la yesca que tenés llega a agarrar'
+              : 'Está cayendo agua justo encima y no hay con qué prender')
+          : (conYesca
+              ? 'Está empapado: haría falta más yesca o unos pellets'
+              : 'Está todo empapado: no hay yesca que agarre'),
+      };
+    }
+    const leniaExtra = Math.round(r / h.umbralNoPrende * h.leniaExtraMaxima);
+    return {
+      prende: true, resistencia: r, resistenciaBruta: bruta,
+      usos: ayuda.usos, leniaExtra,
+      demora: r * h.demoraMaximaPorHumedad,
+    };
+  }
+
+  /** Cobra lo que cuesta el encendido: primero la yesca, después la leña extra. */
+  _cobrarEncendido(cond, horno) {
+    if (cond.leniaExtra) {
+      const hay = this.inventario.disponiblePara('lena');
+      if (hay < cond.leniaExtra) {
+        this.hud.aviso(`${horno.def.nombre}: no prende en mojado`,
+          `Con esta humedad hacen falta ${cond.leniaExtra} de leña extra y tenés ${hay}`);
+        return false;
+      }
+      this.inventario.consumirPara('lena', cond.leniaExtra);
+    }
+    for (const u of cond.usos || []) {
+      this.inventario.consumirPara(u.recurso, u.cantidad);
+    }
+    return true;
+  }
+
+  /** Cómo se lee lo que se gastó en prender: '2 × Yesca · 1 × Leña'. */
+  textoEncendido(cond) {
+    const partes = (cond.usos || []).map(u => `${u.cantidad} × ${nombreDe(u.recurso)}`);
+    if (cond.leniaExtra) partes.push(`${cond.leniaExtra} × ${nombreDe('lena')} extra`);
+    return partes.join(' · ');
+  }
+
+  /**
+   * Moja y seca los hornos al ritmo del mundo, y apaga los que se ahogan. Se
+   * llama todos los cuadros, pero el reloj que manda es el del juego: con el
+   * tiempo acelerado, una tormenta apaga la fogata en lo que dura un trote.
+   */
+  _correrHumedad(est, ahora) {
+    if (this._ultimoMs == null) { this._ultimoMs = ahora; return; }
+    const horas = Math.max(0, Math.min(6, (ahora - this._ultimoMs) / MS_HORA));
+    this._ultimoMs = ahora;
+    if (!horas) return;
+    const h = this.humedad;
+
+    for (const horno of this.hornos) {
+      const encendido = !!horno.trabajo && !horno.trabajo.apagado && !horno.trabajo.esperando;
+      const moja = this._precipitacionSobre(horno, est) * h.mojadoPorHoraDeLluvia;
+
+      // Seca el sol, seca el viento y sobre todo seca el propio fuego
+      const seca = h.secadoPorHora
+        * (0.35 + (1 - (est?.nubosidad ?? 0.5)) * 0.9 + Math.min(1, (est?.vientoKmh || 0) / 45))
+        + (encendido ? h.secadoDelPropioFuego : 0);
+
+      horno.mojado = Math.max(0, Math.min(1.2, (horno.mojado || 0) + (moja - seca) * horas));
+
+      if (encendido && horno.mojado >= h.umbralApagado) {
+        this._apagar(horno, est);
+      }
+    }
+  }
+
+  /**
+   * El agua gana. La hornada no se pierde: queda donde está, fría, y el
+   * progreso se congela hasta que alguien la vuelva a encender.
+   */
+  _apagar(horno, est) {
+    const t = horno.trabajo;
+    t.apagado = true;
+    const nieve = (est?.nieve || 0) > (est?.lluvia || 0);
+    this.hud.aviso(`Se apagó ${horno.def.nombre.toLowerCase()}`,
+      nieve ? `La nieve ahogó el fuego · ${t.receta.nombre} quedó a medio hacer`
+            : `La lluvia ahogó el fuego · ${t.receta.nombre} quedó a medio hacer`);
+    this.alCambiar?.();
+  }
+
+  /** Volver a prender una hornada apagada, con lo que cueste hoy. */
+  reencender(horno) {
+    const t = horno.trabajo;
+    if (!t?.apagado) return false;
+    const cond = this.condicionEncendido(horno);
+    if (!cond.prende) {
+      this.hud.aviso(`${horno.def.nombre} no vuelve a prender`, cond.motivo);
+      return false;
+    }
+    if (!this._cobrarEncendido(cond, horno)) return false;
+    t.apagado = false;
+    t.hasta += (t.hasta - t.desde) * cond.demora;
+    const costo = this.textoEncendido(cond);
+    this.hud.aviso(`${horno.def.nombre} de nuevo encendido`,
+      costo ? `Costó ${costo}` : 'Prendió a la primera');
+    this.alCambiar?.();
+    return true;
+  }
+
   // ── Cocción ───────────────────────────────────────────────────────────────
 
   recetasDe(hornoId) {
-    return this.recetas.filter(r => r.horno === hornoId);
+    return this.recetas.filter(r => {
+      if (r.horno !== hornoId) return false;
+      // Una receta que pide saber algo no se muestra hasta saberlo, y una que
+      // pide una especie no se muestra hasta haberla identificado: un remedio
+      // que no se sabe reconocer no es un remedio, es una hoja.
+      if (this.saberes?.faltaPara('recetas', r.id)) return false;
+      if (r.requiereEspecie && !this.codice?.identificadas?.has(r.requiereEspecie)) return false;
+      return true;
+    });
   }
 
   /** Estado de una receta: lista, sin material, u ocupada. */
   estadoReceta(receta, horno) {
-    if (horno.trabajo) return { estado: 'ocupado' };
+    if (horno.trabajo) return { estado: horno.trabajo.apagado ? 'apagado' : 'ocupado' };
     const falta = (receta.entra || [])
       .map(m => ({
         nombre: nombreDe(m.recurso), pide: m.cantidad,
@@ -152,10 +374,18 @@ export class Fundicion {
 
   iniciar(receta, horno) {
     const e = this.estadoReceta(receta, horno);
-    if (e.estado === 'ocupado') {
-      this.hud.aviso(`${horno.def.nombre} ocupado`, 'Esperá a que termine la carga anterior');
+    if (e.estado === 'ocupado' || e.estado === 'apagado') {
+      this.hud.aviso(`${horno.def.nombre} ocupado`, e.estado === 'apagado'
+        ? 'Hay una hornada apagada adentro: volvé a encenderla o esperá'
+        : 'Esperá a que termine la carga anterior');
       return false;
     }
+    const cond = this.condicionEncendido(horno);
+    if (!cond.prende) {
+      this.hud.aviso(`${horno.def.nombre}: no prende`, cond.motivo);
+      return false;
+    }
+    if (!this._cobrarEncendido(cond, horno)) return false;
     if (e.estado === 'falta') {
       this.hud.aviso(`Falta material para ${receta.nombre.toLowerCase()}`,
         e.falta.map(f => `${f.nombre} ${f.hay}/${f.pide}`).join(' · '));
@@ -164,12 +394,17 @@ export class Fundicion {
     for (const m of receta.entra || []) {
       this.inventario.consumirPara(normalizar(m.recurso), m.cantidad);
     }
+    const horas = (receta.horas || 1) * (1 + cond.demora);
     horno.trabajo = {
       receta,
       desde: this.tiempo.fecha.getTime(),
-      hasta: this.tiempo.fecha.getTime() + (receta.horas || 1) * MS_HORA,
+      hasta: this.tiempo.fecha.getTime() + horas * MS_HORA,
+      apagado: false,
     };
-    this.hud.aviso(`${receta.nombre} en el fuego`, receta.nota || `${receta.horas} h de cocción`);
+    const costo = this.textoEncendido(cond);
+    this.hud.aviso(`${receta.nombre} en el fuego`, costo
+      ? `Costó prenderlo: ${costo} · ${horas.toFixed(1)} h`
+      : (receta.nota || `${receta.horas} h de cocción`));
     this.alCambiar?.();
     return true;
   }
@@ -186,11 +421,23 @@ export class Fundicion {
    * Cierra las cargas terminadas. Si el bolso está lleno, la producción queda
    * esperando en el horno en vez de perderse: nadie tira una hornada.
    */
-  actualizar() {
+  actualizar(est) {
     const ahora = this.tiempo.fecha.getTime();
+    if (est) this.ambiente = est;
+    const anterior = this._ultimoMs ?? ahora;
+    this._correrHumedad(this.ambiente, ahora);
+
     for (const h of this.hornos) {
       const t = h.trabajo;
-      if (!t || ahora < t.hasta) continue;
+      if (!t) continue;
+      if (t.apagado) {
+        // El reloj del mundo sigue, la cocción no: se corre la ventana entera
+        const quieto = ahora - anterior;
+        t.desde += quieto;
+        t.hasta += quieto;
+        continue;
+      }
+      if (ahora < t.hasta) continue;
 
       const obtenido = [], quedan = [];
       for (const s of t.receta.sale || []) {

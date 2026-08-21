@@ -315,6 +315,24 @@ export class Eventos {
    * Daño y desgaste que los eventos causan directamente, aparte de lo que ya
    * hace el modelo térmico con el viento y la temperatura.
    */
+  /**
+   * Deja escrito qué fenómeno está matando, para que la pantalla de fin pueda
+   * explicarlo.
+   *
+   * Los tres fenómenos que más enseñan sobre esta cordillera —la avalancha y el
+   * rayo matan gente real todos los años en el Catedral y el Tronador— restaban
+   * salud sin tocar `causaMuerte`, así que morir aplastado por una placa de
+   * nieve mostraba el texto genérico del desgaste: "comer, beber y no dormir a
+   * la intemperie no son detalles". El único momento en que el jugador está
+   * prestando atención de verdad, gastado en decir cualquier cosa.
+   */
+  _marcarCausa(jugador, causa, ev, extra) {
+    jugador.causaExterna = { causa, fenomeno: ev, ...extra };
+    // Sellada con la hora: un rayo de hace tres días no explica una muerte por
+    // sed. El cuerpo decide después cuál de las dos causas estaba matando.
+    jugador.causaExternaEn = jugador.horasVividas;
+  }
+
   golpear(dt, est, jugador, horasJuego) {
     const p = jugador.posicion;
     for (const ev of est.eventos || []) {
@@ -323,13 +341,19 @@ export class Eventos {
         case 'incendio_forestal': {
           // Cerca del frente el aire quema y el humo asfixia
           const d = ev.distancia ?? 9999;
-          if (d < 90) jugador.salud = Math.max(0, jugador.salud - 42 * horasJuego);
+          if (d < 90) {
+            jugador.salud = Math.max(0, jugador.salud - 42 * horasJuego);
+            this._marcarCausa(jugador, 'incendio', ev, { distancia: Math.round(d) });
+          }
           else if (d < 600) jugador.energia = Math.max(0, jugador.energia - 14 * horasJuego);
           break;
         }
         case 'avalancha': {
           if (this.mundo.pendienteEn(p.x, p.z) > 0.5) {
             jugador.salud = Math.max(0, jugador.salud - 55 * horasJuego);
+            this._marcarCausa(jugador, 'avalancha', ev, {
+              pendienteGrados: this.mundo.pendienteEn(p.x, p.z) * 180 / Math.PI,
+            });
           }
           break;
         }
@@ -340,6 +364,7 @@ export class Eventos {
           // Los rayos caen en lo alto y en lo expuesto
           if (p.y > 1700 && Math.random() < 0.0009 * ev.intensidad) {
             jugador.salud = Math.max(0, jugador.salud - 35);
+            this._marcarCausa(jugador, 'rayo', ev, {});
             this.hud?.aviso('Cayó un rayo cerca',
               'En tormenta, la cumbre y la arista son el peor lugar del cerro. Se baja y se busca terreno bajo, lejos de árboles aislados.');
           }

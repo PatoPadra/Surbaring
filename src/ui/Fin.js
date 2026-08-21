@@ -107,6 +107,39 @@ export class Fin {
           föhn del viento de sotavento sube la temperatura varios grados de golpe.
           <br><br><b>Qué lo habría evitado:</b> sombra, agua y dejar de correr con
           el bolso cargado.`;
+      case 'avalancha': {
+        const g = m.pendienteGrados != null ? `${Math.round(m.pendienteGrados)}°` : 'fuerte';
+        const senal = m.fenomeno?.senalesPrevias;
+        return `Te tapó una avalancha. Estabas en una ladera de ${g}: la mayoría de las placas
+          se sueltan entre 30 y 45 grados, porque por debajo de 25 la nieve no desliza y por
+          encima de 50 no llega a acumularse. Debajo de la nieve el cuerpo pierde calor y aire
+          en minutos, no en horas.
+          <br><br><b>Qué la habría evitado:</b> ${senal
+            ? `el aviso estaba, y decía: «${senal}».`
+            : 'leer el aviso previo, que el juego siempre da antes.'}
+          Después de una nevada grande la nieve nueva tarda uno o dos días en asentarse. En
+          ese lapso se cruza por el filo o por el fondo del valle, nunca por la mitad de la
+          ladera.`;
+      }
+      case 'rayo':
+        return `Te alcanzó un rayo a ${alt} m. En tormenta, la cumbre, la arista y el árbol
+          aislado son los tres peores lugares del cerro: la descarga busca lo más alto y lo
+          más puntiagudo, y vos con el bolso al hombro eras eso.
+          <br><br><b>Qué lo habría evitado:</b> contar. Entre el relámpago y el trueno hay
+          unos tres segundos por kilómetro, porque el sonido va a 343 m/s. Si contás menos de
+          treinta, la tormenta está a menos de diez kilómetros y ya estás dentro de su
+          alcance: ahí se baja, sin discutirlo. Perder cien metros de altura vale más que
+          cualquier refugio que puedas armar arriba.`;
+      case 'incendio': {
+        const d = m.distancia != null ? `a unos ${m.distancia} m del frente` : 'demasiado cerca del frente';
+        return `Te alcanzó el fuego. Estabas ${d}. Un incendio de bosque no mata sobre todo
+          por la llama: mata por el aire, que a esa distancia viene a varios cientos de grados
+          y sin oxígeno útil.
+          <br><br><b>Qué lo habría evitado:</b> mirar para dónde va, no dónde está. El fuego
+          corre cuesta arriba mucho más rápido que en llano —el calor precalienta el
+          combustible de arriba— y va con el viento. Se escapa hacia abajo y de costado,
+          cruzando hacia lo ya quemado o hacia el agua, nunca subiendo por delante de él.`;
+      }
       default:
         return `Te alcanzó el desgaste. Comer, beber y no dormir a la intemperie no son
           detalles en la cordillera: son el juego.`;

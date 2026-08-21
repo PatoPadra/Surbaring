@@ -139,7 +139,7 @@ export class Construccion {
       if (v.castigo > 0) {
         this.saberes.puntos = Math.max(0, this.saberes.puntos - v.castigo);
       }
-      this.hud.aviso(v.titulo, v.detalle);
+      this.hud.negativa(v, { fecha: this.tiempo?.textoFecha });
       return null;
     }
 

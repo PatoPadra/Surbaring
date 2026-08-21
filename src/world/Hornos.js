@@ -74,10 +74,11 @@ export class Hornos {
     return nodo;
   }
 
-  /** Enciende el fuego de los que están cociendo y lo hace latir. */
+  /** Enciende el fuego de los que están cociendo y lo hace latir.
+   *  Un horno apagado por la lluvia se queda a oscuras, y se nota de lejos. */
   actualizar(t) {
     for (const p of this.piezas) {
-      const activo = !!p.horno.trabajo;
+      const activo = !!p.horno.trabajo && !p.horno.trabajo.apagado;
       const objetivo = activo ? 2.6 + Math.sin(t * 7.3 + p.malla.position.x) * 0.5 : 0;
       p.brasa.intensity += (objetivo - p.brasa.intensity) * 0.15;
     }

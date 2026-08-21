@@ -52,6 +52,7 @@ import { Opciones } from './ui/Opciones.js';
 import { Bolso } from './ui/Bolso.js';
 import { Fin } from './ui/Fin.js';
 import { Partida } from './systems/Partida.js';
+import { Norma } from './ui/Norma.js';
 import { Aspecto } from './systems/Aspecto.js';
 import { Cuerpo } from './entities/Cuerpo.js';
 import { Personaje } from './ui/Personaje.js';
@@ -208,7 +209,11 @@ async function iniciar() {
   const hud = new HUD(mundo, jugador, tiempo);
   const inventario = new Inventario(38);
   const saberes = new Saberes(historia, inventario);
-  const codice = new Codice({ flora, fauna, geografia, historia, mundo, hud, saberes, inventario });
+  // La ley del parque, con panel propio y registro que sobrevive a la muerte.
+  // La negativa es el contenido del juego y hasta acá duraba 4,2 segundos.
+  const norma = new Norma();
+  hud.norma = norma;
+  const codice = new Codice({ flora, fauna, geografia, historia, mundo, hud, saberes, inventario, norma });
   // La normativa de caza se carga aparte y con tolerancia: si el dataset
   // todavía no está, el sistema cae en sus reglas mínimas —nativas nunca,
   // exóticas sí— en vez de impedir que el juego arranque.
@@ -237,7 +242,7 @@ async function iniciar() {
     mundo, limites, jugador, inventario, saberes, hud, historia,
   });
   const fundicion = new Fundicion(datosMineria, {
-    inventario, saberes, jugador, tiempo, hud, limites, mundo,
+    inventario, saberes, jugador, tiempo, hud, limites, mundo, codice,
   });
   const hornos = new Hornos();
   escena.add(hornos.grupo);
@@ -276,6 +281,11 @@ async function iniciar() {
   recoleccion.caza = caza;
   recoleccion.mineria = mineria;
   recoleccion.pesca = pesca;
+
+  // Los tres datasets de normativa, ya cargados, a la pestaña que los muestra
+  codice.normativa = {
+    caza: normativaCaza, mineria: datosMineria, construccion: datosConstruccion,
+  };
 
   const taller = new Taller({ fundicion, mineria, construccion, limites, jugador, inventario });
 
@@ -333,6 +343,21 @@ async function iniciar() {
     // Sólo el horno nuevo: encadenar dos veces el mismo material lo rompería
     if (h) dibujarHorno(h);
     return h;
+  };
+
+  /** Lo que se aprende y cambia un número del cuerpo, no una regla. */
+  const CAPACIDAD_BASE = 38;
+  const aplicarEfectos = () => {
+    // La cestería de junco no es un adorno histórico: un canasto es capacidad
+    // de carga, y por eso es de las primeras cosas que se hacen en cualquier
+    // lugar del mundo donde haya fibra.
+    inventario.capacidadKg = CAPACIDAD_BASE + saberes.suma('capacidadExtraKg');
+  };
+  const desbloquearOriginal = saberes.desbloquear.bind(saberes);
+  saberes.desbloquear = (tec) => {
+    const r = desbloquearOriginal(tec);
+    aplicarEfectos();
+    return r;
   };
 
   saberes.alCambiar = (p, motivo) => {
@@ -467,14 +492,16 @@ async function iniciar() {
 
   // La partida guardada se repone recién acá: necesita el mundo entero armado
   // —obras, hornos, calidad— para volver a poner cada cosa donde estaba.
+  aplicarEfectos();
   if (partida.cargar()) {
+    aplicarEfectos();
     hud.aviso('Partida repuesta',
       `${construccion.obras.length} obras en pie · ${inventario.pesoKg.toFixed(1)} kg en el bolso`);
   }
 
   /** ¿Hay algún panel abierto? Sirve para no encimarlos. */
   const hayPanel = () => codice.abierto || taller.abierto || mapa.abierto
-    || bolso.abierto || opciones.abierto || fin.abierto;
+    || bolso.abierto || opciones.abierto || fin.abierto || norma.abierto;
 
   // Con el puntero capturado, Escape se lo come el navegador para liberarlo y la
   // tecla nunca llega acá. Lo que sí llega es que el puntero se soltó, y eso es
@@ -485,7 +512,8 @@ async function iniciar() {
   });
   addEventListener('keydown', (ev) => {
     if (ev.code !== 'Escape') return;
-    if (opciones.abierto) opciones.cerrar();
+    if (norma.abierto) norma.cerrar();
+    else if (opciones.abierto) opciones.cerrar();
     else if (mapa.abierto) mapa.alternar();
     else if (bolso.abierto) bolso.alternar();
     else if (taller.abierto) taller.alternar();
@@ -771,7 +799,7 @@ async function iniciar() {
     inventario, saberes, recoleccion, caza, audio,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima, oclusion, color, calidad,
-    exploracion, mapa, bolso, opciones, fin, partida,
+    exploracion, mapa, bolso, opciones, fin, partida, norma,
   };
 
   if (import.meta.env.DEV) {

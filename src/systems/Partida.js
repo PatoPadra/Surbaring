@@ -177,7 +177,7 @@ export class Partida {
       hornos: (this.fundicion?.hornos || [])
         // Los que vienen de una obra se rehacen al reponer la obra
         .filter(h => !(this.construccion?.obras || []).some(o => o.obra.id === h.def.id))
-        .map(h => ({ id: h.def.id, x: h.x, y: h.y, z: h.z, trabajo: this._serializarTrabajo(h.trabajo) })),
+        .map(h => ({ id: h.def.id, x: h.x, y: h.y, z: h.z, mojado: h.mojado || 0, trabajo: this._serializarTrabajo(h.trabajo) })),
       muerte: this.ultimaMuerte,
     };
   }
@@ -196,6 +196,8 @@ export class Partida {
       // `hasta` es Infinity mientras la hornada espera lugar en el bolso
       hasta: Number.isFinite(t.hasta) ? t.hasta : null,
       esperando: !!t.esperando,
+      // Una hornada apagada por la lluvia vuelve apagada
+      apagado: !!t.apagado,
       sale: t.sale || null,
     };
   }
@@ -209,6 +211,7 @@ export class Partida {
       desde: g.desde ?? Date.now(),
       hasta: g.hasta ?? Infinity,
       esperando: !!g.esperando,
+      apagado: !!g.apagado,
     };
     if (g.sale) t.sale = g.sale;
     return t;
@@ -320,7 +323,7 @@ export class Partida {
     for (const g of lista) {
       const def = catalogo.get(g.id);
       if (!def) continue;
-      const horno = { def, x: g.x, y: g.y, z: g.z, trabajo: this._reponerTrabajo(g.trabajo) };
+      const horno = { def, x: g.x, y: g.y, z: g.z, mojado: g.mojado || 0, trabajo: this._reponerTrabajo(g.trabajo) };
       this.fundicion.hornos.push(horno);
       this.hornos?.agregar(horno);
     }

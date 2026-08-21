@@ -183,6 +183,20 @@ export class HUD {
     return mejor;
   }
 
+  /**
+   * Una negativa de la ley. Va por acá y no por `aviso` porque no son lo mismo:
+   * "No entra nada más" tiene diecinueve caracteres y la explicación de por qué
+   * no se caza un huemul tiene quinientos treinta y seis. Las graves abren el
+   * panel de normativa, que espera; las leves siguen siendo un cartel.
+   *
+   * `this.norma` lo cablea main. Si no está, todo cae en el cartel de siempre:
+   * el juego tiene que poder arrancar sin esta pieza.
+   */
+  negativa(v, ctx) {
+    if (this.norma?.mostrar(v, ctx)) return;
+    this.aviso(v.titulo, v.detalle, v.gravedad === 'grave' ? 9000 : 4200);
+  }
+
   aviso(titulo, detalle = '', duracion = 4200) {
     this.elAviso.querySelector('.t').textContent = titulo;
     this.elAviso.querySelector('.d').textContent = detalle;

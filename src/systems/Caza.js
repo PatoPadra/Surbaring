@@ -121,6 +121,23 @@ export class Caza {
       };
     }
 
+    // Y hace falta con qué. El juego dejaba abatir un ciervo colorado de ciento
+    // ochenta kilos a mano limpia, con el arco y la punta de proyectil
+    // comprados en el árbol y sin ninguna función: treinta y ocho puntos de
+    // saber que no habilitaban nada.
+    const arma = this.saberes?.faltaPara('caza');
+    if (arma) {
+      return {
+        permitido: false, gravedad: 'leve', jurisdiccion: j,
+        titulo: `${esp.nombreComun}: no tenés con qué`,
+        detalle: `A mano limpia no se caza un animal de este porte. Hace falta aprender `
+          + `«${arma.nombre}» en el códice: cuesta ${arma.costoSaber} puntos de saber y pide `
+          + `caña colihue y un tendón, que sale de aprovechar restos sin matar nada.`,
+        color: '#d08a3a',
+        castigo: 0,
+      };
+    }
+
     const temp = this._enTemporada(regla, mes);
     if (!temp.dentro) {
       return {
@@ -147,17 +164,32 @@ export class Caza {
    * Intento de caza. Nunca ejecuta en silencio: siempre explica.
    * @returns {boolean} si se concretó
    */
+  /** Dónde y cuándo pasó, para que el registro de normativa se pueda releer. */
+  _contextoNorma() {
+    const j = this.limites && this.jugador
+      ? this.limites.etiqueta(this.jugador.posicion.x, this.jugador.posicion.z).nombre
+      : '';
+    return { lugar: j, fecha: this.tiempo?.textoFecha || '' };
+  }
+
   intentar(animal, mes) {
     const p = this.jugador?.posicion;
     const v = this.evaluar(animal.esp, mes, p?.x, p?.z);
+    // La nota educativa de la especie viajaba hasta acá y sólo se mostraba
+    // cuando la caza era LEGAL. En el camino de la negativa, que es donde el
+    // jugador está prestando atención, no se veía nunca.
+    if (!v.nota) v.nota = this.reglaPorEspecie.get(animal.esp.id)?.notaEducativa
+      || animal.esp.notaEducativa || '';
 
     if (!v.permitido) {
       this.infracciones++;
       // La penalización es de saber, no de salud: el costo de no entender el
       // lugar es no entenderlo.
       const castigo = v.castigo ?? (v.gravedad === 'grave' ? 8 : 3);
+      // El panel dice lo que costó, así que el veredicto tiene que llevarlo
+      v.castigo = castigo;
       this.saberes.puntos = Math.max(0, this.saberes.puntos - castigo);
-      this.hud.aviso(v.titulo, v.detalle);
+      this.hud.negativa(v, this._contextoNorma());
       // Aunque no se pueda cazar, verla y saber por qué también enseña
       this.codice.registrarFauna(animal.esp, true);
       return false;

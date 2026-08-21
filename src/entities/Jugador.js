@@ -558,8 +558,14 @@ export class Jugador {
     if (this.vivo && this.salud <= 0) {
       this.vivo = false;
       causas.sort((a, b) => b[1] - a[1]);
+      // Un fenómeno reciente manda sobre el desgaste: si una avalancha te bajó
+      // de 100 a 0 en cuatro minutos, no te mató el hambre. Media hora de juego
+      // de vigencia alcanza; pasada ésa, el golpe ya no explica nada.
+      const externa = (this.horasVividas - (this.causaExternaEn ?? -99)) < 0.5
+        ? this.causaExterna : null;
       this.causaMuerte = {
-        causa: causas[0] ? causas[0][0] : 'agotamiento',
+        ...(externa || {}),
+        causa: externa?.causa || (causas[0] ? causas[0][0] : 'agotamiento'),
         porHora: causas[0] ? +causas[0][1].toFixed(1) : 0,
         altitud: this.posicion.y,
         temperaturaCuerpo: this.temperatura,

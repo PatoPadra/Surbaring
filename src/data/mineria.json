@@ -157,7 +157,9 @@
           "recurso": "piedra",
           "cantidad": 4
         }
-      ]
+      ],
+      "resguardo": 0.0,
+      "notaHumedad": "Fuego abierto: la primera gota le cae encima. Bajo lluvia no dura, y con el piso mojado cuesta prenderla."
     },
     {
       "id": "carbonera",
@@ -173,7 +175,9 @@
           "recurso": "arcilla",
           "cantidad": 4
         }
-      ]
+      ],
+      "resguardo": 0.55,
+      "notaHumedad": "La cubierta de tierra la protege bastante, pero una lluvia larga la empapa y la ahoga: la hornada se corta."
     },
     {
       "id": "horno_barro",
@@ -193,7 +197,9 @@
           "recurso": "arena",
           "cantidad": 4
         }
-      ]
+      ],
+      "resguardo": 0.9,
+      "notaHumedad": "La bóveda de arcilla es un techo: adentro llueve poco y el fuego aguanta casi cualquier temporal."
     },
     {
       "id": "fragua",
@@ -213,7 +219,9 @@
           "recurso": "cuero",
           "cantidad": 2
         }
-      ]
+      ],
+      "resguardo": 0.72,
+      "notaHumedad": "La campana desvía el agua, pero el hogar es bajo y abierto de frente."
     }
   ],
   "recetas": [
@@ -565,6 +573,117 @@
       ],
       "horas": 20,
       "nota": "Sin cemento portland la mezcla se apoya en la puzolana: la pómez volcánica finamente molida fragua con el álcali y da un conglomerado que endurece con el agua. Es el principio del hormigón romano."
+    },
+    {
+      "id": "pellet_resina",
+      "nombre": "Pellets de resina",
+      "horno": "fogata",
+      "entra": [
+        {
+          "recurso": "pinocha",
+          "cantidad": 6
+        },
+        {
+          "recurso": "resina",
+          "cantidad": 1
+        },
+        {
+          "recurso": "lena",
+          "cantidad": 1
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "pellet",
+          "cantidad": 4
+        }
+      ],
+      "horas": 0.8,
+      "nota": "Pinocha apelmazada con resina derretida. Se hacen con fuego y con tiempo, en un día bueno, para el día que llueve y no prende nada: la resina arde mojada y sostiene la llama hasta que agarra la leña."
+    },
+    {
+      "id": "infusion_canelo",
+      "nombre": "Infusión de canelo",
+      "horno": "fogata",
+      "horas": 0.5,
+      "requiereEspecie": "canelo",
+      "entra": [
+        {
+          "recurso": "corteza",
+          "cantidad": 2
+        },
+        {
+          "recurso": "agua",
+          "cantidad": 2
+        },
+        {
+          "recurso": "lena",
+          "cantidad": 1
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "infusion_canelo",
+          "cantidad": 2
+        }
+      ],
+      "nota": "La corteza del foye es rica en vitamina C y se usó contra el escorbuto cuando una tripulación llevaba meses sin fruta. Es además el árbol sagrado del pueblo mapuche: el mismo que se planta en el rewe. La misma planta sostiene la ceremonia y la salud, y separarlas en dos categorías es una manera de mirar que el mapuzugun no necesita."
+    },
+    {
+      "id": "emplasto_maqui",
+      "nombre": "Emplasto de maqui",
+      "horno": "fogata",
+      "horas": 0.5,
+      "requiereEspecie": "maqui",
+      "entra": [
+        {
+          "recurso": "fruto",
+          "cantidad": 3
+        },
+        {
+          "recurso": "fibra",
+          "cantidad": 1
+        },
+        {
+          "recurso": "agua",
+          "cantidad": 1
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "emplasto_maqui",
+          "cantidad": 2
+        }
+      ],
+      "nota": "El fruto y las hojas del maqui se usan como antiinflamatorio y cicatrizante: machacados y aplicados en frío sobre un golpe o una herida. No se toma: se pone encima y se ata con fibra."
+    },
+    {
+      "id": "lavado_michay",
+      "nombre": "Lavado de michay",
+      "horno": "fogata",
+      "horas": 0.5,
+      "requiereEspecie": "michay",
+      "entra": [
+        {
+          "recurso": "corteza",
+          "cantidad": 2
+        },
+        {
+          "recurso": "agua",
+          "cantidad": 3
+        },
+        {
+          "recurso": "lena",
+          "cantidad": 1
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "lavado_michay",
+          "cantidad": 2
+        }
+      ],
+      "nota": "La corteza amarilla del michay contiene berberina, un antiséptico que la medicina popular del sur usó mucho antes de que se le pusiera ese nombre. Hervida da un agua para lavar heridas antes de taparlas: en la cordillera una herida sucia que se moja se infecta en un día, y así es como un problema chico se vuelve grave."
     }
   ],
   "fuego": {
@@ -575,7 +694,41 @@
       "detalle": "Encender fuego dentro del Parque Nacional fuera de un sitio habilitado está prohibido. No es una formalidad: la mayoría de los incendios del Nahuel Huapi tienen origen humano, y una carbonera es un fuego que arde días sin vigilancia.",
       "castigoSaber": 6
     },
-    "notaEnReserva": "En Reserva Nacional hay áreas de uso público con fogones habilitados. Igual rige la veda de fuego cuando el riesgo es alto."
+    "notaEnReserva": "En Reserva Nacional hay áreas de uso público con fogones habilitados. Igual rige la veda de fuego cuando el riesgo es alto.",
+    "humedad": {
+      "explicacion": "El agua no discute con el fuego: lo apaga. Una fogata al descubierto no aguanta una lluvia sostenida, y prender con leña mojada o sobre suelo empapado puede costar media caja de fósforos y toda la yesca que uno junte. Lo que salva es el techo: la bóveda de un horno de barro o la cubierta de tierra de una carbonera dejan pasar apenas nada, y por eso una carbonera puede arder días bajo llovizna y morirse en un temporal.",
+      "umbralApagado": 0.72,
+      "umbralNoPrende": 0.95,
+      "mojadoPorHoraDeLluvia": 1.4,
+      "factorNieve": 0.5,
+      "secadoPorHora": 0.22,
+      "secadoDelPropioFuego": 0.35,
+      "leniaExtraMaxima": 3,
+      "demoraMaximaPorHumedad": 0.4
+    },
+    "encendedores": {
+      "explicacion": "Nadie prende un fuego con leña: se prende con algo que agarre la chispa y sostenga la llama treinta segundos. En el bosque andino eso es la barba de viejo seca —el liquen Usnea que cuelga del coihue y la lenga—, la pinocha de los pinos exóticos, que es la hojarasca más inflamable del parque, y, si uno fue previsor, un pellet de pinocha y resina hecho el día que estaba lindo. La yesca no reemplaza a la leña: le compra el tiempo que necesita para prender.",
+      "usa": [
+        {
+          "recurso": "pellet",
+          "poder": 0.5,
+          "maximo": 3,
+          "nota": "La resina arde aunque esté todo mojado."
+        },
+        {
+          "recurso": "yesca",
+          "poder": 0.28,
+          "maximo": 4,
+          "nota": "Barba de viejo seca: agarra la chispa a la primera."
+        },
+        {
+          "recurso": "pinocha",
+          "poder": 0.12,
+          "maximo": 8,
+          "nota": "Prende fuerte y rápido, pero se consume en nada."
+        }
+      ]
+    }
   },
   "canteras": {
     "explicacion": "Una cantera se abre donde el material está y donde la ley lo permite, y esas dos condiciones casi nunca coinciden. En este mapa el material suelto abunda en los valles glaciarios y en las terrazas del este, pero el área núcleo del parque cubre casi todo el oeste.",

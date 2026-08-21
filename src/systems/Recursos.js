@@ -51,6 +51,13 @@ export const RECURSOS = {
   tronco:        { nombre: 'Tronco', kg: 6.0, cat: 'material' },
   corteza:       { nombre: 'Corteza', kg: 0.2, cat: 'material' },
   fibra:         { nombre: 'Fibra vegetal', kg: 0.05, cat: 'material' },
+  // Lo que prende primero. Pesa casi nada y vale una noche: la barba de viejo
+  // seca agarra chispa incluso con humedad en el aire, y la pinocha de los
+  // pinos exóticos es la hojarasca más inflamable del parque —la misma que
+  // convierte una plantación de ponderosa en una mecha—. Juntarla es sacarle
+  // combustible al bosque.
+  yesca:         { nombre: 'Yesca de barba de viejo', kg: 0.01, cat: 'material' },
+  pinocha:       { nombre: 'Pinocha', kg: 0.04, cat: 'material' },
   resina:        { nombre: 'Resina', kg: 0.1, cat: 'material' },
   cana:          { nombre: 'Caña colihue', kg: 0.3, cat: 'material' },
   semilla:       { nombre: 'Semillas', kg: 0.02, cat: 'material' },
@@ -78,6 +85,22 @@ export const RECURSOS = {
   carne_asada:   { nombre: 'Carne asada', kg: 0.32, cat: 'alimento', nutre: 40, hidrata: 1 },
   pescado_asado: { nombre: 'Pescado asado', kg: 0.2, cat: 'alimento', nutre: 29, hidrata: 2 },
   agua_segura:   { nombre: 'Agua hervida', kg: 1.0, cat: 'alimento', nutre: 0, hidrata: 34 },
+  // ── La botica del bosque
+  //
+  // Hasta acá el juego no tenía ninguna forma de curarse. La única recuperación
+  // era 1,4 de salud por hora de juego y sólo con hambre y sed por encima de 40,
+  // una condición que se apaga sola a la media hora: una caída de veinte metros
+  // costaba 66 de salud y casi dos horas reales de caminar sin lastimarse. Al
+  // mismo tiempo, diecisiete especies de flora.json tenían el campo
+  // `usoMedicinal` poblado e investigado, y no hacían absolutamente nada.
+  //
+  // Esto es lo que cierra el círculo de la tesis: identificar una especie deja
+  // de ser un punto abstracto y pasa a ser la razón por la que sobrevivís a la
+  // noche siguiente. Y como el conocimiento no se pierde al morir, se puede
+  // volver a hacer.
+  infusion_canelo: { nombre: 'Infusión de canelo', kg: 0.4, cat: 'alimento', nutre: 4, hidrata: 20, cura: 8 },
+  emplasto_maqui:  { nombre: 'Emplasto de maqui', kg: 0.25, cat: 'remedio', cura: 15 },
+  lavado_michay:   { nombre: 'Lavado de michay', kg: 0.4, cat: 'remedio', cura: 10, seca: true },
   pescado:       { nombre: 'Pescado', kg: 0.25, cat: 'alimento', nutre: 16, hidrata: 3 },
 
   // ── De cantera y de recuperación ─────────────────────────────────────────
@@ -109,6 +132,10 @@ export const RECURSOS = {
   poste:         { nombre: 'Poste', kg: 4.5, cat: 'material' },
   charqui:       { nombre: 'Charqui', kg: 0.12, cat: 'alimento', nutre: 26, hidrata: 0 },
   harina:        { nombre: 'Harina', kg: 0.5, cat: 'alimento', nutre: 14, hidrata: 0 },
+  // Pinocha y aserrín aglomerados con resina: el encendedor casero de toda la
+  // vida. Se hace en un día seco para el día que llueve, que es exactamente
+  // para lo que sirve.
+  pellet:        { nombre: 'Pellet de resina', kg: 0.06, cat: 'material' },
 };
 
 /**
@@ -158,6 +185,14 @@ export function cosechaDe(esp) {
     const base = esp.rendimientoRecurso || 5;
     // Rinde una fracción: se toma lo que la planta puede ceder sin morir
     salida.push({ recurso: k, cantidad: Math.max(1, Math.round(base * 0.14)) });
+  }
+  // Algunas especies dan además algo que no es su recurso principal: la
+  // hojarasca de los pinos exóticos, que se junta del suelo sin tocar el árbol.
+  if (esp.recursoExtra) {
+    salida.push({
+      recurso: normalizar(esp.recursoExtra.recurso),
+      cantidad: esp.recursoExtra.cantidad || 1,
+    });
   }
   if (esp.comestible && esp.parteComestible) {
     const parte = normalizar(esp.parteComestible);

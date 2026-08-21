@@ -76,6 +76,9 @@ export class Taller {
         const horno = this.fundicion.cercano();
         const receta = this.fundicion.recetas.find(r => r.id === id);
         if (horno && receta) this.fundicion.iniciar(receta, horno);
+      } else if (accion === 'encender') {
+        const horno = this.fundicion.cercano();
+        if (horno) this.fundicion.reencender(horno);
       } else if (accion === 'retirar') {
         const horno = this.fundicion.cercano();
         if (horno) this.fundicion.retirar(horno);
@@ -139,6 +142,15 @@ export class Taller {
       html += `<div class="tl-fila"><b>${horno.trabajo.receta.nombre}</b>
         <small>Terminada y esperando lugar en el bolso</small>
         <button data-accion="retirar">Retirar</button></div>`;
+    } else if (horno.trabajo?.apagado) {
+      const pr = Math.round(this.fundicion.progreso(horno) * 100);
+      const cond = this.fundicion.condicionEncendido(horno);
+      html += `<div class="tl-fila"><b>${horno.trabajo.receta.nombre} · apagada</b>
+        <small>El agua ahogó el fuego con la hornada al ${pr} %. Queda ahí hasta que la vuelvas a prender.<br>
+          <span style="opacity:.75">${cond.prende
+            ? (this.fundicion.textoEncendido(cond) ? `Prenderla de nuevo cuesta ${this.fundicion.textoEncendido(cond)}` : 'Ahora prende sin problema')
+            : cond.motivo}</span></small>
+        <button data-accion="encender" ${cond.prende ? '' : 'disabled'}>Encender</button></div>`;
     } else if (horno.trabajo) {
       const pr = Math.round(this.fundicion.progreso(horno) * 100);
       html += `<div class="tl-fila"><b>${horno.trabajo.receta.nombre}</b>
@@ -146,6 +158,13 @@ export class Taller {
         <small style="flex:0 0 3rem;text-align:right">${pr}%</small></div>`;
     } else {
       const recetas = this.fundicion.recetasDe(horno.def.id);
+      const cond = this.fundicion.condicionEncendido(horno);
+      if (!cond.prende || cond.leniaExtra || cond.usos?.length) {
+        html += `<div class="tl-fila"><b>${cond.prende ? 'Cuesta prender' : 'No prende'}</b>
+          <small>${cond.prende
+            ? `Está mojado: prenderlo se lleva ${this.fundicion.textoEncendido(cond)} y la carga tarda un ${Math.round(cond.demora * 100)} % más.`
+            : cond.motivo}${horno.def.notaHumedad ? `<br><span style="opacity:.75">${horno.def.notaHumedad}</span>` : ''}</small></div>`;
+      }
       for (const r of recetas) {
         const e = this.fundicion.estadoReceta(r, horno);
         const entra = (r.entra || []).map(m => `${m.cantidad} ${m.recurso.replace(/_/g, ' ')}`).join(' · ');
