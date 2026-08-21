@@ -40,6 +40,8 @@ export class Jugador {
     this.temperatura = 36.6;
     this.oxigeno = 100;
     this.pesoCargado = 0;
+    /** Cuánto fuego hay a mano, de 0 a 1. Lo escribe el bucle cada cuadro. */
+    this.fuego = 0;
 
     // Muerte: qué la causó y cuánto se aguantó. El juego no la usa para
     // castigar sino para explicar, así que hace falta guardar el contexto.
@@ -305,10 +307,24 @@ export class Jugador {
     // hace que un refugio de montaña sirva: en la cumbre del Catedral no queda
     // cómodo, queda apenas por encima del umbral de daño. Sin fuego, eso es
     // exactamente lo que un refugio de piedra da.
-    const ambienteSentido = ambiente + 10 * abrigo;
+    // El fuego. Hasta acá el juego lo tenía todo construido —fogatas, hornos,
+    // hornadas, jurisdicciones del fuego— y el calor no llegaba al cuerpo: se
+    // podía estar sentado contra las llamas muriéndose de hipotermia. Encender
+    // fuego es la primera respuesta humana al frío y tenía que ser la primera
+    // respuesta del juego.
+    //
+    // Catorce grados es más de lo que da un refugio de piedra, y está bien que
+    // así sea: el refugio te guarda del viento, el fuego te devuelve calor. Y a
+    // diferencia del abrigo, hay que alimentarlo con leña, así que el calor de
+    // la noche se paga juntando durante el día. Ése es el bucle.
+    const fuego = Math.min(1, this.fuego || 0);
+    const ambienteSentido = ambiente + 10 * abrigo + 14 * fuego;
     // Enfriamiento por viento: crece rápido al principio y después satura
     const sensacion = ambienteSentido - Math.min(11, Math.pow(vientoSentido, 0.62) * 0.9);
-    const mojado = this.enAgua || ((clima?.lluvia ?? 0) > 0.2 && abrigo < 0.5);
+    // El fuego además seca: salir del agua y secarse al fuego es media hora de
+    // vida en la cordillera. No seca si seguís adentro del lago, claro.
+    const mojado = this.enAgua
+      || ((clima?.lluvia ?? 0) > 0.2 && abrigo < 0.5 && fuego < 0.5);
 
     // El cuerpo tiende al equilibrio con la sensación térmica, más lento si
     // está abrigado por el propio esfuerzo

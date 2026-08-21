@@ -35,6 +35,11 @@ const EQUIVALE_A = {
   ladrillo: ['muro'],
   ceramica: ['vasija', 'olla'],
   acero: ['hierro'],
+  // Lo cocinado sirve donde se pedía lo crudo: una receta que pide carne se
+  // conforma con el asado, no al revés.
+  carne_asada: ['carne'],
+  pescado_asado: ['pescado'],
+  agua_segura: ['agua'],
   chapa: ['lata'],
 };
 
@@ -66,6 +71,13 @@ export const RECURSOS = {
   lana:          { nombre: 'Lana', kg: 0.15, cat: 'material' },
   asta:          { nombre: 'Asta', kg: 0.6, cat: 'material' },
   carne:         { nombre: 'Carne', kg: 0.4, cat: 'alimento', nutre: 22, hidrata: 2 },
+  // Lo que sale del fuego. Cocinar es la primera tecnología de todas y la que
+  // más rinde: la misma pieza alimenta casi el doble, y el agua hervida deja de
+  // ser una apuesta. Que el asado pese un poco menos que el crudo no es un
+  // detalle decorativo: la cocción evapora agua.
+  carne_asada:   { nombre: 'Carne asada', kg: 0.32, cat: 'alimento', nutre: 40, hidrata: 1 },
+  pescado_asado: { nombre: 'Pescado asado', kg: 0.2, cat: 'alimento', nutre: 29, hidrata: 2 },
+  agua_segura:   { nombre: 'Agua hervida', kg: 1.0, cat: 'alimento', nutre: 0, hidrata: 34 },
   pescado:       { nombre: 'Pescado', kg: 0.25, cat: 'alimento', nutre: 16, hidrata: 3 },
 
   // ── De cantera y de recuperación ─────────────────────────────────────────

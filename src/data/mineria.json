@@ -1,6 +1,5 @@
 {
   "resumen": "Dentro de un Parque Nacional argentino la minería está prohibida por la misma ley que prohíbe la caza. El artículo 5 de la Ley 22.351 incluye entre las actividades vedadas en los Parques Nacionales la exploración y la explotación mineras. La excepción no está en el Parque sino en la categoría vecina: en las Reservas Nacionales, que en el Nahuel Huapi rodean al área núcleo, la Administración de Parques Nacionales puede autorizar la explotación de canteras bajo reglamentación. Fuera de los límites del área protegida rige otro régimen: desde la reforma constitucional de 1994 el dominio originario de los recursos mineros es de las provincias, y la actividad se rige por el Código de Minería con el título de protección ambiental que le incorporó la Ley 24.585 de 1995. La segunda cosa que este archivo enseña es geológica y no jurídica: en la comarca andina del Nahuel Huapi no hay yacimientos metalíferos. El núcleo de las cumbres es el Batolito Norpatagónico, roca plutónica sin mineralización explotable, y lo que efectivamente se extrae alrededor de Bariloche son áridos —arena, ripio y canto rodado de los depósitos glacifluviales— más arcilla, tosca y piedra de construcción. El hierro argentino sale de Sierra Grande, en la misma provincia de Río Negro pero a unos seiscientos kilómetros al este, sobre el Atlántico. Por eso, en esta región, todo el metal llegó siempre manufacturado y por acarreo, y la única fuente real de hierro para alguien que vive en el bosque es recuperar y volver a forjar lo que ya está hecho. Los cánones, cupos de cantera y montos de multa figuran como null cuando no pudieron verificarse contra la reglamentación vigente.",
-
   "normas": [
     {
       "id": "ley_22351_art5",
@@ -27,14 +26,12 @@
       "consecuencia": "Un puesto abandonado de la colonización no es una ferretería a cielo abierto. Levantar chatarra suelta y moderna es una cosa; desarmar una estructura con valor patrimonial es otra."
     }
   ],
-
   "geologia": {
     "porQueNoHayMetal": "El basamento de las altas cumbres es el Batolito Norpatagónico, un cuerpo de granodioritas y tonalitas emplazado a lo largo del Cretácico y el Terciario, y por encima se apoyan las volcanitas de la Formación Ventana. Es una asociación sin depósitos metalíferos de interés económico: no hay vetas de cobre, plata ni hierro que sostengan una explotación. Lo que sí abunda es material suelto de origen glaciario y volcánico, que es exactamente lo que se extrae hoy alrededor de Bariloche.",
     "hierroArgentino": "El yacimiento de hierro más importante del país es Sierra Grande, en el este de Río Negro: hematita en sedimentitas del Paleozoico, explotada desde fines de los años sesenta, cerrada a comienzos de los noventa y reactivada después. Está en la misma provincia que Bariloche y a unos seiscientos kilómetros de distancia, del otro lado de la estepa y sobre el Atlántico.",
     "comoLlegoElMetal": "A la comarca andina el hierro llegó siempre terminado: clavos, alambre, herraduras, chapa acanalada, herramientas de ferretería, y desde 1934 los rieles del ferrocarril que alcanzó Bariloche. Los pobladores no fundían mineral, reforjaban lo que ya existía. Una fragua de puesto trabajaba sobre chatarra, no sobre veta.",
     "obsidiana": "La obsidiana que aparece en los sitios arqueológicos del Nahuel Huapi no es local: proviene de fuentes del norte neuquino y llegó por redes de intercambio de cientos de kilómetros. Su análisis geoquímico permite hoy reconstruir esas rutas."
   },
-
   "materiales": [
     {
       "id": "arena",
@@ -42,7 +39,11 @@
       "origen": "Depósitos glacifluviales y playas de lago",
       "dondeSeSaca": "cantera",
       "explicacion": "La arena de la región es material glacifluvial: molido de roca transportado por el agua de deshielo. Es el árido más extraído alrededor de Bariloche y la materia prima del vidrio y del mortero.",
-      "usos": ["vidrio", "mortero", "hormigón"]
+      "usos": [
+        "vidrio",
+        "mortero",
+        "hormigón"
+      ]
     },
     {
       "id": "ripio",
@@ -50,7 +51,10 @@
       "origen": "Depósitos glacifluviales",
       "dondeSeSaca": "cantera",
       "explicacion": "Grava y canto rodado del acarreo glaciario. Es lo que sostiene los caminos de toda la Patagonia y el agregado grueso del hormigón.",
-      "usos": ["hormigón", "camino"]
+      "usos": [
+        "hormigón",
+        "camino"
+      ]
     },
     {
       "id": "tosca",
@@ -58,7 +62,10 @@
       "origen": "Sedimentos cementados de la transición hacia la estepa",
       "dondeSeSaca": "cantera",
       "explicacion": "Material cementado que se compacta bien y se usa como base de caminos y de pisos. Se saca de canteras de la meseta, ya fuera del área protegida.",
-      "usos": ["camino", "hormigón"]
+      "usos": [
+        "camino",
+        "hormigón"
+      ]
     },
     {
       "id": "piedra",
@@ -66,7 +73,11 @@
       "origen": "Batolito Norpatagónico y bloques erráticos",
       "dondeSeSaca": "superficie",
       "explicacion": "La piedra suelta de superficie se junta sin abrir el suelo, y es la misma que da su carácter a la arquitectura del parque: el Centro Cívico y el hotel Llao Llao son de piedra local trabajada a mano.",
-      "usos": ["horno", "muro", "herramienta"]
+      "usos": [
+        "horno",
+        "muro",
+        "herramienta"
+      ]
     },
     {
       "id": "arcilla",
@@ -74,7 +85,11 @@
       "origen": "Depósitos glacilacustres de las orillas",
       "dondeSeSaca": "superficie",
       "explicacion": "Los limos finos depositados en el fondo de lagos glaciarios dan arcilla plástica. Es la base de la alfarería, que en la región tiene registro arqueológico, y del ladrillo.",
-      "usos": ["cerámica", "ladrillo", "horno"]
+      "usos": [
+        "cerámica",
+        "ladrillo",
+        "horno"
+      ]
     },
     {
       "id": "pomez",
@@ -82,7 +97,11 @@
       "origen": "Depósitos de caída de los volcanes de la cordillera",
       "dondeSeSaca": "superficie",
       "explicacion": "La comarca recibe periódicamente caída de ceniza y pómez de los volcanes chilenos, como la del Puyehue-Cordón Caulle en 2011. La pómez es liviana, aislante y funciona como puzolana en las mezclas.",
-      "usos": ["aislante", "abrasivo", "hormigón"]
+      "usos": [
+        "aislante",
+        "abrasivo",
+        "hormigón"
+      ]
     },
     {
       "id": "chatarra",
@@ -91,10 +110,11 @@
       "dondeSeSaca": "recuperacion",
       "explicacion": "En una región sin mineral de hierro, el metal disponible es el que ya llegó manufacturado y quedó tirado: alambre, chapa, flejes, clavos. Recuperarlo y reforjarlo es lo que hicieron los pobladores durante un siglo, y de paso limpia el bosque.",
       "advertencia": "No cuenta como chatarra lo que forma parte de una construcción histórica o de un sitio arqueológico. Eso está protegido por la Ley 25.743 y desarmarlo destruye información que no se recupera.",
-      "usos": ["hierro"]
+      "usos": [
+        "hierro"
+      ]
     }
   ],
-
   "sinFuenteLocal": [
     {
       "recurso": "hierro",
@@ -122,7 +142,6 @@
       "viaReal": "Ceniza de leña, que aporta álcali aunque no reemplaza a la cal en todo uso."
     }
   ],
-
   "hornos": [
     {
       "id": "fogata",
@@ -130,8 +149,14 @@
       "temperaturaC": 600,
       "descripcion": "Fuego abierto. Alcanza para cocinar y para secar, no para transformar mineral ni para fundir metal.",
       "materiales": [
-        { "recurso": "lena", "cantidad": 6 },
-        { "recurso": "piedra", "cantidad": 4 }
+        {
+          "recurso": "lena",
+          "cantidad": 6
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 4
+        }
       ]
     },
     {
@@ -140,8 +165,14 @@
       "temperaturaC": 500,
       "descripcion": "Pila de leña cubierta de tierra que arde con poco aire durante días. No quema la madera: la destila, y deja carbón vegetal, que es el único combustible que llega a temperatura de fragua. En la comarca hubo carboneras trabajando antes de que existiera el parque, y fue una de las actividades que más bosque consumió.",
       "materiales": [
-        { "recurso": "lena", "cantidad": 12 },
-        { "recurso": "arcilla", "cantidad": 4 }
+        {
+          "recurso": "lena",
+          "cantidad": 12
+        },
+        {
+          "recurso": "arcilla",
+          "cantidad": 4
+        }
       ]
     },
     {
@@ -150,9 +181,18 @@
       "temperaturaC": 950,
       "descripcion": "Bóveda de arcilla y piedra con tiro. Llega a temperatura de cocción cerámica y de vidrio de bosque.",
       "materiales": [
-        { "recurso": "arcilla", "cantidad": 10 },
-        { "recurso": "piedra", "cantidad": 8 },
-        { "recurso": "arena", "cantidad": 4 }
+        {
+          "recurso": "arcilla",
+          "cantidad": 10
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 8
+        },
+        {
+          "recurso": "arena",
+          "cantidad": 4
+        }
       ]
     },
     {
@@ -161,20 +201,38 @@
       "temperaturaC": 1300,
       "descripcion": "Hogar de carbón con fuelle. No funde mineral: ablanda el hierro que ya existe para volver a darle forma. Es la herrería de puesto, la que hizo todos los clavos, herraduras y bisagras de la colonización.",
       "materiales": [
-        { "recurso": "piedra", "cantidad": 12 },
-        { "recurso": "arcilla", "cantidad": 6 },
-        { "recurso": "cuero", "cantidad": 2 }
+        {
+          "recurso": "piedra",
+          "cantidad": 12
+        },
+        {
+          "recurso": "arcilla",
+          "cantidad": 6
+        },
+        {
+          "recurso": "cuero",
+          "cantidad": 2
+        }
       ]
     }
   ],
-
   "recetas": [
     {
       "id": "carbon_vegetal",
       "nombre": "Carbón vegetal",
       "horno": "carbonera",
-      "entra": [{ "recurso": "lena", "cantidad": 6 }],
-      "sale": [{ "recurso": "carbon", "cantidad": 2 }],
+      "entra": [
+        {
+          "recurso": "lena",
+          "cantidad": 6
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "carbon",
+          "cantidad": 2
+        }
+      ],
       "horas": 30,
       "nota": "Seis de leña dan dos de carbón: la mayor parte de la madera se va en humo. Ese rendimiento es la razón por la que las carboneras arrasaron bosques enteros."
     },
@@ -182,17 +240,106 @@
       "id": "ceniza",
       "nombre": "Ceniza de leña",
       "horno": "fogata",
-      "entra": [{ "recurso": "lena", "cantidad": 4 }],
-      "sale": [{ "recurso": "ceniza", "cantidad": 2 }],
+      "entra": [
+        {
+          "recurso": "lena",
+          "cantidad": 4
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "ceniza",
+          "cantidad": 2
+        }
+      ],
       "horas": 2,
       "nota": "La ceniza de madera aporta potasa: sirve como fundente del vidrio, para hacer lejía y para curtir."
+    },
+    {
+      "id": "carne_asada",
+      "nombre": "Carne asada",
+      "horno": "fogata",
+      "entra": [
+        {
+          "recurso": "carne",
+          "cantidad": 1
+        },
+        {
+          "recurso": "lena",
+          "cantidad": 2
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "carne_asada",
+          "cantidad": 1
+        }
+      ],
+      "horas": 0.6,
+      "nota": "El fuego no es sólo calor: cocinar rompe el tejido y mata lo que la carne cruda trae. Rinde casi el doble de alimento y deja de ser una apuesta."
+    },
+    {
+      "id": "pescado_asado",
+      "nombre": "Pescado asado",
+      "horno": "fogata",
+      "entra": [
+        {
+          "recurso": "pescado",
+          "cantidad": 1
+        },
+        {
+          "recurso": "lena",
+          "cantidad": 1
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "pescado_asado",
+          "cantidad": 1
+        }
+      ],
+      "horas": 0.4,
+      "nota": "La trucha a las brasas, envuelta en hojas: la forma más vieja de cocinar lo que se saca del lago."
+    },
+    {
+      "id": "agua_hervida",
+      "nombre": "Agua hervida",
+      "horno": "fogata",
+      "entra": [
+        {
+          "recurso": "agua",
+          "cantidad": 2
+        },
+        {
+          "recurso": "lena",
+          "cantidad": 1
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "agua_segura",
+          "cantidad": 2
+        }
+      ],
+      "horas": 0.3,
+      "nota": "El agua del deshielo es limpia, pero la de un mallín o un charco no. Hervirla es la única purificación que no necesita nada más que fuego."
     },
     {
       "id": "ceramica",
       "nombre": "Cerámica",
       "horno": "horno_barro",
-      "entra": [{ "recurso": "arcilla", "cantidad": 4 }],
-      "sale": [{ "recurso": "ceramica", "cantidad": 2 }],
+      "entra": [
+        {
+          "recurso": "arcilla",
+          "cantidad": 4
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "ceramica",
+          "cantidad": 2
+        }
+      ],
       "horas": 8,
       "nota": "Cocer la arcilla la vuelve irreversible: deja de ser barro y pasa a ser piedra artificial. Es la primera transformación química que hizo la humanidad."
     },
@@ -201,10 +348,21 @@
       "nombre": "Ladrillo",
       "horno": "horno_barro",
       "entra": [
-        { "recurso": "arcilla", "cantidad": 6 },
-        { "recurso": "arena", "cantidad": 2 }
+        {
+          "recurso": "arcilla",
+          "cantidad": 6
+        },
+        {
+          "recurso": "arena",
+          "cantidad": 2
+        }
       ],
-      "sale": [{ "recurso": "ladrillo", "cantidad": 4 }],
+      "sale": [
+        {
+          "recurso": "ladrillo",
+          "cantidad": 4
+        }
+      ],
       "horas": 10,
       "nota": "La arena magra la mezcla y evita que la pieza se raje al secar."
     },
@@ -213,11 +371,25 @@
       "nombre": "Vidrio de bosque",
       "horno": "horno_barro",
       "entra": [
-        { "recurso": "arena", "cantidad": 4 },
-        { "recurso": "ceniza", "cantidad": 3 },
-        { "recurso": "carbon", "cantidad": 2 }
+        {
+          "recurso": "arena",
+          "cantidad": 4
+        },
+        {
+          "recurso": "ceniza",
+          "cantidad": 3
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 2
+        }
       ],
-      "sale": [{ "recurso": "vidrio", "cantidad": 2 }],
+      "sale": [
+        {
+          "recurso": "vidrio",
+          "cantidad": 2
+        }
+      ],
       "horas": 12,
       "nota": "Vidrio hecho con arena y ceniza de leña, sin sosa ni cal traídas de lejos. Sale verdoso por el hierro de la arena, y así se hizo el vidrio europeo de bosque durante siglos."
     },
@@ -226,10 +398,21 @@
       "nombre": "Reforjar hierro",
       "horno": "fragua",
       "entra": [
-        { "recurso": "chatarra", "cantidad": 3 },
-        { "recurso": "carbon", "cantidad": 2 }
+        {
+          "recurso": "chatarra",
+          "cantidad": 3
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 2
+        }
       ],
-      "sale": [{ "recurso": "hierro", "cantidad": 2 }],
+      "sale": [
+        {
+          "recurso": "hierro",
+          "cantidad": 2
+        }
+      ],
       "horas": 4,
       "nota": "No es fundición de mineral: es recuperación. El hierro que se trabaja acá ya fue hierro antes, en otra provincia y en otra forma."
     },
@@ -238,10 +421,21 @@
       "nombre": "Clavos",
       "horno": "fragua",
       "entra": [
-        { "recurso": "hierro", "cantidad": 1 },
-        { "recurso": "carbon", "cantidad": 1 }
+        {
+          "recurso": "hierro",
+          "cantidad": 1
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 1
+        }
       ],
-      "sale": [{ "recurso": "clavo", "cantidad": 8 }],
+      "sale": [
+        {
+          "recurso": "clavo",
+          "cantidad": 8
+        }
+      ],
       "horas": 3,
       "nota": "Antes del clavo industrial cada uno se hacía a mano en la fragua, y por eso las casas viejas se desarmaban para recuperarlos."
     },
@@ -250,10 +444,21 @@
       "nombre": "Alambre",
       "horno": "fragua",
       "entra": [
-        { "recurso": "hierro", "cantidad": 2 },
-        { "recurso": "carbon", "cantidad": 1 }
+        {
+          "recurso": "hierro",
+          "cantidad": 2
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 1
+        }
       ],
-      "sale": [{ "recurso": "alambre", "cantidad": 4 }],
+      "sale": [
+        {
+          "recurso": "alambre",
+          "cantidad": 4
+        }
+      ],
       "horas": 4,
       "nota": "El alambrado cambió la Patagonia más que cualquier otra herramienta: fijó los límites de los campos y terminó con el pastoreo libre."
     },
@@ -262,10 +467,21 @@
       "nombre": "Chapa",
       "horno": "fragua",
       "entra": [
-        { "recurso": "hierro", "cantidad": 3 },
-        { "recurso": "carbon", "cantidad": 2 }
+        {
+          "recurso": "hierro",
+          "cantidad": 3
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 2
+        }
       ],
-      "sale": [{ "recurso": "chapa", "cantidad": 2 }],
+      "sale": [
+        {
+          "recurso": "chapa",
+          "cantidad": 2
+        }
+      ],
       "horas": 5,
       "nota": "La chapa acanalada es el techo de la Patagonia: liviana para acarrear a lomo de mula y capaz de aguantar la nieve."
     },
@@ -274,11 +490,25 @@
       "nombre": "Herramienta de hierro",
       "horno": "fragua",
       "entra": [
-        { "recurso": "hierro", "cantidad": 2 },
-        { "recurso": "madera", "cantidad": 1 },
-        { "recurso": "carbon", "cantidad": 1 }
+        {
+          "recurso": "hierro",
+          "cantidad": 2
+        },
+        {
+          "recurso": "madera",
+          "cantidad": 1
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 1
+        }
       ],
-      "sale": [{ "recurso": "herramienta", "cantidad": 1 }],
+      "sale": [
+        {
+          "recurso": "herramienta",
+          "cantidad": 1
+        }
+      ],
       "horas": 4,
       "nota": "Hoja forjada y cabo de madera dura. Con una herramienta de hierro se abre cantera, y sin ella no se pasa de juntar piedra suelta."
     },
@@ -287,10 +517,21 @@
       "nombre": "Acero",
       "horno": "fragua",
       "entra": [
-        { "recurso": "hierro", "cantidad": 4 },
-        { "recurso": "carbon", "cantidad": 4 }
+        {
+          "recurso": "hierro",
+          "cantidad": 4
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 4
+        }
       ],
-      "sale": [{ "recurso": "acero", "cantidad": 1 }],
+      "sale": [
+        {
+          "recurso": "acero",
+          "cantidad": 1
+        }
+      ],
       "horas": 8,
       "nota": "Acero es hierro con algo de carbono, y en la fragua se consigue por cementación: el metal al rojo entre carbón absorbe carbono por la superficie. Es lento, desparejo y no se parece a la siderurgia industrial, pero es acero."
     },
@@ -299,17 +540,33 @@
       "nombre": "Hormigón",
       "horno": "horno_barro",
       "entra": [
-        { "recurso": "ripio", "cantidad": 6 },
-        { "recurso": "arena", "cantidad": 4 },
-        { "recurso": "pomez", "cantidad": 2 },
-        { "recurso": "agua", "cantidad": 2 }
+        {
+          "recurso": "ripio",
+          "cantidad": 6
+        },
+        {
+          "recurso": "arena",
+          "cantidad": 4
+        },
+        {
+          "recurso": "pomez",
+          "cantidad": 2
+        },
+        {
+          "recurso": "agua",
+          "cantidad": 2
+        }
       ],
-      "sale": [{ "recurso": "hormigon", "cantidad": 3 }],
+      "sale": [
+        {
+          "recurso": "hormigon",
+          "cantidad": 3
+        }
+      ],
       "horas": 20,
       "nota": "Sin cemento portland la mezcla se apoya en la puzolana: la pómez volcánica finamente molida fragua con el álcali y da un conglomerado que endurece con el agua. Es el principio del hormigón romano."
     }
   ],
-
   "fuego": {
     "explicacion": "Hacer fuego en el Parque Nacional Nahuel Huapi sólo está permitido en los sitios habilitados de campamentos y áreas de uso público, con fogón construido y bajo las condiciones que fija la Administración de Parques Nacionales. Fuera de esos lugares está prohibido, y en temporada de alto riesgo la prohibición es total, incluso en los sitios habilitados. El bosque andino-patagónico arde con una facilidad que sorprende a quien no lo conoce: el sotobosque de caña colihue seca y las coníferas resinosas propagan el fuego de copa en copa con viento del oeste, y los incendios de la región se cuentan en miles de hectáreas.",
     "penalidadEnParque": {
@@ -320,7 +577,6 @@
     },
     "notaEnReserva": "En Reserva Nacional hay áreas de uso público con fogones habilitados. Igual rige la veda de fuego cuando el riesgo es alto."
   },
-
   "canteras": {
     "explicacion": "Una cantera se abre donde el material está y donde la ley lo permite, y esas dos condiciones casi nunca coinciden. En este mapa el material suelto abunda en los valles glaciarios y en las terrazas del este, pero el área núcleo del parque cubre casi todo el oeste.",
     "requiereHerramienta": true,

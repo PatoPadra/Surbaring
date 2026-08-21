@@ -223,6 +223,26 @@ export class Recoleccion {
   /** Comer lo mejor que haya en el bolso. */
   comer() {
     const opciones = this.inventario.comestibles();
+
+    // Q atiende lo que más falta. Antes sólo miraba el alimento, así que el
+    // agua cargada en el bolso —la hervida, sobre todo, que cuesta leña y una
+    // hornada— no se podía tomar con ninguna tecla: había que volver a la
+    // orilla igual. Si la sed aprieta más que el hambre y hay algo que hidrate,
+    // se bebe eso.
+    const bebidas = this.inventario.listar()
+      .filter(i => (RECURSOS[i.id]?.hidrata || 0) >= 20)
+      .sort((a, b) => (RECURSOS[b.id].hidrata || 0) - (RECURSOS[a.id].hidrata || 0));
+    if (bebidas.length && this.jugador.sed < this.jugador.hambre && this.jugador.sed < 70) {
+      const b = bebidas[0];
+      const d = RECURSOS[b.id];
+      this.inventario.quitar(b.id, 1);
+      this.jugador.sed = Math.min(100, this.jugador.sed + (d.hidrata || 0));
+      this.jugador.hambre = Math.min(100, this.jugador.hambre + (d.nutre || 0));
+      this.hud.aviso(`Tomaste ${b.nombre.toLowerCase()}`,
+        `Hidratación ${this.jugador.sed.toFixed(0)} · Alimento ${this.jugador.hambre.toFixed(0)}`);
+      return;
+    }
+
     if (!opciones.length) {
       this.hud.aviso('No tenés comida', 'Recolectá frutos de calafate, maqui o michay');
       return;

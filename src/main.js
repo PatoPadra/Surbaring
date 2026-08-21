@@ -502,6 +502,7 @@ async function iniciar() {
   const elDiag = document.getElementById('diag');
   const colorNiebla = new THREE.Color();
   let distanciaAlAgua = 9999;
+  let ultimoAvisoFuego = -9999;
   let destelloPrevio = 0;
 
   /** Cuánto fuego hay a mano: hornos encendidos e incendio forestal. */
@@ -623,12 +624,33 @@ async function iniciar() {
     for (const caida of construccion.actualizar()) obras.quitar(caida);
     // Lo que abriga alrededor entra en el modelo térmico del jugador
     jugador.abrigo = construccion.abrigoEn(jugador.posicion.x, jugador.posicion.z);
+    // El fuego se mide una vez y lo usan los dos que lo necesitan: el cuerpo,
+    // que se calienta y se seca, y el oído, que escucha las llamas.
+    jugador.fuego = fuegoCercano(est);
+
+    // El empujón del fuego. El taller tiene la fogata desde el primer día —seis
+    // leñas y cuatro piedras— pero nadie se entera de que existe hasta que abre
+    // G por curiosidad, y para entonces ya se está muriendo de frío. Cuando el
+    // cuerpo empieza a enfriarse y no hay fuego cerca, el juego lo dice una vez
+    // cada tanto, y sólo entonces: un consejo que aparece cuando hace falta se
+    // lee como ayuda, y uno que aparece siempre, como ruido.
+    if (jugador.temperatura < 36.1 && jugador.fuego < 0.15
+        && tiempo.segundosTotales - ultimoAvisoFuego > 900) {
+      ultimoAvisoFuego = tiempo.segundosTotales;
+      const lena = inventario.disponiblePara('lena');
+      const piedra = inventario.disponiblePara('piedra');
+      hud.aviso('Estás perdiendo calor',
+        lena >= 6 && piedra >= 4
+          ? 'Tenés para una fogata: abrí el taller con G y armala. Calienta, seca y cocina.'
+          : `Una fogata pide 6 leña y 4 piedra (tenés ${lena} y ${piedra}). Se arma en el taller, con G.`,
+        7000);
+    }
 
     // ── Audio
     audio.actualizar(dt, est, {
       altitud: jugador.posicion.y,
       distanciaAgua: distanciaAlAgua,
-      fuegoCerca: fuegoCercano(est),
+      fuegoCerca: jugador.fuego,
     });
     audio.pasos(dt, jugador);
     // El trueno se dispara con el relámpago y llega más tarde, por la velocidad
