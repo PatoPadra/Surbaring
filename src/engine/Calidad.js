@@ -166,7 +166,16 @@ export class Calidad {
     if (oclusion) oclusion.enabled = p.oclusion;
     if (color) color.enabled = p.correccionColor;
     if (resplandor) resplandor.enabled = p.resplandor;
-    if (suavizado) suavizado.enabled = p.suavizado;
+    if (suavizado) {
+      suavizado.enabled = p.suavizado;
+      // El FXAA necesita saber cuánto mide un texel, y esto vivía en el callback
+      // `alCambiar`, o sea que dependía de que quien usara Calidad se acordara de
+      // cablearlo. Cualquier camino que cambie el tamaño sin pasar por ahí deja
+      // al suavizado muestreando con el texel corrido, y eso no se ve como
+      // aliasing: se ve como un halo alrededor de todo lo que tiene borde
+      // recortado, o sea alrededor de cada copa del bosque.
+      suavizado.material?.uniforms?.resolution?.value.set(1 / anchoPx, 1 / altoPx);
+    }
 
     // ── Reflejo del agua. El espejo planar dibuja la escena una segunda vez,
     // así que abajo se apaga entero y arriba se dibuja a media resolución.

@@ -262,11 +262,21 @@ export class Agua {
     const visibles = this.mallas.map(m => m.visible);
     for (const m of this.mallas) m.visible = false;
 
+    // Las cascadas de sombra NO se rehacen para el espejo. CSM arma sus
+    // volúmenes desde la cámara del jugador, que no se movió: dibujar el reflejo
+    // volvía a llenar los cuatro mapas —terreno con desplazamiento en el
+    // vértice, veintiséis lotes de follaje con recorte por alfa, la fauna, el
+    // cuerpo— para escribir exactamente lo mismo. Era el pase más caro del
+    // cuadro, duplicado a cambio de nada.
+    const autoPrevio = render.shadowMap.autoUpdate;
+    render.shadowMap.autoUpdate = false;
+
     render.clippingPlanes = [r.recorte];
     render.setRenderTarget(r.objetivo);
     render.clear();
     render.render(escena, c);
 
+    render.shadowMap.autoUpdate = autoPrevio;
     render.setRenderTarget(objetivoPrevio);
     render.clippingPlanes = recortePrevio;
     escena.fog = nieblaPrevia;

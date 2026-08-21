@@ -218,13 +218,15 @@ async function iniciar() {
   } catch {
     console.warn('caza.json ausente: se usan las reglas mínimas de fauna protegida');
   }
+  // Los límites del parque. Entran antes que cualquier sistema regulado porque
+  // los cuatro —caza, minería, fundición y construcción— necesitan saber en qué
+  // jurisdicción está parado el jugador para poder contestarle.
+  const limites = new Limites(mundo);
   const caza = new Caza(normativaCaza, {
-    jugador, inventario, saberes, codice, hud, tiempo, mundo,
+    jugador, inventario, saberes, codice, hud, tiempo, mundo, limites,
   });
   // La minería es la otra mitad del artículo 5 de la Ley 22.351: la que prohíbe
-  // extraer. Necesita saber en qué jurisdicción está parado el jugador, así que
-  // los límites del parque entran al juego acá.
-  const limites = new Limites(mundo);
+  // extraer.
   let datosMineria = null;
   try {
     datosMineria = (await import('./data/mineria.json')).default;
@@ -403,12 +405,29 @@ async function iniciar() {
   const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.34, 0.62, 0.86);
   compositor.addPass(bloom);
 
+  // El mapeo tonal va ACÁ, y el orden importa más de lo que parece.
+  //
+  // `OutputPass` es lo único que aplica ACES y la codificación sRGB: un
+  // material no mapea tonos cuando dibuja a un objetivo, sólo cuando dibuja al
+  // lienzo, y el compositor siempre dibuja a objetivos. Con el color y el
+  // suavizado antes de este pase, los dos recibían valores lineales de escena
+  // que valen 5, 10 o 30, y los dos están escritos para valores de pantalla
+  // entre 0 y 1: la curva en S del grado, `c*c*(3-2c)`, sólo es monótona en
+  // [0,1] —en 1,5 vale 0 y en 2 vale −4, así que en vez de dar contraste
+  // invertía las luces altas—, el techo suave aplastaba cualquier cosa por
+  // encima de 1 al rango 1,0–1,2 dejando a ACES sin material sobre el que
+  // trabajar, y el FXAA buscaba bordes con umbrales que en HDR no significan
+  // nada. De ahí salían el cielo gris plano, el tinte parejo y la ausencia
+  // total de negros: el rango dinámico se destruía antes de mapearlo.
+  //
+  // El resplandor se queda arriba, en HDR, que es donde corresponde.
+  compositor.addPass(new OutputPass());
+
   const fxaa = new ShaderPass(FXAAShader);
   compositor.addPass(fxaa);
-  // Corrección de color al final, ya con la imagen armada
+  // Corrección de color al final, ya con la imagen formada y en rango 0..1
   const color = new PasoColor();
   compositor.addPass(color);
-  compositor.addPass(new OutputPass());
 
   // ── Calidad ───────────────────────────────────────────────────────────────
   // Nada de esto se elige a ojo: se detecta la placa, se arranca donde
@@ -593,8 +612,19 @@ async function iniciar() {
       acumulador -= PASO;
       pasos++;
     }
-    // Lo que los eventos hacen por su cuenta: quemar, golpear, voltear
-    if (jugador.vivo) eventos.golpear(dt, est, jugador, dt * tiempo.velocidad / 3600);
+    // Lo que los eventos hacen por su cuenta: quemar, golpear, voltear.
+    //
+    // Las horas que se les pasan son las del CUERPO, no las del mundo. Acá
+    // estaba una de las peores trampas del juego: con el reloj del mundo a 300
+    // segundos por segundo, una avalancha de 55 de salud por hora hacía 4,58
+    // por segundo real y mataba en 22 segundos; con la tecla T al máximo, 110
+    // por segundo, o sea muerte antes del cuadro siguiente. Mientras tanto la
+    // hipotermia —que es la lección central del lugar— tarda 22 minutos. Un
+    // mismo juego no puede tener dos escalas de letalidad separadas por un
+    // factor de 7200, y menos cuando el juego invita a acelerar el reloj para
+    // esperar una hornada. Los números del dataset están bien; se leían en el
+    // reloj equivocado.
+    if (jugador.vivo) eventos.golpear(dt, est, jugador, dt * ESCALA_METABOLISMO / 3600);
 
     // Lo que se conoce del parque: se revela caminando y mirando desde alto
     if (jugador.vivo) {

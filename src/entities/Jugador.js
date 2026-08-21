@@ -191,9 +191,27 @@ export class Jugador {
     this.posicion.addScaledVector(this.velocidad, dt);
     this._distanciaRecorrida += Math.hypot(this.velocidad.x, this.velocidad.z) * dt;
 
-    // Resistencia
-    const gasto = this.corriendo ? 11 : (largo > 0.01 ? 1.1 : 0);
-    this.energia = Math.max(0, Math.min(100, this.energia - gasto * dt + (gasto === 0 ? 7.5 * dt : 0)));
+    // Resistencia.
+    //
+    // Los números viejos hacían de Shift una trampa aritmética. Correr gastaba
+    // 11 por segundo y la resistencia SÓLO se reponía estando completamente
+    // quieto: cien de energía daban 9,1 segundos de carrera —56 metros— y
+    // reponerlos costaba 13,3 segundos parado. El ciclo completo daba 2,52 m/s
+    // contra los 3,4 m/s de caminar sin parar. O sea que en cualquier trayecto
+    // de más de sesenta metros, en un mundo de 65 km donde todo se hace a pie,
+    // la tecla que el jugador aprieta por instinto lo hacía ir más lento, y el
+    // juego no se lo decía. La barra de Resistencia, además, vivía en cero.
+    //
+    // Ahora caminar repone en vez de gastar —caminar es el estado de descanso
+    // de un cuerpo, no un esfuerzo— y una carrera dura quince segundos, que es
+    // lo que mide una cuesta o el cruce de un claro: la unidad natural de la
+    // decisión. El ciclo da 4,17 m/s, un 23 % mejor que caminar. Correr vuelve
+    // a ser una decisión con costo en vez de un castigo.
+    let gasto = 0;
+    if (this.corriendo) gasto = 6.5;
+    else if (largo > 0.01) gasto = -2.5;   // caminar repone, despacio
+    else gasto = -9.0;                     // quieto, más rápido
+    this.energia = Math.max(0, Math.min(100, this.energia - gasto * dt));
   }
 
   /**

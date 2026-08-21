@@ -35,6 +35,12 @@ export function instalarCapturas(S) {
       camara.aspect = ancho / alto;
       camara.updateProjectionMatrix();
       csm.updateFrustums();
+      // Y el suavizado, que trabaja en texels. Sin esto la captura sale con un
+      // halo alrededor de cada copa —el FXAA muestreando a 1024×576 sobre un
+      // búfer de 1280×720— y uno termina buscando en el juego un defecto que
+      // sólo existe en la foto. La herramienta de verificación no puede mentir.
+      S.calidad?.ctx?.suavizado?.material?.uniforms?.resolution?.value
+        .set(1 / ancho, 1 / alto);
     }
 
     if (o.fecha) tiempo.fecha = new Date(o.fecha);

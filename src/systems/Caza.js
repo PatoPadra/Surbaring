@@ -51,8 +51,22 @@ export class Caza {
    * Veredicto completo sobre cazar una especie ahora mismo.
    * Devuelve siempre una explicación: es lo que el jugador tiene que aprender.
    */
-  evaluar(esp, mes) {
+  evaluar(esp, mes, x, z) {
     const cat = (id) => (this.n?.categorias || []).find(c => c.id === id);
+
+    // Dónde está parado el jugador, ANTES que qué animal tiene enfrente.
+    //
+    // La caza era el único de los cuatro sistemas regulados que no miraba la
+    // jurisdicción: minería, fundición y construcción las tres consultan los
+    // límites, y ésta contestaba sólo con la especie y el mes. Parado en el
+    // área núcleo del parque, en marzo, frente a un ciervo, el juego decía
+    // "exótica invasora, permitido" y entregaba la faena. O sea que enseñaba
+    // que dentro de un parque nacional se puede cazar si es la época — que es
+    // exactamente lo que el juego existe para desmentir. El artículo 5 de la
+    // Ley 22.351 no distingue entre nativa y exótica: prohíbe toda acción sobre
+    // la fauna, y la caza de exóticas existe únicamente como excepción de
+    // manejo, con permiso, cupo y zona asignada.
+    const j = x !== undefined && this.limites ? this.limites.jurisdiccion(x, z) : null;
 
     if (esp.monumentoNatural) {
       const c = cat('monumento_natural');
@@ -76,8 +90,37 @@ export class Caza {
       };
     }
 
-    // Exótica invasora: permitida, pero no en cualquier momento ni de cualquier modo
+    // Exótica invasora: permitida, pero no en cualquier lugar, ni en cualquier
+    // momento, ni de cualquier modo. Las tres condiciones, en ese orden.
     const regla = this.reglaPorEspecie.get(esp.id);
+
+    if (j === 'parque') {
+      return {
+        permitido: false, gravedad: 'grave', jurisdiccion: j,
+        titulo: `${esp.nombreComun}: estás dentro del Parque Nacional`,
+        detalle: 'El artículo 5 de la Ley 22.351 prohíbe toda acción sobre la fauna dentro de un '
+          + 'Parque Nacional, sea nativa o introducida. El control de exóticas existe, pero es una '
+          + 'excepción de manejo que ejecuta la Administración de Parques Nacionales con cupo, zona '
+          + 'y precinto: no es una temporada abierta a quien pase por acá. Fuera de los límites del '
+          + 'parque rige el régimen de fauna de Río Negro, que es otra cosa.',
+        color: '#c8503f',
+        castigo: 8,
+      };
+    }
+
+    if (j === 'reserva' && regla?.requierePermiso !== false) {
+      return {
+        permitido: false, gravedad: 'leve', jurisdiccion: j,
+        titulo: `${esp.nombreComun}: hace falta el permiso`,
+        detalle: 'En Reserva Nacional la caza de ciervo colorado y jabalí puede habilitarse, pero '
+          + 'por el Reglamento Único de la Resolución de Directorio 277/2011: turnos adjudicados por '
+          + 'subasta, zona asignada, permiso y precinto, con control de guardaparques. El trámite se '
+          + 'hace en la intendencia. Sin eso, cazar acá es furtivismo aunque la especie sea exótica.',
+        color: '#d08a3a',
+        castigo: 3,
+      };
+    }
+
     const temp = this._enTemporada(regla, mes);
     if (!temp.dentro) {
       return {
@@ -105,13 +148,14 @@ export class Caza {
    * @returns {boolean} si se concretó
    */
   intentar(animal, mes) {
-    const v = this.evaluar(animal.esp, mes);
+    const p = this.jugador?.posicion;
+    const v = this.evaluar(animal.esp, mes, p?.x, p?.z);
 
     if (!v.permitido) {
       this.infracciones++;
       // La penalización es de saber, no de salud: el costo de no entender el
       // lugar es no entenderlo.
-      const castigo = v.gravedad === 'grave' ? 8 : 3;
+      const castigo = v.castigo ?? (v.gravedad === 'grave' ? 8 : 3);
       this.saberes.puntos = Math.max(0, this.saberes.puntos - castigo);
       this.hud.aviso(v.titulo, v.detalle);
       // Aunque no se pueda cazar, verla y saber por qué también enseña

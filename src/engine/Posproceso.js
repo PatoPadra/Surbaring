@@ -338,7 +338,12 @@ export class PasoColor extends Pass {
         uVineteado: { value: 0.34 },
         uSombras: { value: new THREE.Color(0.93, 0.97, 1.06) },
         uLuces: { value: new THREE.Color(1.05, 1.01, 0.94) },
-        uTecho: { value: 0.82 },
+        // Este pase corre después del mapeo tonal, así que ve valores de
+        // pantalla entre 0 y 1 y no valores de escena que llegaban a 30. Con el
+        // techo en 0,82 se comprimía un quinto del rango útil por las dudas;
+        // ahora ACES ya hizo ese trabajo y sólo hace falta frenar el blanco
+        // puro, que es lo que se comía el horizonte nublado.
+        uTecho: { value: 0.94 },
       },
       vertexShader: `
         varying vec2 vUv;
