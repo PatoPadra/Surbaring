@@ -191,3 +191,49 @@ O sea: **el doble de fps en Baja y unas tres veces y media en Mínima**, no cinc
 Para más habría que sacar cosas del mundo —menos vista, menos plantas, menos
 escalas de detalle—, que es exactamente lo que el otro lado del objetivo pedía no
 hacer.
+
+## Cuarta ronda: la profundidad logarítmica era el techo
+
+El hallazgo más grande de todo el trabajo, y el que explicaba por qué varias
+optimizaciones anteriores rendían menos de lo esperado.
+
+`logarithmicDepthBuffer` no es cara por lo que calcula: es cara porque obliga a
+**cada fragmento a escribir `gl_FragDepth`**, y eso desactiva el rechazo temprano
+por profundidad en toda la escena. Nada se descarta antes de sombrearse. Por eso
+dibujar el cielo al final ahorró 2,5 ms en vez de los 4,3 que costaba, y por eso
+el terreno pagaba entero aunque el pasto lo tapara.
+
+Medido, mismo punto y misma resolución (1024×576):
+
+| | ms | fps |
+|---|---|---|
+| Con profundidad logarítmica | 62,4 | 16,0 |
+| Sin ella | 41,0 | **24,4** |
+
+**−34 % de tiempo de cuadro.**
+
+El precio es la precisión del búfer de 24 bits, que depende de la relación entre
+el plano cercano y el lejano. Se probaron dos valores de cercano:
+
+- **0,5 m** — el antebrazo del jugador sale **hueco** al mirarse los pies: el
+  plano corta el cilindro del brazo.
+- **0,25 m** — el cuerpo queda entero, y no aparece pelea de profundidad en la
+  orilla, en el bosque, en el suelo a treinta centímetros ni en la cumbre del
+  Tronador.
+
+Con 0,25 m de cercano la vista se topa en 40 km, que es lo que mantiene la
+relación en 160.000 a 1. Las placas que dan para «Alta» o «Media» conservan la
+logarítmica, porque ahí la vista llega a 90 km y el presupuesto alcanza.
+
+Como es una bandera de construcción del render, la decisión se toma antes de
+crearlo, abriendo un contexto de 1×1 sólo para preguntar qué placa hay.
+
+## Estado
+
+| | Base | Ahora |
+|---|---|---|
+| Baja @ 1024×576 | 122,8 ms · 8,1 fps | **41,0 ms · 24,4 fps** |
+| Mínima @ 845×475 | ~95 ms · ~10,5 fps | **21,0 ms · 47,7 fps** |
+
+**3,0× en Baja y 4,5× en Mínima**, que es el preset donde el gobernador termina
+en esta placa.

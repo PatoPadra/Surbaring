@@ -140,6 +140,40 @@ function nivelSegunPlaca(cadena) {
   return 2;
 }
 
+/**
+ * Lee qué placa hay ANTES de construir el render.
+ *
+ * Hace falta porque `logarithmicDepthBuffer` es una bandera de construcción del
+ * render y no se puede cambiar después, y la decisión de usarla o no depende de
+ * la placa. Se abre un contexto de 1×1 sólo para preguntar y se lo tira.
+ */
+export function detectarPlaca() {
+  try {
+    const lienzo = document.createElement('canvas');
+    lienzo.width = lienzo.height = 1;
+    const gl = lienzo.getContext('webgl2') || lienzo.getContext('webgl');
+    if (!gl) return { placa: 'desconocida', nivel: 2 };
+    const info = gl.getExtension('WEBGL_debug_renderer_info');
+    const placa = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : 'desconocida';
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return { placa, nivel: nivelSegunPlaca(placa) };
+  } catch {
+    return { placa: 'desconocida', nivel: 2 };
+  }
+}
+
+/**
+ * Hasta dónde se puede ver sin profundidad logarítmica, en metros.
+ *
+ * Con la logarítmica apagada, la precisión del búfer de 24 bits la fija la
+ * relación entre el plano cercano y el lejano. Con 0,25 m de cercano —que es lo
+ * que hace falta para no cortar el propio cuerpo del jugador al mirarse los
+ * pies— y 40 km de lejano, la relación es de 160.000 a 1 y no aparece pelea de
+ * profundidad en ninguna de las vistas revisadas. Más lejos que eso no se
+ * probó, así que no se promete.
+ */
+export const VISTA_MAX_SIN_LOG = 40000;
+
 export class Calidad {
   /**
    * @param {object} ctx {render, compositor, camara, csm, escena, oclusion,
@@ -299,7 +333,10 @@ export class Calidad {
 
     // ── Distancia de vista
     if (camara) {
-      camara.far = p.vista;
+      // Sin profundidad logarítmica la vista se topa: es lo que mantiene la
+      // relación cercano/lejano dentro de lo que un búfer de 24 bits resuelve.
+      camara.far = render.capabilities.logarithmicDepthBuffer
+        ? p.vista : Math.min(p.vista, VISTA_MAX_SIN_LOG);
       camara.updateProjectionMatrix();
     }
 

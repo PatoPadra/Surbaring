@@ -45,7 +45,7 @@ import { Eventos } from './systems/Eventos.js';
 import { Clima } from './world/Clima.js';
 import { Audio } from './engine/Audio.js';
 import { PasoOclusion, PasoColor } from './engine/Posproceso.js';
-import { Calidad } from './engine/Calidad.js';
+import { Calidad, detectarPlaca } from './engine/Calidad.js';
 import { Exploracion } from './systems/Exploracion.js';
 import { Mapa } from './ui/Mapa.js';
 import { Opciones } from './ui/Opciones.js';
@@ -71,13 +71,38 @@ function progreso(p, texto) {
 async function iniciar() {
   const lienzo = document.getElementById('lienzo');
 
+  // Profundidad logarítmica: sí arriba, no abajo. Es la palanca de rendimiento
+  // más grande de todo el motor y hay que decidirla acá, porque es una bandera
+  // de construcción del render y después no se puede tocar.
+  //
+  // El problema de la logarítmica no es lo que cuesta calcularla: es que obliga
+  // a CADA fragmento a escribir `gl_FragDepth`, y eso **desactiva el rechazo
+  // temprano por profundidad en toda la escena**. Nada se descarta antes de
+  // sombrearse. Por eso dibujar el cielo al final ahorraba mucho menos de lo que
+  // debería, y por eso el terreno pagaba entero aunque el pasto lo tapara.
+  //
+  // Medido en la placa de destino, mismo punto y misma resolución: 62,4 ms con
+  // logarítmica, 41,0 sin ella. Un 34 % del cuadro, de 16,0 a 24,4 fps.
+  //
+  // El precio es la precisión del búfer de 24 bits, que fija la relación entre
+  // el plano cercano y el lejano. Con 0,25 m de cercano —el mínimo para no
+  // cortar el propio cuerpo del jugador cuando se mira los pies, comprobado: con
+  // 0,5 el antebrazo sale hueco— y la vista topada en 40 km, no aparece pelea de
+  // profundidad en la orilla, en el bosque, en el suelo a treinta centímetros ni
+  // en la cumbre del Tronador.
+  //
+  // Las placas que dan para «Alta» o «Media» conservan la logarítmica, porque
+  // ahí la vista llega a 90 km y el presupuesto alcanza para pagarla.
+  const { placa: placaDetectada, nivel: nivelDetectado } = detectarPlaca();
+  const conProfundidadLog = nivelDetectado <= 1;
+
   // ── Render ────────────────────────────────────────────────────────────────
   const render = new THREE.WebGLRenderer({
     canvas: lienzo,
     antialias: false,          // lo resuelve el FXAA del compositor
     powerPreference: 'high-performance',
     stencil: false,
-    logarithmicDepthBuffer: true, // imprescindible: hay 65 km de vista
+    logarithmicDepthBuffer: conProfundidadLog,
     // Permite leer el canvas después de dibujar, que es como se revisa el
     // aspecto del juego durante el desarrollo.
     preserveDrawingBuffer: import.meta.env.DEV,
@@ -91,7 +116,8 @@ async function iniciar() {
   render.outputColorSpace = THREE.SRGBColorSpace;
 
   const escena = new THREE.Scene();
-  const camara = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.1, 90000);
+  const camara = new THREE.PerspectiveCamera(62, innerWidth / innerHeight,
+    conProfundidadLog ? 0.1 : 0.25, 90000);
 
   progreso(0.01, 'Descargando el relieve de Bariloche…');
 
