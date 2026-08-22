@@ -141,3 +141,53 @@ a cortar.
 La recta pasó de **62 ms fijos + 84 por megapíxel** a **48 + 58**. El costo fijo
 es ahora la mayoría del cuadro, y eso dice dónde buscar lo que queda: geometría
 y llamadas de dibujo, no trabajo por píxel.
+
+## Tercera ronda, y una lección cara
+
+El terreno resultó ser el 62 % del cuadro en el preset más bajo, y **no por
+vértices**: recortar el 64 % de los nodos del cuadrantoárbol ahorró apenas el
+13 %. Es costo por píxel — el ruido multiescala, el triplanar y la normal fina en
+tres escalas, calculados en casi toda la pantalla porque el suelo ocupa casi toda
+la pantalla.
+
+Se agregó `uDetalleAlcance`, un uniforme que encoge los radios donde vive ese
+detalle, gobernado por el preset: 1,0 arriba, 0,35 en Baja, 0,18 en Mínima. En
+los presets bajos el detalle se ve bajo los pies y no a cuarenta metros, que es
+donde igual no se distinguía.
+
+### La lección: una mejora de 3,4× que no existía
+
+La primera medición de ese cambio dio **28 fps en Baja y 80 en Mínima**, contra
+22 y 49. Parecía el hallazgo del día. Era falso: el uniforme se usaba en el
+fragmento **sin estar declarado**, así que el shader del terreno no compilaba y
+la malla caía al material por defecto. Se estaba midiendo el costo de dibujar el
+suelo en blanco liso.
+
+Lo que lo delató fue mirar la captura: el suelo salía blanco en Baja **y también
+en Alta**, donde el alcance vale 1,0 y no debía cambiar nada. Dos presets con
+valores distintos y el mismo resultado imposible.
+
+Con el uniforme declarado, la ganancia real es del 4 % en Baja y del 10 % en
+Mínima. Modesta, pero verdadera.
+
+**La regla, otra vez y más cara que la primera:** una medición que da un resultado
+demasiado bueno es una hipótesis sobre el instrumento, no sobre el código. Acá el
+número era plausible y aun así estaba mal; lo único que lo desmintió fue mirar la
+imagen.
+
+## Estado final
+
+Al mismo tamaño forzado con el que se tomó la línea de base (1024×576):
+
+| | Antes | Después |
+|---|---|---|
+| Tiempo de cuadro | 122,8 ms | **62,4 ms** |
+| fps | 8,1 | **16,0** |
+
+En el preset donde el gobernador termina en esta placa (Mínima, 845×475):
+**35,5 fps**, contra unos 10,5 que daba la recta original a esa resolución.
+
+O sea: **el doble de fps en Baja y unas tres veces y media en Mínima**, no cinco.
+Para más habría que sacar cosas del mundo —menos vista, menos plantas, menos
+escalas de detalle—, que es exactamente lo que el otro lado del objetivo pedía no
+hacer.

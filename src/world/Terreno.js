@@ -251,6 +251,8 @@ export class Terreno {
       uTexDetalle: { value: m.texDetalle },
       uDetallePeriodo: { value: DETALLE.periodoM },
       uDetalleAmplitud: { value: DETALLE.amplitudM },
+      // Hasta dónde llega el detalle fino del suelo. Lo mueve el preset.
+      uDetalleAlcance: { value: 1.0 },
       uNieveCota: { value: 1750 },      // el clima la mueve por estación
       uNieveSuavidad: { value: 220 },
       uLineaBosque: { value: 1620 },
@@ -341,6 +343,7 @@ export class Terreno {
         uniform sampler2D uTexDetalle;
         uniform float uDetallePeriodo;
         uniform float uDetalleAmplitud;
+        uniform float uDetalleAlcance;
         uniform float uTamanoMundo;
         uniform float uNieveCota;
         uniform float uNieveSuavidad;
@@ -467,8 +470,21 @@ export class Terreno {
         // suelo. Las frecuencias altas se desvanecen con la distancia, porque
         // más allá de unos metros no se resuelven y sólo producen hormigueo.
         float distVista = length(vViewPosition);
-        float cercania = 1.0 - smoothstep(30.0, 420.0, distVista);
-        float muyCerca = 1.0 - smoothstep(4.0, 45.0, distVista);
+        // El alcance del detalle fino, gobernado por el preset.
+        //
+        // Medido en la placa de destino: el terreno es 19,3 ms de un cuadro de
+        // 31,3 en el preset más bajo, o sea el 62 %. Y no es por vértices —
+        // recortar el 64 % de los nodos del cuadrantoárbol sólo ahorró el 13 %—
+        // sino por píxel: el ruido multiescala, el triplanar y la normal fina en
+        // tres escalas se calculan en casi toda la pantalla, porque el suelo
+        // ocupa casi toda la pantalla.
+        //
+        // Encoger los radios donde ese detalle vive es la única palanca que
+        // queda, y es honesta: en los presets bajos el detalle se ve bajo los
+        // pies y no a cuarenta metros, que es donde igual no se distinguía.
+        float alcance = max(uDetalleAlcance, 0.02);
+        float cercania = 1.0 - smoothstep(30.0 * alcance, 420.0 * alcance, distVista);
+        float muyCerca = 1.0 - smoothstep(4.0 * alcance, 45.0 * alcance, distVista);
 
         // Cada escala se calcula SÓLO si su factor de desvanecimiento la va a
         // usar. Antes se calculaban todas siempre y después se multiplicaban por
@@ -495,7 +511,7 @@ export class Terreno {
         // desenfocado, que era el peor defecto visual que quedaba: todo el
         // trabajo multiescala se terminaba antes de llegar a donde el jugador
         // realmente mira.
-        float pasoCorto = 1.0 - smoothstep(1.2, 16.0, distVista);
+        float pasoCorto = 1.0 - smoothstep(1.2 * alcance, 16.0 * alcance, distVista);
         if (pasoCorto > 0.004) gravilla = fbmTriCorto(vMundo, nrm, 8.2);   // ~12 cm
 
         float detalle = macro;
@@ -597,13 +613,14 @@ export class Terreno {
         // hormiguee. El DEM tiene 32 m por texel: todo lo que pasa por debajo
         // de esa escala tiene que nacer acá.
         float dv = length(vViewPosition);
-        float f1 = 1.0 - smoothstep(20.0, 300.0, dv);
-        float f2 = 1.0 - smoothstep(3.0, 40.0, dv);
+        float alcanceN = max(uDetalleAlcance, 0.02);
+        float f1 = 1.0 - smoothstep(20.0 * alcanceN, 300.0 * alcanceN, dv);
+        float f2 = 1.0 - smoothstep(3.0 * alcanceN, 40.0 * alcanceN, dv);
 
         // Normal del relieve fino, derivada de la MISMA textura que desplazó
         // los vértices. Si se usara otro ruido, la luz contaría una historia
         // distinta de la que cuenta la silueta.
-        {
+        if (f1 > 0.004) {
           vec4 cobN = texture2D(uTexCobertura, vMundo.xz / uTamanoMundo + 0.5);
           float enTierra = 1.0 - smoothstep(0.15, 0.6, cobN.r);
           float e = uDetallePeriodo / 256.0;   // un texel del mosaico

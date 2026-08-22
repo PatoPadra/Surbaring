@@ -66,7 +66,7 @@ export const PRESETS = [
     sombraEnCubierta: true, terrenoProyecta: true,
     oclusion: true, divisorOclusion: 2,
     resplandor: true, suavizado: true, correccionColor: true, nitidez: 0.30,
-    vegetacion: 1.0, sotobosque: 1.0, vista: 90000,
+    vegetacion: 1.0, sotobosque: 1.0, vista: 90000, detalleTerreno: 1.0,
     reflejoAgua: 0.5,
   },
   {
@@ -76,7 +76,7 @@ export const PRESETS = [
     sombraEnCubierta: true, terrenoProyecta: true,
     oclusion: true, divisorOclusion: 2,
     resplandor: true, suavizado: true, correccionColor: true, nitidez: 0.30,
-    vegetacion: 0.8, sotobosque: 0.7, vista: 70000,
+    vegetacion: 0.8, sotobosque: 0.7, vista: 70000, detalleTerreno: 1.0,
     reflejoAgua: 0.35,
   },
   {
@@ -95,7 +95,7 @@ export const PRESETS = [
     sombraEnCubierta: true, terrenoProyecta: true,
     oclusion: false, divisorOclusion: 2,
     resplandor: false, suavizado: true, correccionColor: true, nitidez: 0.30,
-    vegetacion: 0.9, sotobosque: 0.8, vista: 65000,
+    vegetacion: 0.9, sotobosque: 0.8, vista: 65000, detalleTerreno: 0.8,
     reflejoAgua: 0.35,
   },
   {
@@ -105,7 +105,7 @@ export const PRESETS = [
     sombraEnCubierta: false, terrenoProyecta: false,
     oclusion: false, divisorOclusion: 3,
     resplandor: false, suavizado: true, correccionColor: true, nitidez: 0.22,
-    vegetacion: 0.42, sotobosque: 0.28, vista: 34000,
+    vegetacion: 0.42, sotobosque: 0.28, vista: 34000, detalleTerreno: 0.35,
     reflejoAgua: 0,
   },
   {
@@ -115,7 +115,7 @@ export const PRESETS = [
     sombraEnCubierta: false, terrenoProyecta: false,
     oclusion: false, divisorOclusion: 4,
     resplandor: false, suavizado: false, correccionColor: true, nitidez: 0,
-    vegetacion: 0.35, sotobosque: 0.30, vista: 26000,
+    vegetacion: 0.35, sotobosque: 0.30, vista: 26000, detalleTerreno: 0.18,
     reflejoAgua: 0,
   },
 ];
@@ -266,6 +266,8 @@ export class Calidad {
     }
     if (this.ctx.terreno) {
       this.ctx.terreno.malla.castShadow = p.terrenoProyecta !== false;
+      const u = this.ctx.terreno.uniformes?.uDetalleAlcance;
+      if (u) u.value = p.detalleTerreno ?? 1.0;
     }
 
     // ── Posproceso
