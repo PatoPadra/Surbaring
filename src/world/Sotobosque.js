@@ -140,6 +140,7 @@ export class Sotobosque {
     this._normal = new THREE.Vector3();
     this._qGiro = new THREE.Quaternion();
     this._colorAlt = new THREE.Color();
+    this._colorSuelo = new THREE.Color();
     this.total = 0;
   }
 
@@ -404,7 +405,26 @@ export class Sotobosque {
       lote.malla.setMatrixAt(lote.nParcial, this._m);
 
       color.set(tipo.color).lerp(this._colorAlt.set(tipo.colorAlt), azar());
-      const brillo = 0.82 + azar() * 0.4;
+      // Que la mata sepa sobre qué tierra está parada.
+      //
+      // El tinte salía de puro azar entre dos constantes de la especie, sin
+      // consultar el terreno, mientras el shader del suelo calculaba su color a
+      // partir de humedad, altura, pendiente y parche. Dos superficies que se
+      // tocan con dos modelos de color que no se conocen: por eso el pastizal
+      // se leía como una calcomanía apoyada encima y no como algo que sale de
+      // esa tierra. Un tercio de mezcla alcanza —a uno entero el pastizal
+      // desaparece— y con eso, donde el suelo vira a seco, el pasto vira con él.
+      //
+      // Los mismos tres colores que usa Terreno.js para la cubierta vegetal.
+      const hs = Math.min(1, Math.max(0, hum));
+      this._colorSuelo.setRGB(
+        0.290 + (0.070 - 0.290) * hs,
+        0.264 + (0.126 - 0.264) * hs,
+        0.180 + (0.066 - 0.180) * hs);
+      color.lerp(this._colorSuelo, 0.35);
+      // El rango de brillo era más ancho que la variación real dentro de una
+      // champa, y buena parte del ruido cromático salía de ahí.
+      const brillo = 0.88 + azar() * 0.24;
       lote.tintes.setXYZ(lote.nParcial, color.r * brillo, color.g * brillo, color.b * brillo);
 
       lote.nParcial++;

@@ -294,12 +294,34 @@ const FRAG_COLOR = /* glsl */`
   uniform vec3 uSombras;      // tinte de las sombras
   uniform vec3 uLuces;        // tinte de las luces
   uniform float uTecho;       // compresión de las luces altas
+  uniform vec2 uPasoPx;       // 1/ancho, 1/alto del objetivo
+  uniform float uNitidez;     // realce de contraste local
   varying vec2 vUv;
 
   float luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 
   void main() {
     vec3 c = texture2D(tDiffuse, vUv).rgb;
+
+    // Realce de contraste local, y es lo único de toda la cadena que devuelve
+    // frecuencia alta.
+    //
+    // El FXAA hace su trabajo, y su trabajo es difuminar bordes; después nadie
+    // le devolvía nada. Este pase hacía techo, curva, temperatura, saturación y
+    // viñeteado, todas operaciones que miran un píxel por vez y ninguna que mire
+    // a los vecinos. Una cruz de cuatro tomas alcanza: la mitad del ancho de
+    // banda de un kernel de ocho por casi el mismo efecto percibido.
+    //
+    // Va ANTES de la curva en S. Si fuera después, el realce amplificaría el
+    // ruido que la curva acaba de estirar.
+    if (uNitidez > 0.001) {
+      vec3 vecinos = texture2D(tDiffuse, vUv + vec2(0.0, uPasoPx.y)).rgb
+                   + texture2D(tDiffuse, vUv - vec2(0.0, uPasoPx.y)).rgb
+                   + texture2D(tDiffuse, vUv + vec2(uPasoPx.x, 0.0)).rgb
+                   + texture2D(tDiffuse, vUv - vec2(uPasoPx.x, 0.0)).rgb;
+      c += (c - vecinos * 0.25) * uNitidez;
+      c = max(c, vec3(0.0));
+    }
 
     // Techo suave: el cielo nublado se iba a blanco puro y se comía el
     // horizonte. Esto lo frena antes de llegar a 1 sin apagar la escena.
@@ -344,6 +366,11 @@ export class PasoColor extends Pass {
         // ahora ACES ya hizo ese trabajo y sólo hace falta frenar el blanco
         // puro, que es lo que se comía el horizonte nublado.
         uTecho: { value: 0.94 },
+        uPasoPx: { value: new THREE.Vector2(1 / 1024, 1 / 576) },
+        // 0,30 da filo sin halo. Por encima de 0,45 aparece un borde claro
+        // alrededor de los troncos contra el cielo, que es la firma de haberse
+        // pasado. Los presets bajos lo apagan.
+        uNitidez: { value: 0.30 },
       },
       vertexShader: `
         varying vec2 vUv;

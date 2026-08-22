@@ -52,7 +52,7 @@ export const PRESETS = [
     sombras: true, mapaSombra: 2048, alcanceSombra: 900, tipoSombra: 'suave',
     sombraEnCubierta: true, terrenoProyecta: true,
     oclusion: true, divisorOclusion: 2,
-    resplandor: true, suavizado: true, correccionColor: true,
+    resplandor: true, suavizado: true, correccionColor: true, nitidez: 0.30,
     vegetacion: 1.0, sotobosque: 1.0, vista: 90000,
     reflejoAgua: 0.5,
   },
@@ -62,7 +62,7 @@ export const PRESETS = [
     sombras: true, mapaSombra: 1024, alcanceSombra: 600, tipoSombra: 'suave',
     sombraEnCubierta: true, terrenoProyecta: true,
     oclusion: true, divisorOclusion: 2,
-    resplandor: true, suavizado: true, correccionColor: true,
+    resplandor: true, suavizado: true, correccionColor: true, nitidez: 0.30,
     vegetacion: 0.8, sotobosque: 0.7, vista: 70000,
     reflejoAgua: 0.35,
   },
@@ -81,7 +81,7 @@ export const PRESETS = [
     sombras: true, mapaSombra: 1024, alcanceSombra: 500, tipoSombra: 'media',
     sombraEnCubierta: true, terrenoProyecta: true,
     oclusion: false, divisorOclusion: 2,
-    resplandor: false, suavizado: true, correccionColor: true,
+    resplandor: false, suavizado: true, correccionColor: true, nitidez: 0.30,
     vegetacion: 0.9, sotobosque: 0.8, vista: 65000,
     reflejoAgua: 0.35,
   },
@@ -91,7 +91,7 @@ export const PRESETS = [
     sombras: true, mapaSombra: 512, alcanceSombra: 320, tipoSombra: 'media',
     sombraEnCubierta: false, terrenoProyecta: false,
     oclusion: false, divisorOclusion: 3,
-    resplandor: false, suavizado: true, correccionColor: true,
+    resplandor: false, suavizado: true, correccionColor: true, nitidez: 0.22,
     vegetacion: 0.55, sotobosque: 0.45, vista: 55000,
     reflejoAgua: 0,
   },
@@ -101,7 +101,7 @@ export const PRESETS = [
     sombras: false, mapaSombra: 512, alcanceSombra: 200, tipoSombra: 'dura',
     sombraEnCubierta: false, terrenoProyecta: false,
     oclusion: false, divisorOclusion: 4,
-    resplandor: false, suavizado: false, correccionColor: true,
+    resplandor: false, suavizado: false, correccionColor: true, nitidez: 0,
     vegetacion: 0.35, sotobosque: 0.25, vista: 45000,
     reflejoAgua: 0,
   },
@@ -257,7 +257,15 @@ export class Calidad {
 
     // ── Posproceso
     if (oclusion) oclusion.enabled = p.oclusion;
-    if (color) color.enabled = p.correccionColor;
+    if (color) {
+      color.enabled = p.correccionColor;
+      // El realce trabaja en texels, así que necesita el tamaño real del
+      // objetivo. Mismo dato que el suavizado, misma razón para vivir acá.
+      color.material?.uniforms?.uPasoPx?.value.set(1 / anchoPx, 1 / altoPx);
+      if (color.material?.uniforms?.uNitidez) {
+        color.material.uniforms.uNitidez.value = p.nitidez ?? 0.30;
+      }
+    }
     if (resplandor) resplandor.enabled = p.resplandor;
     if (suavizado) {
       suavizado.enabled = p.suavizado;
