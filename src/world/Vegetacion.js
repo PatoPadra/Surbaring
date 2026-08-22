@@ -123,6 +123,8 @@ export class Vegetacion {
     malla.frustumCulled = false;
     malla.count = 0;
     malla.name = esp.id;
+    // Después del sotobosque y antes del terreno: ver la nota de Sotobosque.js.
+    malla.renderOrder = -20;
     // Recorte del pase de sombra. three llama a estos dos ganchos alrededor de
     // cada cascada, así que acá se baja la cuenta a lo que la sombra alcanza y
     // se la devuelve enseguida para el pase visible.
@@ -181,6 +183,7 @@ export class Vegetacion {
     malla.receiveShadow = false;
     malla.frustumCulled = false;
     malla.count = 0;
+    malla.renderOrder = -15;      // las carteleras están lejos: después de los árboles
     malla.name = esp.id + '_impostor';
 
     const colores = new THREE.InstancedBufferAttribute(new Float32Array(MAX_IMPOSTORES * 3), 3);

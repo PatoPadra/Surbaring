@@ -237,3 +237,27 @@ crearlo, abriendo un contexto de 1×1 sólo para preguntar qué placa hay.
 
 **3,0× en Baja y 4,5× en Mínima**, que es el preset donde el gobernador termina
 en esta placa.
+
+## Quinta ronda: el orden de dibujo, que recién ahora valía algo
+
+Con el rechazo temprano por profundidad de vuelta en funcionamiento, el orden
+pasó a importar: lo que se dibuja primero tapa, y lo tapado no se sombrea. El
+terreno es lo más caro por píxel y está detrás de casi todo, así que va último
+entre los opacos; el sotobosque, que es lo más cercano, va primero.
+
+| Orden | ms |
+|---|---|
+| El que salía por defecto | 41,1 |
+| Terreno primero | 41,1 |
+| **De cerca a lejos** | **36,9** |
+
+Otro 10 % por cuatro asignaciones de `renderOrder`. Antes de apagar la
+profundidad logarítmica este cambio no habría dado nada, porque no había rechazo
+temprano que aprovechar.
+
+## Estado final
+
+| | Base | Ahora | |
+|---|---|---|---|
+| Baja @ 1024×576 | 122,8 ms · 8,1 fps | **36,1 ms · 27,7 fps** | **3,4×** |
+| Mínima @ 845×475 | ~95 ms · ~10,5 fps | **17,8 ms · 56,1 fps** | **5,3×** |

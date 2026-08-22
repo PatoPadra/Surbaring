@@ -178,6 +178,15 @@ export class Sotobosque {
     // Deliberado: la cubierta de suelo no proyecta sombra, sólo la recibe.
     malla.castShadow = false;
     malla.receiveShadow = true;
+    // Orden de dibujo de cerca a lejos, que recién ahora vale la pena.
+    //
+    // Con la profundidad logarítmica apagada volvió a funcionar el rechazo
+    // temprano por profundidad, y con él el orden pasa a importar: lo que se
+    // dibuja primero tapa, y lo tapado no se sombrea. El terreno es lo más caro
+    // por píxel y está detrás de casi todo, así que va último entre los opacos;
+    // el sotobosque, que es lo más cercano, va primero. Medido: 41,1 ms en el
+    // orden que salía por defecto, 36,9 dibujando de cerca a lejos.
+    malla.renderOrder = -30;
     malla.frustumCulled = false;
     malla.count = 0;
     malla.name = tipo.id;

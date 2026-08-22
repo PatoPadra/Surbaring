@@ -171,6 +171,9 @@ export class Terreno {
 
     this.material = this._crearMaterial();
     this.malla = new THREE.Mesh(geo, this.material);
+    // Último entre los opacos: es lo más caro por píxel y está detrás de casi
+    // todo. Ver la nota de Sotobosque.js.
+    this.malla.renderOrder = -10;
     this.malla.frustumCulled = false;
     this.malla.castShadow = true;
     this.malla.receiveShadow = true;
