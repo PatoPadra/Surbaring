@@ -22,6 +22,26 @@
 import * as THREE from 'three';
 
 /**
+ * El filtro de sombra, que es el eje que a los presets les faltaba.
+ *
+ * Los cuatro presets movían cinco palancas por píxel —escala, pixelRatio,
+ * oclusión, resplandor, suavizado— y ninguna tocaba lo que cuesta RECIBIR la
+ * sombra, que es de los rubros más caros del cuadro. Medido en la placa de
+ * destino: 12,3 ms de 90, sólo en el filtro.
+ *
+ * `PCFSoftShadowMap` hace dieciséis lecturas de textura por píxel, y como los
+ * mapas de three van empaquetados en RGBA, cada una es un texture2D completo
+ * más un desempaquetado: no hay comparación por hardware que ayude.
+ * `PCFShadowMap` hace nueve. El borde queda un punto más duro y en una placa de
+ * 2012 eso es un precio que vale la pena.
+ */
+const TIPO_SOMBRA = {
+  suave: THREE.PCFSoftShadowMap,
+  media: THREE.PCFShadowMap,
+  dura: THREE.BasicShadowMap,
+};
+
+/**
  * De más a menos. Cada preset dice qué resolución usar y qué apagar; los
  * factores de instancias recortan pasto y árboles sin tocar sus sistemas.
  */
@@ -29,7 +49,7 @@ export const PRESETS = [
   {
     id: 'alta', nombre: 'Alta',
     escala: 1.0, maxPixelRatio: 2,
-    sombras: true, mapaSombra: 2048, alcanceSombra: 900,
+    sombras: true, mapaSombra: 2048, alcanceSombra: 900, tipoSombra: 'suave',
     oclusion: true, divisorOclusion: 2,
     resplandor: true, suavizado: true, correccionColor: true,
     vegetacion: 1.0, sotobosque: 1.0, vista: 90000,
@@ -38,7 +58,7 @@ export const PRESETS = [
   {
     id: 'media', nombre: 'Media',
     escala: 1.0, maxPixelRatio: 1.25,
-    sombras: true, mapaSombra: 1024, alcanceSombra: 600,
+    sombras: true, mapaSombra: 1024, alcanceSombra: 600, tipoSombra: 'suave',
     oclusion: true, divisorOclusion: 2,
     resplandor: true, suavizado: true, correccionColor: true,
     vegetacion: 0.8, sotobosque: 0.7, vista: 70000,
@@ -47,7 +67,7 @@ export const PRESETS = [
   {
     id: 'baja', nombre: 'Baja',
     escala: 0.8, maxPixelRatio: 1,
-    sombras: true, mapaSombra: 512, alcanceSombra: 320,
+    sombras: true, mapaSombra: 512, alcanceSombra: 320, tipoSombra: 'media',
     oclusion: false, divisorOclusion: 3,
     resplandor: false, suavizado: true, correccionColor: true,
     vegetacion: 0.55, sotobosque: 0.45, vista: 55000,
@@ -56,7 +76,7 @@ export const PRESETS = [
   {
     id: 'minima', nombre: 'Mínima',
     escala: 0.6, maxPixelRatio: 1,
-    sombras: false, mapaSombra: 512, alcanceSombra: 200,
+    sombras: false, mapaSombra: 512, alcanceSombra: 200, tipoSombra: 'dura',
     oclusion: false, divisorOclusion: 4,
     resplandor: false, suavizado: false, correccionColor: true,
     vegetacion: 0.35, sotobosque: 0.25, vista: 45000,
@@ -149,6 +169,19 @@ export class Calidad {
 
     // ── Sombras
     render.shadowMap.enabled = p.sombras;
+    // Cambiar el tipo de filtro entra en la clave de caché del programa, así que
+    // obliga a recompilar todos los materiales: unos cuarenta shaders, que en la
+    // placa de destino es un tirón de varios cientos de milisegundos. Sólo se
+    // hace cuando de verdad cambia, no en cada `aplicar()`.
+    const tipoNuevo = TIPO_SOMBRA[p.tipoSombra] ?? THREE.PCFSoftShadowMap;
+    if (render.shadowMap.type !== tipoNuevo) {
+      render.shadowMap.type = tipoNuevo;
+      this.ctx.escena?.traverse(o => {
+        if (o.material) {
+          for (const m of Array.isArray(o.material) ? o.material : [o.material]) m.needsUpdate = true;
+        }
+      });
+    }
     if (csm) {
       csm.maxFar = p.alcanceSombra;
       for (const luz of csm.lights) {

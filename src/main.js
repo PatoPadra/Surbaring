@@ -131,6 +131,27 @@ async function iniciar() {
     luz.shadow.bias = -0.0004;
   });
 
+  // Ley de niebla lineal en la distancia (Beer-Lambert), no cuadrática.
+  //
+  // three trae `FogExp2` con `1 - exp(-d²·z²)`, y con la densidad de un día
+  // limpio eso da 0,09 % de niebla a un kilómetro y 0,36 % a tres: o sea CERO
+  // aire en todo el rango donde vive el bosque, con toda la extinción amontonada
+  // más allá de los veinte kilómetros. Por eso la línea de árboles del fondo
+  // sale con el mismo contraste y la misma saturación que el pasto que uno tiene
+  // a dos metros, y por eso el atardecer sólo se notaba en el cielo: la hora del
+  // día nunca llegaba al suelo.
+  //
+  // Con la misma densidad, la ley lineal da 3 % a un kilómetro, 8,6 % a tres y
+  // 26 % a diez. Más aire cerca —que es donde se lee la profundidad— y, de
+  // yapa, la cordillera lejana queda MÁS visible que antes, no menos.
+  //
+  // Se reemplaza el chunk una sola vez, antes de que compile cualquier material,
+  // y con eso quedan cubiertos el terreno, la vegetación cercana, la fauna y el
+  // cuerpo. Las dos réplicas a mano —el agua y las carteleras— llevan la misma
+  // fórmula: si difieren, se ve el escalón entre una superficie y la otra.
+  THREE.ShaderChunk.fog_fragment = THREE.ShaderChunk.fog_fragment.replace(
+    '- fogDensity * fogDensity * vFogDepth * vFogDepth',
+    '- fogDensity * vFogDepth');
   escena.fog = new THREE.FogExp2(0x9ab4c8, 0.000055);
 
   // Precipitación, rayos y humo: hasta acá el clima existía en los números y en

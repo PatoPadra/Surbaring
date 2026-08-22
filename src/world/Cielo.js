@@ -88,7 +88,21 @@ export class Cielo {
       fragmentShader: FRAG,
     });
     this.malla = new THREE.Mesh(geo, mat);
-    this.malla.renderOrder = -1000;
+    // Último entre los opacos, no primero.
+    //
+    // Estaba en -1000, o sea que el domo de 42 km entraba con el búfer de
+    // profundidad recién limpiado y NINGÚN píxel de cielo se rechazaba: el
+    // shader —dispersión de Rayleigh y Mie más dos fbm de cinco octavas para las
+    // nubes, unas ochenta evaluaciones de hash por píxel— corría entero en la
+    // pantalla completa, y después el terreno y el bosque lo pintaban encima.
+    // Medido en la placa de destino: 4,3 ms de los 122,8 del cuadro, tirados en
+    // píxeles tapados.
+    //
+    // Dibujándolo último, la prueba de profundidad temprana descarta todo lo que
+    // la geometría ya cubrió. No escribe profundidad, así que no puede tapar
+    // nada nuevo; y el agua es transparente, o sea que va después de todos los
+    // opacos y lo sigue viendo debajo.
+    this.malla.renderOrder = 1000;
     this.malla.frustumCulled = false;
     escena.add(this.malla);
 
@@ -134,6 +148,19 @@ export class Cielo {
     );
     this.luzSol.color.copy(color);
     this.luzSol.intensity = 3.4 * dia + 0.06;
+    // Copia propia del sol, porque `main` pisa `luzSol.intensity` con cero antes
+    // de que la vegetación la lea —la iluminación direccional la aportan las
+    // cascadas— y quien la buscara desde afuera se llevaba un cero.
+    //
+    // Vegetacion.js pedía `cielo.intensidadSolar` y `cielo.luzSolColor`, que NO
+    // EXISTÍAN: el `??` caía siempre y las carteleras se iluminaban con un sol
+    // constante de 2,0 a las seis de la mañana, al mediodía y a las nueve de la
+    // noche. Por eso el bosque lejano se veía como recortes de cartulina negra
+    // mientras el árbol de al lado brillaba: dos paradas y media de diferencia
+    // bajo el mismo sol. El comentario de aquel archivo prometía exactamente lo
+    // contrario de lo que el código hacía.
+    this.intensidadSolar = this.luzSol.intensity;
+    this.luzSolColor = this.luzSol.color;
 
     this.luzSol.position.copy(this.direccionSol).multiplyScalar(6000);
     this.luzSol.target.position.set(0, 0, 0);

@@ -493,6 +493,21 @@ vec3 normalOleaje(vec2 p, float t, float fuerza) {
 }
 
 void main() {
+  // La profundidad logarítmica se ESCRIBE acá, y sin esta línea el lago entero
+  // desaparece del juego.
+  //
+  // El arreglo del parpadeo le puso a este shader tres de los cuatro chunks:
+  // las dos declaraciones y el del vértice. Faltaba éste, que es el que
+  // realmente escribe gl_FragDepth. Sin él la superficie declaraba las varyings
+  // y después dejaba la profundidad interpolada estándar, incomparable con la
+  // logarítmica que escribe el terreno: el agua perdía la prueba de profundidad
+  // contra SU PROPIO FONDO y no se dibujaba nunca. Lo que se veía en su lugar
+  // era el lecho del lago, que el shader del terreno pinta de gris pardo, y por
+  // eso el Nahuel Huapi parecía un descampado.
+  //
+  // Se descubrió apagando el terreno y viendo aparecer el lago entero debajo.
+  #include <logdepthbuf_fragment>
+
   // Fuera de la máscara del DEM no hay lago, y tampoco si el fondo pertenece
   // a otro cuerpo de agua a distinta cota.
   if (vMascara < 0.5) discard;
@@ -500,10 +515,31 @@ void main() {
 
   vec3 vista = normalize(uCamara - vMundo);
   float fuerza = clamp(uFuerzaOleaje, 0.05, 1.6);
-  vec3 N = normalOleaje(vMundo.xz, uTiempo, fuerza);
 
-  // Las olas grandes ya inclinaron la superficie: sumamos esa pendiente
-  N = normalize(N + vec3(-vDesplazamiento.x, 0.0, -vDesplazamiento.z) * 0.55);
+  // La normal del oleaje se aplana con la distancia, y esto no es un ajuste
+  // estético: es lo que hace que el lago tenga color.
+  //
+  // El ruido perturbaba la normal con pendientes de ±16° en CADA fragmento, a
+  // cualquier distancia. En el horizonte cosVista tendría que valer ~0,02 y
+  // dar un Fresnel de ~0,9 —el agua a ángulo rasante es un espejo—, pero con la
+  // normal bamboleando al azar el promedio subía a 0,2 y el Fresnel se caía a
+  // 0,25. Toda la reflexión quedaba apagada: el cielo, el espejo del cerro, el
+  // reguero del sol. Mandaba la refracción, que a cuatrocientos metros de agua
+  // es casi negra. De ahí salían las dos cosas raras del lago: que fuera un
+  // gris pardo sin color, y que se OSCURECIERA hacia el horizonte en vez de
+  // encenderse.
+  //
+  // Además el ruido tiene un período de ~1,8 m: a quinientos metros es subpíxel
+  // y hormiguea. Aplanarlo arregla el color, arregla el aliasing y de paso
+  // saltea nueve evaluaciones de ruido en toda la mitad lejana del lago.
+  float distOjo = length(uCamara - vMundo);
+  float nitidez = 1.0 - smoothstep(80.0, 1200.0, distOjo);
+
+  vec3 N = vec3(0.0, 1.0, 0.0);
+  if (nitidez > 0.01) {
+    N = normalOleaje(vMundo.xz, uTiempo, fuerza * nitidez);
+    N = normalize(N + vec3(-vDesplazamiento.x, 0.0, -vDesplazamiento.z) * 0.55 * nitidez);
+  }
 
   float cosVista = clamp(dot(N, vista), 0.0, 1.0);
 
@@ -584,7 +620,9 @@ void main() {
 
   // ── Niebla exponencial coherente con la escena
   float distancia = length(uCamara - vMundo);
-  float factorNiebla = 1.0 - exp(-fogDensity * fogDensity * distancia * distancia);
+  // Misma ley lineal que el resto de la escena (ver main.js): si acá quedara la
+  // cuadrática, el agua y la costa se separarían con un escalón visible.
+  float factorNiebla = 1.0 - exp(-fogDensity * distancia);
   color = mix(color, fogColor, clamp(factorNiebla, 0.0, 1.0));
 
   gl_FragColor = vec4(color, alfa);

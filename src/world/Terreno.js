@@ -394,18 +394,28 @@ export class Terreno {
           vec3 w = abs(n);
           w = pow(w, vec3(4.0));
           w /= max(w.x + w.y + w.z, 1e-4);
-          return fbm3(p.yz * escala) * w.x
-               + fbm3(p.xz * escala) * w.y
-               + fbm3(p.xy * escala) * w.z;
+          // Un eje por vez, y sólo si pesa. El pow(w, 4) concentra muchísimo la
+          // mezcla: en suelo llano w es prácticamente (0, 1, 0), así que seis de
+          // las nueve octavas se calculaban para multiplicarlas por cero. Y esto
+          // no lo paga una escala: lo pagan macro, grano, meso, veta, micro,
+          // gravilla y las cuatro llamadas de la normal fina, en cada píxel de
+          // terreno. El umbral es el mismo 0,004 que ya usa el resto del archivo.
+          float r = 0.0;
+          if (w.x > 0.004) r += fbm3(p.yz * escala) * w.x;
+          if (w.y > 0.004) r += fbm3(p.xz * escala) * w.y;
+          if (w.z > 0.004) r += fbm3(p.xy * escala) * w.z;
+          return r;
         }
         /** Versión barata, para las frecuencias altas que sólo se ven de cerca. */
         float fbmTriCorto(vec3 p, vec3 n, float escala) {
           vec3 w = abs(n);
           w = pow(w, vec3(4.0));
           w /= max(w.x + w.y + w.z, 1e-4);
-          return fbm2(p.yz * escala) * w.x
-               + fbm2(p.xz * escala) * w.y
-               + fbm2(p.xy * escala) * w.z;
+          float r = 0.0;
+          if (w.x > 0.004) r += fbm2(p.yz * escala) * w.x;
+          if (w.y > 0.004) r += fbm2(p.xz * escala) * w.y;
+          if (w.z > 0.004) r += fbm2(p.xy * escala) * w.z;
+          return r;
         }
       ` + shader.fragmentShader;
 
@@ -423,13 +433,27 @@ export class Terreno {
         float alt = vMundo.y;
 
         // ── Paletas de la Patagonia andina ──────────────────────────────────
-        vec3 rocaBase   = vec3(0.335, 0.320, 0.302);    // granodiorita del batolito
-        vec3 rocaOscura = vec3(0.185, 0.176, 0.170);
-        vec3 pedregal   = vec3(0.430, 0.408, 0.378);    // acarreo altoandino
-        vec3 suelo      = vec3(0.196, 0.148, 0.104);    // andisol sobre ceniza
-        vec3 bosqueHum  = vec3(0.086, 0.156, 0.082);    // coihue / selva valdiviana
-        vec3 bosqueSeco = vec3(0.204, 0.226, 0.128);    // ñire y ciprés
-        vec3 estepa     = vec3(0.478, 0.436, 0.296);    // coirón y neneo
+        // Albedos LINEALES, no colores de pantalla. Acá estaba la razón por la
+        // que el suelo se veía de tiza y sin definición: con 0,478 el coirón
+        // tenía un albedo de 0,72 en sRGB —el coirón seco real anda en 0,20 a
+        // 0,25 y el granito no pasa de 0,25— y después pastoClaro lo
+        // multiplicaba por 1,62, dejándolo en 0,859, más claro que la nieve de
+        // dos líneas más abajo. Multiplicado por un sol de 3,4, el suelo entero
+        // aterrizaba sobre el hombro plano de ACES.
+        //
+        // Lo importante de esto no es que quede oscuro: es que TODO el trabajo
+        // multiescala —macro, meso, micro, gravilla, la normal fina en tres
+        // escalas, el triplanar— se estaba calculando y se comprimía a nada
+        // porque modulaba un valor clavado arriba de la curva tonal. Se pagaba
+        // el ruido y no se veía. Bajar la paleta no le saca luz al juego: le
+        // devuelve el contraste local que ya estaba computado.
+        vec3 rocaBase   = vec3(0.222, 0.212, 0.200);    // granodiorita del batolito
+        vec3 rocaOscura = vec3(0.140, 0.133, 0.128);
+        vec3 pedregal   = vec3(0.270, 0.256, 0.238);    // acarreo altoandino
+        vec3 suelo      = vec3(0.150, 0.113, 0.080);    // andisol sobre ceniza
+        vec3 bosqueHum  = vec3(0.070, 0.126, 0.066);    // coihue / selva valdiviana
+        vec3 bosqueSeco = vec3(0.160, 0.178, 0.101);    // ñire y ciprés
+        vec3 estepa     = vec3(0.290, 0.264, 0.180);    // coirón y neneo
         vec3 nieve      = vec3(0.885, 0.912, 0.945);
 
         // Otoño: la lenga y el ñire viran a rojo y naranja intensos.
@@ -452,7 +476,17 @@ export class Terreno {
         // 377 ms de los 504 del cuadro en una Intel HD 4000. Un píxel lejano
         // ahora resuelve con nueve.
         float macro = fbmTri(vMundo, nrm, 0.021);      // manchones de ~48 m
-        float grano = fbmTri(vMundo, nrm, 0.42);
+        // El grano tiene un período de ~2,4 m: a cinco kilómetros eso está muy
+        // por debajo de un píxel, y como es ruido procedural no hay mipmap que
+        // lo promedie. Cada píxel del cerro sacaba un valor independiente, y eso
+        // es la estática que hacía parecer el horizonte un error de compresión.
+        // Sus tres hermanos ya tenían puerta de distancia; a éste se le pasó.
+        // Además de arreglar el hormigueo, la puerta saltea nueve evaluaciones
+        // de ruido en cada píxel lejano, que es la mitad del cuadro cuando se
+        // mira un lago o un valle.
+        float lejania = smoothstep(600.0, 2500.0, distVista);
+        float grano = 0.5;
+        if (lejania < 0.996) grano = mix(fbmTri(vMundo, nrm, 0.42), 0.5, lejania);
         float meso = 0.5, micro = 0.5, gravilla = 0.5;
         if (cercania > 0.004) meso = fbmTri(vMundo, nrm, 0.28);        // matas de ~3,5 m
         if (muyCerca > 0.004) micro = fbmTriCorto(vMundo, nrm, 2.6);   // grano de ~0,4 m
@@ -492,7 +526,7 @@ export class Terreno {
                              + relieveFino * 0.45 * cercania
                              + (detalle - 0.5) * 0.7, 0.0, 1.0);
 
-        vec3 pastoClaro = vegetacion * 1.62 + vec3(0.085, 0.092, 0.032);
+        vec3 pastoClaro = vegetacion * 1.05 + vec3(0.028, 0.030, 0.011);
         vec3 mataOscura = vegetacion * 0.44;
         vegetacion = mix(mataOscura, pastoClaro, smoothstep(0.24, 0.78, parche));
         // Tierra desnuda asomando entre las matas

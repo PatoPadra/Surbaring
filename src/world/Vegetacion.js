@@ -93,11 +93,21 @@ export class Vegetacion {
   _crearLote(esp) {
     const geo = construirPlanta(esp);
     const claseHoja = clasificar(esp) === 'columnar' ? 'aguja' : 'lamina';
-    const mat = new THREE.MeshStandardMaterial({
+    // Lambert y no Standard, y la razón es de presupuesto medido.
+    //
+    // Con rugosidad 0,88 y metalness 0 el lóbulo especular de GGX no aporta un
+    // solo píxel que se distinga: la hoja es mate. Pero cada fragmento pagaba
+    // igual el BRDF físico completo —D_GGX, V_GGX_SmithCorrelated, F_Schlick,
+    // más computeMultiscattering y DFGApprox del camino indirecto— y con el
+    // desvanecido de cascadas del CSM, en la banda de solape lo pagaba dos
+    // veces. El follaje y el sotobosque juntos son 58 de los 99 ms del cuadro
+    // en la placa de destino, así que ahí es donde eso pesa.
+    //
+    // El terreno se queda en Standard a propósito: su rugosidad varía —la nieve
+    // y la roca mojada brillan— y ese brillo sí se ve.
+    const mat = new THREE.MeshLambertMaterial({
       vertexColors: true,
       map: atlasFollaje(claseHoja),
-      roughness: 0.88,
-      metalness: 0.0,
       side: THREE.DoubleSide,
       // Recorte por alfa: sin ordenar por profundidad y sin coste de mezcla.
       // El umbral es bajo a propósito, porque el mipmapping va comiendo el alfa
@@ -444,13 +454,11 @@ function hornearImpostor(render, geometria, mapaFollaje) {
   const alto = caja.max.y - caja.min.y;
   const centroY = (caja.max.y + caja.min.y) / 2;
 
-  const mat = new THREE.MeshStandardMaterial({
+  const mat = new THREE.MeshLambertMaterial({
     map: mapaFollaje,
     vertexColors: true,
     alphaTest: 0.28,
     side: THREE.DoubleSide,
-    roughness: 0.88,
-    metalness: 0,
   });
   const malla = new THREE.Mesh(geo, mat);
 
@@ -652,9 +660,14 @@ void main() {
   float invernal = clamp(1.0 - abs(uEstacion - 2.0), 0.0, 1.0) * (1.0 - uPerenne);
   color = mix(color, vec3(0.32, 0.26, 0.20), invernal * 0.62);
 
-  color *= uAmbiente + uColorSol * uIntensidadSol * 0.42;
+  // El 0,42 de antes compensaba a ojo un sol congelado en 2,0. Con la intensidad
+  // real del cielo hay que recalibrar: 0,26 deja la cartelera dentro de una
+  // parada del árbol de malla a la misma distancia, que es el cruce que no se
+  // tiene que ver.
+  color *= uAmbiente + uColorSol * uIntensidadSol * 0.26;
 
-  float f = 1.0 - exp(-uDensidadNiebla * uDensidadNiebla * vDist * vDist);
+  // Misma ley lineal que el resto de la escena (ver main.js)
+  float f = 1.0 - exp(-uDensidadNiebla * vDist);
   color = mix(color, uNiebla, clamp(f, 0.0, 1.0));
 
   gl_FragColor = vec4(color, 1.0);

@@ -145,11 +145,27 @@ export class Sotobosque {
 
   _crearLote(tipo) {
     const geo = tipo.geo();
-    const mat = new THREE.MeshStandardMaterial({
+    // Lambert y no Standard, y la razón es de presupuesto medido.
+    //
+    // Con rugosidad 0,88 y metalness 0 el lóbulo especular de GGX no aporta un
+    // solo píxel que se distinga: la hoja es mate. Pero cada fragmento pagaba
+    // igual el BRDF físico completo —D_GGX, V_GGX_SmithCorrelated, F_Schlick,
+    // más computeMultiscattering y DFGApprox del camino indirecto— y con el
+    // desvanecido de cascadas del CSM, en la banda de solape lo pagaba dos
+    // veces. El follaje y el sotobosque juntos son 58 de los 99 ms del cuadro
+    // en la placa de destino, así que ahí es donde eso pesa.
+    //
+    // El terreno se queda en Standard a propósito: su rugosidad varía —la nieve
+    // y la roca mojada brillan— y ese brillo sí se ve.
+    const mat = new THREE.MeshLambertMaterial({
       vertexColors: true,
-      roughness: tipo.id === 'piedra' ? 0.82 : 0.93,
-      metalness: 0,
-      side: THREE.DoubleSide,
+      // Dos caras sólo para lo que de verdad es una lámina. La piedra y el
+      // tronco son sólidos cerrados: rasterizar sus caras traseras es sombrear
+      // el doble de fragmentos para que después pierdan la prueba de
+      // profundidad, y encima cada uno de esos fragmentos paga los dieciséis
+      // muestreos del filtro de sombra.
+      side: (tipo.id === 'piedra' || tipo.id === 'tronco')
+        ? THREE.FrontSide : THREE.DoubleSide,
     });
     this._inyectar(mat, tipo);
 
