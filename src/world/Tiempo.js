@@ -30,7 +30,34 @@ const ESTACIONES = [
   { id: 'primavera', nombre: 'Primavera', meses: [9, 10, 11] },
 ];
 
-const VELOCIDADES = [60, 300, 1800, 7200];  // segundos simulados por segundo real
+/**
+ * Segundos del mundo por segundo real.
+ *
+ * Estaban en 60/300/1800/7200 con el 300 por defecto, y el cuerpo corre a 24
+ * (`ESCALA_METABOLISMO` en main.js): doce veces y media de diferencia entre los
+ * dos relojes del mismo juego. Lo que eso producía, medido:
+ *
+ * - Un día entero duraba 4,8 minutos reales y la noche 2,4. La constante
+ *   térmica del cuerpo es de unos 147 segundos, o sea que la noche era MÁS
+ *   CORTA que el tiempo que el cuerpo tarda en enfriarse: el modelo térmico se
+ *   comportaba como un promedio diario y el frío nocturno no se podía sentir,
+ *   aunque estuviera simulado con cuidado.
+ * - Una barra de sed duraba diez días de juego. El jugador veía diez amaneceres
+ *   antes de tener sed una vez.
+ * - La temporada de caza de exóticas, que va de marzo a mayo, empezaba a la hora
+ *   y veinticuatro minutos de juego y se iba a las cinco horas y media. Un juego
+ *   que enseña vedas, temporadas de pesca y floraciones necesita que el mes sea
+ *   un estado con duración, no un parpadeo.
+ *
+ * Con 72 el día dura veinte minutos y la noche unos ocho, que son tres veces la
+ * constante térmica: el frío de la noche por fin se siente y se resuelve con
+ * fuego, que es el bucle que el juego quiere enseñar. La relación entre relojes
+ * baja de 12,5 a 3, que es la que hace verdadera la frase "tengo sed cada día y
+ * medio". Los dos escalones de arriba siguen ahí para las hornadas de treinta
+ * horas, y ahora acelerar es seguro: el daño de los eventos dejó de leerse en
+ * este reloj.
+ */
+const VELOCIDADES = [24, 72, 900, 7200];
 
 export class Tiempo {
   constructor(lat, lon, fechaInicial = null) {

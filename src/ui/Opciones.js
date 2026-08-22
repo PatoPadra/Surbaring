@@ -356,8 +356,8 @@ export class Opciones {
         <span class="op-valor">${p?.bases?.length ?? 0}</span></div>
       <h3>Mundo</h3>
       <div class="op-fila"><span>Paso del tiempo</span>
-        ${this._botones('velocidadTiempo', [{ nombre: '1 min/s' }, { nombre: '5 min/s' },
-          { nombre: '30 min/s' }, { nombre: '2 h/s' }], this.tiempo.indiceVelocidad)}</div>
+        ${this._botones('velocidadTiempo', [{ nombre: '24 s/s' }, { nombre: '1 min/s' },
+          { nombre: '15 min/s' }, { nombre: '2 h/s' }], this.tiempo.indiceVelocidad)}</div>
       <div class="op-fila"><span>Explorado</span>
         <span class="op-valor">${(this.exploracion.fraccionExplorada * 100).toFixed(1)} %</span>
         <button data-accion="olvidarMapa" class="op-peligro">Borrar mapa</button></div>

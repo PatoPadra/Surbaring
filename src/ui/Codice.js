@@ -239,7 +239,7 @@ export class Codice {
         <header>
           <div>
             <h2>Códice del Nahuel Huapi</h2>
-            <p class="cx-sub">Guía de campo del Parque Nacional</p>
+            <p class="cx-sub" id="cx-dia">Guía de campo del Parque Nacional</p>
           </div>
           <div class="cx-progreso">
             <div><span id="cx-esp">0</span><small>especies</small></div>
@@ -321,6 +321,14 @@ export class Codice {
   // ── Pintado ───────────────────────────────────────────────────────────────
 
   _pintar() {
+    // El día del relevamiento en la cabecera: este panel es el cuaderno, y un
+    // cuaderno de campo lleva la fecha en la primera línea.
+    const sub = this.el?.querySelector('#cx-dia');
+    if (sub) {
+      const t = this.relevamiento?.texto;
+      sub.textContent = t ? `Guía de campo · ${t}` : 'Guía de campo del Parque Nacional';
+    }
+
     const lista = document.getElementById('cx-lista');
     const pie = document.getElementById('cx-pie');
     let html = '', ayuda = '';

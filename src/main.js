@@ -53,6 +53,8 @@ import { Bolso } from './ui/Bolso.js';
 import { Fin } from './ui/Fin.js';
 import { Partida } from './systems/Partida.js';
 import { Norma } from './ui/Norma.js';
+import { Relevamiento } from './systems/Relevamiento.js';
+import { Cierre } from './ui/Cierre.js';
 import { Aspecto } from './systems/Aspecto.js';
 import { Cuerpo } from './entities/Cuerpo.js';
 import { Personaje } from './ui/Personaje.js';
@@ -295,6 +297,16 @@ async function iniciar() {
   const mapa = new Mapa({ mundo, jugador, tiempo, exploracion, codice });
   const bolso = new Bolso({ inventario, jugador, hud, recoleccion });
   const fin = new Fin({ jugador, mundo, tiempo, hud, codice, saberes, construccion });
+
+  // El arco del juego: un año con un cuaderno. No es una trama pegada encima —el
+  // motor ya simula estaciones, vedas y cota de nieve—, es el objetivo que el
+  // propio paisaje le impone a cualquiera que quiera describirlo.
+  const relevamiento = new Relevamiento({
+    tiempo, codice, saberes, construccion, exploracion,
+  });
+  const cierre = new Cierre();
+  relevamiento.alCumplirse = (r) => cierre.mostrar(r);
+  codice.relevamiento = relevamiento;
   /** Una obra en el mundo, con sus materiales enganchados a las cascadas. */
   const dibujarObra = (c) => {
     const nodo = obras.agregar(c);
@@ -501,7 +513,8 @@ async function iniciar() {
 
   /** ¿Hay algún panel abierto? Sirve para no encimarlos. */
   const hayPanel = () => codice.abierto || taller.abierto || mapa.abierto
-    || bolso.abierto || opciones.abierto || fin.abierto || norma.abierto;
+    || bolso.abierto || opciones.abierto || fin.abierto || norma.abierto
+    || cierre.abierto;
 
   // Con el puntero capturado, Escape se lo come el navegador para liberarlo y la
   // tecla nunca llega acá. Lo que sí llega es que el puntero se soltó, y eso es
@@ -755,6 +768,7 @@ async function iniciar() {
     if (acumProximidad > 0.5) {
       acumProximidad = 0;
       codice.revisarProximidad(jugador.posicion);
+      relevamiento.actualizar();
       distanciaAlAgua = medirDistanciaAlAgua(mundo, jugador.posicion);
     }
     if (acumProximidad === 0) {
@@ -799,7 +813,7 @@ async function iniciar() {
     inventario, saberes, recoleccion, caza, audio,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima, oclusion, color, calidad,
-    exploracion, mapa, bolso, opciones, fin, partida, norma,
+    exploracion, mapa, bolso, opciones, fin, partida, norma, relevamiento, cierre,
   };
 
   if (import.meta.env.DEV) {

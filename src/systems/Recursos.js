@@ -116,6 +116,10 @@ export const RECURSOS = {
   // ── Salidas de horno y fragua ────────────────────────────────────────────
   carbon:        { nombre: 'Carbón vegetal', kg: 0.35, cat: 'material' },
   ceniza:        { nombre: 'Ceniza', kg: 0.2, cat: 'material' },
+  // El mortero que sí se podía hacer acá. Ver la receta en mineria.json: la
+  // comarca no tiene caliza, así que la cal venía de afuera y la construcción
+  // local se arregló con lo que había.
+  mortero:       { nombre: 'Mortero de ceniza', kg: 1.1, cat: 'material' },
   ceramica:      { nombre: 'Cerámica', kg: 0.7, cat: 'material' },
   ladrillo:      { nombre: 'Ladrillo', kg: 2.2, cat: 'material' },
   vidrio:        { nombre: 'Vidrio', kg: 0.8, cat: 'material' },

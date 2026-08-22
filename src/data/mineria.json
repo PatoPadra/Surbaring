@@ -684,6 +684,33 @@
         }
       ],
       "nota": "La corteza amarilla del michay contiene berberina, un antiséptico que la medicina popular del sur usó mucho antes de que se le pusiera ese nombre. Hervida da un agua para lavar heridas antes de taparlas: en la cordillera una herida sucia que se moja se infecta en un día, y así es como un problema chico se vuelve grave."
+    },
+    {
+      "id": "mortero_ceniza",
+      "nombre": "Mortero de ceniza",
+      "horno": "fogata",
+      "horas": 3,
+      "entra": [
+        {
+          "recurso": "ceniza",
+          "cantidad": 4
+        },
+        {
+          "recurso": "arcilla",
+          "cantidad": 3
+        },
+        {
+          "recurso": "agua",
+          "cantidad": 2
+        }
+      ],
+      "sale": [
+        {
+          "recurso": "mortero",
+          "cantidad": 3
+        }
+      ],
+      "nota": "No hay caliza de interés en la comarca: la cal llegaba de afuera, cara y en bolsas, y por eso la construcción de acá se arregló con lo que había. La ceniza de leña aporta el álcali que hace fraguar la mezcla con la arcilla. No reemplaza a la cal en todo uso —no sirve para revoques finos ni para trabajo bajo agua— pero asienta piedra, y eso es lo que hace falta para levantar un refugio. Es también la razón por la que la piedra del estilo Bustillo se ve casi a hueso, con la junta mínima: la mezcla se reservaba para lo que no se veía."
     }
   ],
   "fuego": {

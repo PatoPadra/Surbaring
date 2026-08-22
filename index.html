@@ -47,6 +47,11 @@
   #barra { width: min(420px, 74vw); height: 2px; background: rgba(255,255,255,.11); overflow: hidden; }
   #barra i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--acento), #d8cfa8); transition: width .35s ease; }
   #estado { font-size: .78rem; color: var(--tinta-tenue); letter-spacing: .08em; min-height: 1.2em; }
+  #carga .premisa { margin-top: 2.2rem; max-width: 34rem; font-size: .82rem; line-height: 2;
+    color: #9aa39b; letter-spacing: .03em; text-align: center; padding: 0 1.4rem;
+    animation: premisaEntra 2.4s ease both .6s; }
+  #carga .premisa b { color: var(--tinta); font-weight: 400; }
+  @keyframes premisaEntra { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
   #carga .pie { position: absolute; bottom: 1.6rem; font-size: .66rem; color: #5d6660; letter-spacing: .1em; text-align: center; padding: 0 1rem; }
 
   /* ── HUD ────────────────────────────────────────────────────────────── */
@@ -124,6 +129,17 @@
     <h1>SurviBar</h1>
     <div id="barra"><i></i></div>
     <div id="estado">Iniciando…</div>
+    <!-- La premisa. El juego tiraba al jugador dentro de un bosque sin decirle
+         qué venía a hacer, y el códice terminaba siendo una base de datos sin
+         autor. La historia real de este lugar es una historia de relevamientos:
+         Moreno llegó en 1876 a medir, y de haber medido salió la donación de
+         1903 y la primera ley de parques. El jugador hace exactamente lo mismo.
+         Sólo faltaba decírselo, y se dice acá, mientras baja el relieve. -->
+    <div class="premisa">
+      Vas a pasar un año en la cuenca del Nahuel Huapi con un cuaderno vacío.<br>
+      Nadie te va a pedir que traigas nada. Te van a pedir que traigas anotado qué hay.<br>
+      <b>Lo que anotes queda. Lo que cargues encima, no.</b>
+    </div>
     <div class="pie">
       Relieve real derivado del modelo de elevación Terrarium (SRTM · NASADEM).<br>
       Juego educativo sin fines comerciales.
