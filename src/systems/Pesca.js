@@ -245,7 +245,14 @@ export class Pesca {
   intentar(mes) {
     const v = this.evaluar(mes);
     if (!v.puede) {
-      if (!this.tienePermiso) this.intentosSinPermiso++;
+      // Sólo cuenta el intento que llegó de verdad al control del permiso. Antes
+      // contaba cualquier fallo, así que probar la tecla P lejos del agua o sin
+      // caña gastaba la gracia de la primera vez: cuando el jugador por fin
+      // tiraba la línea con el equipo armado, el juego le cobraba 6 de saber y
+      // le decía «ya sabías» sin haberle dicho nunca nada. Justo el escenario
+      // que esa gracia existe para proteger, que es el de quien está
+      // explorando las teclas.
+      if (!this.tienePermiso && v.primera !== undefined) this.intentosSinPermiso++;
       if (v.infraccion && (v.castigo || 0) > 0) {
         this.infracciones++;
         this.saberes.puntos = Math.max(0, this.saberes.puntos - v.castigo);

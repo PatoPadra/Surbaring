@@ -93,6 +93,15 @@ export class Jugador {
     this.horasVividas = 0;
     this.velocidad.set(0, 0, 0);
     this._ySuave = null;
+    // El fenómeno que mató al cuerpo anterior no explica nada del nuevo. Y no
+    // alcanzaba con que caducara solo: la comprobación resta `horasVividas`
+    // menos el sello, y al revivir el reloj vuelve a cero mientras el sello
+    // queda en un número positivo, así que la resta daba NEGATIVA y pasaba el
+    // umbral. Resultado: el que moría de sed en la vida siguiente recibía la
+    // lección de la avalancha de la vida anterior, justo en la pantalla que el
+    // juego reserva para explicar.
+    this.causaExterna = null;
+    this.causaExternaEn = null;
     return this;
   }
 
@@ -561,7 +570,8 @@ export class Jugador {
       // Un fenómeno reciente manda sobre el desgaste: si una avalancha te bajó
       // de 100 a 0 en cuatro minutos, no te mató el hambre. Media hora de juego
       // de vigencia alcanza; pasada ésa, el golpe ya no explica nada.
-      const externa = (this.horasVividas - (this.causaExternaEn ?? -99)) < 0.5
+      const externa = (this.causaExternaEn != null
+        && Math.abs(this.horasVividas - this.causaExternaEn) <= 0.5)
         ? this.causaExterna : null;
       this.causaMuerte = {
         ...(externa || {}),

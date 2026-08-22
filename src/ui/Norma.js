@@ -92,6 +92,13 @@ export class Norma {
       if (!this.abierto) return;
       if (ev.code === 'Escape' || ev.code === 'Enter' || ev.code === 'Space') {
         ev.preventDefault();
+        // Y además cortar la propagación entre oyentes del mismo objetivo.
+        // `preventDefault` sólo cancela lo que haría el navegador, no a los
+        // demás oyentes: main tiene el suyo para Escape, corre después de éste,
+        // encuentra el panel YA cerrado y cae en la última rama de su cascada,
+        // que abre las opciones. O sea que cerrar la explicación de la ley
+        // abría el menú encima, justo cuando el jugador terminaba de leerla.
+        ev.stopImmediatePropagation();
         this.cerrar();
       }
     });

@@ -45,6 +45,19 @@ const TIPO_SOMBRA = {
  * De más a menos. Cada preset dice qué resolución usar y qué apagar; los
  * factores de instancias recortan pasto y árboles sin tocar sus sistemas.
  */
+/**
+ * ESPACIADO DE LA ESCALERA, que es lo que el gobernador necesita y no tenía.
+ *
+ * Medido en la placa de destino con la ventana real: Alta 8,9 fps, Media 10,5,
+ * Nativa 10,7, Baja 20,6 y Mínima 55,7. El gobernador apunta a 30, así que desde
+ * Baja se caía a Mínima y aterrizaba en 55: casi el doble del objetivo, pagado
+ * con la mitad de la resolución y sin sombras. Entre 20 y 55 no había nada.
+ *
+ * Los tres presets de abajo se reespaciaron para que cada escalón sea un paso y
+ * no un precipicio. Las palancas que se movieron son de densidad y de alcance
+ * —cuántas plantas, hasta dónde llega la vista y la sombra—, no de corrección:
+ * lo que se pierde es cantidad, no que las cosas estén bien dibujadas.
+ */
 export const PRESETS = [
   {
     id: 'alta', nombre: 'Alta',
@@ -88,21 +101,21 @@ export const PRESETS = [
   {
     id: 'baja', nombre: 'Baja',
     escala: 0.8, maxPixelRatio: 1,
-    sombras: true, mapaSombra: 512, alcanceSombra: 320, tipoSombra: 'media',
+    sombras: true, mapaSombra: 512, alcanceSombra: 240, tipoSombra: 'media',
     sombraEnCubierta: false, terrenoProyecta: false,
     oclusion: false, divisorOclusion: 3,
     resplandor: false, suavizado: true, correccionColor: true, nitidez: 0.22,
-    vegetacion: 0.55, sotobosque: 0.45, vista: 55000,
+    vegetacion: 0.42, sotobosque: 0.28, vista: 34000,
     reflejoAgua: 0,
   },
   {
     id: 'minima', nombre: 'Mínima',
-    escala: 0.6, maxPixelRatio: 1,
+    escala: 0.66, maxPixelRatio: 1,
     sombras: false, mapaSombra: 512, alcanceSombra: 200, tipoSombra: 'dura',
     sombraEnCubierta: false, terrenoProyecta: false,
     oclusion: false, divisorOclusion: 4,
     resplandor: false, suavizado: false, correccionColor: true, nitidez: 0,
-    vegetacion: 0.35, sotobosque: 0.25, vista: 45000,
+    vegetacion: 0.35, sotobosque: 0.30, vista: 26000,
     reflejoAgua: 0,
   },
 ];

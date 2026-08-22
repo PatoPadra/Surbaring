@@ -49,8 +49,16 @@ export class Codice {
   /**
    * @param {object} datos {flora, fauna, geografia, historia, mundo, hud}
    */
-  constructor({ flora, fauna, geografia, historia, mundo, hud, saberes, inventario }) {
+  constructor({ flora, fauna, geografia, historia, mundo, hud, saberes, inventario, norma }) {
     this.saberes = saberes;
+    // El registro de negativas. main lo pasaba y este constructor lo dejaba
+    // caer, así que `this.norma` era siempre undefined y la mitad de abajo de la
+    // pestaña Normativa —el historial de lo que el jugador intentó y no pudo,
+    // que es lo que convierte la negativa en algo que se relee— mostraba para
+    // siempre su texto de "todavía no chocaste con ninguna norma", por más
+    // infracciones que tuviera guardadas. El `?.` de más abajo lo tapaba en
+    // silencio en vez de fallar.
+    this.norma = norma;
     this.inventario = inventario;
     this.flora = flora;
     this.fauna = fauna;

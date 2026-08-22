@@ -385,12 +385,35 @@ export class Fundicion {
       this.hud.aviso(`${horno.def.nombre}: no prende`, cond.motivo);
       return false;
     }
-    if (!this._cobrarEncendido(cond, horno)) return false;
+    // Los materiales se comprueban ANTES de cobrar el encendido, y la leña del
+    // encendido entra en la misma cuenta que la de la receta.
+    //
+    // Estaba al revés: se quemaba la yesca —que el propio dataset describe como
+    // escasa, «conviene juntar poca y en un día bueno, para el día malo»— y los
+    // pellets, y recién después se avisaba que faltaba material. Y había un
+    // agujero peor: `estadoReceta` mira cada ingrediente por separado y no sabe
+    // de la leña extra que pide un horno mojado, así que con la leña justa entre
+    // lo que pide la receta y lo que pide el encendido, el estado daba «lista»,
+    // el encendido se comía la leña de la receta, y el consumo posterior se
+    // quedaba corto en silencio: `consumirPara` devuelve false y nadie lo mira.
+    // La hornada arrancaba igual y rendía completo habiendo cocinado con menos.
     if (e.estado === 'falta') {
       this.hud.aviso(`Falta material para ${receta.nombre.toLowerCase()}`,
         e.falta.map(f => `${f.nombre} ${f.hay}/${f.pide}`).join(' · '));
       return false;
     }
+    const lenaReceta = (receta.entra || [])
+      .filter(m => normalizar(m.recurso) === 'lena')
+      .reduce((a, m) => a + m.cantidad, 0);
+    const lenaTotal = lenaReceta + (cond.leniaExtra || 0);
+    if (lenaTotal > 0 && this.inventario.disponiblePara('lena') < lenaTotal) {
+      this.hud.aviso(`Falta leña para ${receta.nombre.toLowerCase()}`,
+        `Con el horno así hacen falta ${lenaTotal} en total: ${lenaReceta} para la hornada `
+        + `y ${cond.leniaExtra} de más para que prenda`);
+      return false;
+    }
+
+    if (!this._cobrarEncendido(cond, horno)) return false;
     for (const m of receta.entra || []) {
       this.inventario.consumirPara(normalizar(m.recurso), m.cantidad);
     }
