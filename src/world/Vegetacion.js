@@ -123,6 +123,16 @@ export class Vegetacion {
     malla.frustumCulled = false;
     malla.count = 0;
     malla.name = esp.id;
+    // Recorte del pase de sombra. three llama a estos dos ganchos alrededor de
+    // cada cascada, así que acá se baja la cuenta a lo que la sombra alcanza y
+    // se la devuelve enseguida para el pase visible.
+    malla.onBeforeShadow = () => {
+      malla._cuentaVisible = malla.count;
+      malla.count = Math.min(malla.count, this._loteDe(malla)?.nSombra ?? malla.count);
+    };
+    malla.onAfterShadow = () => {
+      if (malla._cuentaVisible !== undefined) malla.count = malla._cuentaVisible;
+    };
 
     // Variación de color por instancia: ningún árbol es idéntico al de al lado
     const colores = new THREE.InstancedBufferAttribute(new Float32Array(MAX_POR_ESPECIE * 3), 3);
@@ -178,6 +188,28 @@ export class Vegetacion {
 
     this.grupo.add(malla);
     return { malla, colores, dist: new Float32Array(MAX_IMPOSTORES), n: 0, horneado };
+  }
+
+  /** El lote al que pertenece una malla, para los ganchos de sombra. */
+  _loteDe(malla) {
+    if (!this._porMalla) this._porMalla = new Map();
+    if (!this._porMalla.has(malla)) {
+      this._porMalla.set(malla, this.lotes.find(l => l.malla === malla) || null);
+    }
+    return this._porMalla.get(malla);
+  }
+
+  /**
+   * Cuántas instancias de un lote caen dentro de un radio, aprovechando que
+   * `dist` quedó ordenado. Búsqueda binaria: el bosque puede tener miles.
+   */
+  _cuantasHasta(lote, radio) {
+    let lo = 0, hi = lote.n;
+    while (lo < hi) {
+      const med = (lo + hi) >> 1;
+      if (lote.dist[med] <= radio) lo = med + 1; else hi = med;
+    }
+    return lo;
   }
 
   /** Aptitud de una especie en un punto: 0 = no crece, 1 = óptimo. */
@@ -350,6 +382,13 @@ export class Vegetacion {
       this._ordenarPorDistancia(lote);
       if (lote.impostor) this._ordenarPorDistancia(lote.impostor);
       lote.malla.count = lote.n;
+      // Cuántas instancias entran en el pase de sombra. Las cuatro cascadas
+      // vuelven a dibujar el bosque ENTERO —sembrado en un disco de 1.248 m—
+      // para alumbrar los 320 m que alcanza la sombra en la placa de destino:
+      // el 93 % de esos árboles no aporta un solo texel al mapa. Como las
+      // instancias ya están ordenadas de cerca a lejos —el recorte por preset
+      // depende de ese mismo orden—, cortar es fijar un número.
+      lote.nSombra = this._cuantasHasta(lote, this.alcanceSombra ?? 400);
       lote.malla.instanceMatrix.needsUpdate = true;
       lote.colores.needsUpdate = true;
       lote.malla.computeBoundingSphere();

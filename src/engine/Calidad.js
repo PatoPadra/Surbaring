@@ -50,6 +50,7 @@ export const PRESETS = [
     id: 'alta', nombre: 'Alta',
     escala: 1.0, maxPixelRatio: 2,
     sombras: true, mapaSombra: 2048, alcanceSombra: 900, tipoSombra: 'suave',
+    sombraEnCubierta: true, terrenoProyecta: true,
     oclusion: true, divisorOclusion: 2,
     resplandor: true, suavizado: true, correccionColor: true,
     vegetacion: 1.0, sotobosque: 1.0, vista: 90000,
@@ -59,15 +60,36 @@ export const PRESETS = [
     id: 'media', nombre: 'Media',
     escala: 1.0, maxPixelRatio: 1.25,
     sombras: true, mapaSombra: 1024, alcanceSombra: 600, tipoSombra: 'suave',
+    sombraEnCubierta: true, terrenoProyecta: true,
     oclusion: true, divisorOclusion: 2,
     resplandor: true, suavizado: true, correccionColor: true,
     vegetacion: 0.8, sotobosque: 0.7, vista: 70000,
     reflejoAgua: 0.35,
   },
   {
+    // El preset que faltaba, y el hueco que tapa es grande: entre «Baja» (0,8 de
+    // escala, 0,64 de área) y «Media» (1,0 con pixelRatio 1,25, 1,56 de área)
+    // había un salto de 2,4 veces en píxeles. Una placa que no llega a Media
+    // caía hasta Baja y se quedaba dibujando al 80 % para después estirar, que
+    // es la peor forma de perder nitidez: la imagen nativa sin sobremuestreo se
+    // ve más definida que una imagen al 80 % agrandada y suavizada encima.
+    //
+    // Acá la resolución es nativa y lo que se paga es apagar la oclusión y el
+    // resplandor, que cuestan por píxel y se notan mucho menos que el filo.
+    id: 'nativa', nombre: 'Nativa',
+    escala: 1.0, maxPixelRatio: 1,
+    sombras: true, mapaSombra: 1024, alcanceSombra: 500, tipoSombra: 'media',
+    sombraEnCubierta: true, terrenoProyecta: true,
+    oclusion: false, divisorOclusion: 2,
+    resplandor: false, suavizado: true, correccionColor: true,
+    vegetacion: 0.9, sotobosque: 0.8, vista: 65000,
+    reflejoAgua: 0.35,
+  },
+  {
     id: 'baja', nombre: 'Baja',
     escala: 0.8, maxPixelRatio: 1,
     sombras: true, mapaSombra: 512, alcanceSombra: 320, tipoSombra: 'media',
+    sombraEnCubierta: false, terrenoProyecta: false,
     oclusion: false, divisorOclusion: 3,
     resplandor: false, suavizado: true, correccionColor: true,
     vegetacion: 0.55, sotobosque: 0.45, vista: 55000,
@@ -77,6 +99,7 @@ export const PRESETS = [
     id: 'minima', nombre: 'Mínima',
     escala: 0.6, maxPixelRatio: 1,
     sombras: false, mapaSombra: 512, alcanceSombra: 200, tipoSombra: 'dura',
+    sombraEnCubierta: false, terrenoProyecta: false,
     oclusion: false, divisorOclusion: 4,
     resplandor: false, suavizado: false, correccionColor: true,
     vegetacion: 0.35, sotobosque: 0.25, vista: 45000,
@@ -91,13 +114,17 @@ export const PRESETS = [
  */
 function nivelSegunPlaca(cadena) {
   const g = (cadena || '').toLowerCase();
-  if (/swiftshader|llvmpipe|software/.test(g)) return 3;
+  // Los índices siguen el orden de PRESETS: 0 alta, 1 media, 2 nativa, 3 baja,
+  // 4 mínima. Al insertar «Nativa» se corrieron los dos de abajo.
+  if (/swiftshader|llvmpipe|software/.test(g)) return 4;
   // Las HD 2000/3000/4000/4400/4600 y las Mali/Adreno viejas no dan para más
-  if (/intel.*(hd graphics (2|3|4|5)\d{3}|hd graphics [234]000)/.test(g)) return 2;
-  if (/mali-[t4-6]|adreno \(tm\) [345]/.test(g)) return 3;
-  if (/intel.*(uhd|iris|hd graphics)/.test(g)) return 1;
+  if (/intel.*(hd graphics (2|3|4|5)\d{3}|hd graphics [234]000)/.test(g)) return 3;
+  if (/mali-[t4-6]|adreno \(tm\) [345]/.test(g)) return 4;
+  // Las integradas modernas prefieren resolución nativa sin oclusión antes que
+  // media resolución con todo encendido.
+  if (/intel.*(uhd|iris|hd graphics)/.test(g)) return 2;
   if (/apple m[1-9]|radeon|geforce|rtx|gtx|arc/.test(g)) return 0;
-  return 1;
+  return 2;
 }
 
 export class Calidad {
@@ -193,6 +220,39 @@ export class Calidad {
         }
       }
       csm.updateFrustums();
+    }
+    // La vegetación necesita saber hasta dónde llega la sombra para no dibujar
+    // el bosque entero en cada una de las cuatro cascadas. El margen de 1,6 es
+    // por la diagonal: con el sol bajo, un árbol de afuera del radio proyecta
+    // adentro, y sin ese margen se ve el borde donde las sombras se cortan.
+    if (this.ctx.vegetacion) this.ctx.vegetacion.alcanceSombra = p.alcanceSombra * 1.6;
+
+    // Los dos ejes de sombra que más cuestan, medidos en la placa de destino:
+    //
+    // - Que la cubierta de suelo RECIBA sombra: 14,7 ms de un cuadro de 92,6.
+    //   Son casi quince mil instancias con recorte por alfa y cada fragmento
+    //   paga la búsqueda en las cascadas. Apagarlo no borra la sombra del suelo
+    //   —el terreno la sigue recibiendo, así que la mancha del árbol se ve
+    //   igual—: lo que se pierde es que cada brizna se oscurezca por su cuenta.
+    // - Que el terreno PROYECTE: 7,7 ms. En los presets bajos el alcance de la
+    //   sombra es de 320 m, o sea que la sombra de un cerro sobre el valle no
+    //   llega a verse nunca; se paga por algo que queda fuera de alcance.
+    //
+    // Arriba los dos quedan encendidos: ahí sí se ven y ahí sí hay presupuesto.
+    if (this.ctx.sotobosque) {
+      const recibe = p.sombraEnCubierta !== false;
+      let cambio = false;
+      for (const lote of this.ctx.sotobosque.lotes) {
+        if (lote.malla.receiveShadow !== recibe) {
+          lote.malla.receiveShadow = recibe;
+          lote.malla.material.needsUpdate = true;
+          cambio = true;
+        }
+      }
+      if (cambio) this.ctx.sotobosque.grupo.updateMatrixWorld?.();
+    }
+    if (this.ctx.terreno) {
+      this.ctx.terreno.malla.castShadow = p.terrenoProyecta !== false;
     }
 
     // ── Posproceso

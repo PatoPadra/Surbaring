@@ -1,3 +1,4 @@
+import { PRESETS } from '../engine/Calidad.js';
 /**
  * Panel del juego — una sola ventana con pestañas: Controles, Video, Audio y
  * Partida.
@@ -169,8 +170,10 @@ export class Opciones {
     const v = parseFloat(valor);
     switch (accion) {
       case 'calidad':
-        // La barra va de menos a más y los presets al revés: 0 es Alta
-        this.calidad.elegir(3 - parseInt(valor, 10));
+        // La barra va de menos a más y los presets al revés: 0 es Alta. El tope
+        // sale de la lista para que agregar un preset no obligue a acordarse de
+        // tocar también este número.
+        this.calidad.elegir(PRESETS.length - 1 - parseInt(valor, 10));
         break;
       case 'auto':
         this.calidad.automatico = !this.calidad.automatico;
@@ -310,7 +313,7 @@ export class Opciones {
     return `
       <h3>Gráficos</h3>
       <div class="op-fila"><span>Calidad</span>
-        ${this._rango('calidad', 0, 3, 1, 3 - c.nivel,
+        ${this._rango('calidad', 0, PRESETS.length - 1, 1, PRESETS.length - 1 - c.nivel,
           `${c.preset.nombre}${fps != null ? ` · ${fps} fps` : ''}`)}</div>
       <div class="op-fila"><span>Ajuste automático</span>
         <span class="op-valor">${c.automatico ? 'sí' : 'no'}</span>

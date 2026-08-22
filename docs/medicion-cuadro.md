@@ -94,3 +94,50 @@ para tarifarlas, y `window.bancoValidez()` comprueba que el instrumento no esté
 mintiendo. Encola todas las consultas de GPU y las cobra juntas: esperar una por
 una en una pestaña oculta tarda un segundo por consulta, porque el navegador
 limita los temporizadores de las pestañas que nadie mira.
+
+## Segunda ronda: los dos ejes de sombra que faltaban
+
+| Pieza | Base | Ronda 1 | Ronda 2 |
+|---|---|---|---|
+| **Cuadro** | **122,8 ms (8,1 fps)** | 88,6 (11,3) | **69,2 ms (14,5 fps)** |
+| Terreno | 48,6 | 33,6 | 28,3 |
+| Sotobosque | 45,0 | 31,8 | 15,7 |
+| Árboles | 19,5 | 16,6 | 16,5 |
+| Sombras | 11,6 | 12,1 | 6,4 |
+| Cielo | 4,3 | 1,8 | 1,5 |
+
+**−44 % de tiempo de cuadro y +79 % de fps** respecto de la línea de base.
+
+Los dos cambios de esta ronda salieron de medir con `castShadow` y
+`receiveShadow` por objeto, no de leer código:
+
+- **Que la cubierta de suelo reciba sombra costaba 14,7 ms**, el 16 % del cuadro.
+  Son casi quince mil instancias con recorte por alfa, y cada fragmento paga la
+  búsqueda en las cuatro cascadas. Apagarlo en los presets bajos no borra la
+  sombra del suelo —el terreno la sigue recibiendo, así que la mancha del árbol
+  se ve igual—; lo único que se pierde es que cada brizna se oscurezca aparte.
+- **Que el terreno proyecte costaba 7,7 ms.** En los presets bajos el alcance de
+  la sombra es de 320 m, o sea que la sombra de un cerro sobre el valle nunca
+  llega a verse: se pagaba por algo fuera de alcance.
+
+### Otro intento que no dio nada
+
+Recortar las instancias de vegetación durante el pase de sombra: cero. El bosque
+cercano tiene 103 árboles de malla completa y todos caen dentro del alcance; el
+resto son carteleras, que ya no proyectaban sombra. El diagnóstico suponía miles
+de árboles dibujándose cuatro veces y no era así. El gancho quedó puesto porque
+es correcto y porque en los presets altos, con más alcance y más densidad, sí va
+a cortar.
+
+### La curva de resolución, otra vez
+
+| Resolución | Mpx | antes | después |
+|---|---|---|---|
+| 640×360 | 0,23 | 81,5 | 61,6 |
+| 1280×720 | 0,92 | 156,8 | 117,2 |
+| 1920×1080 | 2,07 | 253,6 | 183,2 |
+| 2560×1440 | 3,69 | 370,7 | 262,5 |
+
+La recta pasó de **62 ms fijos + 84 por megapíxel** a **48 + 58**. El costo fijo
+es ahora la mayoría del cuadro, y eso dice dónde buscar lo que queda: geometría
+y llamadas de dibujo, no trabajo por píxel.

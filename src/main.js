@@ -492,7 +492,7 @@ async function iniciar() {
   // corresponde, y después se mide el cuadro de verdad y se ajusta solo.
   const calidad = new Calidad({
     render, compositor, camara, csm, escena, oclusion, color,
-    resplandor: bloom, suavizado: fxaa, vegetacion, sotobosque, agua,
+    resplandor: bloom, suavizado: fxaa, vegetacion, sotobosque, agua, terreno,
   });
   calidad.nivel = calidad.nivelDetectado;
   calidad.alCambiar = (p) => {
