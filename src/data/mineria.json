@@ -159,6 +159,7 @@
         }
       ],
       "resguardo": 0.0,
+      "enciendeAlLevantar": true,
       "notaHumedad": "Fuego abierto: la primera gota le cae encima. Bajo lluvia no dura, y con el piso mojado cuesta prenderla."
     },
     {
@@ -732,6 +733,11 @@
       "secadoDelPropioFuego": 0.35,
       "leniaExtraMaxima": 3,
       "demoraMaximaPorHumedad": 0.4
+    },
+    "carga": {
+      "explicacion": "Un fuego no es un estado, es un consumo: arde mientras haya con qué, y se apaga cuando se acaba. Una fogata al descubierto se come la leña rápido porque casi todo el calor se va para arriba; un hogar con techo la aprovecha mucho más, y por eso una carbonera tapada de tierra arde días con la misma carga que a la intemperie duraría una tarde.",
+      "lenia": 2,
+      "horasPorLenia": 1.5
     },
     "encendedores": {
       "explicacion": "Nadie prende un fuego con leña: se prende con algo que agarre la chispa y sostenga la llama treinta segundos. En el bosque andino eso es la barba de viejo seca —el liquen Usnea que cuelga del coihue y la lenga—, la pinocha de los pinos exóticos, que es la hojarasca más inflamable del parque, y, si uno fue previsor, un pellet de pinocha y resina hecho el día que estaba lindo. La yesca no reemplaza a la leña: le compra el tiempo que necesita para prender.",

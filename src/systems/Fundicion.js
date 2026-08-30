@@ -18,6 +18,12 @@
  * 4. El fuego está regulado. En el Parque Nacional sólo se enciende en sitios
  *    habilitados, y una carbonera es un fuego que arde días. La negativa
  *    también enseña.
+ * 5. La llama es una cosa y la hornada es otra. Un fuego arde mientras tenga
+ *    leña, se esté cocinando algo o no, y ésa es la razón por la que uno lo
+ *    enciende: para no morirse de frío. Cocinar es lo que se le hace encima.
+ *    Tenerlo al revés —que el fuego existiera sólo mientras había una receta
+ *    cargada— convertía la fogata en un electrodoméstico y dejaba al jugador
+ *    a la intemperie con las llamas al lado.
  *
  * El tiempo de cocción corre en horas del mundo, no en segundos reales: con la
  * tecla de velocidad del tiempo, una carbonera de treinta horas se resuelve en
@@ -44,6 +50,9 @@ const HUMEDAD = {
 /** Un horno de obra —ahumadero, aserradero— tiene techo pero no es hermético. */
 const RESGUARDO_DE_OBRA = 0.6;
 
+/** Cuánto rinde la leña, por si el dataset no lo trae. */
+const CARGA = { lenia: 2, horasPorLenia: 1.5 };
+
 export class Fundicion {
   /**
    * @param {object} datos contenido de mineria.json
@@ -64,6 +73,7 @@ export class Fundicion {
   }
 
   get humedad() { return { ...HUMEDAD, ...(this.d.fuego?.humedad || {}) }; }
+  get carga() { return { ...CARGA, ...(this.d.fuego?.carga || {}) }; }
   get encendedores() { return this.d.fuego?.encendedores?.usa || []; }
 
   get definicionesHorno() { return this.d.hornos || []; }
@@ -75,6 +85,102 @@ export class Fundicion {
   }
 
   hornoPorId(id) { return this.definicionesHorno.find(h => h.id === id); }
+
+  // ── La llama ──────────────────────────────────────────────────────────────
+
+  /**
+   * ¿Este horno anda a fuego? El aserradero y el molino figuran como hornos del
+   * taller porque para el jugador funcionan igual —se cargan y se espera— pero
+   * los mueve el agua: pedirles yesca para serruchar un tronco no tenía sentido.
+   * Los que queman son los que declaran temperatura.
+   */
+  usaFuego(horno) { return !!horno.def?.temperaturaC; }
+
+  /** ¿Hay llama ahora mismo? Lo que no quema está siempre listo. */
+  arde(horno) {
+    if (!this.usaFuego(horno)) return true;
+    return !!horno.fuego && this.tiempo.fecha.getTime() < horno.fuego.hasta;
+  }
+
+  /** Horas del mundo que le quedan a la leña cargada. */
+  horasDeFuego(horno) {
+    if (!horno.fuego) return 0;
+    return Math.max(0, (horno.fuego.hasta - this.tiempo.fecha.getTime()) / MS_HORA);
+  }
+
+  /**
+   * Cuánto dura una carga de leña acá. El techo no sólo tapa el agua: un hogar
+   * cerrado devuelve el calor en vez de mandarlo al cielo, y la misma leña rinde
+   * mucho más. Por eso una carbonera arde días y una fogata, una tarde.
+   */
+  horasPorCarga(horno) {
+    const c = this.carga;
+    return c.lenia * c.horasPorLenia * (1 + this.resguardoDe(horno));
+  }
+
+  /**
+   * Prender el fuego. Era la operación que faltaba, y no era una comodidad: sin
+   * ella el calor lo daba la hornada, así que se podía levantar una fogata,
+   * pasar la noche contra las llamas y morirse de hipotermia igual.
+   *
+   * Encender cuesta yesca —lo que agarra la chispa— y leña, que es lo que dura.
+   * Avivar un fuego que ya arde cuesta sólo leña: nadie tira yesca sobre brasas.
+   *
+   * @param {object} opts
+   *   `gratis`: la primera carga de una fogata recién armada no cobra leña,
+   *   porque las seis leñas que costó armarla son exactamente el fuego.
+   *   `avisar`: false cuando el aviso lo da quien llama.
+   */
+  encender(horno, { gratis = false, avisar = true } = {}) {
+    if (!this.usaFuego(horno)) return false;
+    const yaArde = this.arde(horno);
+    const cond = yaArde
+      ? { prende: true, usos: [], leniaExtra: 0, demora: 0 }
+      : this.condicionEncendido(horno);
+    if (!cond.prende) {
+      if (avisar) this.hud.aviso(`${horno.def.nombre}: no prende`, cond.motivo);
+      return false;
+    }
+
+    const lenia = gratis ? 0 : this.carga.lenia;
+    const total = lenia + (cond.leniaExtra || 0);
+    const hay = this.inventario.disponiblePara('lena');
+    if (total > hay) {
+      if (avisar) this.hud.aviso(`${horno.def.nombre}: falta leña`,
+        cond.leniaExtra
+          ? `Con el horno así hacen falta ${total} —${lenia} de carga y ${cond.leniaExtra} `
+            + `de más para que agarre— y tenés ${hay}`
+          : `Una carga son ${total} de leña y tenés ${hay}`);
+      return false;
+    }
+    if (!this._cobrarEncendido(cond, horno)) return false;
+    if (lenia) this.inventario.consumirPara('lena', lenia);
+
+    // La leña se suma a la que ya está ardiendo: avivar estira, no reinicia
+    const ahora = this.tiempo.fecha.getTime();
+    const base = Math.max(ahora, horno.fuego?.hasta ?? 0);
+    horno.fuego = { hasta: base + this.horasPorCarga(horno) * MS_HORA };
+    horno.ardiendo = true;
+
+    // Si adentro había una hornada esperando fuego, sigue donde quedó
+    const t = horno.trabajo;
+    if (t?.apagado) {
+      t.apagado = false;
+      t.hasta += (t.hasta - t.desde) * cond.demora;
+    }
+
+    if (avisar) {
+      const partes = [];
+      if (lenia) partes.push(`${lenia} × ${nombreDe('lena')}`);
+      const costo = this.textoEncendido(cond);
+      if (costo) partes.push(costo);
+      this.hud.aviso(`${horno.def.nombre}: ${yaArde ? 'fuego avivado' : 'fuego encendido'}`,
+        `Arde ${this.horasDeFuego(horno).toFixed(1)} h más`
+        + (partes.length ? ` · ${partes.join(' · ')}` : ''));
+    }
+    this.alCambiar?.();
+    return true;
+  }
 
   /** El horno construido más cercano al jugador, si hay alguno a mano. */
   cercano(radio = RADIO_HORNO_M) {
@@ -164,10 +270,29 @@ export class Fundicion {
       def, x: p.x, z: p.z, y: this.mundo.alturaEn(p.x, p.z), trabajo: null,
       // Se levanta seco: lo que moja después es la intemperie
       mojado: 0,
+      // La llama, aparte de la hornada: `{hasta}` mientras haya leña
+      fuego: null, ardiendo: false,
     };
     this.hornos.push(horno);
     this.saberes.otorgar(3, `${def.nombre} en pie`);
-    this.hud.aviso(def.nombre, fuego.nota || def.descripcion);
+
+    // Armar una fogata ES encenderla. Nadie apila leña y piedras para mirarlas,
+    // y separar las dos cosas era exactamente lo que dejaba al jugador con la
+    // fogata hecha preguntándose cómo se prende. La primera carga va sin cobrar
+    // leña porque las seis que costó armarla son el fuego; la yesca sí se paga.
+    // Si el día no da —empapado, sin nada que agarre— queda armada y fría, con
+    // el motivo escrito, que también es información.
+    let nota = fuego.nota || def.descripcion;
+    if (def.enciendeAlLevantar) {
+      const cond = this.condicionEncendido(horno);
+      const costo = this.textoEncendido(cond);
+      nota = this.encender(horno, { gratis: true, avisar: false })
+        ? `Prendida: arde ${this.horasDeFuego(horno).toFixed(1)} h`
+          + (costo ? ` · costó ${costo}` : '')
+          + '. Calienta, seca y cocina. Cargale más leña desde el taller.'
+        : `Armada, pero no prende: ${cond.motivo || 'no agarra'}`;
+    }
+    this.hud.aviso(def.nombre, nota);
     this.alCambiar?.();
     return horno;
   }
@@ -297,7 +422,7 @@ export class Fundicion {
     const h = this.humedad;
 
     for (const horno of this.hornos) {
-      const encendido = !!horno.trabajo && !horno.trabajo.apagado && !horno.trabajo.esperando;
+      const encendido = this.usaFuego(horno) && this.arde(horno) && !horno.trabajo?.esperando;
       const moja = this._precipitacionSobre(horno, est) * h.mojadoPorHoraDeLluvia;
 
       // Seca el sol, seca el viento y sobre todo seca el propio fuego
@@ -314,36 +439,48 @@ export class Fundicion {
   }
 
   /**
-   * El agua gana. La hornada no se pierde: queda donde está, fría, y el
-   * progreso se congela hasta que alguien la vuelva a encender.
+   * Matar la llama sin borrarla. La hora en que se murió queda anotada porque
+   * es el dato con el que después se decide cuánto alcanzó a cocinarse la
+   * hornada: si se borrara, un salto grande del reloj —y con la tecla T los
+   * saltos son de horas— no sabría distinguir un fuego que aguantó hasta el
+   * final de uno que se apagó en el primer minuto.
+   */
+  _matarLlama(horno) {
+    const ahora = this.tiempo.fecha.getTime();
+    horno.fuego = { hasta: Math.min(horno.fuego?.hasta ?? ahora, ahora), consumido: true };
+    horno.ardiendo = false;
+  }
+
+  /**
+   * El agua gana. La leña que quedaba se pierde —está empapada— y la hornada
+   * no: queda donde está, fría, y el progreso se congela hasta que alguien la
+   * vuelva a encender.
    */
   _apagar(horno, est) {
+    this._matarLlama(horno);
     const t = horno.trabajo;
-    t.apagado = true;
+    if (t) t.apagado = true;
     const nieve = (est?.nieve || 0) > (est?.lluvia || 0);
+    const agua = nieve ? 'La nieve ahogó el fuego' : 'La lluvia ahogó el fuego';
     this.hud.aviso(`Se apagó ${horno.def.nombre.toLowerCase()}`,
-      nieve ? `La nieve ahogó el fuego · ${t.receta.nombre} quedó a medio hacer`
-            : `La lluvia ahogó el fuego · ${t.receta.nombre} quedó a medio hacer`);
+      t ? `${agua} · ${t.receta.nombre} quedó a medio hacer` : agua);
     this.alCambiar?.();
   }
 
-  /** Volver a prender una hornada apagada, con lo que cueste hoy. */
-  reencender(horno) {
+  /**
+   * Se acabó la leña. No es una desgracia como la lluvia: es lo que hace un
+   * fuego. Avisarlo importa porque el jugador dormido al lado de las brasas
+   * pierde el calor sin enterarse.
+   */
+  _consumido(horno) {
+    horno.fuego.consumido = true;
+    horno.ardiendo = false;
     const t = horno.trabajo;
-    if (!t?.apagado) return false;
-    const cond = this.condicionEncendido(horno);
-    if (!cond.prende) {
-      this.hud.aviso(`${horno.def.nombre} no vuelve a prender`, cond.motivo);
-      return false;
-    }
-    if (!this._cobrarEncendido(cond, horno)) return false;
-    t.apagado = false;
-    t.hasta += (t.hasta - t.desde) * cond.demora;
-    const costo = this.textoEncendido(cond);
-    this.hud.aviso(`${horno.def.nombre} de nuevo encendido`,
-      costo ? `Costó ${costo}` : 'Prendió a la primera');
+    if (t) t.apagado = true;
+    this.hud.aviso(`Se consumió la leña de ${horno.def.nombre.toLowerCase()}`,
+      t ? `${t.receta.nombre} quedó a medio hacer: cargale leña y volvé a prender`
+        : 'Quedaron las brasas. Cargale leña desde el taller para que siga ardiendo.');
     this.alCambiar?.();
-    return true;
   }
 
   // ── Cocción ───────────────────────────────────────────────────────────────
@@ -380,7 +517,13 @@ export class Fundicion {
         : 'Esperá a que termine la carga anterior');
       return false;
     }
-    const cond = this.condicionEncendido(horno);
+    // Cargar una hornada sobre un fuego que ya arde no cuesta encenderlo: la
+    // yesca se gasta una vez, cuando se prende, y no cada vez que se pone algo
+    // encima. Sobre un horno frío, cargar lo prende —la leña de la receta es el
+    // combustible— y así el gesto de siempre sigue funcionando igual.
+    const cond = this.arde(horno)
+      ? { prende: true, usos: [], leniaExtra: 0, demora: 0 }
+      : this.condicionEncendido(horno);
     if (!cond.prende) {
       this.hud.aviso(`${horno.def.nombre}: no prende`, cond.motivo);
       return false;
@@ -418,12 +561,19 @@ export class Fundicion {
       this.inventario.consumirPara(normalizar(m.recurso), m.cantidad);
     }
     const horas = (receta.horas || 1) * (1 + cond.demora);
+    const ahora = this.tiempo.fecha.getTime();
     horno.trabajo = {
       receta,
-      desde: this.tiempo.fecha.getTime(),
-      hasta: this.tiempo.fecha.getTime() + horas * MS_HORA,
+      desde: ahora,
+      hasta: ahora + horas * MS_HORA,
       apagado: false,
     };
+    // La leña de la receta es el combustible de la hornada: mientras cocina, la
+    // llama no se muere de hambre. Por lluvia sí se apaga, y eso no cambia.
+    if (this.usaFuego(horno)) {
+      horno.fuego = { hasta: Math.max(horno.fuego?.hasta ?? 0, ahora + horas * MS_HORA) };
+      horno.ardiendo = true;
+    }
     const costo = this.textoEncendido(cond);
     this.hud.aviso(`${receta.nombre} en el fuego`, costo
       ? `Costó prenderlo: ${costo} · ${horas.toFixed(1)} h`
@@ -451,15 +601,26 @@ export class Fundicion {
     this._correrHumedad(this.ambiente, ahora);
 
     for (const h of this.hornos) {
+      // La leña se acaba. Un fuego no es un estado que se queda prendido solo:
+      // es lo que separa tener leña juntada de no tenerla.
+      if (h.fuego && !h.fuego.consumido && ahora >= h.fuego.hasta) this._consumido(h);
+      h.ardiendo = this.usaFuego(h) && this.arde(h);
+
       const t = h.trabajo;
-      if (!t) continue;
-      if (t.apagado) {
-        // El reloj del mundo sigue, la cocción no: se corre la ventana entera
-        const quieto = ahora - anterior;
-        t.desde += quieto;
-        t.hasta += quieto;
-        continue;
-      }
+      if (!t || t.esperando) continue;
+
+      // Lo que cuece es la llama, y la llama tiene fecha de muerte: la leña que
+      // le queda. De este tramo de reloj sólo cuenta el pedazo en que hubo
+      // fuego; el resto se le devuelve a la hornada corriéndole la ventana
+      // entera, así que el progreso se congela donde estaba.
+      //
+      // Comparar contra la fecha, y no contra un simple «¿arde ahora?», es lo
+      // que hace que esto aguante los saltos de reloj: con la tecla T un solo
+      // cuadro puede cubrir seis horas, y adentro de esas seis puede haberse
+      // apagado el fuego, terminado la hornada, o las dos cosas.
+      const muerte = this.usaFuego(h) ? (h.fuego?.hasta ?? anterior) : Infinity;
+      const quieto = ahora - Math.max(anterior, Math.min(ahora, muerte));
+      if (quieto > 0) { t.desde += quieto; t.hasta += quieto; }
       if (ahora < t.hasta) continue;
 
       const obtenido = [], quedan = [];

@@ -177,7 +177,13 @@ export class Partida {
       hornos: (this.fundicion?.hornos || [])
         // Los que vienen de una obra se rehacen al reponer la obra
         .filter(h => !(this.construccion?.obras || []).some(o => o.obra.id === h.def.id))
-        .map(h => ({ id: h.def.id, x: h.x, y: h.y, z: h.z, mojado: h.mojado || 0, trabajo: this._serializarTrabajo(h.trabajo) })),
+        // `fuego.hasta` es una fecha del mundo, y el mundo se guarda con ella:
+        // volver y encontrar la fogata todavía prendida es lo que uno espera.
+        .map(h => ({
+          id: h.def.id, x: h.x, y: h.y, z: h.z, mojado: h.mojado || 0,
+          fuego: h.fuego?.hasta ?? null,
+          trabajo: this._serializarTrabajo(h.trabajo),
+        })),
       muerte: this.ultimaMuerte,
     };
   }
@@ -323,7 +329,19 @@ export class Partida {
     for (const g of lista) {
       const def = catalogo.get(g.id);
       if (!def) continue;
-      const horno = { def, x: g.x, y: g.y, z: g.z, mojado: g.mojado || 0, trabajo: this._reponerTrabajo(g.trabajo) };
+      // El reloj del mundo ya está repuesto acá arriba, así que una llama con
+      // fecha vencida vuelve marcada como consumida: si no, el primer cuadro
+      // avisaría «se consumió la leña» de un fuego que se apagó la sesión pasada.
+      const ahora = this.fundicion?.tiempo?.fecha?.getTime() ?? Date.now();
+      const horno = {
+        def, x: g.x, y: g.y, z: g.z, mojado: g.mojado || 0,
+        fuego: Number.isFinite(g.fuego) ? { hasta: g.fuego, consumido: g.fuego <= ahora } : null,
+        ardiendo: false,
+        trabajo: this._reponerTrabajo(g.trabajo),
+      };
+      // Lo pone en su lugar el primer `actualizar()`, pero la brasa se dibuja
+      // antes que eso y una fogata viva no puede aparecer negra ni un cuadro.
+      horno.ardiendo = this.fundicion.usaFuego(horno) && this.fundicion.arde(horno);
       this.fundicion.hornos.push(horno);
       this.hornos?.agregar(horno);
     }

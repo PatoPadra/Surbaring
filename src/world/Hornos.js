@@ -64,7 +64,7 @@ export class Hornos {
     nodo.traverse(o => { o.castShadow = true; o.receiveShadow = true; });
     nodo.position.set(horno.x, horno.y, horno.z);
 
-    // La brasa: apagada mientras el horno no trabaja
+    // La brasa: apagada mientras el horno no arda
     const brasa = new THREE.PointLight(0xff7a2e, 0, 14, 2);
     brasa.position.set(0, 0.6, 0);
     nodo.add(brasa);
@@ -74,11 +74,12 @@ export class Hornos {
     return nodo;
   }
 
-  /** Enciende el fuego de los que están cociendo y lo hace latir.
-   *  Un horno apagado por la lluvia se queda a oscuras, y se nota de lejos. */
+  /** Enciende el fuego de los que arden y lo hace latir. Un horno sin leña o
+   *  ahogado por la lluvia se queda a oscuras, y eso se ve de lejos: la brasa
+   *  es la única señal de que el fuego sigue vivo cuando uno vuelve al campamento. */
   actualizar(t) {
     for (const p of this.piezas) {
-      const activo = !!p.horno.trabajo && !p.horno.trabajo.apagado;
+      const activo = !!p.horno.ardiendo;
       const objetivo = activo ? 2.6 + Math.sin(t * 7.3 + p.malla.position.x) * 0.5 : 0;
       p.brasa.intensity += (objetivo - p.brasa.intensity) * 0.15;
     }

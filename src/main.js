@@ -646,8 +646,12 @@ async function iniciar() {
   function fuegoCercano(est) {
     let f = 0;
     for (const h of fundicion.hornos) {
-      // Un horno apagado por la lluvia no calienta a nadie
-      if (!h.trabajo || h.trabajo.apagado) continue;
+      // Lo que calienta es la llama, no la hornada. Acá decía `!h.trabajo` y esa
+      // línea sola rompía el bucle central del juego: una fogata sin nada
+      // cocinándose daba cero calor, así que se podía armar el fuego, sentarse
+      // al lado y morirse de frío igual. Ahora un horno arde mientras tenga
+      // leña, esté cocinando o no, que es lo que hace un fuego.
+      if (!h.ardiendo) continue;
       const d = Math.hypot(h.x - jugador.posicion.x, h.z - jugador.posicion.z);
       f = Math.max(f, Math.max(0, 1 - d / 16));
     }
@@ -788,10 +792,19 @@ async function iniciar() {
       ultimoAvisoFuego = tiempo.segundosTotales;
       const lena = inventario.disponiblePara('lena');
       const piedra = inventario.disponiblePara('piedra');
+      // Hay tres situaciones distintas y decirle la misma frase a las tres era
+      // peor que no decir nada: al que tiene la fogata armada y apagada al lado,
+      // «armá una fogata» le suena a que el juego no lo está mirando.
+      const cerca = fundicion.cercano(20);
+      const apagado = cerca && fundicion.usaFuego(cerca) && !cerca.ardiendo;
       hud.aviso('Estás perdiendo calor',
-        lena >= 6 && piedra >= 4
-          ? 'Tenés para una fogata: abrí el taller con G y armala. Calienta, seca y cocina.'
-          : `Una fogata pide 6 leña y 4 piedra (tenés ${lena} y ${piedra}). Se arma en el taller, con G.`,
+        apagado
+          ? (lena >= fundicion.carga.lenia
+              ? `Tenés ${cerca.def.nombre.toLowerCase()} acá al lado y está apagada: abrí el taller con G y prendela.`
+              : `Tenés ${cerca.def.nombre.toLowerCase()} acá al lado, pero sin leña no prende: juntá de los troncos caídos.`)
+          : (lena >= 6 && piedra >= 4
+              ? 'Tenés para una fogata: abrí el taller con G y armala. Se prende sola al armarla, y calienta, seca y cocina.'
+              : `Una fogata pide 6 leña y 4 piedra (tenés ${lena} y ${piedra}). Se arma en el taller, con G.`),
         7000);
     }
 

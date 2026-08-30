@@ -78,7 +78,7 @@ export class Taller {
         if (horno && receta) this.fundicion.iniciar(receta, horno);
       } else if (accion === 'encender') {
         const horno = this.fundicion.cercano();
-        if (horno) this.fundicion.reencender(horno);
+        if (horno) this.fundicion.encender(horno);
       } else if (accion === 'retirar') {
         const horno = this.fundicion.cercano();
         if (horno) this.fundicion.retirar(horno);
@@ -134,6 +134,15 @@ export class Taller {
         </button></div>`;
     }
 
+    // ── El fuego del horno que tengo al lado, antes que la hornada
+    //
+    // Va primero y con título propio porque es lo que se viene a buscar cuando
+    // hace frío. Estaba escondido detrás de las recetas —el fuego se prendía de
+    // costado, al cargar una— y así nadie encontraba cómo encenderlo.
+    if (horno && this.fundicion.usaFuego(horno)) {
+      html += `<h3>Fuego · ${horno.def.nombre}</h3>${this._pintarFuego(horno)}`;
+    }
+
     // ── Hornadas del horno que tengo al lado
     html += '<h3>Hornadas</h3>';
     if (!horno) {
@@ -143,14 +152,12 @@ export class Taller {
         <small>Terminada y esperando lugar en el bolso</small>
         <button data-accion="retirar">Retirar</button></div>`;
     } else if (horno.trabajo?.apagado) {
+      // El botón de encender vive arriba, en Fuego: es el mismo fuego, y tenerlo
+      // dos veces hacía pensar que eran dos cosas distintas.
       const pr = Math.round(this.fundicion.progreso(horno) * 100);
-      const cond = this.fundicion.condicionEncendido(horno);
-      html += `<div class="tl-fila"><b>${horno.trabajo.receta.nombre} · apagada</b>
-        <small>El agua ahogó el fuego con la hornada al ${pr} %. Queda ahí hasta que la vuelvas a prender.<br>
-          <span style="opacity:.75">${cond.prende
-            ? (this.fundicion.textoEncendido(cond) ? `Prenderla de nuevo cuesta ${this.fundicion.textoEncendido(cond)}` : 'Ahora prende sin problema')
-            : cond.motivo}</span></small>
-        <button data-accion="encender" ${cond.prende ? '' : 'disabled'}>Encender</button></div>`;
+      html += `<div class="tl-fila"><b>${horno.trabajo.receta.nombre} · a medio hacer</b>
+        <small>Se quedó al ${pr} % cuando se apagó el fuego, y ahí queda: el reloj del mundo
+          sigue pero la cocción no. Volvé a prender arriba y sigue donde estaba.</small></div>`;
     } else if (horno.trabajo) {
       const pr = Math.round(this.fundicion.progreso(horno) * 100);
       html += `<div class="tl-fila"><b>${horno.trabajo.receta.nombre}</b>
@@ -158,13 +165,6 @@ export class Taller {
         <small style="flex:0 0 3rem;text-align:right">${pr}%</small></div>`;
     } else {
       const recetas = this.fundicion.recetasDe(horno.def.id);
-      const cond = this.fundicion.condicionEncendido(horno);
-      if (!cond.prende || cond.leniaExtra || cond.usos?.length) {
-        html += `<div class="tl-fila"><b>${cond.prende ? 'Cuesta prender' : 'No prende'}</b>
-          <small>${cond.prende
-            ? `Está mojado: prenderlo se lleva ${this.fundicion.textoEncendido(cond)} y la carga tarda un ${Math.round(cond.demora * 100)} % más.`
-            : cond.motivo}${horno.def.notaHumedad ? `<br><span style="opacity:.75">${horno.def.notaHumedad}</span>` : ''}</small></div>`;
-      }
       for (const r of recetas) {
         const e = this.fundicion.estadoReceta(r, horno);
         const entra = (r.entra || []).map(m => `${m.cantidad} ${m.recurso.replace(/_/g, ' ')}`).join(' · ');
@@ -180,6 +180,54 @@ export class Taller {
 
     html += this._pintarObras(p, j);
     document.getElementById('tl-cuerpo').innerHTML = html;
+  }
+
+  /**
+   * El estado de la llama y el botón para prenderla o avivarla.
+   *
+   * Dice siempre las dos cosas que hacen falta para decidir: cuánto le queda de
+   * leña y qué cuesta la próxima carga. Un fuego que se apaga a la madrugada sin
+   * que nadie lo haya visto venir es una muerte que el jugador no entiende.
+   */
+  _pintarFuego(horno) {
+    const f = this.fundicion;
+    const arde = f.arde(horno);
+    const hay = this.inventario.disponiblePara('lena');
+    const carga = f.carga.lenia;
+    // Sobre brasas no se tira yesca: avivar es sólo leña
+    const cond = arde ? null : f.condicionEncendido(horno);
+    const extra = cond?.leniaExtra || 0;
+    const yesca = arde ? '' : f.textoEncendido(cond);
+    const puede = (arde || cond.prende) && hay >= carga + extra;
+
+    const costo = [`${carga} × Leña`, yesca].filter(Boolean).join(' · ');
+    let detalle;
+    if (arde) {
+      const horas = f.horasDeFuego(horno);
+      detalle = `Le queda leña para <b>${horas.toFixed(1)} h</b> del mundo. Mientras arde te calienta,
+        te seca la ropa y cocina lo que le pongas encima.
+        <br><span style="opacity:.75">Otra carga son ${costo} y suma
+        ${f.horasPorCarga(horno).toFixed(1)} h.</span>`;
+    } else if (cond.prende) {
+      detalle = `Prenderlo cuesta <b>${costo}</b> y arde ${f.horasPorCarga(horno).toFixed(1)} h.
+        <br><span style="opacity:.75">Un fuego encendido abriga aunque no estés cocinando nada:
+        es la respuesta al frío y a la ropa mojada.</span>`;
+    } else {
+      detalle = cond.motivo;
+      if (horno.def.notaHumedad) {
+        detalle += `<br><span style="opacity:.75">${horno.def.notaHumedad}</span>`;
+      }
+    }
+    if (!puede && (arde || cond.prende)) {
+      detalle += `<br><span style="opacity:.8;color:#d08a3a">Te falta leña: hacen falta
+        ${carga + extra} y tenés ${hay}.</span>`;
+    }
+
+    return `<div class="tl-fila">
+      <b>${arde ? '🔥 Encendido' : 'Apagado'}</b>
+      <small>${detalle}</small>
+      <button data-accion="encender" ${puede ? '' : 'disabled'}>
+        ${arde ? 'Avivar' : 'Encender'}</button></div>`;
   }
 
   /**
