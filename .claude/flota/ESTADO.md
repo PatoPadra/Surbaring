@@ -1,5 +1,60 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+## ⏸ GUARDADO EL 31/8/2026 — CÓMO SEGUIR DESDE ACÁ
+
+Se paró por límite de tokens semanales del usuario, no porque el trabajo fallara.
+
+**Todo lo hecho está commiteado** en la rama `mejoras/flota-visual-jugabilidad`,
+commit `c0ed137`. `main` quedó intacto en `0746527`. Para descartar todo:
+`git checkout main`. Para ver qué cambió: `git diff main`.
+
+**El juego carga y corre.** Verificado tras el commit: sintaxis, importación real
+de todos los módulos con GLSL, y `window.SurviBar` vivo en el navegador.
+
+### Terminados — no relanzar
+
+| Agente | Qué cerró |
+|---|---|
+| **luz** | Cielo verde, coseno solar doble, exposición constante → curva. Informe en `bitacora-luz.md`. |
+| **veg** | Piedras negras, normal nula en la punta del pasto, albedo de 8 especies, ambiente de carteleras. |
+| **agua** | Cenit reflejado, silueta del cerro en el agua, relieve fino con puerta propia. −5 ms de cuadro. |
+| **bucle** | La leña no se podía juntar; cadena del metal de 196 a 38 h de mundo. |
+
+### Pendientes — acá se retoma
+
+Los tres tienen **bitácora con diagnóstico ya hecho**. No los lances en frío:
+lanzá un agente nuevo y decile que lea su bitácora y ejecute su sección
+«3. Siguiente». Ese es todo el truco.
+
+| Agente | Archivos | Estado |
+|---|---|---|
+| **feel** | `entities/Jugador.js`, `entities/Cuerpo.js`, `engine/Entrada.js` | **Nada escrito.** Tiene el ANTES medido y un banco numérico que corre en Node. Es el que más rinde: el jugador está en contacto con esto todo el tiempo. |
+| **ui** | `ui/*.js`, `index.html` | Cambios a medias en `index.html`, `Codice.js`, `HUD.js`, ya commiteados. Recorrida de paneles hecha y escrita. |
+| **vida** | `engine/Audio.js`, `entities/Fauna.js`, `entities/Peces.js` | **+710 líneas escritas y SIN VERIFICAR.** Primera tarea: comprobar que no haya fuga de osciladores y que ningún canto tenga período audible. |
+
+### Encargos sueltos que quedaron anotados
+
+- **Los troncos siguen casi negros.** `veg` lo detectó y no lo abrió por estar
+  fuera de su encargo: es `colorTronco`, no `colorHoja`. Se arregla igual que el
+  follaje y es corto.
+- **La transición agua-costa quedó a medias**: `agua` bajó el alfa de la orilla
+  pero no agregó piedra mojada ni verificó la línea de espuma.
+- **`bucle` dejó sin hacer** los gestos de caza, pesca, saberes, relevamiento y
+  exploración, y la legibilidad del árbol de 47 tecnologías.
+- **Medir Baja contra Baja.** La línea de base de 57,1 ms es preset **Alta**.
+  Falta una medición equivalente en Baja, que es donde juega el usuario.
+- **El README miente ahora**: su sección `## Estado real` lista como defectos
+  varios que esta rama resolvió.
+
+### Herramientas que dejó la flota
+
+- `.claude/flota/cadena-bucle.mjs` — resuelve la cadena de una receta hacia atrás
+  sobre los JSON reales. `node .claude/flota/cadena-bucle.mjs herramienta 1`.
+- `.claude/flota/bucle-recoleccion.mjs` — 5 casos de la tecla de acción.
+- `public/banco.js` — reloj de GPU. No está enganchado en `index.html`.
+
+---
+
 Si sos una sesión nueva retomando este trabajo: **empezá por acá**, después por
 `.claude/flota/CONTEXTO.md`, y después por las bitácoras.
 
