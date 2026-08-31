@@ -534,15 +534,39 @@ export class Terreno {
         // Se usa el mismo campo que desplazó los vértices, así el color
         // acompaña al relieve: las lomas se secan y las hondonadas verdean.
         float relieve = texture2D(uTexDetalle, vMundo.xz / uDetallePeriodo).r;
-        float relieveFino = texture2D(uTexDetalle, vMundo.xz / (uDetallePeriodo * 0.21)).r;
         // Tercera lectura del mismo mosaico, con los ejes cambiados, un período
         // muy distinto y un corrimiento: rompe la correlación consigo mismo. Sin
         // esto, desde el aire el valle entero se ve como una grilla regular de
         // manchones verdes, que es el mosaico repitiéndose. Modula en vez de
         // sumarse, así que apaga el patrón sin aplanar el color.
         float relieveAncho = texture2D(uTexDetalle, vMundo.zx / (uDetallePeriodo * 3.7) + 0.37).r;
+
+        // La lectura fina, y el patrón de churretes que delataba.
+        //
+        // Son 13,4 m de período sobre un mosaico de 256 texels SIN mipmaps
+        // (Mundo.js los apaga), o sea 5,2 cm por texel. Iba multiplicada por
+        // cercania, que en el preset bajo llega hasta 147 m: cien metros de
+        // ladera resolviendo una textura de cinco centímetros por texel, muy por
+        // debajo de un píxel y sin ningún mipmap que la promedie. Eso no produce
+        // ruido, produce MOIRÉ, y visto a ras el moiré se estira en la dirección
+        // de la vista: son las manchas oscuras alargadas de base-cumbre.png.
+        // Alimenta parche, que elige entre mataOscura y pastoClaro, así que el
+        // patrón entraba con un 56 % de contraste.
+        //
+        // Se le da entonces su propia puerta, corta —la escala que describe es de
+        // metros, no de cien metros— y se la decorrelaciona con la misma idea que
+        // ya rompió la grilla del valle: segunda lectura con los ejes cambiados,
+        // período muy distinto y corrimiento, que MODULA en vez de sumarse.
+        float finoCerca = 1.0 - smoothstep(6.0, 34.0, distVista);
+        float relieveFino = 0.0;
+        if (finoCerca > 0.004) {
+          relieveFino = texture2D(uTexDetalle, vMundo.xz / (uDetallePeriodo * 0.21)).r;
+          float finoCruz = texture2D(uTexDetalle, vMundo.zx / (uDetallePeriodo * 0.77) + 0.61).r;
+          relieveFino *= 0.55 + finoCruz * 0.90;
+        }
+
         float parche = clamp(0.5 + relieve * 0.85 * (0.45 + relieveAncho * 1.1)
-                             + relieveFino * 0.45 * cercania
+                             + relieveFino * 0.45 * finoCerca
                              + (detalle - 0.5) * 0.7, 0.0, 1.0);
 
         vec3 pastoClaro = vegetacion * 1.05 + vec3(0.028, 0.030, 0.011);
@@ -592,7 +616,20 @@ export class Terreno {
         // oscura. Se aplica sólo en los últimos metros y respeta la nieve, que
         // por definición tapa el detalle del suelo.
         float moteado = mix(0.5, gravilla, pasoCorto * (1.0 - mascaraNieve));
-        tierra *= 0.90 + 0.20 * moteado;
+        // El grano de 40 cm YA está calculado acá arriba para el campo detalle.
+        // Usarlo también en el albedo extiende el moteado desde los 5,6 m donde
+        // muere la gravilla hasta los 15,8 m de muyCerca —los dos números son del
+        // preset bajo, que es el de la placa de destino— sin una sola evaluación
+        // de ruido nueva. Era la mitad del problema del suelo liso: el ruido se
+        // pagaba y no se usaba para nada que se viera.
+        moteado = mix(moteado, mix(moteado, micro, 0.5), muyCerca * (1.0 - mascaraNieve));
+        // Y la amplitud, que estaba en ±10 %. En una ladera de acarreo el
+        // contraste entre la piedrita clara y la hojarasca es mucho mayor que
+        // eso; con ±10 % el grano existía pero no se leía, que es lo que hacía
+        // ver la pendiente como una lámina de caqui liso. Sale gratis: es el
+        // mismo número, multiplicado distinto. Neutro a la distancia, porque ahí
+        // moteado vale 0,5 y 0,82 + 0,36·0,5 = 1,0 exacto.
+        tierra *= 0.82 + 0.36 * moteado;
 
         // La lluvia reciente oscurece y satura el suelo
         tierra = mix(tierra, tierra * 0.72, uHumedadGlobal * (1.0 - mascaraNieve) * 0.55);

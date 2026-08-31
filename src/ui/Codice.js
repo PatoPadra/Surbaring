@@ -72,6 +72,7 @@ export class Codice {
     this.lugares = new Set();        // cerros, lagos y sitios alcanzados
     this.abierto = false;
     this.pestana = 'fauna';
+    this.filtro = '';                // texto de búsqueda, vive entre pestañas
 
     this._armarLugares();
     this._crearElemento();
@@ -255,14 +256,15 @@ export class Codice {
           </div>
         </header>
         <nav>
-          <button data-p="fauna" class="activo">Fauna</button>
-          <button data-p="flora">Flora</button>
-          <button data-p="geografia">Geografía</button>
-          <button data-p="historia">Historia</button>
+          <button data-p="fauna" class="activo">Fauna <small class="cx-cnt"></small></button>
+          <button data-p="flora">Flora <small class="cx-cnt"></small></button>
+          <button data-p="geografia">Geografía <small class="cx-cnt"></small></button>
+          <button data-p="historia">Historia <small class="cx-cnt"></small></button>
           <button data-p="mitologia">Mitología</button>
           <button data-p="normativa">Normativa</button>
-          <button data-p="saberes">Saberes</button>
+          <button data-p="saberes">Saberes <small class="cx-cnt"></small></button>
         </nav>
+        <div class="cx-buscar"><input id="cx-q" type="search" placeholder="Buscar en esta sección…" autocomplete="off" spellcheck="false"></div>
         <div class="cx-lista" id="cx-lista"></div>
         <footer id="cx-pie"></footer>
       </div>`;
@@ -280,7 +282,64 @@ export class Codice {
       });
     });
 
+    // La búsqueda vive en un <input> de texto, el primero que tiene el juego.
+    // Entrada.js escucha keydown en toda la ventana sin mirar qué tiene el
+    // foco, así que sin cortar la propagación acá, escribir "g" cerraría este
+    // mismo panel y "tab" también: son teclas de juego antes que letras.
+    this.elBuscar = el.querySelector('#cx-q');
+    this.elBuscar.addEventListener('input', () => {
+      this.filtro = this.elBuscar.value;
+      this._aplicarFiltro();
+    });
+    this.elBuscar.addEventListener('keydown', (ev) => {
+      if (ev.code === 'Escape') {
+        // Primer Escape limpia la búsqueda; recién el segundo, con el campo ya
+        // vacío, sube y cierra el códice como siempre. Comerse el cierre en el
+        // primer toque sería peor que no filtrar nada.
+        if (this.elBuscar.value) {
+          ev.stopPropagation();
+          this.elBuscar.value = '';
+          this.filtro = '';
+          this._aplicarFiltro();
+        }
+        return;
+      }
+      ev.stopPropagation();
+    });
+    this.elBuscar.addEventListener('keyup', (ev) => ev.stopPropagation());
+
     this.el = el;
+  }
+
+  /**
+   * Filtra lo ya pintado por texto, sin volver a construir el HTML: así no se
+   * pierde el foco del campo ni se repite el trabajo de armar cada ficha.
+   * Compara contra lo que el marcado ya muestra, así que una especie sin
+   * descubrir —que en pantalla sólo dice "Sin descubrir"— no aparece por
+   * buscar su nombre real: no se puede encontrar lo que todavía no se sabe.
+   */
+  _aplicarFiltro() {
+    const lista = document.getElementById('cx-lista');
+    if (!lista) return;
+    const q = normaliza(this.filtro).trim();
+    const nodos = lista.querySelectorAll('.cx-ficha, .cx-linea, .cx-saber, .cx-topo');
+    let visibles = 0;
+    nodos.forEach(n => {
+      const coincide = !q || normaliza(n.textContent).includes(q);
+      n.classList.toggle('cx-filtro-oculto', !coincide);
+      if (coincide) visibles++;
+    });
+    let vacio = lista.querySelector('.cx-buscar-vacio');
+    if (q && nodos.length && visibles === 0) {
+      if (!vacio) {
+        vacio = document.createElement('div');
+        vacio.className = 'cx-buscar-vacio';
+        lista.appendChild(vacio);
+      }
+      vacio.textContent = `Nada con «${this.filtro.trim()}» en esta sección.`;
+    } else if (vacio) {
+      vacio.remove();
+    }
   }
 
   alternar() {
@@ -319,11 +378,33 @@ export class Codice {
     this._actualizarCuenta();
   }
 
+  /**
+   * Cuenta identificado/total en cada pestaña de la nav. No es sólo prolijidad:
+   * es la forma de notar, sin entrar, dónde queda algo por descubrir sin
+   * arruinar la sorpresa de qué es —el número no dice cuál falta, sólo cuántos.
+   */
   _actualizarCuenta() {
     const a = document.getElementById('cx-esp');
     const b = document.getElementById('cx-lug');
     if (a) a.textContent = this.identificadas.size;
     if (b) b.textContent = this.lugares.size;
+
+    const setCnt = (p, txt) => {
+      const el = this.el?.querySelector(`nav button[data-p="${p}"] .cx-cnt`);
+      if (el) el.textContent = txt;
+    };
+    const faunaN = this.fauna.especies.filter(e => this.identificadas.has(e.id)).length;
+    const floraN = this.flora.especies.filter(e => this.identificadas.has(e.id)).length;
+    setCnt('fauna', `${faunaN}/${this.fauna.especies.length}`);
+    setCnt('flora', `${floraN}/${this.flora.especies.length}`);
+    setCnt('geografia', `${this.lugares.size}/${this.listaLugares.length}`);
+
+    const eventosTotal = this.historia.eventos?.length || 0;
+    if (eventosTotal) {
+      setCnt('historia', `${this._eventosDesbloqueados().size}/${eventosTotal}`);
+    }
+    const rs = this.saberes?.resumen();
+    if (rs) setCnt('saberes', `${rs.desbloqueadas}/${rs.total}`);
   }
 
   // ── Pintado ───────────────────────────────────────────────────────────────
@@ -375,6 +456,7 @@ export class Codice {
     lista.className = 'cx-lista ' + (this.pestana === 'fauna' || this.pestana === 'flora' || this.pestana === 'geografia' ? 'rejilla' : 'columna');
     pie.innerHTML = ayuda + ' · <b>Tab</b> cierra';
     this._actualizarCuenta();
+    this._aplicarFiltro();
 
     lista.querySelectorAll('.sab-btn').forEach(b => {
       b.addEventListener('click', () => {
@@ -729,6 +811,8 @@ export class Codice {
 const cap = s => s ? s[0].toUpperCase() + s.slice(1) : '';
 const tag = (txt, c) => `<span class="cx-tag" style="--c:${c}">${txt}</span>`;
 const anio = a => a == null ? '····' : (a < 0 ? `${-a} a. C.` : `${a}`);
+/** Sin tildes y en minúsculas, para que buscar "canete" encuentre "cañete". */
+const normaliza = (t) => (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 const CSS = `
 #codice {
@@ -761,6 +845,19 @@ const CSS = `
 }
 .cx-marco nav button:hover { color: #e8e4dc; }
 .cx-marco nav button.activo { color: #6fae7c; border-bottom-color: #6fae7c; }
+.cx-cnt { font-size: .6rem; letter-spacing: 0; text-transform: none; opacity: .62; font-variant-numeric: tabular-nums; }
+
+.cx-buscar { padding: .7rem 1.6rem 0; }
+.cx-buscar input {
+  width: 100%; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.11);
+  border-radius: 3px; padding: .45rem .7rem; font: inherit; font-size: .8rem;
+  color: #e8e4dc; letter-spacing: .02em;
+}
+.cx-buscar input::placeholder { color: #6d766f; }
+.cx-buscar input:focus { outline: none; border-color: rgba(111,174,124,.55); background: rgba(255,255,255,.07); }
+.cx-filtro-oculto { display: none !important; }
+.cx-buscar-vacio { grid-column: 1 / -1; padding: 1.6rem 0; text-align: center; color: #7d857c; font-size: .8rem; font-style: italic; }
+
 .cx-lista { overflow-y: auto; padding: 1rem 1.6rem 1.4rem; display: grid; gap: .7rem; }
 .cx-lista.rejilla { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
 .cx-lista.columna { grid-template-columns: 1fr; }

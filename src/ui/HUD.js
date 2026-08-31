@@ -75,6 +75,7 @@ export class HUD {
     ).join('');
     this._barras = barras.map(([id]) => ({
       id,
+      vital: document.getElementById(`v-${id}`).closest('.vital'),
       barra: document.getElementById(`v-${id}`),
       texto: document.getElementById(`v-${id}-n`),
     }));
@@ -104,12 +105,14 @@ export class HUD {
       #bolso .alim { color: #b0c47a; }
       #accion { position: absolute; bottom: 21%; left: 50%; transform: translateX(-50%);
         font-size: .78rem; letter-spacing: .05em; color: var(--tinta);
-        text-shadow: 0 2px 10px #000; opacity: 0; transition: opacity .2s ease; text-align: center; }
+        text-shadow: 0 1px 2px rgba(0,0,0,.95), 0 0 8px rgba(0,0,0,.8);
+        opacity: 0; transition: opacity .2s ease; text-align: center; }
       #accion.visible { opacity: 1; }
       #accion b { color: var(--acento); }
       #termico { position: absolute; top: 46%; left: 50%; transform: translateX(-50%);
         font-size: .8rem; letter-spacing: .16em; text-transform: uppercase;
-        text-shadow: 0 2px 12px #000; opacity: 0; transition: opacity .6s ease; }
+        text-shadow: 0 1px 2px rgba(0,0,0,.95), 0 0 10px rgba(0,0,0,.85);
+        opacity: 0; transition: opacity .6s ease; }
       #termico.visible { opacity: 1; }
       #termico.frio { color: #7fb8d8; }
       #termico.calor { color: #d8a05a; }
@@ -263,7 +266,9 @@ export class HUD {
       const v = Math.max(0, Math.min(100, this.jugador[b.id]));
       b.barra.style.width = `${v}%`;
       b.texto.textContent = v.toFixed(0);
-      b.barra.style.opacity = v < 22 ? '0.55' : '1';
+      // La animación vive en el CSS (.critico); acá sólo se prende y apaga la
+      // clase. Ver la nota en index.html sobre por qué dejó de ser opacidad fija.
+      b.vital.classList.toggle('critico', v < 22);
     }
 
     // ── Aviso térmico: lo que de verdad mata en la Patagonia

@@ -14,6 +14,44 @@ import * as THREE from 'three';
 
 const RAD = Math.PI / 180;
 
+/**
+ * Modelo atmosférico compartido entre la CPU y el shader.
+ *
+ * Las mismas constantes las usan `FRAG` —para dibujar la cúpula— y
+ * `_dispersion()` —para sacar de ahí el color del sol, el de la luz de relleno y
+ * el de la niebla. Si divergen, el paisaje deja de pertenecer al cielo que tiene
+ * encima: era exactamente el defecto viejo, con la hemisférica en un pastel fijo
+ * y la niebla en una rampa inventada.
+ */
+// Coeficientes de dispersión Rayleigh en RGB (longitudes de onda 680/550/440 nm)
+const BETA_R = [5.8e-6, 13.5e-6, 33.1e-6];
+// Mie. Estaba en 21e-6, que con turbiedad 2,2 da una profundidad óptica de
+// aerosol de 0,058: un día con calima, no el aire de un parque nacional. En
+// 14e-6 queda en 0,039, que es lo que se mide en montaña limpia, y de paso el
+// gris del Mie deja de comerle saturación al azul del cielo alto.
+const BETA_M = 14.0e-6;
+// Escala de la radiancia del cielo a las unidades lineales de la escena.
+//
+// Estaba en 26 y el horizonte pasaba de 1,0 lineal a toda hora. El resplandor de
+// `main.js` tiene el umbral en 0,86 y corre ANTES del mapeo tonal, o sea que el
+// cielo entero entraba al bloom y lo derramaba sobre el paisaje: eso —y no la
+// niebla— es la neblina lechosa del mediodía de `base-alta-bosque.png`.
+const ESCALA_CIELO = 21.0;
+
+function suave(a, b, x) {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * Camino óptico en metros, con la masa de aire de Kasten-Young. Réplica exacta
+ * de `caminoOptico()` del shader: si una de las dos cambia, cambian las dos.
+ */
+function caminoOptico(cosCenit, alturaEscala) {
+  const c = Math.max(cosCenit, 0);
+  return alturaEscala / (c + 0.15 * Math.pow(93.885 - Math.acos(Math.min(1, c)) / RAD, -1.253));
+}
+
 /** Posición solar real (algoritmo NOAA simplificado). */
 export function posicionSolar(fecha, latitud, longitud) {
   const dia = (Date.UTC(fecha.getUTCFullYear(), fecha.getUTCMonth(), fecha.getUTCDate())
@@ -68,7 +106,14 @@ export class Cielo {
       uLuna: { value: this.direccionLuna },
       uFaseLunar: { value: 0.5 },
       uTurbiedad: { value: 2.2 },   // aire muy limpio: es un parque nacional
-      uRayleigh: { value: 1.6 },
+      // Estaba en 1,6 y encima multiplicado por (1 + 0,15·turbiedad), o sea 2,13
+      // efectivo: una atmósfera del doble de espesa que la real. La turbiedad
+      // son aerosoles y el Rayleigh son moléculas de aire — acoplarlos no tiene
+      // sentido físico, y el sol de media mañana salía naranja de atardecer.
+      uRayleigh: { value: 1.15 },
+      // Peso del rebote de dispersión múltiple. Ver el comentario largo en FRAG:
+      // es el término que faltaba y por cuya falta el cielo era verde.
+      uMultiple: { value: 3.0 },
       uMieG: { value: 0.78 },
       uMieCoef: { value: 1.0 },
       uIntensidad: { value: 1.0 },
@@ -112,9 +157,22 @@ export class Cielo {
     this.luzSol = new THREE.DirectionalLight(0xffffff, 3.0);
     this.luzSol.castShadow = false;
 
-    // Rebote del cielo y del suelo
+    // Luz de cielo y rebote del suelo.
+    //
+    // Es media bóveda de fuente de área, o sea la única luz que recibe la cara
+    // en sombra de cualquier cosa. Los valores de acá son sólo el arranque: el
+    // color y la intensidad los reescribe `_encenderLuces()` con el cielo que
+    // de verdad hay a esa hora.
     this.luzAmbiente = new THREE.HemisphereLight(0x9fc0e8, 0x4a4034, 0.55);
     escena.add(this.luzAmbiente);
+
+    // Reutilizados por cuadro para no ensuciar el recolector de basura
+    this._cenit = [0, 0, 0];
+    this._bajo = [0, 0, 0];
+    this._trans = [0, 0, 0];
+    this._tauSol = [0, 0, 0];
+    this._mezcla = [0, 0, 0];
+    this._niebla = [0, 0, 0];
   }
 
   /**
@@ -134,20 +192,114 @@ export class Cielo {
     this.uniformes.uFaseLunar.value = 0.5 - 0.5 * Math.cos(faseDias * Math.PI * 2);
     this.uniformes.uTiempo.value = tiempo;
 
-    // ── Luz solar: color e intensidad según la altura sobre el horizonte
     const h = Math.max(-0.18, altura);
-    const dia = Math.max(0, Math.sin(h));
-    const crepusculo = Math.exp(-Math.pow(Math.max(0, h) / 0.22, 2));
+    this.factorDia = Math.max(0, Math.sin(h));
+    this.factorCrepusculo = Math.exp(-Math.pow(Math.max(0, h) / 0.22, 2))
+      * (altura > -0.18 ? 1 : 0);
 
-    const color = new THREE.Color();
-    // De rojo profundo en el horizonte a blanco levemente cálido en el cenit
-    color.setRGB(
-      1.0,
-      0.36 + 0.60 * Math.min(1, Math.max(0, (h + 0.06) / 0.42)),
-      0.14 + 0.80 * Math.min(1, Math.max(0, (h - 0.02) / 0.46))
-    );
-    this.luzSol.color.copy(color);
-    this.luzSol.intensity = 3.4 * dia + 0.06;
+    this._encenderLuces();
+    return this;
+  }
+
+  configurarAtmosfera({ turbiedad, nubes, ceniza } = {}) {
+    if (turbiedad !== undefined) this.uniformes.uTurbiedad.value = turbiedad;
+    if (nubes !== undefined) this.uniformes.uNubes.value = nubes;
+    if (ceniza !== undefined) this.uniformes.uCeniza.value = ceniza;
+    // El clima no cambia sólo la cúpula: un cubierto apaga el sol y prende el
+    // cielo. Se rehacen las luces acá porque `main` llama a esta función DESPUÉS
+    // de `actualizar()`, y si no el sol quedaría con la nubosidad del cuadro
+    // anterior —o, en una captura con salto de fecha, con la de otro día.
+    if (this.alturaSol !== undefined) this._encenderLuces();
+  }
+
+  /**
+   * Transmitancia atmosférica del rayo directo del sol, por canal.
+   * Es de dónde salen el color y la atenuación del sol a cada hora.
+   */
+  _transmitanciaSolar(salida = [0, 0, 0]) {
+    const u = this.uniformes;
+    const solY = this.direccionSol.y;
+    const solR = caminoOptico(solY, 8400.0);
+    const solM = caminoOptico(solY, 1250.0);
+    const bM = BETA_M * u.uMieCoef.value * u.uTurbiedad.value * solM;
+    for (let i = 0; i < 3; i++) {
+      salida[i] = Math.exp(-(BETA_R[i] * u.uRayleigh.value * solR + bM));
+    }
+    return salida;
+  }
+
+  /**
+   * Radiancia del cielo en una dirección, en las unidades lineales de la escena.
+   * Réplica en CPU del bloque de dispersión de `FRAG` —incluido el rebote de
+   * dispersión múltiple—, para que la luz de relleno y la niebla sean el MISMO
+   * cielo que se está dibujando y no una rampa aparte.
+   *
+   * @param {number} alturaVista seno de la altura de la dirección mirada
+   * @param {number} cosTheta coseno del ángulo con el sol
+   */
+  _dispersion(alturaVista, cosTheta, salida = [0, 0, 0]) {
+    const u = this.uniformes;
+    const g = u.uMieG.value;
+    const solY = this.direccionSol.y;
+
+    const faseR = (3 / (16 * Math.PI)) * (1 + cosTheta * cosTheta);
+    const faseM = (1 / (4 * Math.PI)) * ((1 - g * g) /
+      Math.pow(Math.max(1e-4, 1 + g * g - 2 * g * cosTheta), 1.5));
+
+    const sR = caminoOptico(alturaVista, 8400.0);
+    const sM = caminoOptico(alturaVista, 1250.0);
+    const solR = caminoOptico(solY, 8400.0);
+    const solM = caminoOptico(solY, 1250.0);
+    const bM = BETA_M * u.uMieCoef.value * u.uTurbiedad.value;
+    const ray = u.uRayleigh.value;
+
+    const tauSol = this._tauSol;
+    let brillo = 0;
+    for (let i = 0; i < 3; i++) {
+      tauSol[i] = BETA_R[i] * ray * solR + bM * solM;
+      brillo += Math.exp(-tauSol[i]) / 3;
+    }
+
+    const escala = ESCALA_CIELO * u.uIntensidad.value
+      * (0.04 + 0.96 * suave(-0.14, 0.10, solY));
+    const tauM = bM * sM;
+    for (let i = 0; i < 3; i++) {
+      const tauR = BETA_R[i] * ray * sR;
+      const tau = tauR + tauM;
+      const fuente = Math.exp(-tauSol[i])
+        + (1 - Math.exp(-tauSol[i] * 0.35)) * u.uMultiple.value * brillo;
+      const albedo = (tauR * faseR + tauM * faseM) / Math.max(tau, 1e-9);
+      salida[i] = albedo * (1 - Math.exp(-tau)) * fuente * escala;
+    }
+    return salida;
+  }
+
+  /**
+   * Sol y luz de cielo a partir del mismo modelo que dibuja la cúpula.
+   *
+   * ── El sol ──────────────────────────────────────────────────────────────
+   * Estaba en `3.4 * sin(h)`, y el sombreado ya multiplica por N·L, que es el
+   * mismo coseno: el terreno llano recibía 3,4·sin²(h). A las nueve de la mañana
+   * del 15 de febrero, con el sol a 22,4°, eso es 0,52 — de ahí la penumbra de
+   * `base-alta-manana.png` a plena mañana. El disco solar arriba de la atmósfera
+   * vale lo mismo a toda hora; lo que baja con la altura es la transmitancia, y
+   * el coseno lo pone el sombreado una sola vez.
+   */
+  _encenderLuces() {
+    const u = this.uniformes;
+    const solY = this.direccionSol.y;
+    const nubes = u.uNubes.value;
+
+    const trans = this._transmitanciaSolar(this._trans);
+    const pico = Math.max(trans[0], trans[1], trans[2], 1e-6);
+    // Lo que atraviesa la capa de nubes. Antes el cielo cubierto no tocaba la
+    // luz de la escena: sólo cambiaba la cúpula, y un día de tormenta iluminaba
+    // el bosque igual que uno despejado.
+    const paso = 1 - 0.75 * nubes * nubes;
+    const visible = suave(-0.06, 0.02, solY);
+
+    this.luzSol.color.setRGB(trans[0] / pico, trans[1] / pico, trans[2] / pico);
+    this.luzSol.intensity = 3.9 * pico * visible * paso;
     // Copia propia del sol, porque `main` pisa `luzSol.intensity` con cero antes
     // de que la vegetación la lea —la iluminación direccional la aportan las
     // cascadas— y quien la buscara desde afuera se llevaba un cero.
@@ -165,45 +317,112 @@ export class Cielo {
     this.luzSol.position.copy(this.direccionSol).multiplyScalar(6000);
     this.luzSol.target.position.set(0, 0, 0);
 
-    // ── Ambiente: de noche domina la luz lunar, azulada y tenue
-    const luzLunar = Math.max(0, this.direccionLuna.y) * this.uniformes.uFaseLunar.value;
-    const ambDia = 0.62 * dia;
-    const ambNoche = 0.055 + 0.10 * luzLunar;
-    this.luzAmbiente.intensity = ambDia + ambNoche;
-    this.luzAmbiente.color.setRGB(
-      0.35 + 0.30 * dia,
-      0.48 + 0.26 * dia,
-      0.72 + 0.16 * dia
-    );
+    // ── Luz de cielo ────────────────────────────────────────────────────────
+    //
+    // Dos muestras de la cúpula alcanzan para media bóveda: el cenit —que es lo
+    // que más pesa para una cara mirando arriba, porque el coseno lo favorece— y
+    // el cielo bajo a 6°, que es el más brillante. A 90° del sol las dos, así
+    // que el halo de dispersión hacia adelante no las contamina; una hemisférica
+    // no puede representar una dirección preferente igual.
+    const cenit = this._dispersion(1.0, solY, this._cenit);
+    const bajo = this._dispersion(0.10, 0.0, this._bajo);
+    const c = this._mezcla;
+    for (let i = 0; i < 3; i++) c[i] = 0.65 * cenit[i] + 0.35 * bajo[i];
+
+    // Con nubes el cielo pierde color y gana brillo: la lámina gris devuelve
+    // repartida la luz que el sol dejó de mandar derecho.
+    if (nubes > 0.01) {
+      const lum = 0.30 * c[0] + 0.59 * c[1] + 0.11 * c[2];
+      const gris = nubes * 0.8;
+      const refuerzo = 1 + 1.1 * nubes;
+      for (let i = 0; i < 3; i++) c[i] = (c[i] * (1 - gris) + lum * gris) * refuerzo;
+    }
+
+    // 0,82 calibra la radiancia del cielo contra las unidades de three: deja el
+    // relleno en un 15-17 % del sol directo al mediodía limpio, que es la
+    // fracción difusa que se mide en un día así.
+    let brillo = Math.max(c[0], c[1], c[2], 1e-5);
+    let intensidad = 0.82 * brillo;
+
+    // De noche manda la luna. Sin este piso la escena queda en negro absoluto:
+    // no es lo que ve un ojo adaptado bajo el cielo austral.
+    const noche = 1 - suave(-0.10, 0.06, solY);
+    if (noche > 0.001) {
+      const luna = Math.max(0, this.direccionLuna.y) * u.uFaseLunar.value;
+      const ambNoche = (0.045 + 0.09 * luna) * noche;
+      const az = [0.42, 0.55, 1.0];
+      for (let i = 0; i < 3; i++) {
+        c[i] = c[i] / brillo * intensidad + az[i] * ambNoche;
+      }
+      brillo = Math.max(c[0], c[1], c[2], 1e-5);
+      intensidad = brillo;
+    }
+
+    this.luzAmbiente.intensity = intensidad;
+    this.luzAmbiente.color.setRGB(c[0] / brillo, c[1] / brillo, c[2] / brillo);
+
+    // Contrato para quien NO pasa por el sistema de luces de three.
+    //
+    // Las carteleras de `Vegetacion.js` se iluminan a mano y arman su ambiente
+    // con `0.18 + 0.34 * factorDia` y dos constantes más: la misma clase de
+    // rampa inventada que acabo de sacar de acá, o sea que el bosque lejano
+    // vuelve a despegarse del cercano. `irradianciaCielo` ya viene multiplicada
+    // —color por intensidad— para que enchufarla sea una línea.
+    (this.irradianciaCielo ??= new THREE.Color()).setRGB(
+      c[0] / brillo * intensidad, c[1] / brillo * intensidad, c[2] / brillo * intensidad);
+    this.intensidadCielo = intensidad;
+    this.luzCieloColor = this.luzAmbiente.color;
+
+    // El suelo devuelve lo que recibe, teñido por su albedo: pardo con verde de
+    // bosque. Es lo que le pone luz a la cara de abajo de las hojas y a los
+    // aleros, y antes era un marrón fijo que no sabía si era de día.
+    const ALBEDO_SUELO = [0.17, 0.15, 0.11];
+    const solHoriz = Math.max(0, solY) * this.luzSol.intensity;
+    const sc = this.luzSol.color;
+    const irr = [
+      this.luzAmbiente.color.r * intensidad + solHoriz * sc.r,
+      this.luzAmbiente.color.g * intensidad + solHoriz * sc.g,
+      this.luzAmbiente.color.b * intensidad + solHoriz * sc.b,
+    ];
     this.luzAmbiente.groundColor.setRGB(
-      0.16 + 0.14 * dia, 0.14 + 0.12 * dia, 0.11 + 0.09 * dia
+      Math.min(1, irr[0] * ALBEDO_SUELO[0] / intensidad),
+      Math.min(1, irr[1] * ALBEDO_SUELO[1] / intensidad),
+      Math.min(1, irr[2] * ALBEDO_SUELO[2] / intensidad)
     );
-
-    this.factorDia = dia;
-    this.factorCrepusculo = crepusculo * (altura > -0.18 ? 1 : 0);
-    return this;
   }
 
-  configurarAtmosfera({ turbiedad, nubes, ceniza } = {}) {
-    if (turbiedad !== undefined) this.uniformes.uTurbiedad.value = turbiedad;
-    if (nubes !== undefined) this.uniformes.uNubes.value = nubes;
-    if (ceniza !== undefined) this.uniformes.uCeniza.value = ceniza;
-  }
-
-  /** Color de niebla coherente con el cielo cerca del horizonte. */
+  /**
+   * Color de niebla coherente con el cielo cerca del horizonte.
+   *
+   * Es lo que hace que la cadena lejana se funda con el cielo contra el que se
+   * recorta en vez de despegarse: la perspectiva aérea converge a la radiancia
+   * del cielo, así que la niebla TIENE que ser ese mismo número. Antes era una
+   * rampa de tres constantes que al mediodía daba un celeste lechoso y al
+   * atardecer no se enteraba del naranja.
+   *
+   * A 2,6° de altura y 70° del sol: bastante bajo para ser el horizonte, y lo
+   * bastante fuera del sol para no teñirse del halo cuando uno mira para otro
+   * lado. En el crepúsculo el término de Mie hacia adelante todavía alcanza para
+   * que la niebla se caliente sola.
+   */
   colorNiebla(salida = new THREE.Color()) {
-    const d = this.factorDia ?? 0;
-    const c = this.factorCrepusculo ?? 0;
-    salida.setRGB(
-      0.10 + 0.52 * d + 0.34 * c,
-      0.14 + 0.60 * d + 0.16 * c,
-      0.22 + 0.74 * d + 0.04 * c
-    );
+    const c = this._dispersion(0.045, 0.35, this._niebla);
+
+    // De noche el aire igual devuelve algo: la luna y el resplandor del cielo
+    // estrellado. Sin este piso la cordillera se recorta en negro absoluto
+    // contra un cielo que sí tiene brillo.
+    const noche = 1 - suave(-0.10, 0.06, this.direccionSol.y);
+    const luna = Math.max(0, this.direccionLuna.y) * this.uniformes.uFaseLunar.value;
+    const piso = noche * (0.020 + 0.045 * luna);
+    salida.setRGB(c[0] + piso * 0.62, c[1] + piso * 0.78, c[2] + piso);
+
     const ceniza = this.uniformes.uCeniza.value;
-    if (ceniza > 0) salida.lerp(new THREE.Color(0.42, 0.39, 0.36), ceniza * 0.75);
+    if (ceniza > 0) salida.lerp(CENIZA, ceniza * 0.75);
     return salida;
   }
 }
+
+const CENIZA = new THREE.Color(0.42, 0.39, 0.36);
 
 const VERT = /* glsl */`
 varying vec3 vDir;
@@ -227,6 +446,7 @@ uniform float uRayleigh;
 uniform float uMieG;
 uniform float uMieCoef;
 uniform float uIntensidad;
+uniform float uMultiple;
 uniform float uCeniza;
 uniform float uNubes;
 uniform float uTiempo;
@@ -235,7 +455,7 @@ uniform vec2 uVientoNubes;
 const float PI = 3.141592653589793;
 // Coeficientes de dispersión Rayleigh en RGB (longitudes de onda 680/550/440 nm)
 const vec3 BETA_R = vec3(5.8e-6, 13.5e-6, 33.1e-6);
-const vec3 BETA_M = vec3(21.0e-6);
+const vec3 BETA_M = vec3(14.0e-6);
 
 float hash(vec3 p) {
   p = fract(p * 0.3183099 + vec3(0.71, 0.113, 0.419));
@@ -273,7 +493,11 @@ void main() {
   float cosTheta = dot(dir, sol);
 
   // ── Dispersión ────────────────────────────────────────────────────────────
-  float rayleigh = uRayleigh * (1.0 + 0.15 * uTurbiedad);
+  // El Rayleigh NO se acopla a la turbiedad: la turbiedad son aerosoles y el
+  // Rayleigh son moléculas de aire. El (1 + 0,15·turbiedad) que había acá subía
+  // el espesor de la atmósfera a 2,13 veces el real, y el sol de media mañana
+  // salía naranja de atardecer.
+  float rayleigh = uRayleigh;
   float faseR = (3.0 / (16.0 * PI)) * (1.0 + cosTheta * cosTheta);
   float g = uMieG;
   float faseM = (1.0 / (4.0 * PI)) * ((1.0 - g * g) /
@@ -287,20 +511,48 @@ void main() {
   vec3 betaR = BETA_R * rayleigh;
   vec3 betaM = BETA_M * uMieCoef * uTurbiedad;
 
-  // Lo que le llega al punto donde se dispersa, tras cruzar la atmósfera desde
-  // el sol. Acá nace el rojo del atardecer: con el sol bajo, el camino es tan
-  // largo que el azul se extingue por completo y sólo pasa el rojo.
-  vec3 luzIncidente = exp(-(betaR * solR + betaM * solM));
+  // Profundidad óptica de la COLUMNA, no coeficiente por metro.
+  //
+  // El albedo se pesaba con betaR / (betaR + betaM), y eso compara un número
+  // de aire de 8400 m de altura de escala con uno de 1250: el Mie —que es gris—
+  // pesaba lo mismo mirando al cenit que al horizonte, y le comía el azul al
+  // cielo alto. Pesado por columna, el aerosol sólo manda donde de verdad hay
+  // aerosol, que es cerca del suelo.
+  vec3 tauR = betaR * sR;
+  vec3 tauM = betaM * sM;
+  vec3 tauVista = tauR + tauM;
+
+  vec3 tauSol = betaR * solR + betaM * solM;
+  vec3 directa = exp(-tauSol);
+
+  // ── Acá estaba el cielo verde ─────────────────────────────────────────────
+  //
+  // Antes la fuente era la directa a secas: la luz se atenuaba con TODO el camino
+  // al sol y después la vista la volvía a atenuar. El azul se extinguía dos
+  // veces y el verde —que se extingue la mitad— quedaba arriba. Con el sol a 30°
+  // y mirando a 17° de altura la cuenta daba (0,192 0,290 0,265): verde oliva
+  // medido, no una impresión. Es el cielo de capturas/base-alta-manana.png.
+  //
+  // Lo que falta es que el fotón azul que el rayo directo pierde no desaparece:
+  // se dispersa, y una buena parte vuelve. Ese segundo rebote sale de arriba,
+  // donde el aire ya es fino, así que se atenúa mucho menos —de ahí el 0,35 del
+  // camino— y su espectro es el complemento de lo que se extinguió, o sea azul,
+  // que es justo el canal que faltaba.
+  //
+  // El factor de brillo es lo que lo apaga con el sol bajo, y es la parte que no
+  // se puede sacar: un rebote proporcional a (1 - directa) a secas tiende a gris
+  // parejo cuando el sol se hunde y MATA el rojo del atardecer. Probado.
+  float brillo = dot(directa, vec3(0.3333333));
+  vec3 fuente = directa + (1.0 - exp(-tauSol * 0.35)) * uMultiple * brillo;
 
   // Dispersión acumulada a lo largo de la vista. Se usa la forma de albedo por
   // (1 - transmitancia): satura hacia el blanco en el horizonte en vez de
   // dispararse al infinito, que es lo que rompía la versión anterior.
-  vec3 tauVista = betaR * sR + betaM * sM;
-  vec3 albedo = (betaR * faseR + betaM * faseM) / max(betaR + betaM, vec3(1e-9));
-  vec3 dispersion = albedo * (1.0 - exp(-tauVista)) * luzIncidente;
+  vec3 albedo = (tauR * faseR + tauM * faseM) / max(tauVista, vec3(1e-9));
+  vec3 dispersion = albedo * (1.0 - exp(-tauVista)) * fuente;
 
   float diurno = smoothstep(-0.14, 0.10, sol.y);
-  vec3 color = dispersion * 26.0 * uIntensidad * mix(0.04, 1.0, diurno);
+  vec3 color = dispersion * 21.0 * uIntensidad * mix(0.04, 1.0, diurno);
 
   // ── Cielo nocturno ────────────────────────────────────────────────────────
   float noche = 1.0 - diurno;
@@ -354,8 +606,21 @@ void main() {
 
     // Iluminación de la nube: bordes encendidos hacia el sol
     float haciaSol = max(0.0, dot(normalize(vec3(dir.x, 0.0, dir.z)), normalize(vec3(sol.x, 0.0, sol.z))));
-    vec3 nubeClara = mix(vec3(0.62, 0.66, 0.72), vec3(1.0, 0.93, 0.84), haciaSol * 0.6);
-    vec3 nubeSombra = mix(vec3(0.26, 0.29, 0.35), vec3(0.42, 0.33, 0.32), haciaSol * 0.4);
+
+    // La nube no tiene color propio: devuelve la luz que le llega.
+    //
+    // Estaba en una paleta fija —(1,00 0,93 0,84) en la cara al sol— que a las
+    // once de la mañana daba una lámina de 0,9 lineal, por encima del umbral
+    // 0,86 del resplandor: el cielo cubierto entraba entero al bloom y se comía
+    // el horizonte. Y era la misma crema a toda hora, así que un cubierto de
+    // mediodía y uno de atardecer se veían igual.
+    //
+    // El 0,4 del camino es porque la nube está ARRIBA: la luz que la ilumina no
+    // cruzó la atmósfera baja, y usar la transmitancia del suelo la pintaba de
+    // naranja al mediodía.
+    vec3 luzNube = exp(-tauSol * 0.4) * 0.86 + fuente * 0.22;
+    vec3 nubeClara = luzNube * mix(0.62, 0.95, haciaSol * 0.6);
+    vec3 nubeSombra = luzNube * mix(0.26, 0.40, haciaSol * 0.4);
     vec3 colorNube = mix(nubeSombra, nubeClara, smoothstep(0.1, 0.85, d));
     colorNube *= mix(0.10, 1.0, diurno);
     colorNube += colorDisco * pow(max(0.0, cosTheta), 40.0) * 0.35 * diurno;

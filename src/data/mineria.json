@@ -210,15 +210,15 @@
       "materiales": [
         {
           "recurso": "piedra",
-          "cantidad": 12
+          "cantidad": 10
         },
         {
           "recurso": "arcilla",
-          "cantidad": 6
+          "cantidad": 4
         },
         {
           "recurso": "cuero",
-          "cantidad": 2
+          "cantidad": 1
         }
       ],
       "resguardo": 0.72,
@@ -233,17 +233,17 @@
       "entra": [
         {
           "recurso": "lena",
-          "cantidad": 6
+          "cantidad": 12
         }
       ],
       "sale": [
         {
           "recurso": "carbon",
-          "cantidad": 2
+          "cantidad": 4
         }
       ],
       "horas": 30,
-      "nota": "Seis de leña dan dos de carbón: la mayor parte de la madera se va en humo. Ese rendimiento es la razón por la que las carboneras arrasaron bosques enteros."
+      "nota": "Doce de leña dan cuatro de carbón: dos tercios de la madera se van en humo. Ese rendimiento es la razón por la que las carboneras arrasaron bosques enteros. La pila va entera de una vez porque los días de quema los fija el tamaño del montículo y su tiro, no la cantidad de leña: por eso las carboneras se armaban grandes."
     },
     {
       "id": "ceniza",
@@ -413,7 +413,7 @@
         },
         {
           "recurso": "carbon",
-          "cantidad": 2
+          "cantidad": 1
         }
       ],
       "sale": [

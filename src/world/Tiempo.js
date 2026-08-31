@@ -7,6 +7,8 @@
  * en vez de un sorteo independiente por día.
  */
 
+import { posicionSolar } from './Cielo.js';
+
 const CLIMATOLOGIA = [
   // mes, tempMax, tempMin, precipMm, díasLluvia, nubosidad, vientoKmh
   { mes: 1, max: 22.0, min: 6.6, precip: 22, dias: 5, nubes: 0.34, viento: 24 },
@@ -192,9 +194,36 @@ export class Tiempo {
       ceniza: this.ceniza,
       humedadSuelo: Math.min(1, lluvia * 1.6),
       densidadNiebla,
-      exposicion: 1.05 - nubosidad * 0.18 - this.ceniza * 0.2,
+      exposicion: this._exposicion(nubosidad),
       esDeNoche: false,
     };
+  }
+
+  /**
+   * Exposición: adaptación PARCIAL a la luz que hay, como la del ojo.
+   *
+   * Estaba fija en `1.05 - nubosidad*0.18`, o sea que no era una curva mal
+   * ajustada: no había curva. No dependía de la altura del sol. Combinada con un
+   * sol que entregaba el coseno al cuadrado, eso aplastaba la mañana a negro y
+   * reventaba el mediodía a blanco, que son los dos extremos del defecto.
+   *
+   * `2,24 / (1,54 + sen h)` da 1,45 con el sol en el horizonte, 1,16 a 22° y
+   * 0,88 en el cenit: una parada y media de recorrido en todo el arco del día.
+   * Poco a propósito — el ojo tampoco compensa del todo, y si compensara del
+   * todo el mediodía y el crepúsculo se verían igual de brillantes, que es
+   * justamente lo que uno no quiere de un juego con ciclo de día.
+   */
+  _exposicion(nubosidad) {
+    const { altura } = posicionSolar(this.fecha, this.lat, this.lon);
+    const seno = Math.sin(altura);
+    const diurna = 2.24 / (1.54 + Math.max(0, seno));
+    // De noche se deja de compensar: adaptar la noche a la luz del día es
+    // convertirla en un atardecer eterno, y el frío nocturno se enseña a
+    // oscuras.
+    const t = Math.max(0, Math.min(1, (seno + 0.12) / 0.14));
+    const dia = t * t * (3 - 2 * t);
+    return diurna * (0.78 + 0.22 * dia)
+      * (1 - nubosidad * 0.10 - this.ceniza * 0.20);
   }
 
   /** Dispara una caída de ceniza, como la del Puyehue-Cordón Caulle en 2011. */

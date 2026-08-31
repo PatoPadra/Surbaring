@@ -127,10 +127,25 @@ export class Agua {
     this.uniformesComunes.uFuerzaOleaje.value =
       Math.min(1.6, 0.12 + (estado.vientoKmh ?? 20) / 55);
 
+    // El cenit NO es un azul inventado.
+    //
+    // Acá estaba la razón de que el lago pareciera una lámina de plástico
+    // celeste. El cenit se armaba multiplicando el color de niebla por
+    // (0,55 · 0,72 · 1,00), o sea bajando el rojo casi a la mitad y dejando el
+    // azul intacto: pasara lo que pasara en el cielo, el agua reflejaba azul
+    // saturado. Medido en `base-alta-manana.png`: el cielo de esa hora es
+    // rgb(102,133,117) —verde, con más verde que azul— y el lago debajo salía
+    // rgb(31,76,111), con el azul al triple del rojo. El agua devolvía un color
+    // que no existía en ninguna parte de la escena, y por eso se leía como un
+    // recorte pegado encima en vez de una superficie.
+    //
+    // El cenit real es el MISMO cielo del horizonte, más oscuro y apenas más
+    // frío. Se lo trata así: un escalado casi neutro, con el sesgo al azul
+    // reducido de 1,8 a 1,2, que es el orden que tiene un cielo de verdad.
     const cielo = this.cielo.colorNiebla();
     this.uniformesComunes.uColorHorizonte.value.copy(cielo);
     this.uniformesComunes.uColorCielo.value.setRGB(
-      cielo.r * 0.55, cielo.g * 0.72, cielo.b * 1.0
+      cielo.r * 0.48, cielo.g * 0.52, cielo.b * 0.58
     );
 
     // Mantener la niebla de la escena sincronizada en los materiales propios
@@ -462,6 +477,10 @@ uniform float fogDensity;
 uniform sampler2D uReflejo;
 uniform mat4 uMatrizReflejo;
 uniform float uFuerzaReflejo;
+// El DEM, para saber si el rayo reflejado se topa con el cerro de enfrente.
+// Ya estaban atados en uniformesComunes para el vértice; sólo faltaba declararlos.
+uniform sampler2D uTexAltura;
+uniform float uTamanoMundo;
 
 varying vec3 vMundo;
 varying float vProfundidad;
@@ -532,8 +551,18 @@ void main() {
   // Además el ruido tiene un período de ~1,8 m: a quinientos metros es subpíxel
   // y hormiguea. Aplanarlo arregla el color, arregla el aliasing y de paso
   // saltea nueve evaluaciones de ruido en toda la mitad lejana del lago.
+  // La banda de transición se acorta de 80–1200 m a 60–420 m.
+  //
+  // Con el lóbulo especular ancho de más abajo, la franja donde la normal
+  // TODAVÍA lleva ruido de período 1,8 m pero ya está muy por debajo de un
+  // píxel se llenó de destellos sueltos: el lago del medio campo quedaba como
+  // papel de aluminio. Es el mismo aliasing que el aplanado venía a resolver,
+  // sólo que ahora se dispara mucho más seguido porque el lóbulo perdona más.
+  // Achicar la banda lo apaga, deja el medio campo en manos del lóbulo ancho
+  // —que es liso por construcción— y de paso saltea nueve evaluaciones de ruido
+  // en bastante más pantalla que antes.
   float distOjo = length(uCamara - vMundo);
-  float nitidez = 1.0 - smoothstep(80.0, 1200.0, distOjo);
+  float nitidez = 1.0 - smoothstep(60.0, 420.0, distOjo);
 
   vec3 N = vec3(0.0, 1.0, 0.0);
   if (nitidez > 0.01) {
@@ -552,15 +581,90 @@ void main() {
   vec3 absorcion = vec3(0.42, 0.09, 0.045);   // el rojo se extingue primero
   float camino = min(vProfundidad, 60.0) * 2.0;
   vec3 transmision = exp(-absorcion * camino);
-  vec3 colorFondo = vec3(0.20, 0.24, 0.19);   // sedimento y roca del lecho
-  vec3 colorHondo = vec3(0.016, 0.075, 0.125);
+
+  // Los dos colores de abajo son ALBEDOS —cuánto devuelven el lecho y la masa de
+  // agua—, no colores de pantalla, y por lo tanto hay que multiplicarlos por la
+  // luz del momento.
+  //
+  // Sin esto aparecía un defecto muy delator, que encontró el agente luz en su
+  // captura de crepúsculo: a las 20:40 los lagos del FONDO tomaban el rosa del
+  // poniente y el de ADELANTE seguía celeste de mediodía. No era casualidad. El
+  // lago lejano se ve rasante, ahí manda el reflejo, y el reflejo sí sigue al
+  // cielo; el de adelante se ve empinado, ahí manda la refracción, y la
+  // refracción era una constante clavada. Dos aguas del mismo lago con dos horas
+  // distintas es peor que cualquiera de las dos por separado.
+  //
+  // Se separa en tinte y nivel a propósito. El TINTE sale normalizado por su
+  // propio brillo, así que aporta color y no exposición: el nivel del agua lo
+  // sigue fijando la absorción, que es lo que corresponde. Y el NIVEL cuelga de
+  // uFactorDia y no del color de niebla, porque colorNiebla() ya no está acotado
+  // a 1 —luz lo dejó llegar a ~1,28 al mediodía para que la perspectiva aérea
+  // converja a la radiancia real— y colgar de él ataría el brillo del lago a una
+  // escala que no es mía y puede volver a moverse.
+  vec3 luzAgua = uColorHorizonte * 0.55 + uColorSol * uFactorDia * 0.28;
+  float brilloAgua = max(dot(luzAgua, vec3(0.2126, 0.7152, 0.0722)), 0.02);
+  vec3 tinteAgua = mix(vec3(1.0), luzAgua / brilloAgua, 0.80);
+  float nivelAgua = 0.12 + 0.88 * clamp(uFactorDia * 1.15, 0.0, 1.0);
+  vec3 luzEnAgua = tinteAgua * nivelAgua;
+
+  vec3 colorFondo = vec3(0.20, 0.24, 0.19) * luzEnAgua;   // sedimento y roca del lecho
+  vec3 colorHondo = vec3(0.016, 0.075, 0.125) * luzEnAgua;
   vec3 refraccion = mix(colorHondo, colorFondo * transmision + colorHondo * (1.0 - transmision),
                         smoothstep(14.0, 0.0, vProfundidad));
 
-  // ── Reflexión: el cielo, más oscuro cerca del cenit y claro al horizonte
+  // Dispersión de volumen. El agua clara y profunda NO es negra: dispersa.
+  //
+  // Sin esto, mirar el lago desde arriba daba rgb(1,2,3) —negro medido, no una
+  // impresión—: con la vista empinada el Fresnel vale 0,02, así que manda la
+  // refracción, y pasados 14 m de fondo la refracción era la constante
+  // colorHondo y nada más. El término satura con el camino óptico, así que la
+  // orilla somera no se toca —ahí sigue mandando la absorción, que ya da el
+  // turquesa— y el centro del lago se llena de un verde-azul apagado en vez de
+  // un agujero negro. Es el mismo integral de in-scattering de siempre,
+  // resuelto en forma cerrada porque el medio es homogéneo.
+  refraccion += vec3(0.032, 0.088, 0.082) * luzAgua * (1.0 - exp(-camino * 0.055));
+
+  // ── Reflexión ────────────────────────────────────────────────────────────
   vec3 R = reflect(-vista, N);
   float alturaR = clamp(R.y, 0.0, 1.0);
-  vec3 reflejo = mix(uColorHorizonte, uColorCielo, pow(alturaR, 0.55));
+
+  // Un lago de montaña mirado rasante NO refleja cielo: refleja el cerro de
+  // enfrente, que está en sombra y es oscuro. Reflejar cielo ahí es lo que hacía
+  // que el agua se ENCENDIERA justo donde tendría que apagarse.
+  //
+  // Pero oscurecer con una constante tampoco sirve, y eso ya se probó acá: el
+  // lago pasaba de ser una lámina celeste a ser una lámina gris, que es el mismo
+  // defecto con otro color. Un espejo tiene que DEVOLVER algo; si lo que
+  // devuelve es plano, sigue siendo pintura.
+  //
+  // Así que la silueta se saca del DEM, con UNA sola muestra y sin trazado: se
+  // avanza el rayo reflejado una distancia fija y se pregunta si el terreno de
+  // ese punto está por encima de la altura a la que el rayo llegó. Donde el
+  // cerro tapa, el reflejo es ladera en sombra; donde el rayo se escapa por
+  // arriba de la cresta —o donde enfrente hay lago abierto y no montaña—, es
+  // cielo. Sale una línea de cumbres reflejada que sigue al relieve de verdad.
+  //
+  // Es el reemplazo barato del espejo planar, que en la placa de destino está
+  // apagado (reflejoAgua = 0 en los presets baja y mínima), o sea que ES lo que
+  // ve el jugador. Cuesta una lectura de textura, y sólo en píxeles de agua.
+  vec2 pRef = vMundo.xz + R.xz * 1200.0;
+  float hRef = texture2D(uTexAltura, pRef / uTamanoMundo + 0.5).r;
+  float tapa = smoothstep(-60.0, 80.0, hRef - (vMundo.y + R.y * 1200.0));
+
+  // El cerro reflejado no es negro: es ladera vista a través de la misma bruma
+  // que el resto de la escena. Se lo tiñe con el color de niebla en vez de
+  // apagarlo a cero, y se lo aclara un poco hacia arriba, que es como se ve una
+  // ladera contra el cielo.
+  vec3 ribera = uColorHorizonte * (0.17 + 0.45 * clamp(alturaR * 3.5, 0.0, 1.0));
+
+  // El degradé del cielo lo manda el HORIZONTE, que es el color de niebla y por
+  // lo tanto integra con el resto de la escena. Con el exponente 0,55 de antes,
+  // a 20° de elevación el cenit ya pesaba más de la mitad, y el cenit era el
+  // azul inventado: bastaba mirar el agua un poco de arriba para que se pusiera
+  // celeste. Con 1,15 el horizonte manda hasta bien alto, que además es como se
+  // ve un cielo de verdad desde el agua.
+  vec3 domo = mix(uColorHorizonte, uColorCielo, pow(alturaR, 1.15));
+  vec3 reflejo = mix(domo, ribera, tapa);
 
   // ── Espejo planar: el cerro de enfrente, que es lo que un lago de montaña
   // devuelve de verdad. Se proyecta el punto del agua sobre la textura que se
@@ -584,11 +688,32 @@ void main() {
     reflejo = mix(reflejo, espejo, valido * uFuerzaReflejo * 0.86);
   }
 
-  // Brillo especular del sol sobre el agua: el reguero de luz del atardecer
+  // Brillo especular del sol: el reguero de luz que quiebra la superficie.
+  //
+  // El lóbulo se ENSANCHA con la distancia, y ésa es la pieza que faltaba para
+  // que el agua lejana dejara de ser un papel pintado.
+  //
+  // Pasados ~1200 m la normal se aplana a (0,1,0) exacto —arreglo correcto, no
+  // se toca: el ruido de período 1,8 m hormiguea y arruina el promedio del
+  // Fresnel—. Pero aplanar la normal no hace desaparecer las olas: hace
+  // desaparecer la única huella que dejaban. Un espejo perfecto con un lóbulo de
+  // exponente 420 devuelve el sol en un círculo de menos de un píxel, así que a
+  // la distancia no había NADA: ni reguero, ni destello, ni superficie.
+  //
+  // La pendiente de la ola sigue existiendo aunque no se resuelva; lo que
+  // corresponde es tratarla como rugosidad y no como geometría. Ensanchar el
+  // lóbulo es exactamente ese mismo fenómeno en estadística, y cuesta una
+  // interpolación: ni una lectura de textura ni una octava de ruido más.
   vec3 sol = normalize(uSol);
-  float espec = pow(max(0.0, dot(R, sol)), 420.0);
-  float destello = pow(max(0.0, dot(R, sol)), 26.0) * 0.11;
-  reflejo += uColorSol * (espec * 9.0 + destello) * smoothstep(-0.05, 0.10, sol.y);
+  float rd = max(0.0, dot(R, sol));
+  float dureza = mix(34.0, 420.0, nitidez);
+  float espec = pow(rd, dureza);
+  float destello = pow(rd, 11.0) * 0.13;
+  // La intensidad baja cuando el lóbulo se ensancha: un lóbulo ancho reparte la
+  // misma energía en más ángulo. Sin esa compensación el reguero lejano se
+  // quemaba a blanco.
+  reflejo += uColorSol * (espec * mix(1.9, 6.5, nitidez) + destello)
+           * smoothstep(-0.05, 0.10, sol.y);
 
   vec3 color = mix(refraccion, reflejo, fresnel);
 
@@ -614,8 +739,15 @@ void main() {
   float traslucidez = pow(max(0.0, dot(vista, -sol)), 3.0) * smoothstep(0.0, 0.6, vDesplazamiento.y);
   color += vec3(0.05, 0.20, 0.16) * traslucidez * uFactorDia;
 
-  // Transparencia: casi opaco de lejos, translúcido en la orilla
-  float alfa = mix(0.62, 0.985, smoothstep(0.0, 2.6, vProfundidad));
+  // Transparencia: casi opaco de lejos, translúcido en la orilla.
+  //
+  // El alfa mínimo era 0,62, y con eso el bajo fondo tapaba la piedra mojada:
+  // el lago terminaba en un canto duro contra la costa. Bajarlo a 0,18 en los
+  // primeros centímetros deja ver el lecho a través del agua y la línea de
+  // orilla se convierte en una transición y no en un recorte. La curva arranca
+  // más abajo (1,8 m en vez de 2,6) para que el tramo translúcido sea angosto y
+  // el cuerpo del lago siga siendo opaco.
+  float alfa = mix(0.18, 0.985, smoothstep(0.0, 1.8, vProfundidad));
   alfa = max(alfa, espuma);
 
   // ── Niebla exponencial coherente con la escena

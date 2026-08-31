@@ -256,10 +256,17 @@ export class Vegetacion {
     if (this.cielo) {
       this.uniformesImpostor.uColorSol.value.copy(this.cielo.luzSolColor ?? this.cielo.luzSol.color);
       this.uniformesImpostor.uIntensidadSol.value = this.cielo.intensidadSolar ?? 2.0;
-      const d = this.cielo.factorDia ?? 1;
-      this.uniformesImpostor.uAmbiente.value.setRGB(
-        0.18 + 0.34 * d, 0.21 + 0.36 * d, 0.26 + 0.34 * d
-      );
+      // El ambiente de la cartelera sale de la luz de cielo REAL de esa hora.
+      //
+      // Antes era `0.18 + 0.34 * factorDia` y dos constantes más: una rampa
+      // inventada que no sabía nada del cielo que había arriba. `Cielo.js` sacó
+      // la suya por el mismo motivo y dejó `irradianciaCielo` —color por
+      // intensidad, ya multiplicado— justamente para enchufarla acá. Con la
+      // rampa, el bosque lejano se despegaba del cercano en cuanto la luz
+      // dejaba de ser la del mediodía.
+      if (this.cielo.irradianciaCielo) {
+        this.uniformesImpostor.uAmbiente.value.copy(this.cielo.irradianciaCielo);
+      }
     }
     for (const lote of this.lotes) {
       if (!lote.impostor) continue;
@@ -368,9 +375,19 @@ export class Vegetacion {
           this._matriz.compose(this._pos, usaImpostor ? IDENTIDAD : this._cua, this._esc);
           destino.malla.setMatrixAt(destino.n, this._matriz);
 
-          // Tinte: verdes más oscuros en umbría, más claros al sol
-          const v = 0.82 + azar() * 0.36;
-          color.setRGB(v * (0.92 + azar() * 0.16), v, v * (0.88 + azar() * 0.2));
+          // Tinte: verdes más oscuros en umbría, más claros al sol, y sobre todo
+          // un verde distinto por árbol.
+          //
+          // Antes el tono se movía ±8 % en rojo y en azul por separado, y con
+          // los dos canales sorteados aparte lo que más se movía terminaba
+          // siendo el brillo: un bosque de chupetines del mismo verde, más
+          // claros unos que otros. Un solo sorteo que empuja el rojo contra el
+          // azul —con el verde casi quieto, que es el canal de la luminancia—
+          // abre el tono del amarillento al azulado sin tocar la luz. Es el
+          // mismo truco que el del pastizal, y por la misma razón.
+          const v = 0.80 + azar() * 0.40;
+          const tono = azar() * 2 - 1;          // −1 amarillento, +1 azulado
+          color.setRGB(v * (1 - tono * 0.13), v * (1 + tono * 0.02), v * (1 + tono * 0.20));
           destino.colores.setXYZ(destino.n, color.r, color.g, color.b);
           destino.dist[destino.n] = dist;
 

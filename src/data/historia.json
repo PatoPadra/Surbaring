@@ -1244,12 +1244,12 @@
       "contextoHistorico": "Llegó con misioneros y comerciantes y transformó la producción de herramientas locales. Fue base técnica de la posterior platería mapuche.",
       "materiales": [
         {
-          "recurso": "hierro",
+          "recurso": "chatarra",
           "cantidad": 4
         },
         {
           "recurso": "carbon",
-          "cantidad": 4
+          "cantidad": 2
         },
         {
           "recurso": "piedra",
@@ -1257,7 +1257,7 @@
         }
       ],
       "requiere": [],
-      "costoSaber": 26,
+      "costoSaber": 20,
       "efecto": {
         "recetas": [
           "herramienta"

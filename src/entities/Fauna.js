@@ -54,6 +54,17 @@ export class Fauna {
     this._tmp2 = new THREE.Vector3();
     this._ultimaSiembra = 0;
     this.avistajes = new Map();  // id -> cantidad de veces visto (para el códice)
+
+    /**
+     * El motor de audio, si está cableado. Lo pone main.js. Si no está, la
+     * fauna es muda y todo lo demás anda igual: el bosque no se rompe por no
+     * tener voz, sólo queda como estaba.
+     */
+    this.audio = null;
+    this._proxCanto = 3;
+    this._silencio = 0;
+    this._cantos = 0;       // cuántas frases se pidieron (para medir)
+    this._alarmas = 0;
   }
 
   /** ¿La especie depende del agua para vivir? */
@@ -141,6 +152,176 @@ export class Fauna {
         this.avistajes.set(a.esp.id, (this.avistajes.get(a.esp.id) || 0) + 1);
         this.alAvistar?.(a.esp);
       }
+    }
+
+    this._vocalizar(dt, jugador, estado, hora, tiempoTotal);
+  }
+
+  // ── El bosque suena ─────────────────────────────────────────────────────────
+
+  /**
+   * Decide quién canta y cuándo. La síntesis es de Audio; la ecología es de acá,
+   * porque acá está la población: si en este punto hay un chucao vivo es porque
+   * `_aptitud` ya comprobó que el lugar es bosque de coihue con sotobosque, a la
+   * altitud correcta, en una estación en la que la especie está activa. Volver a
+   * preguntarlo del lado del audio sería duplicar la lógica y, tarde o temprano,
+   * contradecir el dataset.
+   */
+  _vocalizar(dt, jugador, est, hora, t) {
+    const audio = this.audio;
+    if (!audio?.listo) return;
+
+    // Después de una alarma el monte se calla. Ese silencio repentino es
+    // información: significa que algo pasó, y lo nota cualquiera que camine.
+    if (this._silencio > 0) { this._silencio -= dt; return; }
+
+    // Con lluvia fuerte los pájaros paran. Con granizo, más todavía. Y el viento
+    // fuerte tapa el canto y además los hace buscar reparo.
+    const agua = Math.max(est.lluvia ?? 0, est.granizo ?? 0, (est.nieve ?? 0) * 0.5);
+    const viento = Math.min(1, (est.vientoKmh ?? 12) / 75);
+    let ganas = Math.max(0, 1 - agua * 2.4) * (1 - viento * 0.75);
+
+    // El coro del amanecer no es una licencia poética: es la hora de más canto
+    // del día y por lejos. El del atardecer existe pero es más corto y más flojo.
+    const alba = Math.exp(-((hora - 7.0) ** 2) / 2.0);
+    const ocaso = Math.exp(-((hora - 19.8) ** 2) / 2.4);
+    ganas *= 0.30 + alba * 2.2 + ocaso * 0.85;
+    if (ganas < 0.02) return;
+
+    // Proceso de Poisson. El intervalo sale de una exponencial, así que no hay
+    // período: es la única forma de que no aparezca un pulso audible. Un
+    // temporizador fijo con un poco de ruido encima sigue teniendo período y el
+    // oído lo encuentra en dos minutos, que es cuando la ambientación se vuelve
+    // insoportable.
+    this._proxCanto -= dt * ganas;
+    if (this._proxCanto > 0) return;
+    this._proxCanto = 1.4 - Math.log(1 - Math.random()) * 4.6;
+
+    // ── Quién canta
+    let suma = 0;
+    const cand = [], pesos = [];
+    for (const a of this.vivos) {
+      if (a.estado === ESTADOS.HUYENDO) continue;      // el que huye no canta
+      if (t - (a.ultimoCanto ?? -999) < 14) continue;  // ni el que acaba de cantar
+      if (!audio.tieneVoz(a.esp.id)) continue;
+      // El ciervo colorado sólo brama en otoño. Fuera de la brama está callado,
+      // y un bramido en primavera sería inventar.
+      if (a.esp.id === 'ciervo_colorado' && est.estacion !== 'otono') continue;
+      let p = this._actividad(a.esp, hora);
+      // El ambiente sonoro del bosque lo hacen las aves: a un mamífero se lo oye
+      // cuando ya te vio, y para eso está la alarma, no el coro.
+      p *= a.esp.clase === 'ave' ? 3.2 : 0.35;
+      if (p < 0.02) continue;
+      cand.push(a); pesos.push(p); suma += p;
+    }
+    if (!cand.length) return;
+
+    let ruleta = Math.random() * suma, i = 0;
+    for (; i < pesos.length - 1; i++) {
+      ruleta -= pesos[i];
+      if (ruleta <= 0) break;
+    }
+    const a = cand[i];
+    const alcance = audio.alcanceVoz(a.esp.id);
+
+    // ── Dónde está el que canta
+    let dx = a.objeto.position.x - jugador.posicion.x;
+    let dz = a.objeto.position.z - jugador.posicion.z;
+    let d = Math.hypot(dx, dz);
+    if (d > alcance * 0.85) {
+      // Fauna simula cincuenta y dos animales y en el parque hay miles: el que
+      // canta es casi siempre uno de los que no se simulan. Ponerlo a una
+      // distancia plausible es más honesto que fingir que el bosque son estos
+      // cincuenta y dos, y además es como se oye de verdad: se escuchan muchos
+      // más pájaros de los que se ven.
+      const ang = Math.random() * Math.PI * 2;
+      d = alcance * (0.10 + Math.random() * 0.65);
+      dx = Math.sin(ang) * d;
+      dz = Math.cos(ang) * d;
+    } else {
+      a.ultimoCanto = t;
+    }
+
+    this._cantos++;
+    if (audio.voz(a.esp.id, {
+      distancia: d,
+      azimut: this._azimut(dx, dz, d, jugador.giro),
+      variante: this._variante(a.esp.id, hora),
+    })) {
+      a.ultimoCanto = t;
+    }
+  }
+
+  /**
+   * De qué lado suena. El frente de la cámara es (−sin giro, −cos giro), así que
+   * su derecha es (cos giro, −sin giro): proyectar ahí la dirección al animal da
+   * el paneo directo, sin pasar por un atan2.
+   */
+  _azimut(dx, dz, d, giro) {
+    if (d < 0.001) return 0;
+    return (dx * Math.cos(giro) - dz * Math.sin(giro)) / d;
+  }
+
+  /**
+   * Algunas especies tienen más de una voz y la ficha dice cuándo va cada una:
+   * el zorzal canta flauteado al amanecer y da un chuc-chuc seco de alarma al
+   * atardecer, y en el cauquén el macho silba fino y la hembra cacarea grave.
+   */
+  _variante(id, hora) {
+    if (id === 'zorzal_patagonico') {
+      return hora > 15 ? 'zorzal_patagonico_alarma' : 'zorzal_patagonico';
+    }
+    if (id === 'cauquen_comun' && Math.random() < 0.45) return 'cauquen_comun_hembra';
+    return id;
+  }
+
+  /**
+   * El grito de alarma del que acaba de ver al jugador. No entra en el sorteo
+   * del coro: se dispara solo, tiene su propio ritmo —el de cuánto te acercás— y
+   * arrastra al bosque a callarse unos segundos detrás.
+   */
+  _alarma(a, jugador, t) {
+    const audio = this.audio;
+    if (!audio?.listo || !audio.tieneVoz(a.esp.id)) return;
+    if (t - (a.ultimaAlarma ?? -999) < 8) return;
+    a.ultimaAlarma = t;
+
+    const dx = a.objeto.position.x - jugador.posicion.x;
+    const dz = a.objeto.position.z - jugador.posicion.z;
+    const d = Math.hypot(dx, dz);
+    this._alarmas++;
+    if (audio.voz(a.esp.id, {
+      distancia: d,
+      azimut: this._azimut(dx, dz, d, jugador.giro),
+      ganancia: 1.35,            // el grito de alarma es más fuerte que el canto
+      variante: a.esp.id === 'zorzal_patagonico' ? 'zorzal_patagonico_alarma' : a.esp.id,
+    })) {
+      this._silencio = 4 + Math.random() * 5;
+    }
+  }
+
+  /**
+   * El pánico se contagia. Una tropa de guanacos no huye de a uno: el centinela
+   * relincha y se van todos juntos, y una bandada de cachañas levanta entera.
+   * Esto es lo que separa un grupo de un montón de individuos que casualmente
+   * están parados cerca —que es lo que eran hasta ahora—.
+   */
+  _contagiar(origen, jugador, t) {
+    if (!origen.esp.gregario) return;
+    const p = origen.objeto.position;
+    for (const b of this.vivos) {
+      if (b === origen || b.esp.id !== origen.esp.id) continue;
+      if (b.estado === ESTADOS.HUYENDO) continue;
+      if (b.objeto.position.distanceTo(p) > 45) continue;
+      b.estado = ESTADOS.HUYENDO;
+      b.temporizador = 3 + Math.random() * 3;
+      b.direccion = Math.atan2(
+        b.objeto.position.x - jugador.posicion.x,
+        b.objeto.position.z - jugador.posicion.z
+      );
+      // Ya está avisado: no hace falta que grite cada uno por su cuenta, que es
+      // como se convierte una alarma en un coro de alarmas.
+      b.ultimaAlarma = t;
     }
   }
 
@@ -243,11 +424,20 @@ export class Fauna {
     a.temporizador -= dt;
 
     // ── Percepción del jugador
-    const huida = esp.distanciaHuidaM ?? 30;
+    //
+    // La distancia de fuga sale del dataset y es contenido educativo: el pudú
+    // rompe a los 20 m, el zorro gris deja acercarse hasta 30, el huemul a los
+    // 45, el guanaco a los 100. Estaba multiplicada por 0,55, así que todos
+    // aguantaban casi el doble de cerca de lo que aguantan de verdad —un huemul
+    // que te deja llegar a veinticinco metros no es un huemul—. Ahora se usa el
+    // número tal cual, y lo único que lo mueve es cómo camina el jugador.
+    const sigilo = jugador.agachado ? 0.55 : (jugador.corriendo ? 1.4 : 1);
+    const huida = (esp.distanciaHuidaM ?? 30) * sigilo;
     const agresivo = (esp.agresividad ?? 0) > 0.55;
+    const yaHuia = a.estado === ESTADOS.HUYENDO;
 
     if (!a.vuela) {
-      if (distancia < huida * 0.55 && !agresivo) {
+      if (distancia < huida && !agresivo) {
         a.estado = ESTADOS.HUYENDO;
         a.temporizador = 3.5 + Math.random() * 3;
         // Huye en dirección opuesta al jugador
@@ -255,7 +445,15 @@ export class Fauna {
           a.objeto.position.x - jugador.posicion.x,
           a.objeto.position.z - jugador.posicion.z
         );
-      } else if (distancia < huida && a.estado !== ESTADOS.HUYENDO) {
+        // El grito va una sola vez, al romper: mientras corre no grita.
+        if (!yaHuia) {
+          this._alarma(a, jugador, t);
+          this._contagiar(a, jugador, t);
+        }
+      } else if (distancia < huida * 1.9 && !yaHuia) {
+        // Antes de romper hay un rato de vigilancia. Ese margen es lo que
+        // permite verlos: si pasaran de pastar a correr sin pausa, el jugador
+        // sólo vería ancas alejándose.
         a.estado = agresivo ? ESTADOS.ACECHANDO : ESTADOS.ALERTA;
         a.temporizador = Math.max(a.temporizador, 1.5);
       }
@@ -333,6 +531,22 @@ export class Fauna {
       a.objeto.rotation.y = a.direccion;
       a.objeto.rotation.x = -Math.atan2(nrm.z, nrm.y) * 0.6;
       a.objeto.rotation.z = Math.atan2(nrm.x, nrm.y) * 0.6;
+
+      // Un pájaro asustado no corre: despega. Las aves de menos de kilo y medio
+      // andan por el suelo —chucao, rayadito, cachaña— y el modelo de ave ni
+      // siquiera tiene patas que animar, así que huyendo patinaban. Ahora se
+      // levantan del piso mientras dura el susto y bajan solas después.
+      if (esp.clase === 'ave') {
+        a.vuelito = Math.max(0, Math.min(1,
+          (a.vuelito ?? 0) + dt * (a.estado === ESTADOS.HUYENDO ? 2.4 : -1.2)));
+        if (a.vuelito > 0.002) {
+          a.objeto.position.y += a.vuelito * (2.5 + (esp.largoM ?? 0.2) * 14);
+          // En el aire el terreno ya no manda: se endereza y cabecea con el vuelo
+          a.objeto.rotation.x *= 1 - a.vuelito;
+          a.objeto.rotation.z = a.objeto.rotation.z * (1 - a.vuelito)
+                              + Math.sin(a.fase * 3.1) * 0.22 * a.vuelito;
+        }
+      }
     }
 
     this._animar(a, dt);
@@ -344,12 +558,14 @@ export class Fauna {
     const zancada = vel * 2.4 / Math.max(0.4, (a.esp.alturaCruzM ?? 0.6));
     a.fasePaso = (a.fasePaso ?? 0) + zancada * dt;
 
-    if (a.vuela && p.alas.length) {
+    if ((a.vuela || (a.vuelito ?? 0) > 0.002) && p.alas.length) {
       // El cóndor planea: bate poco y sostiene las alas extendidas
       const planea = a.esp.id.includes('condor') || a.esp.id.includes('aguila');
-      const bateo = planea
-        ? Math.sin(a.fase * 1.1) * 0.10
-        : Math.sin(a.fase * 11) * 0.62;
+      // El que acaba de despegar bate desesperado; el bateo se apaga con el
+      // vuelito, así que al posarse las alas vuelven a quedarse quietas.
+      const bateo = a.vuela
+        ? (planea ? Math.sin(a.fase * 1.1) * 0.10 : Math.sin(a.fase * 11) * 0.62)
+        : Math.sin(a.fase * 17) * 0.75 * a.vuelito;
       p.alas[0].rotation.z = bateo;
       if (p.alas[1]) p.alas[1].rotation.z = -bateo;
     }

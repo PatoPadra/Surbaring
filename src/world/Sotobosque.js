@@ -139,6 +139,8 @@ export class Sotobosque {
     this._eje = new THREE.Vector3(0, 1, 0);
     this._normal = new THREE.Vector3();
     this._qGiro = new THREE.Quaternion();
+    this._qInc = new THREE.Quaternion();
+    this._ejeInc = new THREE.Vector3();
     this._colorAlt = new THREE.Color();
     this._colorSuelo = new THREE.Color();
     this.total = 0;
@@ -200,6 +202,7 @@ export class Sotobosque {
 
   _inyectar(mat, tipo) {
     const flexible = tipo.flexible ? 1 : 0;
+    const lamina = !!tipo.flexible;   // hoja, fronda, ramita: lámina fina
     mat.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, this.uniformes);
       shader.uniforms.uFlexible = { value: flexible };
@@ -212,7 +215,7 @@ export class Sotobosque {
         uniform float uFlexible;
         varying vec3 vTinte;
         varying float vAlturaMundo;
-        varying float vAlturaLocal;
+        ${lamina ? '' : 'varying float vArriba;'}
       ` + shader.vertexShader;
 
       shader.vertexShader = shader.vertexShader.replace(
@@ -220,7 +223,6 @@ export class Sotobosque {
         `
         #include <begin_vertex>
         vTinte = iTinte;
-        vAlturaLocal = position.y;
 
         // El pasto se dobla desde la base: la punta describe casi un arco, la
         // raíz no se mueve. Cada mata lleva su propia fase para que el pastizal
@@ -238,12 +240,26 @@ export class Sotobosque {
         `
       );
 
+      // Cuánto mira al cielo cada cara, para el relleno hemisférico de los
+      // sólidos. Se resuelve en el vértice —una normalización y un producto
+      // punto sobre unos pocos miles de vértices— y no en el fragmento.
+      if (!lamina) {
+        shader.vertexShader = shader.vertexShader.replace(
+          '#include <defaultnormal_vertex>',
+          `
+          #include <defaultnormal_vertex>
+          vArriba = dot(normalize(transformedNormal),
+                        normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz));
+          `
+        );
+      }
+
       shader.fragmentShader = `
         uniform float uEstacion;
         uniform float uCotaNieve;
         varying vec3 vTinte;
         varying float vAlturaMundo;
-        varying float vAlturaLocal;
+        ${lamina ? '' : 'varying float vArriba;'}
       ` + shader.fragmentShader;
 
       shader.fragmentShader = shader.fragmentShader.replace(
@@ -251,34 +267,51 @@ export class Sotobosque {
         `
         #include <color_fragment>
         diffuseColor.rgb *= vTinte;
-
-        // Oclusión propia de la mata: la base recibe mucho menos cielo que la
-        // punta. La oclusión de pantalla resuelve el contacto de cerca, pero se
-        // desvanece a los pocos metros por costo; sin esto, de media distancia
-        // el pastizal vuelve a verse como calcomanías pegadas al suelo.
-        diffuseColor.rgb *= mix(0.55, 1.0, clamp(vAlturaLocal / 0.6, 0.0, 1.0));
-
+        ${lamina ? `
         // Otoño e invierno secan el pastizal
         float seco = clamp(1.0 - abs(uEstacion - 1.6), 0.0, 1.0);
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.52, 0.44, 0.24), seco * 0.42 * ${flexible.toFixed(1)});
-
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.52, 0.44, 0.24), seco * 0.42);
+        ` : ''}
         // La nieve tapa la cubierta baja antes que a los árboles
         float nieve = smoothstep(uCotaNieve - 60.0, uCotaNieve + 90.0, vAlturaMundo);
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.90, 0.93, 0.96), nieve * 0.85);
         `
       );
 
-      // Translucidez: la hoja fina deja pasar la luz
-      if (tipo.flexible) {
-        shader.fragmentShader = shader.fragmentShader.replace(
-          '#include <lights_fragment_end>',
-          `
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <lights_fragment_end>',
+        lamina ? `
           #include <lights_fragment_end>
+          // Translucidez: la hoja fina deja pasar la luz
           reflectedLight.indirectDiffuse += diffuseColor.rgb * vec3(0.22, 0.30, 0.17);
-          `
-        );
-      }
+        ` : `
+          #include <lights_fragment_end>
+          // Relleno hemisférico para los sólidos, y la razón de que exista.
+          //
+          // La piedra y el tronco caído salían NEGRO PURO a pleno mediodía. La
+          // hoja tenía su término de translucidez —el de acá arriba— y ellos no
+          // tenían nada: cerrados y con FrontSide, las caras que quedan a la
+          // vista son casi todas de canto al sol, y sin relleno el resultado es
+          // cero. Un canto rodado de granito nunca es negro: la cara de arriba
+          // recibe el cielo entero y la de abajo el rebote de la tierra.
+          //
+          // Cuesta un mix de dos constantes: no hay ni una textura de por medio.
+          reflectedLight.indirectDiffuse += diffuseColor.rgb
+            * mix(vec3(0.085, 0.075, 0.058), vec3(0.30, 0.34, 0.42),
+                  clamp(vArriba * 0.5 + 0.5, 0.0, 1.0));
+        `
+      );
     };
+
+    // Dos materiales cuyo `onBeforeCompile` tiene el MISMO texto comparten
+    // programa: la clave de caché que arma three sale de
+    // `onBeforeCompile.toString()`, y como acá los nueve tipos salen del mismo
+    // método, los nueve dan el mismo texto. Antes daba igual porque el shader
+    // era idéntico; ahora la lámina y el sólido compilan fuentes distintas, y
+    // sin esto la carroña —doble cara y no flexible, como el pasto— se llevaría
+    // el shader del pasto y se quedaría sin `vArriba`. Es la trampa 3 del
+    // contexto: no lanza excepción, sólo sale mal.
+    mat.customProgramCacheKey = () => `sotobosque-${lamina ? 'lamina' : 'solido'}`;
   }
 
   actualizar(posicion, tiempo, estado) {
@@ -407,9 +440,24 @@ export class Sotobosque {
       this._qGiro.setFromAxisAngle(this._eje, azar() * Math.PI * 2);
       this._q.multiply(this._qGiro);
 
+      // Ninguna champa crece a plomo. Alineadas todas con la normal del terreno
+      // quedaban en el mismo ángulo exacto, y una ladera entera de matas
+      // paralelas es lo que hacía que se leyeran como calcomanías clavadas.
+      // Diez grados de desvío en una dirección cualquiera alcanzan.
+      if (tipo.flexible) {
+        const azInc = azar() * Math.PI * 2;
+        this._ejeInc.set(Math.cos(azInc), 0, Math.sin(azInc));
+        this._qInc.setFromAxisAngle(this._ejeInc, (azar() - 0.5) * 0.34);
+        this._q.multiply(this._qInc);
+      }
+
       const esc = 0.68 + azar() * 0.75;
       this._p.set(x, alt - 0.04, z);
-      this._s.set(esc, esc * (0.8 + azar() * 0.5), esc);
+      // Escala no uniforme también en planta: una mata más ancha que profunda
+      // rompe la repetición sin costar un solo triángulo más.
+      this._s.set(esc * (0.86 + azar() * 0.28),
+                  esc * (0.8 + azar() * 0.5),
+                  esc * (0.86 + azar() * 0.28));
       this._m.compose(this._p, this._q, this._s);
       lote.malla.setMatrixAt(lote.nParcial, this._m);
 
@@ -431,6 +479,20 @@ export class Sotobosque {
         0.264 + (0.126 - 0.264) * hs,
         0.180 + (0.066 - 0.180) * hs);
       color.lerp(this._colorSuelo, 0.35);
+
+      // Variación de TONO entre individuos, que no es lo mismo que de brillo.
+      //
+      // El brillo ya se movía y aun así el pastizal se veía de un solo verde:
+      // subir y bajar los tres canales a la vez no cambia el color, sólo la
+      // luz. Un pastizal real va del verde amarillento al verde azulado según
+      // la mata. Se empuja el rojo contra el azul y se deja el verde casi
+      // quieto —que es el canal que lleva la luminancia—, así el tono se abre
+      // sin que aparezca el ruido de brillo que ya se había sacado a mano.
+      const tono = azar() * 2 - 1;          // −1 amarillenta, +1 azulada
+      color.r *= 1 - tono * 0.11;
+      color.g *= 1 + tono * 0.02;
+      color.b *= 1 + tono * 0.17;
+
       // El rango de brillo era más ancho que la variación real dentro de una
       // champa, y buena parte del ruido cromático salía de ahí.
       const brillo = 0.88 + azar() * 0.24;
@@ -480,8 +542,21 @@ function matoja(altura, hojas, ancho, dispersion = 0.30) {
     const bx = Math.cos(angBase) * rBase, bz = Math.sin(angBase) * rBase;
 
     const ang = Math.random() * Math.PI * 2;
-    const inclina = 0.16 + Math.random() * 0.46;
+    // Más arqueada que antes. Con el rango viejo (0,16 a 0,62) la hoja salía
+    // casi recta y el pastizal se leía como un montón de triángulos parados
+    // todos al mismo ángulo; una gramínea real se vence hacia la punta.
+    const inclina = 0.30 + Math.random() * 0.78;
     const h = altura * (0.55 + Math.random() * 0.8);
+    // Tres tramos, y se probó con cuatro.
+    //
+    // Con cuatro la hoja se lee un poco más como curva y menos como codo, pero
+    // medido en el bosque de la ladera eran **+123.552 triángulos, un 28 % más
+    // de sotobosque** (562.106 contra 438.554) para el detalle más fino de la
+    // pieza más instanciada del juego. En una HD 4000, donde el costo fijo de
+    // geometría ya es la mayor parte del cuadro, eso son milisegundos por una
+    // silueta que a un metro de distancia casi no se distingue. No vale.
+    //
+    // El arqueo se ganó subiendo `inclina`, que es gratis.
     const segs = 3;
     const dirX = Math.cos(ang), dirZ = Math.sin(ang);
 
@@ -491,7 +566,15 @@ function matoja(altura, hojas, ancho, dispersion = 0.30) {
       const arco = t * t * inclina;
       const y = h * t * (1 - arco * 0.34);
       const r = h * arco;
-      const an = ancho * (1 - t) * (1 - t * 0.3);
+      // La punta conserva un ancho mínimo, y no es un detalle estético.
+      //
+      // Con `(1 - t)` el ancho daba exactamente 0 en la punta: los dos vértices
+      // del extremo caían en el mismo lugar, el último triángulo del quad salía
+      // degenerado y `computeVertexNormals()` le dejaba **normal cero** al
+      // vértice que sólo tocaba ese triángulo. Medido: una normal nula por hoja
+      // —16 de 128 vértices en el coirón, 18 de 144 en el pastizal húmedo—, y
+      // una normal nula es un vértice negro que se derrama sobre toda la punta.
+      const an = ancho * (0.05 + 0.95 * (1 - t)) * (1 - t * 0.3);
       const cx = bx + dirX * r, cz = bz + dirZ * r;
       const px = -dirZ * an, pz = dirX * an;
       pos.push(cx - px, y, cz - pz);
@@ -503,7 +586,37 @@ function matoja(altura, hojas, ancho, dispersion = 0.30) {
     }
     v += (segs + 1) * 2;
   }
-  return armar(pos, idx);
+  const g = armar(pos, idx);
+  gradiente(g, altura, [0.46, 0.44, 0.35], [1.00, 1.02, 0.90]);
+  return g;
+}
+
+/**
+ * Hornea la oclusión propia en el color del vértice.
+ *
+ * Antes esto era una línea del fragmento —`mix(0.55, 1.0, vAlturaLocal/0.6)`—
+ * que se pagaba en cada píxel de cada brizna, que son las decenas de miles de
+ * instancias más caras del cuadro. El atributo `color` ya existía en todas
+ * estas geometrías, ya estaba declarado `vertexColors: true` y ya se
+ * multiplicaba en `<color_fragment>`... relleno de unos, sin hacer nada. Pasar
+ * el degradado ahí es gratis: se calcula una vez al construir la malla y le
+ * saca al fragmento un clamp, un mix, una multiplicación y un varying.
+ *
+ * Y de paso hace más de lo que hacía: la base no sólo se oscurece, también vira
+ * a tierra. El contacto con el suelo dejó de leerse como un corte.
+ */
+function gradiente(g, alturaRef, base, punta) {
+  const p = g.attributes.position, c = g.attributes.color;
+  for (let i = 0; i < p.count; i++) {
+    // La raíz de la potencia concentra el degradado abajo, que es donde la
+    // champa de verdad se tapa a sí misma.
+    const t = Math.pow(Math.min(1, Math.max(0, p.getY(i) / alturaRef)), 0.65);
+    c.setXYZ(i,
+      base[0] + (punta[0] - base[0]) * t,
+      base[1] + (punta[1] - base[1]) * t,
+      base[2] + (punta[2] - base[2]) * t);
+  }
+  c.needsUpdate = true;
 }
 
 /** Fronda de helecho: pinnas escalonadas sobre un raquis arqueado. */
@@ -530,7 +643,9 @@ function helecho(altura) {
       v += 3;
     }
   }
-  return armar(pos, idx);
+  const g = armar(pos, idx);
+  gradiente(g, altura, [0.40, 0.46, 0.34], [1.00, 1.04, 0.92]);
+  return g;
 }
 
 /** Arbustillo leñoso: masa de hojas sobre ramitas cortas. */
@@ -545,16 +660,60 @@ function arbustillo(altura) {
     g.translate(Math.cos(a) * r, altura * (0.34 + Math.random() * 0.4), Math.sin(a) * r);
     geos.push(g);
   }
-  return fusionar(geos);
+  const g = fusionar(geos);
+  gradiente(g, altura, [0.52, 0.54, 0.44], [1.00, 1.02, 0.94]);
+  return g;
 }
 
-/** Canto rodado irregular, achatado contra el suelo. */
+/**
+ * Canto rodado irregular, achatado contra el suelo.
+ *
+ * El bulto sale de una función continua de la DIRECCIÓN del vértice, y no de un
+ * `Math.random()` por vértice, y esa es toda la diferencia entre una piedra y lo
+ * que había antes.
+ *
+ * `IcosahedronGeometry` no está indexada: los tres vértices de cada triángulo
+ * son propios, así que dos vértices que ocupan el mismo lugar son objetos
+ * distintos. Sortear un factor de escala para cada uno los mandaba para lados
+ * distintos y **abría el sólido en ochenta placas sueltas**. De ahí salían los
+ * dos defectos a la vez: la forma de esquirlas, y el negro —con `FrontSide` las
+ * caras internas de las placas de atrás se descartan, por los huecos se ve el
+ * interior, y lo que queda a la vista son placas de canto al sol con
+ * `dot(N,L)` casi nulo—.
+ *
+ * Con lóbulos senoidales sobre la dirección, dos vértices que comparten lugar
+ * reciben el mismo desplazamiento y la cáscara queda cerrada. Se deja sin
+ * indexar a propósito: cada triángulo conserva su normal de cara y la piedra se
+ * lee facetada, que es el estilo del juego.
+ */
 function piedra(radio) {
   const g = new THREE.IcosahedronGeometry(radio, 1);
   const p = g.attributes.position;
+
+  // Unos pocos lóbulos con eje, frecuencia y fase al azar: una piedra distinta
+  // por cada llamada, pero continua sobre la esfera.
+  const lobulos = [];
+  for (let i = 0; i < 4; i++) {
+    const v = new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1);
+    if (v.lengthSq() < 1e-6) v.set(0, 1, 0);
+    lobulos.push({
+      eje: v.normalize(),
+      amp: 0.09 + Math.random() * 0.15,
+      frec: 1.4 + Math.random() * 2.6,
+      fase: Math.random() * Math.PI * 2,
+    });
+  }
+
+  const d = new THREE.Vector3();
   for (let i = 0; i < p.count; i++) {
-    const f = 0.68 + Math.random() * 0.62;
-    p.setXYZ(i, p.getX(i) * f, p.getY(i) * f * 0.62, p.getZ(i) * f);
+    d.set(p.getX(i), p.getY(i), p.getZ(i));
+    const largo = d.length();
+    if (largo < 1e-6) continue;
+    d.divideScalar(largo);
+    let f = 1;
+    for (const l of lobulos) f += l.amp * Math.sin(l.frec * d.dot(l.eje) * Math.PI + l.fase);
+    // Achatada contra el suelo, como un canto rodado y no como una pelota.
+    p.setXYZ(i, d.x * largo * f, d.y * largo * f * 0.62, d.z * largo * f);
   }
   p.needsUpdate = true;
   g.computeVertexNormals();

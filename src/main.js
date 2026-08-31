@@ -892,11 +892,38 @@ async function iniciar() {
  */
 function conCSM(csm, material) {
   const propio = material.onBeforeCompile;
+  const clavePropia = material.customProgramCacheKey;
   csm.setupMaterial(material);
   const deCSM = material.onBeforeCompile;
   material.onBeforeCompile = function (shader, renderer) {
     if (deCSM) deCSM.call(this, shader, renderer);
     if (propio) propio.call(this, shader, renderer);
+  };
+
+  // Y hay que devolverle la clave de caché que este envoltorio le acaba de
+  // borrar, que es un defecto que costó encontrar y no daba ningún error.
+  //
+  // three arma la clave del programa, por defecto, con el TEXTO de
+  // `onBeforeCompile`. La función anónima de arriba es idéntica para todos los
+  // materiales, así que después de pasar por acá todos declaran el mismo
+  // programa y lo único que los sigue separando son los parámetros del material
+  // —tipo, doble cara, color por vértice—. Dos materiales que inyectan shaders
+  // DISTINTOS y coinciden en esos parámetros colisionan: el que compila primero
+  // se lleva puesto al otro, en silencio y sin una línea en consola.
+  //
+  // Apareció en el sotobosque, donde la carroña y los pastos comparten
+  // parámetros y desde que la lámina y el sólido compilan fuentes distintas se
+  // pisaban. Se arregla acá y no allá porque el defecto lo introduce este
+  // envoltorio, y lo tiene latente cualquiera que inyecte shaders distintos en
+  // materiales del mismo tipo.
+  //
+  // Se respeta la clave propia del material si la definió —es más precisa que
+  // cualquier texto, porque distingue variantes que un mismo closure produce
+  // según lo que tenga capturado— y si no, se vuelve al texto del inyector, que
+  // es lo que three habría usado si nadie hubiera envuelto nada.
+  material.customProgramCacheKey = function () {
+    const mia = clavePropia ? clavePropia.call(this) : '';
+    return `${mia}|${propio ? propio.toString() : ''}`;
   };
   material.needsUpdate = true;
 }
