@@ -289,9 +289,19 @@ export class Cuerpo {
     if (j.enAgua) this.grupo.position.y -= Math.min(0.55, j.profundidadAgua * 0.35);
 
     const rapidez = Math.hypot(j.velocidad.x, j.velocidad.z);
-    // La fase avanza con la distancia recorrida: el paso acompaña la velocidad
-    // sin necesidad de una animación por cada modo de andar.
-    this.fase += rapidez * dt * 2.4;
+    // La fase del paso la manda el jugador, no este cuerpo.
+    //
+    // Tenía un reloj propio —`rapidez * dt * 2,4`, o sea 1,309 m por paso— y la
+    // cámara tenía otro —1,736 m por cabeceo— y el sonido un tercero —0,85 m—.
+    // Eran tres pasos distintos corriendo a la vez sobre el mismo cuerpo: el
+    // pie apoyaba, el ruido llegaba y la cabeza bajaba en tres momentos que no
+    // coincidían nunca. Ahora los tres leen `jugador.fasePaso`.
+    //
+    // El maniquí de la creación de personaje no es un `Jugador` y no tiene
+    // fase, así que ahí se conserva el reloj viejo: es una vidriera girando,
+    // no hay cámara que sincronizar.
+    if (j.fasePaso !== undefined) this.fase = j.fasePaso;
+    else this.fase += rapidez * dt * 2.4;
     const swing = Math.min(rapidez / 5.5, 1) * (j.enSuelo ? 1 : 0.25);
     const s = Math.sin(this.fase);
 

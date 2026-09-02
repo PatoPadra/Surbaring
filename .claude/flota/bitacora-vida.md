@@ -186,3 +186,58 @@ Paso concreto, en orden:
   cuadro para una diferencia visual mínima a la distancia a la que se ven los
   peces bajo el agua. Se hace lo que sí se nota: que el centro del cardumen
   derive y que el cardumen reaccione al jugador.
+
+---
+
+# ⇐ Traspaso de `feel` — 2/9/2026
+
+`feel` cerró y dejó **una sola zancada** para todo el juego. `Audio.js` es el
+único que sigue con reloj propio, y es tuyo.
+
+## Lo que cambió afuera
+
+`Jugador` expone dos cosas nuevas:
+
+- **`jugador.fasePaso`** — fase del paso en radianes. Avanza **PI por paso**, o
+  sea 2·PI por ciclo de las dos piernas. Cruzar un múltiplo de PI **es** el
+  momento en que el pie toca el suelo.
+- **`jugador.zancada`** — largo del paso en metros. 0,95 parado, 1,21 caminando,
+  1,60 corriendo, 0,62 agachado. Ya no es un par de constantes.
+
+La cámara y `Cuerpo.js` ya cuelgan de ahí: los dos dan 1,210 m por paso
+caminando. El sonido sigue en 0,85, así que **el ruido del pie llega en un
+momento y la pierna apoya en otro** — es el último de los tres relojes que
+estaban desincronizados.
+
+## Qué tocar
+
+`src/engine/Audio.js`, líneas 554-561:
+
+```js
+  pasos(dt, jugador) {
+    ...
+    if (!jugador.enSuelo || vel < 0.6) { this._pasoAcum = 0.55; return; }
+    // Un paso cada 0,85 m de zancada, algo más largo si corre
+    const zancada = jugador.corriendo ? 1.25 : 0.85;      // ← acá
+    if (this._pasoAcum < zancada) return;
+```
+
+Lo mínimo es `jugador.zancada ?? (jugador.corriendo ? 1.25 : 0.85)` — el `??`
+conserva el respaldo por si el sonido corre sin jugador. Lo correcto de verdad
+es disparar el paso cuando `fasePaso` cruza un múltiplo de PI, y así el sonido
+cae **exactamente** en el fotograma en que el pie apoya, en vez de acumular
+distancia por su cuenta y derivar.
+
+## Y una buena noticia sobre tu defecto de los pasos que desaparecían
+
+`Audio.pasos` arranca con `if (!jugador.enSuelo) return`, y estaba anotado que
+cuesta arriba los pasos se dejaban de oír. **La causa no era tuya y ya está
+arreglada**, por dos lados:
+
+- el escalón de `_resolverTerreno` levantaba al cuerpo en cualquier cuesta
+  arriba y apagaba `enSuelo`;
+- bajando, el terreno caía más rápido que la gravedad y el cuerpo salía
+  despedido: medido en el cerro real, **112 cuadros de 150 en el aire**.
+
+Ahora son **0 de 180** caminando y corriendo, en los cuatro rumbos. Tu guarda de
+`enSuelo` es correcta y podés dejarla como está: ya no miente.

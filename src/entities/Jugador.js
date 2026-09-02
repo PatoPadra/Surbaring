@@ -68,7 +68,33 @@ export class Jugador {
     this.horasVividas = 0;
     this.alMorir = null;
 
-    this._balanceo = 0;
+    /**
+     * Fase de la zancada, en radianes. Avanza PI por paso, o sea 2·PI por
+     * ciclo completo de las dos piernas.
+     *
+     * Es una sola para todo el juego a propósito. Antes había tres relojes de
+     * paso sin relación: la cámara cabeceaba cada 1,736 m, el cuerpo apoyaba
+     * cada 1,309 m y el sonido sonaba cada 0,85 m. El pie tocaba el suelo, el
+     * ruido llegaba y la cabeza bajaba en tres momentos distintos, que es
+     * exactamente la sensación de estar manejando un muñeco en vez de caminar.
+     */
+    this.fasePaso = 0;
+    /** Transición de agacharse, de 0 a 1. Ver `_colocarCamara`. */
+    this._agachadoSuave = 0;
+    /** Golpe de cámara al aterrizar: resorte amortiguado, en metros. */
+    this._golpeY = 0;
+    this._golpeV = 0;
+    /**
+     * Campo visual de reposo, en grados. Lo elige el jugador desde opciones,
+     * que escribe `camara.fov` directamente; acá se adopta ese valor cuando
+     * cambia por fuera, y se le suma la apertura de correr.
+     */
+    this.fovBase = camara.fov;
+    this._fovAplicado = camara.fov;
+    /** ¿El avance de este cuadro lo frenó una pared? Lo usa el escalón. */
+    this._frenado = false;
+    /** ¿Hay entrada de movimiento? Lo usa el rozamiento. */
+    this._pidiendoMover = false;
     this._normalSuelo = new THREE.Vector3(0, 1, 0);
     this._normalMuro = new THREE.Vector3(0, 1, 0);
     /** Altura suavizada de la cámara. Ver `_colocarCamara`. */
@@ -93,6 +119,11 @@ export class Jugador {
     this.horasVividas = 0;
     this.velocidad.set(0, 0, 0);
     this._ySuave = null;
+    // El cuerpo es nuevo: no hereda la zancada a medio paso, ni la rodilla
+    // doblada, ni el golpe del aterrizaje que lo mató.
+    this.fasePaso = 0;
+    this._agachadoSuave = 0;
+    this._golpeY = 0; this._golpeV = 0;
     // El fenómeno que mató al cuerpo anterior no explica nada del nuevo. Y no
     // alcanzaba con que caducara solo: la comprobación resta `horasVividas`
     // menos el sello, y al revivir el reloj vuelve a cero mientras el sello
@@ -158,12 +189,27 @@ export class Jugador {
 
     const vel = this.velocidadBase * (this.enAgua ? 0.55 : 1);
 
-    // En pendiente cuesta más subir: proyecta el deseo sobre el plano del suelo
+    // En pendiente cuesta más subir: proyecta el deseo sobre el plano del suelo.
+    //
+    // Dos cosas que faltaban. Bajar no daba NADA: la cuesta abajo costaba lo
+    // mismo que el llano, y una ladera no es un pasillo horizontal. Y la carga
+    // no se sentía en la cuesta: el peso sólo escalaba `velocidadBase` parejo,
+    // así que cuarenta kilos frenaban igual subiendo un pedrero que caminando
+    // por la playa. El README decía que el inventario frena cuesta arriba y no
+    // era cierto en ninguna línea del código.
     let penalizacion = 1;
     if (this.enSuelo && largo > 1e-4) {
       const subida = -(this._normalSuelo.x * dx + this._normalSuelo.z * dz);
-      penalizacion = 1 - Math.max(0, subida) * 0.55;
+      if (subida > 0) {
+        const carga = 1 + Math.min(1, this.pesoCargado / 40) * 0.5;
+        penalizacion = Math.max(0.25, 1 - subida * 0.55 * carga);
+      } else {
+        // Bajar empuja, con techo: una cuesta ayuda, no convierte al jugador
+        // en un carro sin frenos.
+        penalizacion = 1 + Math.min(0.22, -subida * 0.3);
+      }
     }
+    this._pidiendoMover = largo > 1e-4;
 
     const objetivoX = dx * vel * penalizacion;
     const objetivoZ = dz * vel * penalizacion;
@@ -274,6 +320,7 @@ export class Jugador {
     if (largo < 1e-4) {                       // pared vertical sin gradiente útil
       this.posicion.x = this._antesX;
       this.posicion.z = this._antesZ;
+      this._frenado = true;
       return;
     }
     nx /= largo; nz /= largo;
@@ -291,6 +338,7 @@ export class Jugador {
       this.posicion.x = tx;
       this.posicion.z = tz;
     }
+    this._frenado = true;
 
     // La velocidad pierde lo mismo que perdió el avance. Sin esto se sigue
     // acumulando contra la pared y salta en cuanto la pared se termina.
@@ -304,6 +352,7 @@ export class Jugador {
   _resolverTerreno(dt) {
     const m = this.mundo;
 
+    this._frenado = false;
     this._resolverMuro();
 
     // Mantener dentro del mundo
@@ -326,13 +375,41 @@ export class Jugador {
 
     const pendiente = m.pendienteEn(this.posicion.x, this.posicion.z);
 
-    if (this.posicion.y <= suelo + 0.001) {
+    // Cuánto puede haberse escapado el suelo de abajo de los pies en un cuadro.
+    //
+    // Bajando una cuesta el terreno cae más rápido de lo que la gravedad baja
+    // al cuerpo: a 3,4 m/s por una ladera de 30° el suelo se va 3,3 cm por
+    // cuadro y la gravedad sólo lo baja 0,3 cm. El cuerpo salía despedido en
+    // cada bajada. Medido en el cerro real, con el terreno de verdad y no con
+    // el plano sintético del banco: **112 cuadros de 150 en el aire caminando**.
+    // Y `enSuelo` apagado es, otra vez, el rozamiento que no se aplica, el
+    // cabeceo que parpadea y los pasos que no suenan.
+    //
+    // El plano sintético no podía mostrarlo porque una rampa perfecta no tiene
+    // por dónde despegar: hace falta el relieve muestreado.
+    //
+    // Pegarse al suelo mientras la separación sea menor que ese escape es lo
+    // que convierte un rebote en un paso. Sólo hacia abajo: si el cuerpo está
+    // subiendo, saltó, y un salto no se cancela.
+    const rapidezH = Math.hypot(this.velocidad.x, this.velocidad.z);
+    const pegado = this.velocidad.y <= 0 ? 0.02 + rapidezH * dt * 2.5 : 0.001;
+
+    if (this.posicion.y <= suelo + pegado) {
       this.posicion.y = suelo;
       if (this.velocidad.y < 0) {
         // Caída: daño a partir de 8 m/s, como una caída de ~3,3 m
         const impacto = -this.velocidad.y;
         if (impacto > 8 && !this.enAgua) {
           this.salud -= Math.pow(impacto - 8, 1.55) * 1.4;
+        }
+        // Golpe de aterrizaje. La cámara perseguía la cota con k=90 en el
+        // aire, así que llegaba clavada: se caía cuatro metros y el cuerpo no
+        // acusaba recibo. Acá se le da un empujón hacia abajo al resorte de
+        // `_colocarCamara`, proporcional a la velocidad de impacto y con tope,
+        // porque una caída grande ya se cobra en salud y no hace falta además
+        // marear. Bajo el agua no hay golpe: el agua frena por su cuenta.
+        if (impacto > 1.5 && !this.enAgua) {
+          this._golpeV -= Math.min(impacto, 14) * 0.19;
         }
         this.velocidad.y = 0;
       }
@@ -344,9 +421,21 @@ export class Jugador {
         const desliz = 12 * exceso * dt;
         this.velocidad.x += this._normalSuelo.x * desliz;
         this.velocidad.z += this._normalSuelo.z * desliz;
-      } else {
-        // Rozamiento
-        const roce = Math.exp(-9 * dt);
+      } else if (!this._pidiendoMover) {
+        // Rozamiento, y sólo cuando el jugador NO está pidiendo moverse.
+        //
+        // Corría siempre, también contra la entrada, y peleaba con la
+        // aceleración de `_mover`: una acelera con k = 1 − exp(−14·dt) y el
+        // otro multiplica por exp(−9·dt), y el punto fijo de las dos juntas es
+        // 0,5618·velocidadBase. Por eso caminar declaraba 3,4 m/s y daba 1,91,
+        // y correr declaraba 6,2 y daba 3,49. El README, el código y el juego
+        // decían tres cosas distintas, y la que mandaba no estaba escrita en
+        // ningún lado.
+        //
+        // El otro síntoma del mismo defecto: en el aire el rozamiento no corre,
+        // así que saltar caminando ACELERABA de 1,91 a 2,64 m/s. Saltando en
+        // el lugar se llegaba más lejos que caminando.
+        const roce = Math.exp(-16 * dt);
         this.velocidad.x *= roce;
         this.velocidad.z *= roce;
       }
@@ -354,13 +443,33 @@ export class Jugador {
       this.enSuelo = false;
     }
 
-    // Escalón: si el terreno inmediato es un poco más alto, se sube sin saltar
-    if (this.enSuelo) {
-      const sin = Math.sin(this.giro), cos = Math.cos(this.giro);
-      const frenteX = this.posicion.x - sin * RADIO * 1.6;
-      const frenteZ = this.posicion.z - cos * RADIO * 1.6;
-      const hFrente = m.alturaEn(frenteX, frenteZ);
-      const delta = hFrente - this.posicion.y;
+    // Escalón: subir un peldaño sin saltar.
+    //
+    // Acá estaba el defecto que explicaba tres síntomas que parecían no tener
+    // nada que ver entre sí. Esto miraba el terreno 61 cm adelante y levantaba
+    // al cuerpo cada vez que era más alto — y en una ladera pareja SIEMPRE es
+    // más alto: a 10° son 10,7 cm de levantada por cuadro. El cuerpo iba
+    // flotando sobre la cuesta y `enSuelo` se apagaba, así que:
+    //
+    //   · subir salía MÁS RÁPIDO que el llano (2,436 contra 1,913 m/s medidos),
+    //     porque el rozamiento sólo corre con los pies en el suelo;
+    //   · el balanceo de cámara parpadeaba, porque se multiplica por `enSuelo`;
+    //   · el sonido de los pasos desaparecía cuesta arriba, porque
+    //     `Audio.pasos` arranca con `if (!jugador.enSuelo) return`. Ese defecto
+    //     estaba anotado como de audio y la causa estaba acá.
+    //
+    // Una cuesta caminable no necesita ninguna ayuda: el ajuste de altura de
+    // arriba ya pega el cuerpo a la cota en cada cuadro. El peldaño sólo hace
+    // falta cuando el avance quedó FRENADO por una pared, y se prueba en la
+    // dirección en la que se camina y no en la que se mira: de espaldas a un
+    // tronco también se sube.
+    if (this.enSuelo && this._frenado) {
+      const rapidez = Math.hypot(this.velocidad.x, this.velocidad.z);
+      const dirX = rapidez > 1e-3 ? this.velocidad.x / rapidez : -Math.sin(this.giro);
+      const dirZ = rapidez > 1e-3 ? this.velocidad.z / rapidez : -Math.cos(this.giro);
+      const frenteX = this.posicion.x + dirX * RADIO * 1.6;
+      const frenteZ = this.posicion.z + dirZ * RADIO * 1.6;
+      const delta = m.alturaEn(frenteX, frenteZ) - this.posicion.y;
       if (delta > 0 && delta < PASO_MAX && m.pendienteEn(frenteX, frenteZ) < PENDIENTE_MAX) {
         this.posicion.y += Math.min(delta, 8 * dt);
       }
@@ -383,18 +492,76 @@ export class Jugador {
     return this.aspecto?.alturaOjos ?? ALTURA_OJOS;
   }
 
+  /**
+   * Largo del paso, en metros. Crece con la velocidad porque un cuerpo que
+   * apura no da más pasos del mismo largo: da pasos más largos y más seguidos.
+   *
+   * Es la unidad de la que cuelgan las tres cosas que antes iban cada una por
+   * su lado —el cabeceo de la cámara, las piernas de `Cuerpo` y el sonido de
+   * los pasos de `Audio`—. Quien quiera engancharse al paso tiene que leer
+   * `fasePaso` y `zancada`, no inventarse un reloj propio.
+   */
+  get zancada() {
+    if (this.agachado) return 0.62;
+    const r = Math.hypot(this.velocidad.x, this.velocidad.z);
+    const t = Math.min(1, Math.max(0, (r - 2.2) / 3.0));
+    return 0.95 + t * 0.65;
+  }
+
   _colocarCamara(dt, entrada) {
     const m = this.mundo;
-    const alturaOjos = this.alturaOjos * (this.agachado ? 0.62 : 1);
+
+    // Agacharse era un escalón: `agachado ? 0,62 : 1` bajaba la cámara 64 cm
+    // en UN cuadro, ida y vuelta. Doblar las rodillas lleva un rato, y ese rato
+    // es justo lo que hace que agacharse se sienta como un movimiento del
+    // cuerpo y no como un corte de montaje. 140 ms hasta el 90 %.
+    const metaAgachado = this.agachado ? 1 : 0;
+    this._agachadoSuave += (metaAgachado - this._agachadoSuave) * (1 - Math.exp(-dt / 0.06));
+    const alturaOjos = this.alturaOjos * (1 - 0.38 * this._agachadoSuave);
 
     // Balanceo al caminar: sutil, sólo para dar peso al paso. Quien lo sienta
     // como temblor lo puede bajar a cero desde las opciones; hay gente a la que
     // el cabeceo de cámara le da mareo de verdad, y no es un capricho.
+    //
+    // La fase ya no es un contador propio de la cámara: es `fasePaso`, la misma
+    // que mueve las piernas y a la que se engancha el sonido. Un ciclo de
+    // cabeceo por paso —de ahí el ×2— y un vaivén lateral por cada dos pasos,
+    // que es el balanceo de la cadera.
     const rapidez = Math.hypot(this.velocidad.x, this.velocidad.z);
-    this._balanceo += rapidez * dt * 2.1;
+    if (this.enSuelo) this.fasePaso += (rapidez / this.zancada) * Math.PI * dt;
     const amplitud = Math.min(rapidez / 6.2, 1) * (this.enSuelo ? 1 : 0) * this.balanceo;
-    const bobY = Math.sin(this._balanceo * 2) * 0.045 * amplitud;
-    const bobX = Math.cos(this._balanceo) * 0.032 * amplitud;
+    const bobY = Math.sin(this.fasePaso * 2) * 0.027 * amplitud;
+    const bobX = Math.cos(this.fasePaso) * 0.019 * amplitud;
+
+    // Golpe de aterrizaje: resorte amortiguado que empuja `_resolverTerreno`.
+    // Se resuelve siempre, también en el aire, para que llegue al suelo ya
+    // quieto en vez de arrastrar el rebote del salto anterior.
+    // W y el amortiguamiento están elegidos contra el paso de 60 Hz, no en el
+    // papel: con W=26 y zeta=0,7 el término de amortiguación vale 2·zeta·W·dt =
+    // 0,61, o sea que se comía el 61 % de la velocidad en el PRIMER cuadro y el
+    // hundimiento quedaba en dos centímetros. Con estos valores el pozo tarda
+    // 88 ms en llegar al fondo, que es lo que tarda una rodilla en ceder.
+    const W = 14;
+    this._golpeV += (-W * W * this._golpeY - 2 * 0.45 * W * this._golpeV) * dt;
+    this._golpeY += this._golpeV * dt;
+    this._golpeY = Math.max(-0.11, Math.min(0.03, this._golpeY));
+
+    // Campo visual: se abre al correr. No es un adorno. Correr no cambia lo que
+    // pasa en la pantalla salvo por el número de la velocidad, y ensanchar el
+    // cuadro cinco grados es lo que hace que se sienta más rápido.
+    //
+    // Opciones escribe `camara.fov` a mano con el valor que elige el jugador,
+    // así que acá se detecta ese cambio de afuera —cualquier valor que no sea
+    // el que dejé yo el cuadro pasado— y se adopta como el nuevo reposo. Sin
+    // esto, la apertura de correr y el control deslizante se pelean.
+    if (Math.abs(this.camara.fov - this._fovAplicado) > 1e-6) this.fovBase = this.camara.fov;
+    const metaFov = this.fovBase + (this.corriendo ? 5 : 0);
+    const nuevoFov = this.camara.fov + (metaFov - this.camara.fov) * (1 - Math.exp(-dt / 0.18));
+    if (Math.abs(nuevoFov - this.camara.fov) > 1e-4) {
+      this.camara.fov = nuevoFov;
+      this.camara.updateProjectionMatrix();
+    }
+    this._fovAplicado = this.camara.fov;
 
     // Suavizado vertical de la vista.
     //
@@ -412,12 +579,12 @@ export class Jugador {
 
     const ojo = this._tmp.set(
       this.posicion.x + bobX * Math.cos(this.giro),
-      this._ySuave + alturaOjos + bobY,
+      this._ySuave + alturaOjos + bobY + this._golpeY,
       this.posicion.z - bobX * Math.sin(this.giro)
     );
 
     this.camara.rotation.order = 'YXZ';
-    this.camara.rotation.set(this.cabeceo, this.giro, Math.sin(this._balanceo) * 0.006 * amplitud);
+    this.camara.rotation.set(this.cabeceo, this.giro, Math.sin(this.fasePaso) * 0.006 * amplitud);
 
     if (this.tercerPersona) {
       // Brazo de cámara con colisión contra el relieve

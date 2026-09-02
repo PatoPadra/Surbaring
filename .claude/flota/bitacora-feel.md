@@ -147,32 +147,122 @@ apaga y de ahí salen tres cosas medidas:
 
 ## 2. Hecho
 
-Sólo archivos de desarrollo, que no entran al juego y viven en `capturas/`
-(ignorado por git): `feel-banco.js` (navegador) y `feel-node.mjs` (Node, el que
-vale).
+### Herramientas (en `capturas/`, ignorado por git)
 
-## 3. Siguiente
+`feel-banco.js` (navegador) y `feel-node.mjs` (Node, el que vale). Al medir el
+DESPUÉS aparecieron **dos artefactos del propio banco** que daban números
+falsos, y quedaron arreglados:
 
-1. Correr `medirTodo()` con la receta de arriba y pegar los números en la
-   sección "Medido con el banco". Ése es el ANTES.
-2. Cambios previstos en `src/entities/Jugador.js`, por orden de cuánto se notan:
-   - transición de agachado (interpolar `alturaOjos`, ~140 ms);
-   - golpe de cámara al aterrizar, proporcional a la velocidad de impacto,
-     resorte amortiguado, tope chico (~10 cm);
-   - una sola zancada: fase de paso en `Jugador`, expuesta como `fasePaso`
-     y `zancada`, y que `Cuerpo` y el balanceo de cámara la usen. Avisarle a
-     **vida** para que `Audio.pasos` se enganche a lo mismo;
-   - apertura de campo visual al correr (~+5°, con rampa);
-   - fricción que no se aplique cuando hay entrada, para que la velocidad real
-     coincida con la declarada, y rampa de arranque un poco más larga;
-   - bajada que apure y subida que cueste más con carga.
-3. Repetir `medirTodo()` → ése es el DESPUÉS. Capturas `feel-*` para la
-   tercera persona.
+- `zancadaCuerpoM` estaba **clavada a mano** en `2·PI/2,4/2` — no medía nada,
+  reflejaba una línea de `Cuerpo.js` que ya no existe. Ahora lee `j.zancada`.
+- `zancadas.cuerpo` tomaba `f0 = c.fase` de un `Cuerpo` recién creado (0) y lo
+  restaba contra la fase del jugador, que viene **acumulada de todas las medidas
+  anteriores**. Daba 5,788 rad/m donde eran 2,596. Ahora corre un cuadro en seco
+  antes de tomar `f0`, y mide la distancia recorrida de verdad en vez de
+  suponerla como `v·n·P`.
 
-## 4. Descartado
+### Cambios, todos en `src/entities/Jugador.js` salvo el último
+
+1. **El rozamiento ya no corre contra la entrada.** Era el defecto 1 del
+   diagnóstico. Se aplica sólo cuando no hay pedido de movimiento, y el
+   coeficiente pasó de 9 a 16 para que la frenada no se volviera blanda al
+   desaparecer la pelea. Con esto la velocidad real **coincide con la
+   declarada**, y de paso se cae solo el defecto de saltar caminando: ya no
+   quedaba margen para acelerar en el aire.
+2. **El escalón sólo corre cuando el avance quedó frenado.** Era el defecto 2.
+   Antes levantaba al cuerpo en cualquier cuesta arriba. Además prueba en la
+   dirección en la que se camina y no en la que se mira.
+3. **Pegado al suelo** (`pegado`, tolerancia proporcional a la velocidad).
+   **Esto no estaba en el diagnóstico: lo encontró la medición en el navegador
+   contra el terreno real.** El plano sintético del banco no puede mostrarlo
+   porque una rampa perfecta no tiene por dónde despegar. Ver sección 5.
+4. **Transición de agachado**, 140 ms hasta el 90 %.
+5. **Golpe de cámara al aterrizar**: resorte amortiguado, tope 11 cm.
+6. **Una sola zancada**: `fasePaso` y `zancada` expuestas en `Jugador`. La
+   cámara y `Cuerpo.js` ya cuelgan de ellas. **Falta `Audio.js`, que es de
+   `vida`** — el traspaso está escrito en `bitacora-vida.md`.
+7. **Campo visual**: +5° al correr, con rampa de 180 ms. Detecta que Opciones
+   escribió `camara.fov` a mano y adopta ese valor como nuevo reposo, así el
+   control deslizante y la apertura de correr no se pelean.
+8. **Pendientes**: bajar ayuda (con techo) y subir cuesta más con carga.
+9. `Cuerpo.js` lee `j.fasePaso`. Conserva su reloj viejo como respaldo para el
+   maniquí de la creación de personaje, que no es un `Jugador`.
+
+## 3. Medido — el DESPUÉS
+
+`node capturas/feel-node.mjs`, terreno sintético, determinista.
+
+| medida | ANTES | DESPUÉS |
+|---|---|---|
+| caminar (declara 3,4) | 1,913 m/s | **3,400** |
+| correr (declara 6,2) | 3,488 | **6,200** |
+| agachado (declara 1,5) | 0,844 | **1,500** |
+| rampa de arranque t90 | 117 ms | 167 ms |
+| frenada a 0,2 m/s | 100 ms | 100 ms |
+| en el aire, horizontal | 1,913 → **2,641** (aceleraba solo) | 3,400 → **3,400** |
+| hundimiento de cámara al caer 4 m | **0 mm** | **−43 mm** |
+| ídem al aterrizar un salto | 0 mm | −16 mm |
+| agacharse | **0,638 m en UN cuadro** | 0,638 m en 140 ms, máx **0,117 m/cuadro** |
+| campo visual al correr | 62° → 62° | 62° → **67°**, vuelta en 417 ms |
+| metros por cabeceo de cámara | 1,736 | **1,210** |
+| metros por paso del cuerpo | 1,309 | **1,210** |
+| metros por paso del audio | 0,850 | **0,850 — sigue suelto, es de `vida`** |
+| subir 10° | **2,436 (más rápido que el llano)** | 3,075 |
+| subir 20° / 30° / 40° | 2,252 / 1,799 / 1,852 | 2,760 / 2,465 / 2,198 |
+| bajar 10° / 30° | 1,913 / 2,663 | 3,577 / 3,910 |
+| 40 kg subiendo 30° | 1,786 | **1,818** (contra 2,465 sin carga) |
+
+Las tres zancadas que iban cada una por su lado ahora son **una**: cámara y
+cuerpo dan el mismo 1,210 m. Falta enganchar el sonido.
+
+Subir es por fin monótono: cuanto más empinado, más lento. Antes 10° era más
+rápido que el llano y 40° más rápido que 30°, que es la firma del defecto 2.
+
+## 4. El defecto que sólo apareció en el navegador
+
+El banco de Node corre contra `mundoPlano(m)`, una rampa de pendiente exacta.
+Contra el **terreno real**, con el jugador vivo en el cerro, apareció esto:
+
+| | ANTES | DESPUÉS |
+|---|---|---|
+| cuadros en el aire caminando | **112 de 150** | **0 de 180** |
+| ídem corriendo | — | **0 de 180**, en los cuatro rumbos |
+| velocidad vertical máxima | — | **0,00 m/s** |
+
+Bajando una cuesta el terreno cae más rápido de lo que la gravedad baja al
+cuerpo: a 3,4 m/s por una ladera de 30° el suelo se va 3,3 cm por cuadro y la
+gravedad sólo lo baja 0,3 cm. El cuerpo salía despedido en cada bajada y
+`enSuelo` se apagaba tres cuartas partes del tiempo — o sea los mismos tres
+síntomas del defecto 2, por una causa distinta y en un lugar distinto.
+
+**La lección, que vale para toda la flota:** el plano sintético es más rápido,
+determinista y midió bien todo lo demás, pero es incapaz de mostrar este
+defecto. Un relieve muestreado tiene por dónde despegar y una rampa perfecta no.
+Las dos mediciones hacen falta.
+
+## 5. Descartado
 
 - Cargar el banco con `<script src>` y leer `window.__feel` desde el mundo
   aislado: el `onload` corre en el mundo aislado y ahí `window.__feel` no
   existe nunca. Parecía un error de carga y no lo era.
 - `javascript_tool` con un `await` de 13 s para esperar la carga del juego: la
   recarga de Vite mata la llamada entera. Hay que esperar en tramos cortos.
+- **Medir con `requestAnimationFrame` con el panel del navegador oculto.** No
+  dispara: el bucle del juego queda congelado y la corrida devuelve vacío sin
+  decir por qué. Lo que sí funciona con el panel oculto es mover la física a
+  mano —`j.actualizar(P, entradaSintética)` en el script inyectado— guardando y
+  restaurando el estado del jugador alrededor. Mide el módulo real contra el
+  mundo real y no depende de que el navegador componga un solo cuadro.
+
+## 6. Siguiente
+
+- **Enganchar `Audio.pasos` a `jugador.fasePaso`.** Es de `vida`; el traspaso
+  con el número de línea está en `bitacora-vida.md`.
+- Ajustar a gusto: la velocidad real subió un 78 % al arreglar el rozamiento
+  (1,91 → 3,40 m/s caminando). Es lo que el código declaraba y lo que dice el
+  README, pero el juego se venía jugando y equilibrando al valor viejo. Si se
+  siente demasiado, lo que hay que tocar es `velocidadBase`, **no** volver a
+  poner el rozamiento contra la entrada.
+- El suelo sigue sin material: roca, pasto y nieve caminan y suenan igual.
+- `_mirar` corre dentro del paso fijo: con `dt < 1/60` el giro espera al próximo
+  paso, hasta 16 ms de retardo. Arreglarlo pide tocar `main.js`.

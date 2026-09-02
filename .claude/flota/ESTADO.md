@@ -1,65 +1,85 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
-## ⏸ GUARDADO EL 31/8/2026 — CÓMO SEGUIR DESDE ACÁ
+## Al 2/9/2026
 
-Se paró por límite de tokens semanales del usuario, no porque el trabajo fallara.
+**Todo está en GitHub.** `origin/main` estaba **19 commits atrás** del `main`
+local: el fuego que calienta, la creación de personaje, el lago, las cuatro
+rondas de optimización — nada de eso estaba subido. Ya se empujó. La rama
+`mejoras/flota-visual-jugabilidad` también está en el remoto.
 
-**Todo lo hecho está commiteado** en la rama `mejoras/flota-visual-jugabilidad`,
-commit `c0ed137`. `main` quedó intacto en `0746527`. Para descartar todo:
-`git checkout main`. Para ver qué cambió: `git diff main`.
+**La rama NO se fusionó a `main` a propósito**: lleva las 710 líneas de audio y
+fauna que `vida` dejó sin verificar. Entra cuando `vida` esté comprobado.
 
-**El juego carga y corre.** Verificado tras el commit: sintaxis, importación real
-de todos los módulos con GLSL, y `window.SurviBar` vivo en el navegador.
+**Sigue sin respaldo `capturas/`**, que está en `.gitignore`: 204 archivos,
+incluidas las `base-*.png` que son el "antes" de todas las comparaciones y los
+bancos de medición `feel-node.mjs` y `feel-banco.js`. Si se rompe la máquina, se
+pierden.
 
 ### Terminados — no relanzar
 
 | Agente | Qué cerró |
 |---|---|
-| **luz** | Cielo verde, coseno solar doble, exposición constante → curva. Informe en `bitacora-luz.md`. |
-| **veg** | Piedras negras, normal nula en la punta del pasto, albedo de 8 especies, ambiente de carteleras. |
-| **agua** | Cenit reflejado, silueta del cerro en el agua, relieve fino con puerta propia. −5 ms de cuadro. |
+| **luz** | Cielo verde, coseno solar doble, exposición constante → curva. |
+| **veg** | Piedras negras, normal nula en la punta del pasto, albedo de 8 especies. |
+| **agua** | Cenit reflejado, silueta del cerro en el agua, relieve fino. −5 ms de cuadro. |
 | **bucle** | La leña no se podía juntar; cadena del metal de 196 a 38 h de mundo. |
+| **feel** | Velocidad real = declarada (1,91 → 3,40 m/s). Una sola zancada. Agachado con transición, golpe al aterrizar, campo visual al correr. Y el cuerpo dejó de ir por el aire: **0 cuadros de 180**, contra 112 de 150. |
 
 ### Pendientes — acá se retoma
 
-Los tres tienen **bitácora con diagnóstico ya hecho**. No los lances en frío:
-lanzá un agente nuevo y decile que lea su bitácora y ejecute su sección
-«3. Siguiente». Ese es todo el truco.
-
 | Agente | Archivos | Estado |
 |---|---|---|
-| **feel** | `entities/Jugador.js`, `entities/Cuerpo.js`, `engine/Entrada.js` | **Nada escrito.** Tiene el ANTES medido y un banco numérico que corre en Node. Es el que más rinde: el jugador está en contacto con esto todo el tiempo. |
-| **ui** | `ui/*.js`, `index.html` | Cambios a medias en `index.html`, `Codice.js`, `HUD.js`, ya commiteados. Recorrida de paneles hecha y escrita. |
-| **vida** | `engine/Audio.js`, `entities/Fauna.js`, `entities/Peces.js` | **+710 líneas escritas y SIN VERIFICAR.** Primera tarea: comprobar que no haya fuga de osciladores y que ningún canto tenga período audible. |
+| **vida** | `engine/Audio.js`, `entities/Fauna.js`, `entities/Peces.js` | **+710 líneas SIN VERIFICAR.** Primera tarea: fuga de osciladores y cantos con período audible. **Tiene un traspaso de `feel` al final de su bitácora**: engancharse a `jugador.fasePaso`. |
+| **ui** | `ui/*.js`, `index.html` | Cambios a medias ya commiteados. Recorrida de paneles hecha y escrita. |
+
+Los dos tienen **bitácora con diagnóstico ya hecho**. No los lances en frío:
+decíles que lean su bitácora y ejecuten su sección «Siguiente».
 
 ### Encargos sueltos que quedaron anotados
 
-- **Los troncos siguen casi negros.** `veg` lo detectó y no lo abrió por estar
-  fuera de su encargo: es `colorTronco`, no `colorHoja`. Se arregla igual que el
-  follaje y es corto.
-- **La transición agua-costa quedó a medias**: `agua` bajó el alfa de la orilla
-  pero no agregó piedra mojada ni verificó la línea de espuma.
+- **Los troncos siguen casi negros.** Es `colorTronco`, no `colorHoja`. Corto.
+- **La transición agua-costa quedó a medias**: falta piedra mojada y línea de
+  espuma.
 - **`bucle` dejó sin hacer** los gestos de caza, pesca, saberes, relevamiento y
   exploración, y la legibilidad del árbol de 47 tecnologías.
 - **Medir Baja contra Baja.** La línea de base de 57,1 ms es preset **Alta**.
-  Falta una medición equivalente en Baja, que es donde juega el usuario.
-- **El README miente ahora**: su sección `## Estado real` lista como defectos
-  varios que esta rama resolvió.
+- **El README miente**: su sección `## Estado real` lista como defectos varios
+  que esta rama resolvió, y además declara 3,4 m/s, que recién ahora es cierto.
+- **La velocidad subió un 78 %** al arreglar el rozamiento. Es lo que el código
+  declaraba, pero el juego se venía equilibrando al valor viejo. Si se siente
+  demasiado, se toca `velocidadBase` — **no** se vuelve a poner el rozamiento
+  contra la entrada.
+
+### `pendiente-*.md`
+
+**`pendiente-agua.md` ya está resuelto** y no hay otros. Su parte urgente eran
+cuatro comillas invertidas en comentarios GLSL de `Cielo.js` que tumbaban la
+carga entera; ya no quedan. Su segunda parte no pedía cableado: sólo avisa que
+`reflejoAgua: 0` en los presets `baja` y `mínima` es deliberado y correcto, así
+que el jugador de la placa de destino **nunca ve el espejo planar**.
 
 ### Herramientas que dejó la flota
 
-- `.claude/flota/cadena-bucle.mjs` — resuelve la cadena de una receta hacia atrás
-  sobre los JSON reales. `node .claude/flota/cadena-bucle.mjs herramienta 1`.
+- `.claude/flota/cadena-bucle.mjs` — resuelve una receta hacia atrás.
 - `.claude/flota/bucle-recoleccion.mjs` — 5 casos de la tecla de acción.
+- `capturas/feel-node.mjs` — banco de sensación de movimiento, en Node,
+  determinista. `node capturas/feel-node.mjs`.
 - `public/banco.js` — reloj de GPU. No está enganchado en `index.html`.
 
+### Dos trampas de medición ya pagadas
+
+1. **Con el panel del navegador oculto, `requestAnimationFrame` no dispara** y
+   el bucle del juego queda congelado: la corrida devuelve vacío sin decir por
+   qué. Lo que sí funciona es mover la física a mano desde el script inyectado
+   —`j.actualizar(1/60, entradaSintética)`— guardando y restaurando el estado
+   del jugador alrededor.
+2. **El terreno sintético no muestra todo.** El banco de `feel` corre contra una
+   rampa perfecta: es determinista y midió bien nueve defectos, pero fue
+   incapaz de ver que el cuerpo salía despedido en las bajadas, porque una rampa
+   perfecta no tiene por dónde despegar. Eso sólo apareció midiendo contra el
+   relieve real. Las dos mediciones hacen falta.
+
 ---
-
-Si sos una sesión nueva retomando este trabajo: **empezá por acá**, después por
-`.claude/flota/CONTEXTO.md`, y después por las bitácoras.
-
-Fecha de apertura: 30–31 de agosto de 2026. Rama `main`, commit de partida
-`0746527`.
 
 ## Qué se está haciendo
 
