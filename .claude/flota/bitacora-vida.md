@@ -115,77 +115,168 @@ No hace falta `atan2`.
 
 ## 2. Hecho
 
-- **`src/engine/Audio.js`** — agregado arriba de `class Audio`: constante
-  `MAX_VOCES = 4`, helper `serie()`, y la tabla `VOCES` con 40 entradas
-  derivadas del campo `vocalizacion` de `fauna.json`. En el `constructor`,
-  cuatro contadores nuevos: `vocesActivas`, `vocesEmitidas`, `vocesPico`,
-  `vocesRechazadas` (para poder medir fugas de osciladores desde el script
-  inyectado, que es la única forma de verificar audio acá).
-  **Todavía sin verificar** — falta el motor de síntesis que consuma la tabla.
+Al retomar, lo escrito era **mucho mas** de lo que decia esta bitacora: el
+agente alcanzo a escribir el motor entero y no a anotarlo antes de que lo
+cortara el limite. Ya estaban `voz()`, `tieneVoz`, `alcanceVoz`, la tabla de 42
+voces, `Fauna._vocalizar`, `_alarma`, `_contagiar`, la distancia de fuga sin el
+`* 0.55`, el sigilo y el despegue de las aves chicas.
 
----
+Lo que faltaba, y se hizo ahora:
 
-## 3. Siguiente
+1. **El cableado de `main.js`** - sin `bichos.audio = audio` la fauna quedaba
+   muda con las 42 voces escritas, y **sin que nada fallara ni avisara**, porque
+   del lado de `Fauna` el acceso es opcional (`audio?.listo`). Esa opcionalidad,
+   puesta para que la falta no rompiera nada, era justo lo que escondia la falta.
+2. **El testigo de las voces** - ver seccion 3.
+3. **Los pasos enganchados a `jugador.fasePaso`** - el traspaso de `feel`.
+4. **`Peces.js`**, el unico archivo del plan que nunca se habia abierto.
+5. Una fuga latente en `voz()`: la salida por `!fuentes.length` ocurre despues
+   de arrancar el vibrato, asi que dejaba un oscilador sonando para siempre. No
+   es alcanzable con la tabla actual, pero la salida ahora limpia.
 
-Paso concreto, en orden:
+## 3. El defecto que habia, y era el inverso del que se buscaba
 
-1. **`Audio.js`: escribir el motor `voz(id, {distancia, azimut, ganancia})`**
-   que consuma `VOCES`. Cadena por frase, compartida entre todas sus notas para
-   que salga barata: `[osc por nota → gain por nota] → gainFrase →
-   [pasabanda de timbre si t es 'a'/'n'] → pasabajos de distancia → StereoPanner
-   → this.bus`. Un solo LFO de vibrato por frase conectado a todos los
-   `osc.frequency`. Atenuación `(1 - d/alcance)^1.6`; el pasabajos de distancia
-   va de ~16 kHz cerca a ~1,2 kHz en el borde (el aire se come los agudos: el
-   mismo principio que ya usa `_trueno`). Cortar con `return false` si
-   `vocesActivas >= MAX_VOCES` (y sumar `vocesRechazadas`). Contar
-   `vocesActivas++` al empezar y `--` en el `onended` de la última fuente, con
-   `disconnect()`.
-2. **`Fauna.js`: `_vocalizar(dt, jugador, est, hora)`**, llamado desde
-   `actualizar()`. Proceso de Poisson (`-Math.log(1-Math.random())`) para que
-   **no haya período audible por construcción**. Modulación de las ganas de
-   cantar: coro del amanecer (gaussiana centrada en 7,2 h) y del atardecer
-   (19,6 h, más floja); con lluvia o granizo fuerte los pájaros callan
-   (`1 - min(1, lluvia*2.2)`); el viento fuerte también los baja. Elegir
-   candidato entre `this.vivos` pesando por `_actividad(esp, hora)`. Enfriamiento
-   por individuo. Tras una alarma, silencio del coro 4-8 s.
-3. **`Fauna.js`: distancia de fuga.** Sacar el `* 0.55`, usar el valor del
-   dataset tal cual, multiplicar por sigilo (agachado 0.55, corriendo 1.35) y
-   poner la detección/alerta en `huida * 1.9`. Alarma sonora al pasar a HUYENDO
-   y propagación a conespecíficos gregarios a menos de 40 m.
-4. **`Fauna.js`: despegue de las aves chicas** al huir (hoy patinan por el
-   suelo sin patas modeladas).
-5. **`Peces.js`: deriva del centro del cardumen + reacción al jugador** en la
-   orilla (hoy giran en un círculo de centro fijo).
-6. **Verificar**: pestaña propia en `http://127.0.0.1:5174/`, script inyectado
-   que hace `window.SurviBar.fauna.audio = window.SurviBar.audio` **en caliente**
-   (así se prueba la cadena completa sin tocar `main.js`, que es del
-   coordinador), y después medir a lo largo de varios minutos simulados:
-   `vocesActivas` (tiene que volver a 0), `vocesPico` (≤ 4), `vocesEmitidas`, y
-   la lista de intervalos entre cantos para confirmar que no hay período.
-   Capturas con prefijo `vida-`.
-7. **Escribir `.claude/flota/pendiente-vida.md`** con el parche exacto de una
-   línea para `main.js`: después de `const audio = new Audio();` (línea ~228),
-   agregar `bichos.audio = audio;`. Sin esa línea la fauna queda muda en
-   producción (pero el juego anda igual que hoy: `this.audio?.` es opcional).
+La tarea escrita era "comprobar que no haya fuga de osciladores". **No la hay.**
+Lo que habia era lo contrario: **todo se desarmaba demasiado pronto**.
 
----
+`voz()` cuenta las voces con un `BufferSource` mudo que arranca con la frase y
+termina con la ultima nota. Ese testigo usaba `this.ruido`, que dura
+`SEG_RUIDO = 2` segundos, y **sin `loop`**. Un `BufferSource` sin bucle termina
+cuando se le acaba el bufer e **ignora su propio `stop()`**: el testigo moria
+siempre a los dos segundos.
 
-## 4. Descartado
+Consecuencias, las tres medidas:
 
-- **Duplicar el filtro de hábitat dentro de `Audio.js`** para decidir qué
-  especie canta. `Fauna._aptitud()` ya resuelve bioma, altitud, estación y
-  distancia al agua contra el dataset; reimplementarlo en el audio sería lógica
-  duplicada que tarde o temprano contradice el JSON verificado. El audio recibe
-  la especie ya elegida.
-- **Poner los parámetros de síntesis dentro de `fauna.json`.** El CONTEXTO
-  permite agregar campos, pero frecuencias y Q son números de audio, no datos
-  naturales: mezclarlos con el contenido verificado lo ensucia. Van en
-  `Audio.js`, al lado del código que los usa.
-- **Boids completos (cohesión/separación/alineación) en `Peces.js`.** Con hasta
-  22 peces por cardumen y 14 cardúmenes, las consultas de vecinos son O(n²) por
-  cuadro para una diferencia visual mínima a la distancia a la que se ven los
-  peces bajo el agua. Se hace lo que sí se nota: que el centro del cardumen
-  derive y que el cardumen reaccione al jugador.
+- **27 de las 42 voces se cortaban siempre**, y 35 al menos a veces. Entre ellas
+  el chucao, que es el sonido firma del bosque y al que esta bitacora le dedico
+  la mayor parte del trabajo de sintesis.
+- El `onended` disparaba temprano, asi que `vocesActivas` bajaba antes de tiempo
+  y **el tope de `MAX_VOCES` dejaba pasar mas frases de las que decia permitir**
+  - justo la proteccion de CPU que el testigo existe para sostener.
+- Los `disconnect()` corrian con notas todavia programadas: la frase se cortaba
+  a la mitad en vez de terminar.
+
+Arreglo: `testigo.loop = true`. Una linea.
+
+### Medido, en el juego corriendo
+
+Duracion real de la frase, disparada a 8 m:
+
+| voz | antes | despues |
+|---|---|---|
+| ciervo colorado (brama) | 2,00 s (tope) | **12,78 s** |
+| zorzal patagonico | 2,00 s (tope) | **6,19 s** |
+| churrin | 2,00 s (tope) | **4,06 s** |
+| tuco-tuco colonial | 2,00 s (tope) | **3,17 s** |
+| huet-huet | 2,00 s (tope) | **2,31 s** |
+| cachana | 2,00 s (tope) | **2,14 s** |
+
+### Fuga de osciladores: no hay
+
+Coro del amanecer forzado, 240 s simulados, hora 7,0, otono, sin lluvia:
+
+| | |
+|---|---|
+| animales vivos | 52 (el tope) |
+| **voces activas al terminar** | **0** |
+| tiempo hasta llegar a cero | 1,96 s |
+| pico de voces simultaneas | **4** - nunca paso `MAX_VOCES` |
+
+Los 90 rechazos de esa corrida **no son un dato del juego**: comprimi 240 s
+simulados en 10 s reales, y las frases suenan en tiempo real. Con la tasa real
+del amanecer -un canto cada 2,6 s contra frases de 3,3 s de media- la carga
+ofrecida es 1,27 voces simultaneas sobre 4 lugares, asi que el rechazo es raro.
+
+### Periodo audible: no hay
+
+El generador es `1.4 - Math.log(1 - Math.random()) * 4.6`: exponencial con piso.
+20.000 muestras por escenario.
+
+| escenario | ganas | intervalo medio | CV | autocorrelacion (retardos 1-8) |
+|---|---|---|---|---|
+| amanecer 7,0 h | 2,30 | 2,62 s | **0,759** | todas < 0,006 |
+| media manana 10,3 h | 0,24 | 24,98 s | 0,761 | todas < 0,014 |
+| atardecer 19,8 h | 1,06 | 5,66 s | 0,755 | todas < 0,010 |
+| noche 3,0 h | 0,28 | 21,67 s | 0,766 | todas < 0,007 |
+| amanecer con lluvia 0,5 | **0** | - | - | callados del todo |
+
+Un metronomo daria CV = 0. Una exponencial con piso de 1,4 s sobre media 6,0 da
+0,767, y eso es lo que sale. La autocorrelacion esta en el ruido de fondo
+(1/raiz(20000) = 0,007). **Los intervalos son sin memoria: no hay periodo que el
+oido pueda encontrar.**
+
+## 4. Los pasos, del traspaso de `feel`
+
+`Audio.pasos` acumulaba distancia por su cuenta y disparaba cada 0,85 m -o 1,25
+corriendo-, mientras la camara cabeceaba cada 1,736 m y las piernas apoyaban
+cada 1,309 m. Ahora dispara cuando `jugador.fasePaso` cruza un multiplo de PI,
+que **es** el fotograma del apoyo. Medido en tierra firme, terreno real:
+
+| | sonidos | pasos de fase | m por sonido | `zancada` |
+|---|---|---|---|---|
+| caminando | 15 | 13,98 | 1,13 | 1,21 |
+| corriendo | 20 | 19,34 | 1,55 | 1,60 |
+| agachado | 14 | 12,58 | 0,56 | 0,62 |
+
+El sonido va uno por delante de la fase a proposito: al arrancar a caminar se
+oye el primer paso en el acto en vez de esperar al siguiente cruce. El timbre
+sale correcto solo: `tierra` caminando y corriendo, `suave` agachado.
+
+## 5. `Peces.js` - el archivo que nunca se habia abierto
+
+Los cardumenes giraban alrededor de un punto **fijo para siempre**: parado en la
+orilla se veia el mismo carrusel repetirse, y acercarse no cambiaba nada.
+
+- El centro ahora deriva con un paseo al azar y se dobla contra la orilla en vez
+  de encallar. El cardumen guarda su **profundidad**, no su cota, asi que al
+  cambiar de sitio recalcula contra la superficie de ahi: no termina volando
+  sobre el agua ni enterrado.
+- A menos de 9 m el cardumen registra al jugador, se cierra -los peces se
+  juntan, no se desbandan- y se va derecho para el lado contrario.
+- La fase orbital paso de `t * vel` a un `c.giro` integrado. **Era necesario:**
+  si la velocidad cuelga de `t`, cambiarla mueve el angulo de golpe y el
+  cardumen entero se teletransporta.
+
+Verificado con 14 cardumenes y 101 peces en el lago: los 14 se mueven, **14 de
+14 siguen en agua**, **14 de 14 con cota coherente**, y al pararse encima la
+distancia al jugador **crece**. Cuesta 14 vueltas por cuadro y ninguna consulta
+de vecinos, que es justo lo que se descarto al decidir no hacer boids.
+
+## 6. Trampas de medicion pagadas aca
+
+- **El panel del navegador corre a ~1 cuadro por segundo** en este entorno. Con
+  eso `peces.actualizar` recibe 5 llamadas en 4,6 s reales y acumula 0,23 s de
+  `dt`: las magnitudes parecen ridiculas y el mecanismo esta bien. Antes de
+  llamar defecto a un numero chico, medir el `dt` que de verdad llega.
+- **El silencio de Opciones se activo solo a mitad de una corrida** y `voz()`
+  devolvia `false` sin decir por que. Comprobar `audio.silenciado` antes de
+  creerle a un `false`.
+- **Una recarga de Vite tira el contexto de audio** y `listo` vuelve a `false`,
+  con lo que `pasos()` corta en la primera guarda y no suena nada. Hace falta un
+  gesto real -un clic en el lienzo- despues de cada recarga.
+- **El jugador teleportado a la orilla se mete al agua**, y nadando no hay
+  pasos. Es correcto, pero da un cero que parece defecto. Probar en tierra firme.
+
+## 7. Descartado
+
+- **Duplicar el filtro de habitat dentro de `Audio.js`** para decidir que
+  especie canta. `Fauna._aptitud()` ya resuelve bioma, altitud, estacion y
+  distancia al agua contra el dataset; reimplementarlo en el audio seria logica
+  duplicada que tarde o temprano contradice el JSON verificado.
+- **Poner los parametros de sintesis dentro de `fauna.json`.** Frecuencias y Q
+  son numeros de audio, no datos naturales.
+- **Boids completos en `Peces.js`.** Con hasta 22 peces por cardumen y 14
+  cardumenes, las consultas de vecinos son O(n^2) por cuadro para una diferencia
+  minima a la distancia a la que se ven los peces bajo el agua.
+
+## 8. Siguiente
+
+- **Nada bloqueante. `vida` queda cerrado.**
+- Queda sin medir el costo en cuadro de las voces sobre la HD 4000 real, que es
+  parte del pendiente general de "medir Baja contra Baja".
+- El coro no distingue especies ya oidas: un chucao puede cantar tres veces
+  seguidas si el sorteo lo elige. Hay enfriamiento por individuo (14 s) pero no
+  por especie.
 
 ---
 

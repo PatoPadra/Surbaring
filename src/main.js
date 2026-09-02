@@ -229,6 +229,13 @@ async function iniciar() {
   lienzo.addEventListener('click', () => audio.iniciar());
   addEventListener('keydown', () => audio.iniciar(), { once: true });
 
+  // La fauna canta a través del audio, pero no se lo construye: se lo prestamos.
+  // Sin esta línea `Fauna.audio` queda en null, `_vocalizar` corta en la primera
+  // guarda y el parque entero queda mudo — con las cuarenta y dos voces escritas
+  // y sin que nada falle ni avise. Es opcional del lado de `Fauna` (`audio?.`)
+  // justo para que la falta no rompa nada, y ese silencio es la trampa.
+  bichos.audio = audio;
+
   const entrada = new Entrada(lienzo);
   entrada.registrar('KeyF', () => { jugador.tercerPersona = !jugador.tercerPersona; });
   entrada.registrar('F3', () => document.getElementById('diag').classList.toggle('visible'));

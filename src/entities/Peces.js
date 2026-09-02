@@ -23,6 +23,12 @@ const RADIO_SIEMBRA = 190;     // hasta dónde se pueblan cardúmenes
 const RADIO_OLVIDO = 300;
 const MAX_CARDUMENES = 14;
 const MAX_POR_CARDUMEN = 22;
+/**
+ * A qué distancia el cardumen registra al jugador y se aparta. Nueve metros es
+ * lo que se ve de agua clara desde la orilla: más lejos el pez ya no distingue
+ * la sombra, y más cerca se iría antes de que uno llegue a verlo.
+ */
+const ESPANTO_M = 9;
 
 const COLORES = {
   trucha_arcoiris: 0x8a9a7b,
@@ -172,8 +178,15 @@ export class Peces {
       this.cardumenes.push({
         esp, x, z, ambiente: amb.id,
         cota: amb.cota - profundidad,
+        // La profundidad se guarda porque el centro ahora se mueve: al cambiar
+        // de sitio hay que recalcular la cota contra la superficie de ahí, no
+        // arrastrar la del lugar donde nació.
+        profundidad,
         n, fase: Math.random() * 100,
         radio: esp.pesoKg > 1 ? 3 + Math.random() * 6 : 1.4 + Math.random() * 2.5,
+        rumbo: Math.random() * Math.PI * 2,
+        giro: Math.random() * 100,
+        susto: 0,
       });
     }
   }
@@ -184,6 +197,10 @@ export class Peces {
       this.sembrar(posJugador);
     }
 
+    const dt = Math.min(0.1, Math.max(0, t - (this._tPrev ?? t)));
+    this._tPrev = t;
+    this._derivar(dt, posJugador);
+
     const cuenta = new Map();
     for (const esp of this.especies) cuenta.set(esp.id, 0);
 
@@ -193,10 +210,16 @@ export class Peces {
         const k = cuenta.get(c.esp.id);
         if (k >= malla.instanceMatrix.count) break;
 
-        // Giro lento alrededor del centro del cardumen, cada pez en su fase
-        const vel = c.esp.invasora ? 0.28 : 0.42;
-        const a = c.fase + i * (Math.PI * 2 / Math.max(1, c.n)) + t * vel;
-        const rr = c.radio * (0.5 + 0.5 * Math.sin(c.fase + i * 1.7));
+        // Giro lento alrededor del centro, cada pez en su fase.
+        //
+        // El ángulo sale de `c.giro`, que se acumula en `_derivar`, y no de
+        // `t * vel` como antes: si la velocidad cuelga de `t`, cambiarla mueve
+        // el ángulo de golpe y el cardumen entero se teletransporta. Que un
+        // cardumen asustado nade más rápido exige que la fase se integre.
+        const a = c.fase + i * (Math.PI * 2 / Math.max(1, c.n)) + c.giro;
+        // Asustado el cardumen se cierra: los peces se juntan, no se desbandan.
+        const apreton = 1 - c.susto * 0.45;
+        const rr = c.radio * apreton * (0.5 + 0.5 * Math.sin(c.fase + i * 1.7));
         const x = c.x + Math.cos(a) * rr;
         const z = c.z + Math.sin(a) * rr;
         const y = c.cota + Math.sin(t * 0.7 + i) * 0.18;
@@ -217,6 +240,52 @@ export class Peces {
       malla.count = n;
       malla.instanceMatrix.needsUpdate = true;
       this.total += n;
+    }
+  }
+
+  /**
+   * El centro del cardumen se mueve, y se aparta si el jugador se acerca.
+   *
+   * Antes cada cardumen giraba alrededor de un punto fijo para siempre: parado
+   * en la orilla se veía el mismo carrusel repetirse, y acercarse no cambiaba
+   * nada. Un pez que no registra a la sombra que se le para encima no es un
+   * pez. Son catorce cardúmenes, así que esto cuesta catorce vueltas por
+   * cuadro y ninguna consulta de vecinos — que es justo lo que se descartó al
+   * decidir no hacer boids.
+   */
+  _derivar(dt, posJugador) {
+    if (dt <= 0) return;
+    for (const c of this.cardumenes) {
+      const dx = c.x - posJugador.x, dz = c.z - posJugador.z;
+      const d = Math.hypot(dx, dz);
+      const espanto = d < ESPANTO_M ? 1 - d / ESPANTO_M : 0;
+
+      if (espanto > 0) {
+        // Derecho para el lado contrario. `(dx, dz)` va del jugador al
+        // cardumen, así que ese mismo rumbo es el que lo aleja.
+        c.rumbo = Math.atan2(dz, dx);
+        c.susto = Math.min(1, c.susto + dt * 3 * espanto);
+      } else {
+        c.susto = Math.max(0, c.susto - dt * 0.4);
+        c.rumbo += (Math.random() - 0.5) * dt * 1.8;   // paseo al azar, sin rumbo fijo
+      }
+
+      // Un cardumen asustado nada, no pasea
+      const nado = (c.esp.pesoKg > 1 ? 0.32 : 0.5) * (1 + c.susto * 4);
+      c.giro += (c.esp.invasora ? 0.28 : 0.42) * (1 + c.susto * 2.2) * dt;
+
+      const nx = c.x + Math.cos(c.rumbo) * nado * dt;
+      const nz = c.z + Math.sin(c.rumbo) * nado * dt;
+      const amb = this.ambienteEn(nx, nz);
+      if (amb && amb.id === c.ambiente) {
+        c.x = nx; c.z = nz;
+        // La superficie de destino manda: el cardumen guarda su profundidad,
+        // no su cota, y así no termina volando sobre el agua ni enterrado.
+        c.cota = amb.cota - c.profundidad;
+      } else {
+        // Contra la orilla se dobla en vez de encallar contra ella
+        c.rumbo += Math.PI * (0.5 + Math.random() * 0.5);
+      }
     }
   }
 

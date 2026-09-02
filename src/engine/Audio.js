@@ -316,6 +316,8 @@ export class Audio {
     this.silenciado = false;
     this.volumen = 0.7;
     this._pasoAcum = 0;
+    /** Último múltiplo de PI de `jugador.fasePaso` que ya sonó. Ver `pasos()`. */
+    this._pasoPrev = null;
     this._truenos = [];
     this._chasquidos = 0;
     // Contadores de voces de fauna. No son adorno: una fuga de osciladores no
@@ -554,12 +556,29 @@ export class Audio {
   pasos(dt, jugador) {
     if (!this.listo) return;
     const vel = Math.hypot(jugador.velocidad.x, jugador.velocidad.z);
-    if (!jugador.enSuelo || vel < 0.6) { this._pasoAcum = 0.55; return; }
-    this._pasoAcum += vel * dt;
-    // Un paso cada 0,85 m de zancada, algo más largo si corre
-    const zancada = jugador.corriendo ? 1.25 : 0.85;
-    if (this._pasoAcum < zancada) return;
-    this._pasoAcum = 0;
+    if (!jugador.enSuelo || vel < 0.6) { this._pasoAcum = 0.55; this._pasoPrev = null; return; }
+
+    // El apoyo del pie lo manda `Jugador`, no este archivo.
+    //
+    // Había tres relojes de paso corriendo a la vez sobre el mismo cuerpo: la
+    // cámara cabeceaba cada 1,736 m, las piernas de `Cuerpo` apoyaban cada
+    // 1,309 m y acá el ruido sonaba cada 0,85 m. Ninguno coincidía con otro, y
+    // eso es exactamente la sensación de manejar un muñeco en vez de caminar.
+    //
+    // `jugador.fasePaso` avanza PI por paso, así que cruzar un múltiplo de PI
+    // ES el fotograma en que el pie toca el suelo. Enganchado ahí el sonido no
+    // puede derivar, que es lo que sí hacía acumulando distancia por su cuenta.
+    if (jugador.fasePaso !== undefined) {
+      const paso = Math.floor(jugador.fasePaso / Math.PI);
+      if (this._pasoPrev === paso) return;
+      this._pasoPrev = paso;
+    } else {
+      // Respaldo por distancia, para quien use el audio sin un `Jugador`.
+      this._pasoAcum += vel * dt;
+      const zancada = jugador.corriendo ? 1.25 : 0.85;
+      if (this._pasoAcum < zancada) return;
+      this._pasoAcum = 0;
+    }
     this._paso(jugador.enAgua ? 'agua' : (jugador.agachado ? 'suave' : 'tierra'), vel);
   }
 
@@ -764,7 +783,19 @@ export class Audio {
       }
     }
 
-    if (!fuentes.length) return false;
+    if (!fuentes.length) {
+      // No debería pasar —toda entrada de VOCES trae notas—, pero si pasara,
+      // el vibrato ya arrancó y la cadena ya está colgada del bus: sin esto
+      // quedaría un oscilador sonando para siempre y nadie lo apagaría, porque
+      // el testigo que hace la limpieza se crea recién más abajo.
+      if (lfo) { try { lfo.stop(); lfo._prof.disconnect(); lfo.disconnect(); } catch { /* ya cerrado */ } }
+      if (golpeFiltro) golpeFiltro.disconnect();
+      frase.disconnect();
+      if (entrada !== aire) entrada.disconnect();
+      aire.disconnect();
+      salida.disconnect();
+      return false;
+    }
 
     this.vocesActivas++;
     this.vocesEmitidas++;
@@ -776,6 +807,17 @@ export class Audio {
     // colgando del bus para siempre. Cuesta un nodo y no suena: no se conecta.
     const testigo = ctx.createBufferSource();
     testigo.buffer = this.ruido;
+    // `loop` NO es decoración. Sin él, un `BufferSource` termina cuando se le
+    // acaba el búfer y **ignora su propio `stop()`**: `this.ruido` dura
+    // SEG_RUIDO = 2 s, así que el testigo moría a los dos segundos de toda
+    // frase, por larga que fuera. Medido sobre la tabla: **27 de las 42 voces
+    // se cortaban siempre** y 35 al menos a veces. La brama del ciervo dura
+    // diez segundos y sonaba dos; el chucao, que es el sonido firma del
+    // bosque, entraba en la lista. Y como el `onended` disparaba temprano,
+    // `vocesActivas` bajaba antes de tiempo y el tope de MAX_VOCES dejaba
+    // pasar más frases de las que decía permitir — justo la protección de CPU
+    // que este testigo existe para sostener.
+    testigo.loop = true;
     testigo.start(t0);
     testigo.stop(fin + 0.06);
     testigo.onended = () => {

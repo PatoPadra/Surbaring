@@ -1,24 +1,10 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
-## Al 2/9/2026
+## Al 2/9/2026 — queda un solo agente
 
-**Todo está en GitHub y todo está en `main`.** `origin/main` estaba **19 commits
-atrás** del `main` local: el fuego que calienta, la creación de personaje, el
-lago, las cuatro rondas de optimización — nada de eso estaba subido.
-
-`main`, `origin/main` y la rama `mejoras/flota-visual-jugabilidad` apuntan los
-tres al mismo commit. La rama se conserva pero ya no lleva nada propio.
-
-**Ojo con lo que entró sin verificar:** en `main` están ahora las **710 líneas
-de audio y fauna de `vida`**. El juego carga y corre con ellas —comprobado en el
-navegador, sin errores de consola—, pero la duda de `vida` sigue abierta: fuga
-de osciladores y cantos con período audible. Es una duda de calidad, no de que
-se rompa. Si hubiera que sacarlas, el commit es `c0ed137`.
-
-**Sigue sin respaldo `capturas/`**, que está en `.gitignore`: 204 archivos,
-incluidas las `base-*.png` que son el "antes" de todas las comparaciones y los
-bancos de medición `feel-node.mjs` y `feel-banco.js`. Si se rompe la máquina, se
-pierden.
+**Todo está en GitHub y todo está en `main`.** `origin/main` había quedado 19
+commits atrás: el fuego que calienta, la creación de personaje, el lago, las
+cuatro rondas de optimización. Ya se empujó todo.
 
 ### Terminados — no relanzar
 
@@ -28,17 +14,26 @@ pierden.
 | **veg** | Piedras negras, normal nula en la punta del pasto, albedo de 8 especies. |
 | **agua** | Cenit reflejado, silueta del cerro en el agua, relieve fino. −5 ms de cuadro. |
 | **bucle** | La leña no se podía juntar; cadena del metal de 196 a 38 h de mundo. |
-| **feel** | Velocidad real = declarada (1,91 → 3,40 m/s). Una sola zancada. Agachado con transición, golpe al aterrizar, campo visual al correr. Y el cuerpo dejó de ir por el aire: **0 cuadros de 180**, contra 112 de 150. |
+| **feel** | Velocidad real = declarada (1,91 → 3,40 m/s). Una sola zancada. Agachado con transición, golpe al aterrizar, campo visual al correr. El cuerpo dejó de ir por el aire: **0 cuadros de 180** contra 112 de 150. |
+| **vida** | El testigo de las voces moría a los 2 s y **cortaba 27 de las 42 voces**. Fauna cableada al audio en `main.js` —estaba muda—. Pasos enganchados a la zancada. `Peces.js` abierto por primera vez. |
 
-### Pendientes — acá se retoma
+### Pendiente — queda uno solo
 
 | Agente | Archivos | Estado |
 |---|---|---|
-| **vida** | `engine/Audio.js`, `entities/Fauna.js`, `entities/Peces.js` | **+710 líneas SIN VERIFICAR.** Primera tarea: fuga de osciladores y cantos con período audible. **Tiene un traspaso de `feel` al final de su bitácora**: engancharse a `jugador.fasePaso`. |
-| **ui** | `ui/*.js`, `index.html` | Cambios a medias ya commiteados. Recorrida de paneles hecha y escrita. |
+| **ui** | `ui/*.js`, `index.html` | Cambios a medias ya commiteados. Recorrida de paneles hecha y escrita en su bitácora. Es lo único que falta para cerrar el encargo original. |
 
-Los dos tienen **bitácora con diagnóstico ya hecho**. No los lances en frío:
-decíles que lean su bitácora y ejecuten su sección «Siguiente».
+No lo lances en frío: decíle que lea `bitacora-ui.md` y ejecute su sección
+«Siguiente».
+
+### `pendiente-*.md`: ninguno sin aplicar
+
+- **`pendiente-agua.md`** está resuelto. Su parte urgente eran cuatro comillas
+  invertidas en comentarios GLSL de `Cielo.js` que tumbaban la carga entera.
+- **El cableado que `vida` iba a pedir ya está aplicado**: `bichos.audio = audio`
+  en `main.js`, junto a la construcción del audio. Nunca llegó a escribir su
+  `pendiente-vida.md`, y sin esa línea el parque quedaba mudo **sin que nada
+  fallara ni avisara**, porque del lado de `Fauna` el acceso es opcional.
 
 ### Encargos sueltos que quedaron anotados
 
@@ -48,20 +43,16 @@ decíles que lean su bitácora y ejecuten su sección «Siguiente».
 - **`bucle` dejó sin hacer** los gestos de caza, pesca, saberes, relevamiento y
   exploración, y la legibilidad del árbol de 47 tecnologías.
 - **Medir Baja contra Baja.** La línea de base de 57,1 ms es preset **Alta**.
+  Falta además el costo en cuadro de las voces de fauna sobre la HD 4000 real.
 - **El README miente**: su sección `## Estado real` lista como defectos varios
-  que esta rama resolvió, y además declara 3,4 m/s, que recién ahora es cierto.
+  que esta rama resolvió, y declara 3,4 m/s, que recién ahora es cierto.
 - **La velocidad subió un 78 %** al arreglar el rozamiento. Es lo que el código
   declaraba, pero el juego se venía equilibrando al valor viejo. Si se siente
   demasiado, se toca `velocidadBase` — **no** se vuelve a poner el rozamiento
   contra la entrada.
-
-### `pendiente-*.md`
-
-**`pendiente-agua.md` ya está resuelto** y no hay otros. Su parte urgente eran
-cuatro comillas invertidas en comentarios GLSL de `Cielo.js` que tumbaban la
-carga entera; ya no quedan. Su segunda parte no pedía cableado: sólo avisa que
-`reflejoAgua: 0` en los presets `baja` y `mínima` es deliberado y correcto, así
-que el jugador de la placa de destino **nunca ve el espejo planar**.
+- **`capturas/` no está en el repo** (está en `.gitignore`): 204 archivos,
+  incluidas las `base-*.png` que son el "antes" de todas las comparaciones y los
+  bancos de medición. El dueño lo sabe y decidió dejarlo así.
 
 ### Herramientas que dejó la flota
 
@@ -71,18 +62,24 @@ que el jugador de la placa de destino **nunca ve el espejo planar**.
   determinista. `node capturas/feel-node.mjs`.
 - `public/banco.js` — reloj de GPU. No está enganchado en `index.html`.
 
-### Dos trampas de medición ya pagadas
+### Trampas de medición ya pagadas — leer antes de medir cualquier cosa
 
 1. **Con el panel del navegador oculto, `requestAnimationFrame` no dispara** y
    el bucle del juego queda congelado: la corrida devuelve vacío sin decir por
    qué. Lo que sí funciona es mover la física a mano desde el script inyectado
    —`j.actualizar(1/60, entradaSintética)`— guardando y restaurando el estado
    del jugador alrededor.
-2. **El terreno sintético no muestra todo.** El banco de `feel` corre contra una
-   rampa perfecta: es determinista y midió bien nueve defectos, pero fue
-   incapaz de ver que el cuerpo salía despedido en las bajadas, porque una rampa
-   perfecta no tiene por dónde despegar. Eso sólo apareció midiendo contra el
-   relieve real. Las dos mediciones hacen falta.
+2. **Con el panel visible, el bucle corre a ~1 cuadro por segundo** en este
+   entorno. Cualquier sistema que integre `dt` avanza cien veces menos de lo que
+   uno espera y sus magnitudes parecen defectos. **Medir el `dt` que de verdad
+   llega antes de llamar defecto a un número chico.**
+3. **El terreno sintético no muestra todo.** El banco de `feel` corre contra una
+   rampa perfecta: midió bien nueve defectos y fue incapaz de ver que el cuerpo
+   salía despedido en las bajadas, porque una rampa perfecta no tiene por dónde
+   despegar. Las dos mediciones hacen falta.
+4. **Una recarga de Vite tira el contexto de audio** (`listo` vuelve a `false`)
+   y hace falta un gesto real —un clic en el lienzo— para revivirlo. Comprobar
+   también `audio.silenciado` antes de creerle a un `false` de `voz()`.
 
 ---
 
