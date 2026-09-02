@@ -2,13 +2,18 @@
 
 ## Al 2/9/2026
 
-**Todo está en GitHub.** `origin/main` estaba **19 commits atrás** del `main`
-local: el fuego que calienta, la creación de personaje, el lago, las cuatro
-rondas de optimización — nada de eso estaba subido. Ya se empujó. La rama
-`mejoras/flota-visual-jugabilidad` también está en el remoto.
+**Todo está en GitHub y todo está en `main`.** `origin/main` estaba **19 commits
+atrás** del `main` local: el fuego que calienta, la creación de personaje, el
+lago, las cuatro rondas de optimización — nada de eso estaba subido.
 
-**La rama NO se fusionó a `main` a propósito**: lleva las 710 líneas de audio y
-fauna que `vida` dejó sin verificar. Entra cuando `vida` esté comprobado.
+`main`, `origin/main` y la rama `mejoras/flota-visual-jugabilidad` apuntan los
+tres al mismo commit. La rama se conserva pero ya no lleva nada propio.
+
+**Ojo con lo que entró sin verificar:** en `main` están ahora las **710 líneas
+de audio y fauna de `vida`**. El juego carga y corre con ellas —comprobado en el
+navegador, sin errores de consola—, pero la duda de `vida` sigue abierta: fuga
+de osciladores y cantos con período audible. Es una duda de calidad, no de que
+se rompa. Si hubiera que sacarlas, el commit es `c0ed137`.
 
 **Sigue sin respaldo `capturas/`**, que está en `.gitignore`: 204 archivos,
 incluidas las `base-*.png` que son el "antes" de todas las comparaciones y los
