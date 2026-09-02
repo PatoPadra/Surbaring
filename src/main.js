@@ -624,8 +624,12 @@ async function iniciar() {
     try { localStorage.setItem(CLAVE_BIENVENIDA, '1'); } catch { /* da igual */ }
     setTimeout(() => opciones.abrir('controles'), 900);
   } else {
-    hud.aviso('Clic para mirar · F1 para los controles',
-      'E recolecta e identifica · Q come · Tab abre el códice · G el taller · M el mapa', 9000);
+    // Seis teclas de un tirón no las retiene nadie, y el que vuelve a jugar no
+    // necesita el manual: necesita lo único que no puede deducir —que hay que
+    // hacer clic para que el ratón mire— y dónde está el resto cuando lo
+    // busque. Lo demás lo enseña `hud.mostrarAccion()` en el momento justo,
+    // parado enfrente de la mata, que es cuando se aprende.
+    hud.aviso('Clic para mirar', 'F1 muestra todos los controles', 6000);
   }
 
   const reloj = new THREE.Clock();

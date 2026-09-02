@@ -98,45 +98,109 @@ Hallazgos, panel por panel:
     agregado** (el HTML ya referencia esas clases, pero el CSS no está
     escrito — sin esto el buscador se ve sin estilo, aunque funciona).
 
-## 3. Siguiente
+## 3. Verificado (lo que esta bitacora nunca alcanzo a hacer)
 
-1. En `src/ui/Codice.js`, método `_actualizarCuenta()`: agregar cálculo y
-   escritura de conteos por pestaña en los `<small class="cx-cnt">` de la
-   nav (fauna, flora, geografía ya tienen el `<small>` en el HTML; historia y
-   saberes también). Patrón:
-   ```js
-   const setCnt = (p, txt) => {
-     const el = this.el?.querySelector(`nav button[data-p="${p}"] .cx-cnt`);
-     if (el) el.textContent = txt;
-   };
-   setCnt('fauna', `${this.fauna.especies.filter(e => this.identificadas.has(e.id)).length}/${this.fauna.especies.length}`);
-   setCnt('flora', `${this.flora.especies.filter(e => this.identificadas.has(e.id)).length}/${this.flora.especies.length}`);
-   setCnt('geografia', `${this.lugares.size}/${this.listaLugares.length}`);
-   ```
-   Historia y saberes son más caros de calcular (requieren `_eventosDesbloqueados()`
-   y `this.saberes.resumen()`); si el tiempo aprieta, dejarlos sin conteo (ya
-   tienen el `<small>` vacío en el HTML, no rompe nada) y sacar esos dos
-   `<small>` del markup si se decide no completarlos.
-2. Agregar al bloque `const CSS = \`...\`` al final de Codice.js:
-   - `.cx-cnt` (número chico junto al nombre de la pestaña, atenuado)
-   - `.cx-buscar` (el contenedor del input, padding acorde al resto del panel)
-   - `.cx-buscar input` + `:focus` + `::placeholder`
-   - `.cx-filtro-oculto { display: none !important; }`
-   - `.cx-buscar-vacio` (mensaje centrado, itálica, atenuado — mismo tono que
-     `.cx-vacio` de Bolso.js si sirve de referencia visual)
-3. Abrir el juego en una pestaña propia (`tabs_create` + `navigate` a
-   `http://127.0.0.1:5174/`, prefijo de capturas `ui-` si hiciera falta,
-   aunque las capturas del HUD no van a salir por el problema conocido —
-   usar `read_page`/`get_page_text`/`find` en cambio) y con `read_page`
-   comprobar: que el `<input>` de búsqueda existe y tiene el placeholder
-   correcto, que escribir en él no dispara acciones de juego (revisar que
-   Tab/Taller/Mapa sigan cerrados), que los `<small class="cx-cnt">` muestran
-   números una vez identificada alguna especie.
-4. Escribir el parche de `main.js` (líneas 619-622, la bienvenida) en
-   `.claude/flota/pendiente-ui.md`, con el texto viejo y el nuevo — todavía
-   no escrito, sólo diagnosticado. Ver la propuesta completa en la sección
-   Diagnóstico de esta bitácora.
-5. Terminar con el informe final en el formato de `CONTEXTO.md` (5 puntos).
+Al retomar, **lo escrito estaba completo**: los conteos de `_actualizarCuenta()`
+y el bloque CSS que esta bitacora daba por pendientes ya estaban en el archivo.
+El agente los escribio y no llego a anotarlo antes de que lo cortara el limite.
+Lo que faltaba de verdad era comprobar que todo eso funcionara.
+
+Comprobado en el juego corriendo, con el Codice abierto:
+
+| | |
+|---|---|
+| buscador presente, `type="search"`, con su placeholder | si |
+| conteos en la nav | **fauna 0/61 · flora 0/63 · geografia 0/41 · historia 0/32 · saberes 0/48** |
+| CSS vivo | `.cx-filtro-oculto` → `display:none`; `.cx-cnt` opacidad 0,62; padding del buscador aplicado |
+
+Los cinco conteos estan llenos, incluidos historia y saberes, que esta bitacora
+daba por opcionales.
+
+### El filtro filtra, y discrimina
+
+| busqueda | fichas visibles | mensaje |
+|---|---|---|
+| (vacio) | 61 de 61 | — |
+| `descubrir` | **61 de 61** | — |
+| `guanaco` | **0 de 61** | «Nada con «guanaco» en esta seccion.» |
+
+Que `guanaco` no encuentre nada **es correcto y deliberado**: sin identificar,
+la ficha en pantalla dice "Sin descubrir" y el nombre real no esta en el
+marcado. No se puede buscar lo que todavia no se sabe. Sin el caso `descubrir`
+—que muestra las 61— este cero pareceria un filtro roto.
+
+### El blindaje de teclado, con teclas de verdad
+
+Escribiendo `guanaco` dentro del buscador, con pulsaciones reales del navegador:
+
+| | |
+|---|---|
+| texto que llego al campo | `guanaco` |
+| Taller abierto por la `g` | **no** |
+| Mapa / Bolso / Opciones | **no** |
+| Codice seguia abierto | si |
+| teclas retenidas en `entrada.teclas` | **ninguna** |
+
+Y con eventos despachados, las cuatro reglas del panel:
+
+1. Escape con texto → limpia el campo y **no** cierra. ✔
+2. Escape con el campo vacio → sube y **cierra** el codice. ✔
+3. `G`, `M`, `I`, `Tab`, `E`, `Q` dentro del buscador → no abren nada. ✔
+4. **La misma `M` fuera del campo → abre el mapa.** ✔
+
+El cuarto es el control que importa: prueba que el blindaje es puntual y no un
+bloqueo general que romperia el juego.
+
+### Las vitales criticas
+
+| salud | clase | animacion de la barra | color del numero |
+|---|---|---|---|
+| 60 | `vital` | ninguna | gris `rgb(164,158,147)` |
+| **12** | `vital critico` | **`vitalCritico` 1,15 s** | **naranja `rgb(232,131,111)`** |
+| 99 (recuperado) | `vital` | ninguna | gris |
+
+Antes la barra critica se ponia **mas transparente** (`opacity: 0.55`), o sea lo
+contrario de lo que hace falta. Ahora pulsa y el numero cambia de color.
+
+### La brujula y los avisos sobre el lienzo
+
+Sombra de dos capas confirmada en los tres: `#brujula .marca`, `#accion` y
+`#termico` dan `rgba(0,0,0,.95) 0 1px 2px, rgba(0,0,0,.8) 0 0 8px`, y la aguja
+lleva `box-shadow`. Es lo que los despega del cielo lavado del mediodia, que es
+el unico fondo contra el que se fundian.
+
+## 4. Lo que hizo el coordinador, fuera del territorio de `ui`
+
+Dos cosas que esta bitacora diagnostico y escalo correctamente:
+
+- **`src/engine/Entrada.js` ahora respeta el foco.** Escuchaba `keydown` en
+  `window` sin mirar quien lo tenia. `Codice.js` lo tapo por su lado con
+  `stopPropagation`, que funciona, pero dejaba **la trampa armada para el
+  proximo panel que estrenara un campo de texto**. El arreglo de raiz es una
+  guarda: si el foco esta en un `input`, `textarea`, `select` o algo editable,
+  el teclado no es del juego. Ademas suelta las teclas retenidas, porque si uno
+  estaba caminando y hace clic en el buscador, el `keyup` de la W nunca llega y
+  el jugador sigue caminando solo para siempre.
+- **El aviso de bienvenida de `main.js`.** Listaba seis teclas de un tiron
+  («Clic para mirar · F1 para los controles · E recolecta e identifica · Q come
+  · Tab abre el codice · G el taller · M el mapa»). Quedo en **«Clic para
+  mirar» / «F1 muestra todos los controles»**: lo unico que no se puede deducir,
+  y donde esta el resto cuando se lo busque. Lo demas lo enseña
+  `hud.mostrarAccion()` parado enfrente de la mata —se lo ve funcionando en la
+  captura, «E · Juntar piedra suelta»—, que es cuando se aprende.
+
+## 5. Trampas de medicion pagadas aca
+
+- **La tecla Escape de la herramienta del navegador no llega a la pagina.** Una
+  sonda en fase de captura sobre `window` no vio el evento ni con el foco en el
+  campo ni fuera de el. Parecia que el segundo Escape no cerraba el panel y el
+  codigo estaba bien: hay que ejercitar esa logica con eventos despachados.
+- **`getComputedStyle` sobre el elemento equivocado.** La animacion critica vive
+  en `.vital.critico .pista i`, no en `.vital.critico`: medir el contenedor daba
+  `animation: none` y parecia que el pulso no corria.
+- **El panel no compone con viewport emulado.** A 1280x720 la escena se dibuja
+  en una esquina. Las capturas del HUD sirven para mirar, no para medir; para
+  medir, `getComputedStyle` y `classList`.
 
 ## 4. Descartado
 

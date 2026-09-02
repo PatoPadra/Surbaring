@@ -177,7 +177,22 @@ Qué se colecciona y qué no es una decisión deliberada:
   grandes y ralas en el anillo de 64 a 192 m. Cada tipo con su regla ecológica.
   El sembrado se reparte entre cuadros con presupuesto de 5 ms, así cruzar una
   celda no produce un tirón
-- Fauna con máquina de estados, animación por partes y filtro de hábitat
+- Fauna con máquina de estados, animación por partes y filtro de hábitat. La
+  distancia de fuga sale del dataset y se corrige por sigilo: agachado deja
+  acercarse casi el doble que corriendo. El pánico se contagia entre
+  conespecíficos gregarios, así que una tropa de guanacos huye junta
+- Voces de fauna sintetizadas, 42 entradas derivadas del campo `vocalizacion`
+  de `fauna.json` y no de la imaginación: si la ficha dice «doble golpe seco
+  sobre el tronco», ahí hay dos golpes secos, y el cóndor —que carece de
+  siringe— no canta. Los cantos salen de un proceso de Poisson, así que no hay
+  período que el oído pueda encontrar; hay coro del amanecer, y con lluvia
+  fuerte los pájaros callan
+- Movimiento con la velocidad que declara: caminar da los 3,4 m/s que dice el
+  código, y una sola zancada compartida por la cámara, el cuerpo y el sonido de
+  los pasos, así el pie apoya, el ruido llega y la cabeza baja en el mismo
+  instante. Agacharse tiene transición, aterrizar hunde la cámara y correr abre
+  el campo visual
+- Códice con buscador por sección y conteo de progreso por pestaña
 - Ciclo día/noche con posición solar astronómica para latitud −41,13
 - Clima mensual con las normales de Bariloche Aero
 - Códice de seis secciones con descubrimiento por proximidad, 41 lugares
@@ -208,21 +223,26 @@ Qué se colecciona y qué no es una decisión deliberada:
 
 ### Roto o a medio hacer
 
-1. **El follaje no tiene variación de brillo por cara.** Las tarjetas se
-   iluminan con la normal de la copa, que da volumen pero aplana el detalle
-   interno; falta oclusión propia dentro de la copa.
-2. **Ocho vistas siguen siendo pocas para un giro rápido.** El cruce entre
+1. **Ocho vistas siguen siendo pocas para un giro rápido.** El cruce entre
    vistas vecinas se nota si la cámara barre rápido en horizontal. Subir a 12 o
    16 vistas lo suavizaría a costa de memoria.
-3. **El árbol de saberes llega hasta la mitad y ahí se corta por honestidad.**
+2. **El árbol de saberes llega hasta la mitad y ahí se corta por honestidad.**
    Con la caza regulada, la carroña, la cantera y la fragua, 26 de las 47
    tecnologías tienen todos sus materiales al alcance. Las 21 restantes piden
    batería, motor, radio, sensor, panel o combustible nuclear, y ninguna de
    esas cosas sale de un bosque: para llegar ahí haría falta industria, no otro
-   sistema de recolección.
-4. El audio es de ambiente y de acciones; no hay música ni voces de fauna.
+   sistema de recolección. El árbol tampoco se lee bien: 47 nodos en un panel
+   sin jerarquía visual.
+3. **No hay música.** El audio es enteramente sintetizado —ambiente, acciones y
+   voces de fauna—, y no hay ni va a haber una pista grabada.
+4. **El suelo no tiene material bajo los pies.** Roca, pasto y nieve se caminan
+   y suenan igual: ni la velocidad ni el ruido del paso distinguen sobre qué se
+   está pisando.
 5. El sotobosque llega hasta 192 m. Más allá el suelo queda desnudo, aunque a
    esa distancia la niebla aérea ya disimula bastante el corte.
+6. **Los troncos caídos siguen saliendo casi negros** a pleno sol. Es el mismo
+   defecto de albedo que se corrigió en el follaje y las piedras, pero en
+   `colorTronco`, que quedó sin tocar.
 
 #### La caza, y por qué casi siempre te la van a negar
 

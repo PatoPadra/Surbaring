@@ -1,60 +1,54 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
-## Al 2/9/2026 — queda un solo agente
+## Al 2/9/2026 — LA FLOTA CERRÓ. Los siete agentes están terminados.
 
 **Todo está en GitHub y todo está en `main`.** `origin/main` había quedado 19
-commits atrás: el fuego que calienta, la creación de personaje, el lago, las
-cuatro rondas de optimización. Ya se empujó todo.
+commits atrás; ya se empujó todo.
 
-### Terminados — no relanzar
+**No queda ningún agente pendiente y ningún `pendiente-*.md` sin aplicar.**
+
+### Los siete
 
 | Agente | Qué cerró |
 |---|---|
 | **luz** | Cielo verde, coseno solar doble, exposición constante → curva. |
-| **veg** | Piedras negras, normal nula en la punta del pasto, albedo de 8 especies. |
+| **veg** | Piedras negras, normal nula en la punta del pasto, albedo de 8 especies, oclusión propia de la copa. |
 | **agua** | Cenit reflejado, silueta del cerro en el agua, relieve fino. −5 ms de cuadro. |
 | **bucle** | La leña no se podía juntar; cadena del metal de 196 a 38 h de mundo. |
 | **feel** | Velocidad real = declarada (1,91 → 3,40 m/s). Una sola zancada. Agachado con transición, golpe al aterrizar, campo visual al correr. El cuerpo dejó de ir por el aire: **0 cuadros de 180** contra 112 de 150. |
-| **vida** | El testigo de las voces moría a los 2 s y **cortaba 27 de las 42 voces**. Fauna cableada al audio en `main.js` —estaba muda—. Pasos enganchados a la zancada. `Peces.js` abierto por primera vez. |
+| **vida** | El testigo de las voces moría a los 2 s y **cortaba 27 de las 42 voces**. La fauna estaba muda: faltaba el cableado en `main.js`. Pasos enganchados a la zancada. `Peces.js` abierto por primera vez. |
+| **ui** | Barra crítica que se ponía **más** transparente. Buscador y conteos en el Códice. Brújula ilegible contra el cielo del mediodía. Y el teclado del juego se disparaba escribiendo. |
 
-### Pendiente — queda uno solo
+### Lo que hizo el coordinador
 
-| Agente | Archivos | Estado |
-|---|---|---|
-| **ui** | `ui/*.js`, `index.html` | Cambios a medias ya commiteados. Recorrida de paneles hecha y escrita en su bitácora. Es lo único que falta para cerrar el encargo original. |
+- `src/main.js`: `bichos.audio = audio` (sin eso la fauna quedaba muda) y el
+  aviso de bienvenida reducido de seis teclas a dos.
+- `src/engine/Entrada.js`: respeta el foco. Escuchaba `keydown` en `window` sin
+  mirar quién lo tenía, así que cualquier campo de texto de cualquier panel
+  chocaba con los atajos del juego. `Codice.js` lo había tapado por su lado;
+  esto lo arregla de raíz.
+- `README.md`: la sección `## Estado real` listaba como defectos la oclusión de
+  copa y la falta de voces de fauna, que esta flota resolvió.
 
-No lo lances en frío: decíle que lea `bitacora-ui.md` y ejecute su sección
-«Siguiente».
+## Lo que queda, y no es de ningún agente
 
-### `pendiente-*.md`: ninguno sin aplicar
+1. **Medir Baja contra Baja.** La línea de base de 57,1 ms es preset **Alta**.
+   El dueño juega en una HD 4000, donde el gobernador termina en Baja o Mínima.
+   Falta además el costo en cuadro de las voces de fauna. Es el pendiente más
+   grande que queda.
+2. **Decidir la velocidad.** Subió un 78 % al arreglar el rozamiento: es lo que
+   el código siempre declaró y lo que dice el README, pero el juego se venía
+   equilibrando al valor viejo. Si se siente demasiado, se toca
+   `velocidadBase` — **no** se vuelve a poner el rozamiento contra la entrada.
+3. **Una tanda de capturas finales** contra `capturas/base-*.png`.
+4. Los cabos sueltos que quedaron anotados en el README: troncos casi negros
+   (`colorTronco`), la transición agua-costa a medias, el suelo sin material
+   bajo los pies, y la legibilidad del árbol de 47 tecnologías.
+5. **`capturas/` no está en el repo** (está en `.gitignore`): 204 archivos,
+   incluidas las `base-*.png` que son el "antes" de todas las comparaciones y
+   los bancos de medición. El dueño lo sabe y decidió dejarlo así.
 
-- **`pendiente-agua.md`** está resuelto. Su parte urgente eran cuatro comillas
-  invertidas en comentarios GLSL de `Cielo.js` que tumbaban la carga entera.
-- **El cableado que `vida` iba a pedir ya está aplicado**: `bichos.audio = audio`
-  en `main.js`, junto a la construcción del audio. Nunca llegó a escribir su
-  `pendiente-vida.md`, y sin esa línea el parque quedaba mudo **sin que nada
-  fallara ni avisara**, porque del lado de `Fauna` el acceso es opcional.
-
-### Encargos sueltos que quedaron anotados
-
-- **Los troncos siguen casi negros.** Es `colorTronco`, no `colorHoja`. Corto.
-- **La transición agua-costa quedó a medias**: falta piedra mojada y línea de
-  espuma.
-- **`bucle` dejó sin hacer** los gestos de caza, pesca, saberes, relevamiento y
-  exploración, y la legibilidad del árbol de 47 tecnologías.
-- **Medir Baja contra Baja.** La línea de base de 57,1 ms es preset **Alta**.
-  Falta además el costo en cuadro de las voces de fauna sobre la HD 4000 real.
-- **El README miente**: su sección `## Estado real` lista como defectos varios
-  que esta rama resolvió, y declara 3,4 m/s, que recién ahora es cierto.
-- **La velocidad subió un 78 %** al arreglar el rozamiento. Es lo que el código
-  declaraba, pero el juego se venía equilibrando al valor viejo. Si se siente
-  demasiado, se toca `velocidadBase` — **no** se vuelve a poner el rozamiento
-  contra la entrada.
-- **`capturas/` no está en el repo** (está en `.gitignore`): 204 archivos,
-  incluidas las `base-*.png` que son el "antes" de todas las comparaciones y los
-  bancos de medición. El dueño lo sabe y decidió dejarlo así.
-
-### Herramientas que dejó la flota
+## Herramientas que dejó la flota
 
 - `.claude/flota/cadena-bucle.mjs` — resuelve una receta hacia atrás.
 - `.claude/flota/bucle-recoleccion.mjs` — 5 casos de la tecla de acción.
@@ -62,17 +56,19 @@ No lo lances en frío: decíle que lea `bitacora-ui.md` y ejecute su sección
   determinista. `node capturas/feel-node.mjs`.
 - `public/banco.js` — reloj de GPU. No está enganchado en `index.html`.
 
-### Trampas de medición ya pagadas — leer antes de medir cualquier cosa
+## Trampas de medición ya pagadas — leer antes de medir cualquier cosa
+
+Esto es lo más caro que dejó la flota, porque cada una costó una sesión.
 
 1. **Con el panel del navegador oculto, `requestAnimationFrame` no dispara** y
    el bucle del juego queda congelado: la corrida devuelve vacío sin decir por
    qué. Lo que sí funciona es mover la física a mano desde el script inyectado
    —`j.actualizar(1/60, entradaSintética)`— guardando y restaurando el estado
    del jugador alrededor.
-2. **Con el panel visible, el bucle corre a ~1 cuadro por segundo** en este
-   entorno. Cualquier sistema que integre `dt` avanza cien veces menos de lo que
-   uno espera y sus magnitudes parecen defectos. **Medir el `dt` que de verdad
-   llega antes de llamar defecto a un número chico.**
+2. **Con el panel visible, el bucle corre a ~1 cuadro por segundo.** Cualquier
+   sistema que integre `dt` avanza cien veces menos de lo esperado y sus
+   magnitudes parecen defectos. **Medir el `dt` que de verdad llega antes de
+   llamar defecto a un número chico.**
 3. **El terreno sintético no muestra todo.** El banco de `feel` corre contra una
    rampa perfecta: midió bien nueve defectos y fue incapaz de ver que el cuerpo
    salía despedido en las bajadas, porque una rampa perfecta no tiene por dónde
@@ -80,6 +76,25 @@ No lo lances en frío: decíle que lea `bitacora-ui.md` y ejecute su sección
 4. **Una recarga de Vite tira el contexto de audio** (`listo` vuelve a `false`)
    y hace falta un gesto real —un clic en el lienzo— para revivirlo. Comprobar
    también `audio.silenciado` antes de creerle a un `false` de `voz()`.
+5. **La tecla Escape de la herramienta del navegador no llega a la página.** Ni
+   con una sonda en fase de captura sobre `window`. La lógica de Escape hay que
+   ejercitarla con eventos despachados.
+6. **`getComputedStyle` sobre el elemento equivocado miente sin avisar.** La
+   animación de la vital crítica vive en `.vital.critico .pista i`, no en el
+   contenedor: medir el padre daba `animation: none` y parecía un defecto.
+7. **El panel no compone con viewport emulado.** A 1280×720 la escena se dibuja
+   en una esquina. Las capturas del HUD sirven para mirar, no para medir.
+
+## Y una lección de método, que es la que más se repitió
+
+**Tres de los siete agentes habían escrito mucho más de lo que decía su
+bitácora.** El límite de tokens los cortó entre hacer el trabajo y anotarlo, así
+que `vida` decía «paso 1 de 4» con el motor entero escrito, y `ui` daba por
+pendiente un CSS que ya estaba en el archivo. Retomar leyendo sólo la bitácora
+habría significado reescribir trabajo bueno.
+
+**Al retomar un agente: leer su bitácora para el diagnóstico y lo descartado,
+pero comprobar contra el código qué está hecho de verdad.**
 
 ---
 
