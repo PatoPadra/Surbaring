@@ -30,23 +30,61 @@ commits atrás; ya se empujó todo.
 - `README.md`: la sección `## Estado real` listaba como defectos la oclusión de
   copa y la falta de voces de fauna, que esta flota resolvió.
 
+## Baja contra Baja: MEDIDO el 2/9/2026
+
+Instrumento validado antes de nada (`bancoValidez()` → «el instrumento mide»),
+placa confirmada como la de destino: `ANGLE (Intel, Intel(R) HD Graphics 4000)`.
+
+| Preset | Resolución | ms | fps |
+|---|---|---|---|
+| Alta | 1280×720 | 77,84 | 12,8 |
+| Baja | 1280×720 | 42,34 | 23,6 |
+| **Baja** | **1024×576** | **31,42** | **31,8** |
+| **Mínima** | **1280×720** | **31,71** | **31,5** |
+
+**La flota no agregó costo: lo bajó.** Contra la línea de base registrada
+—preset Alta, árbol limpio—: 57,1 → 49,21 ms a 640×360 (**−13,8 %**) y
+88,3 → 77,84 a 720p (**−11,8 %**).
+
+Desglose a Baja 1024×576: terreno **35 %**, árboles 22 %, sombras 9 %, agua
+4,5 %, sotobosque 4,5 %, cielo 4 %, posproceso 3 %, **reflejo 0 %**. Dos cosas
+que esto corrige de `docs/medicion-cuadro.md`: el sotobosque **ya no** es el
+77 % del cuadro junto con el terreno —bajó a 4,5 %—, y el terreno es hoy la
+única pieza con algo grande para ganar. Todo escrito en la sexta ronda de ese
+documento.
+
 ## Lo que queda, y no es de ningún agente
 
-1. **Medir Baja contra Baja.** La línea de base de 57,1 ms es preset **Alta**.
-   El dueño juega en una HD 4000, donde el gobernador termina en Baja o Mínima.
-   Falta además el costo en cuadro de las voces de fauna. Es el pendiente más
-   grande que queda.
-2. **Decidir la velocidad.** Subió un 78 % al arreglar el rozamiento: es lo que
+1. **Decidir la velocidad.** Subió un 78 % al arreglar el rozamiento: es lo que
    el código siempre declaró y lo que dice el README, pero el juego se venía
    equilibrando al valor viejo. Si se siente demasiado, se toca
    `velocidadBase` — **no** se vuelve a poner el rozamiento contra la entrada.
-3. **Una tanda de capturas finales** contra `capturas/base-*.png`.
-4. Los cabos sueltos que quedaron anotados en el README: troncos casi negros
-   (`colorTronco`), la transición agua-costa a medias, el suelo sin material
-   bajo los pies, y la legibilidad del árbol de 47 tecnologías.
-5. **`capturas/` no está en el repo** (está en `.gitignore`): 204 archivos,
+2. **Una tanda de capturas finales** contra `capturas/base-*.png`, y de paso la
+   confirmación visual de la línea de espuma de la orilla, que es lo único de
+   `agua` que quedó sin mirar. El panel del navegador no compone un cuadro
+   utilizable, así que esto pide una mirada en el juego de verdad.
+3. **Diagnosticado pero sin empezar** — no es trabajo a medias, es trabajo
+   nuevo, y por eso no se abrió: los gestos de caza, pesca, saberes,
+   relevamiento y exploración que anotó `bucle` (la chatarra y la cantera ya
+   tienen el suyo); la legibilidad del árbol de 47 tecnologías; el suelo sin
+   material bajo los pies; y los dos defectos de `veg` que piden medición de
+   memoria (ocho vistas de impostor, el corte del sotobosque a 192 m).
+4. **`capturas/` no está en el repo** (está en `.gitignore`): 204 archivos,
    incluidas las `base-*.png` que son el "antes" de todas las comparaciones y
    los bancos de medición. El dueño lo sabe y decidió dejarlo así.
+
+## Trabajo a medias que se cerró al final
+
+- **El tronco caído seguía negro.** `veg` había arreglado la iluminación de los
+  sólidos pero no el albedo del tronco, y el relleno se multiplica por el
+  albedo: 0,047 × 0,34 sigue siendo negro. Ahora 0,115, en rango de madera
+  muerta a la intemperie. El detalle, en `bitacora-veg.md`.
+- **`bancoDesglose()` de `agua`**, que nunca había podido completar por las
+  recargas de los otros agentes.
+- **La transición agua-costa**, verificada por mecanismo: son tres bandas
+  —espuma, franja transparente a 0,5 m, agua cerrada a 1,8 m— y no un canto
+  duro. La «piedra mojada» que `agua` se había anotado no hace falta:
+  `Terreno.js:613` ya oscurece el lecho y bajar el alfa es lo que la deja ver.
 
 ## Herramientas que dejó la flota
 

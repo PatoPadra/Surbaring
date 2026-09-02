@@ -269,3 +269,35 @@ sirva; hay que comprobar primero que en el encuadre esté lo que se arregló.
 
 Números de línea de base: `vegetacion.mallasCompletas = 103`,
 `vegetacion.impostores = 4194`, `sotobosque.total = 7916`.
+
+---
+
+# Cerrado por el coordinador — 2/9/2026
+
+## El tronco caído seguía negro, y no era la luz: era el albedo
+
+`veg` arregló la **iluminación** de los sólidos del sotobosque —el relleno
+hemisférico que rescató a la piedra— pero el tronco caído siguió saliendo casi
+negro. La causa es aritmética y es la misma que `luz` documentó para las hojas
+de coihue: **el relleno se multiplica por el albedo**, así que no hay cantidad
+de cielo que arregle un albedo de 0,03.
+
+Medido sobre `Sotobosque.js`, luminancia lineal:
+
+| | albedo | con el relleno (×0,34) |
+|---|---|---|
+| tronco caído, antes | **0,047 / 0,025** | 0,016 / 0,008 — negro |
+| piedra (la que `veg` sí subió) | 0,183 / 0,090 | 0,062 / 0,031 |
+| **tronco caído, ahora** | **0,115 / 0,080** | 0,039 / 0,027 |
+
+`0x4a3a2c / 0x36291f` → **`0x6f5c46 / 0x5e4d38`**. Queda en el rango de madera
+muerta a la intemperie (0,10-0,20 real) y **por debajo** del granito de la
+piedra, que es la relación correcta: la madera es más oscura que el canto rodado.
+
+Comprobado vivo en el juego, leyendo `tipo.color` del lote servido.
+
+**Por qué se pasó por alto:** la pasada de albedo de `veg` fue sobre
+`flora.json`, que es donde viven los árboles de pie. El tronco caído no es una
+especie de `flora.json`: es un tipo del sotobosque con su color escrito a mano
+en `Sotobosque.js`. Los troncos **de pie** están bien (coihue 0,061, lenga
+0,179); el que estaba mal era el caído, que es otro archivo.

@@ -261,3 +261,85 @@ temprano que aprovechar.
 |---|---|---|---|
 | Baja @ 1024×576 | 122,8 ms · 8,1 fps | **36,1 ms · 27,7 fps** | **3,4×** |
 | Mínima @ 845×475 | ~95 ms · ~10,5 fps | **17,8 ms · 56,1 fps** | **5,3×** |
+
+## Sexta ronda: Baja contra Baja, que es donde de verdad se juega
+
+**2/9/2026, con la flota de siete agentes ya cerrada.**
+
+Todas las rondas anteriores midieron en preset **Alta**, y el dueño juega en una
+Intel HD 4000 donde el gobernador termina en **Baja** o **Mínima**. Medir Alta
+para decidir sobre Baja es medir otro juego.
+
+Instrumento validado antes de creerle a un solo número: `window.bancoValidez()`
+dio **«el instrumento mide»**, con el tiempo creciendo monótono con los píxeles
+(19,6 → 46,5 → 83,4 → 133,0 ms de 0,23 a 3,69 Mpx). Placa confirmada como la de
+destino: `ANGLE (Intel, Intel(R) HD Graphics 4000, D3D11)`.
+
+### La comparación que importa
+
+Promedio de los tres puntos (bosque, orilla, altura), mediodía del 15 de febrero:
+
+| Preset | Resolución | ms de GPU | fps |
+|---|---|---|---|
+| Alta | 640×360 | 49,21 | 20,3 |
+| Alta | 1280×720 | 77,84 | 12,8 |
+| **Baja** | **640×360** | **18,90** | **52,9** |
+| Baja | 854×480 | 25,22 | 39,6 |
+| **Baja** | **1024×576** | **31,42** | **31,8** |
+| Baja | 1280×720 | 42,34 | 23,6 |
+| Mínima | 640×360 | 12,94 | 77,3 |
+| **Mínima** | **1280×720** | **31,71** | **31,5** |
+
+### La flota no agregó costo: lo bajó
+
+La línea de base registrada arriba en este mismo documento —árbol limpio, preset
+Alta— era 57,1 ms a 640×360 y 88,3 ms a 1280×720. Contra los mismos dos puntos:
+
+| Resolución | Alta antes | Alta ahora | |
+|---|---|---|---|
+| 640×360 | 57,1 ms | **49,21 ms** | **−13,8 %** |
+| 1280×720 | 88,3 ms | **77,84 ms** | **−11,8 %** |
+
+Se temía que la flota hubiera agregado costo con el cielo nuevo, el agua nueva
+y el sotobosque retocado. No: el saldo es negativo por los dos lados.
+
+### Qué configuración usar
+
+Dos formas de llegar a los 30 fps, y las dos existen hoy:
+
+- **Baja a 1024×576** → 31,8 fps.
+- **Mínima a 1280×720** → 31,5 fps, o sea a resolución nativa completa.
+
+Baja a 720p da 23,6 fps: se puede jugar pero está por debajo del objetivo del
+gobernador, y es la combinación a evitar.
+
+### Desglose a Baja, 1024×576 — 31,1 ms
+
+Es la medición que `agua` nunca pudo completar, porque las recargas de los otros
+agentes le volteaban la corrida. Con la flota cerrada sale a la primera:
+
+| Pieza | ms | % del cuadro |
+|---|---|---|
+| **Terreno** | **11,0** | **35 %** |
+| **Árboles** | **6,8** | **22 %** |
+| Sombras | 2,9 | 9 % |
+| Agua | 1,4 | 4,5 % |
+| Sotobosque | 1,4 | 4,5 % |
+| Cielo | 1,3 | 4 % |
+| Posproceso | 0,9 | 3 % |
+| Reflejo | **0,0** | 0 % |
+| Fauna | −0,2 | ruido de medida |
+
+Tres cosas que este desglose cambia respecto de lo que este documento decía:
+
+1. **«Terreno y sotobosque son el 77 % del cuadro» ya no es cierto.** El
+   sotobosque bajó a **4,5 %**: las rondas de optimización lo resolvieron. El
+   terreno sigue siendo la pieza más cara con el 35 %, y es el único lugar donde
+   una ronda siguiente tiene algo grande para ganar.
+2. **El reflejo planar cuesta exactamente 0 ms en Baja**, porque el preset lo
+   apaga. `agua` lo había deducido leyendo `Calidad.js` y no lo había podido
+   medir. Queda medido: **el jugador de la placa de destino nunca ve el espejo
+   planar**, sólo el camino procedural, y por eso todo el trabajo de `agua` fue
+   a ese camino.
+3. La suma de las piezas da 25,5 de 31,1 ms. Los 5,6 ms restantes son costo fijo
+   que no se le puede cobrar a ninguna: no se recupera apagando cosas.

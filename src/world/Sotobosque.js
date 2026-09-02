@@ -123,7 +123,18 @@ export class Sotobosque {
         id: 'tronco',
         nombre: 'Tronco caído',
         geo: () => tronco(3.4, 0.24),
-        color: 0x4a3a2c, colorAlt: 0x36291f,
+        // Albedo, no iluminacion. El relleno hemisferico de mas abajo rescato a
+        // la piedra y no pudo con el tronco por una razon aritmetica: se
+        // multiplica por el albedo, y el del tronco estaba en 0,047 y 0,025
+        // lineal. Con el relleno puesto daban 0,016 y 0,008: negro igual. Es el
+        // mismo hallazgo que destapo las hojas de coihue —ninguna cantidad de
+        // cielo arregla un albedo de 0,03—, sólo que ahi era `colorHoja` y aca
+        // es el tronco caido, que quedo fuera de aquella pasada.
+        //
+        // Ahora 0,115 y 0,080, que es madera muerta a la intemperie (0,10-0,20
+        // real) y sigue estando por debajo del granito de la piedra (0,183),
+        // como corresponde.
+        color: 0x6f5c46, colorAlt: 0x5e4d38,
         radio: RADIO_LEJOS, porCelda: 0.8, flexible: false,
         // Sólo donde hay bosque que los produzca
         apto: (alt, hum, pend) => alt < 1600 && hum > 0.45 && pend < 30 ? (hum - 0.4) * 1.5 : 0,

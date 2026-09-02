@@ -197,3 +197,71 @@ escala, `detalleTerreno` 0,35): acá hay ~4× los píxeles y ~3× el radio de de
   dedicada. El punto de orilla que encontré mira a pasto, no a agua; haría falta
   buscar uno con la costa en el encuadre.
 - **`bancoDesglose()`** no llegó a completar ninguna vez (recargas ajenas).
+
+---
+
+# Cerrado por el coordinador — 2/9/2026
+
+Con la flota terminada ya no hay recargas ajenas, así que las dos mediciones que
+no habías podido completar salieron a la primera.
+
+## `bancoDesglose()` completó, y confirma tu deducción
+
+Preset **Baja**, 1024×576, punto bosque. Cuadro completo 31,1 ms:
+
+| Pieza | ms | % |
+|---|---|---|
+| Terreno | 11,0 | 35 % |
+| Árboles | 6,8 | 22 % |
+| Sombras | 2,9 | 9 % |
+| **Agua** | **1,4** | **4,5 %** |
+| Sotobosque | 1,4 | 4,5 % |
+| Cielo | 1,3 | 4 % |
+| Posproceso | 0,9 | 3 % |
+| **Reflejo** | **0,0** | **0 %** |
+
+**El reflejo planar cuesta exactamente cero en Baja**, que es lo que habías
+deducido leyendo `Calidad.js` y no habías podido medir. Queda medido: el jugador
+de la placa de destino nunca ve el espejo, sólo el camino procedural — o sea que
+todo tu trabajo fue al camino que efectivamente se usa.
+
+Y tu agua entera cuesta **1,4 ms de 31,1**, el 4,5 % del cuadro.
+
+## Lo de los −5 ms: la pregunta cambió, y la respuesta es mejor
+
+No se pudo aislar tu parte, y ya no hace falta. Lo que importaba era si la flota
+había agregado costo. Medido contra la línea de base registrada, preset Alta:
+
+| Resolución | antes | después | |
+|---|---|---|---|
+| 640×360 | 57,1 ms | 49,21 ms | **−13,8 %** |
+| 1280×720 | 88,3 ms | 77,84 ms | **−11,8 %** |
+
+## La transición agua-costa: el mecanismo, verificado
+
+Tu código estaba completo; faltaba comprobarlo. Evaluadas las mismas fórmulas
+del fragment sobre un barrido de profundidad:
+
+| profundidad | alfa final | fondo mojado visible |
+|---|---|---|
+| 0,00 m | 0,965 (manda la espuma) | 4 % |
+| 0,10 m | 0,876 | 12 % |
+| 0,35 m | 0,516 | 48 % |
+| **0,50 m** | **0,332** | **67 %** |
+| 1,20 m | 0,776 | 22 % |
+| 1,80 m | 0,985 | 2 % |
+
+La orilla no es un canto duro: son **tres bandas**. Espuma blanca pegada al
+borde, una franja transparente a medio metro donde se ve el lecho mojado que
+`Terreno.js` ya oscurece, y el agua cerrándose a 1,8 m. Que el máximo de
+transparencia esté a 0,5 m y no en el borde es correcto: en el borde la espuma
+tapa.
+
+**Lo único que queda sin hacer** es la confirmación visual con una captura
+dedicada de la línea de espuma. El panel del navegador no compone un cuadro
+utilizable —a 238×594 no se distingue agua de tierra en los píxeles—, así que
+esto queda para una mirada del dueño en el juego, no para una medición.
+
+La «piedra mojada» que te habías anotado no hace falta como pieza aparte:
+`Terreno.js:613` ya oscurece el lecho húmedo, y bajar el alfa es exactamente lo
+que la deja ver.

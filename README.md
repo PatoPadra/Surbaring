@@ -153,6 +153,29 @@ Qué se colecciona y qué no es una decisión deliberada:
 
 ---
 
+## Rendimiento
+
+Medido con el reloj de la GPU sobre la placa de destino —`Intel(R) HD Graphics
+4000`—, promedio de tres puntos al mediodía del 15 de febrero. El detalle y las
+seis rondas de optimización están en `docs/medicion-cuadro.md`.
+
+| Preset | Resolución | ms de GPU | fps |
+|---|---|---|---|
+| Alta | 1280×720 | 77,84 | 12,8 |
+| Baja | 1280×720 | 42,34 | 23,6 |
+| **Baja** | **1024×576** | **31,42** | **31,8** |
+| **Mínima** | **1280×720** | **31,71** | **31,5** |
+| Mínima | 640×360 | 12,94 | 77,3 |
+
+Hay dos formas de llegar a los 30 fps en esta placa: **Baja a 1024×576**, o
+**Mínima a resolución nativa completa**. El gobernador adaptativo elige solo,
+pero conviene saber que Baja a 720p —23,6 fps— es la combinación a evitar.
+
+A Baja, el cuadro se reparte así: terreno 35 %, árboles 22 %, sombras 9 %, y
+todo lo demás por debajo del 5 % cada uno. El espejo planar del lago cuesta
+**cero**: los presets Baja y Mínima lo apagan, así que en esta placa el agua se
+resuelve enteramente por el camino procedural.
+
 ## Estado real
 
 ### Funciona
@@ -240,9 +263,10 @@ Qué se colecciona y qué no es una decisión deliberada:
    está pisando.
 5. El sotobosque llega hasta 192 m. Más allá el suelo queda desnudo, aunque a
    esa distancia la niebla aérea ya disimula bastante el corte.
-6. **Los troncos caídos siguen saliendo casi negros** a pleno sol. Es el mismo
-   defecto de albedo que se corrigió en el follaje y las piedras, pero en
-   `colorTronco`, que quedó sin tocar.
+6. **La línea de espuma de la orilla no tiene confirmación visual.** El
+   mecanismo está medido —espuma pegada al borde, una franja a medio metro
+   donde se ve el lecho mojado, y el agua cerrándose a 1,8 m— pero nadie la
+   miró todavía con una captura dedicada.
 
 #### La caza, y por qué casi siempre te la van a negar
 
