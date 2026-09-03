@@ -77,6 +77,12 @@ export const RECURSOS = {
   grasa:         { nombre: 'Grasa', kg: 0.3, cat: 'material' },
   lana:          { nombre: 'Lana', kg: 0.15, cat: 'material' },
   asta:          { nombre: 'Asta', kg: 0.6, cat: 'material' },
+  // El hueso lo entregaba `caza.json` en los tres rindes de carroña y no tenía
+  // ficha acá, así que caía en el `?? 0.5` de omisión de `pesoDe()` y se quedaba
+  // sin `cat`. Y `Bolso.js` sólo dibujaba «alimento» y «material»: el jugador lo
+  // juntaba, le ocupaba peso y **no lo veía en ninguna pantalla**. Un fémur seco
+  // de ciervo colorado o de jabalí anda por los 300 g.
+  hueso:         { nombre: 'Hueso', kg: 0.3, cat: 'material' },
   carne:         { nombre: 'Carne', kg: 0.4, cat: 'alimento', nutre: 22, hidrata: 2 },
   // Lo que sale del fuego. Cocinar es la primera tecnología de todas y la que
   // más rinde: la misma pieza alimenta casi el doble, y el agua hervida deja de

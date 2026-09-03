@@ -16,6 +16,25 @@
 
 const SITIO_PATRIMONIAL_M = 260;   // radio en el que un sitio protege su contexto
 
+/**
+ * El tamaño de un frente de cantera, y la razón por la que existe esta constante.
+ *
+ * `yacimientoEn()` leía la altura y la pendiente **del punto exacto** donde
+ * estaba parado el jugador, así que la respuesta cambiaba con cada paso. Medido
+ * con `.claude/flota/r2-cantera.mjs` sobre el DEM real, caminando 3210 m desde el
+ * punto de partida en ocho rumbos: la etiqueta saltaba **68 veces, una cada
+ * 47 m** —«Abrir depósito de ripio», «Abrir frente de tosca», nada, «ripio» otra
+ * vez— y el aviso estaba en pantalla el **61,6 %** del recorrido. Eso es el
+ * parpadeo que trajo el dueño en la captura.
+ *
+ * El defecto no está en los umbrales sino en la escala: una terraza glacifluvial
+ * tiene decenas de metros, y preguntarle a un píxel del DEM si es una terraza es
+ * preguntarle mal. Ahora se decide una vez por celda, y es la misma celda con la
+ * que se lleva la cuenta de los frentes agotados: **el frente que abrís es el
+ * frente que se agota**.
+ */
+const FRENTE_M = 24;
+
 export class Mineria {
   /**
    * @param {object} datos contenido de mineria.json
@@ -37,7 +56,7 @@ export class Mineria {
     });
   }
 
-  _clave(x, z) { return `${Math.round(x / 24)}:${Math.round(z / 24)}`; }
+  _clave(x, z) { return `${Math.round(x / FRENTE_M)}:${Math.round(z / FRENTE_M)}`; }
 
   /** Un frente de cantera queda agotado un rato: no es una canilla. */
   _agotado(x, z, ahora) {
@@ -61,6 +80,19 @@ export class Mineria {
    * pómez es caída volcánica y se conserva donde no la lavó el agua, en altura.
    */
   yacimientoEn(x, z) {
+    // Se resuelve en el centro de la celda, no bajo los pies: ver `FRENTE_M`.
+    // Y se memoriza la última, que es la que se pregunta dos veces por segundo
+    // para el indicador de la tecla de acción y otra vez al apretar R.
+    const clave = this._clave(x, z);
+    if (this._ultimoFrente?.clave === clave) return this._ultimoFrente.yac;
+    const cx = Math.round(x / FRENTE_M) * FRENTE_M;
+    const cz = Math.round(z / FRENTE_M) * FRENTE_M;
+    const yac = this._resolverFrente(cx, cz);
+    this._ultimoFrente = { clave, yac };
+    return yac;
+  }
+
+  _resolverFrente(x, z) {
     const y = this.mundo.alturaEn(x, z);
     const pend = this.mundo.pendienteEn(x, z);
     const cerca = (dx, dz) => this.mundo.esAgua(x + dx, z + dz);
@@ -223,9 +255,39 @@ export class Mineria {
   }
 
   /**
+   * ¿Hay chatarra que de verdad se pueda levantar acá y ahora?
+   *
+   * `hayChatarra()` contesta por la geografía y nada más: es un hash puro de la
+   * posición, así que sigue diciendo que sí después de que uno vació la veta y
+   * también adentro de un sitio patrimonial. El indicador del HUD la usaba tal
+   * cual, y eso rompía la única regla con la que se decidió dejar la chatarra
+   * arriba de todo: **si el aviso aparece, la tecla funciona**.
+   *
+   * Los dos casos en que no funcionaba:
+   *
+   * - **Agotada.** `recuperarChatarra()` marca la celda y contesta «ya juntaste
+   *   lo que había» durante 900 s. Pero `segundosTotales` avanza con el `dt`
+   *   real, así que son **quince minutos de reloj de pared** con un cartel que
+   *   miente. Y ahora se nota más que antes: desde que el árido bajó, la
+   *   chatarra es el 100 % de la etiqueta minera que queda en pantalla.
+   * - **Sitio patrimonial.** Adentro de los 260 m de un sitio, levantar cobra
+   *   cinco puntos de saber y una infracción. Ofrecerlo sería tenderle una
+   *   trampa al jugador. La Ley 25.743 se sigue enseñando entera, pero cuando
+   *   aprieta `R` a propósito, que es la misma regla que se aplicó a la cantera.
+   */
+  chatarraAMano(x, z, ahora) {
+    return this.hayChatarra(x, z)
+      && !this._agotado(x, z, ahora)
+      && !this._sitioCercano(x, z);
+  }
+
+  /**
    * ¿Hay chatarra plausible acá? Sólo donde hubo ocupación: el ejido y la
    * franja de reserva con rutas y villas. En el área núcleo el bosque está
    * limpio, y ésa es justamente la diferencia.
+   *
+   * Ojo: contesta por la geografía y nada más. Para saber si además se puede
+   * levantar **ahora**, está `chatarraAMano()`.
    */
   hayChatarra(x, z) {
     const j = this.limites.jurisdiccion(x, z);

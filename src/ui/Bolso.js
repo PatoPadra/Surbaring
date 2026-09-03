@@ -44,7 +44,37 @@ const CSS = `
   #bolsoPanel footer { margin-top: 1rem; font-size: .68rem; color: var(--tinta-tenue); }
 `;
 
-const TITULOS = { alimento: 'Alimento', material: 'Materiales' };
+const TITULOS = { alimento: 'Alimento', remedio: 'Botica', material: 'Materiales' };
+
+/**
+ * En qué orden se muestran los grupos, no cuáles se muestran.
+ *
+ * Acá había un defecto silencioso y caro: el bolso recorría la lista literal
+ * `['alimento', 'material']`, así que **cualquier categoría que no fuera una de
+ * esas dos desaparecía de la pantalla**. Y hay dos declaradas con `cat:
+ * 'remedio'` en `Recursos.js` —el emplasto de maqui y el lavado de michay—, que
+ * son justamente el cierre de la tesis del juego: identificar una planta es lo
+ * que te salva la noche siguiente. El jugador los juntaba, los tenía encima, lo
+ * curaban al apretar Q… y no había forma de enterarse de que los tenía.
+ *
+ * Eran **dos** recursos invisibles, no tres: el hueso, que tampoco tenía ficha,
+ * igual se dibujaba, porque `Inventario.listar()` ya rellena `cat` con
+ * `'material'` por omisión. Lo suyo era otra cosa —pesaba los 0,5 kg de omisión
+ * de `pesoDe()` en vez de un peso decidido—, y se arregló fichándolo.
+ *
+ * Por eso el grupo «Otros» de más abajo es, hoy, una red que no atrapa nada:
+ * mientras `listar()` rellene la categoría, nunca llega un `undefined`. Se deja
+ * igual, y a propósito: cuesta cero y es lo que evita que el próximo que
+ * devuelva una categoría sin título vuelva a desaparecer sin dejar rastro.
+ *
+ * Por eso ahora los grupos salen de lo que de verdad hay en el bolso y esta
+ * lista sólo manda el orden: el alimento primero porque es lo que se mira con
+ * hambre, la botica segunda porque es lo que se busca con la salud en rojo, y
+ * los materiales al final porque son los que más renglones ocupan. Lo que no
+ * esté acá se dibuja igual, al final. Agregar una categoría nueva a
+ * `Recursos.js` no vuelve a esconder nada.
+ */
+const ORDEN = ['alimento', 'remedio', 'material'];
 
 export class Bolso {
   /** @param {object} deps {inventario, jugador, hud, recoleccion} */
@@ -87,6 +117,27 @@ export class Bolso {
           this.hud?.aviso(`Comiste ${def.nombre.toLowerCase()}`,
             `Alimento ${this.jugador.hambre.toFixed(0)} · Hidratación ${this.jugador.sed.toFixed(0)}`);
         }
+      } else if (accion === 'curar') {
+        // La misma cuenta que hace `Recoleccion.comer()`, pero cuando lo decide
+        // el jugador y no el umbral. Q sólo cura por debajo de 65 de salud, que
+        // está bien como reflejo automático y mal como única puerta: uno se
+        // venda antes de salir, no cuando ya está tirado.
+        const def = RECURSOS[id];
+        if (!def?.cura) return;
+        // Un emplasto se gasta una sola vez: gastarlo con la salud llena es
+        // tirar a la basura la planta que costó identificar.
+        if (this.jugador.salud >= 99.5) {
+          this.hud?.aviso('Estás entero', `Guardá ${def.nombre.toLowerCase()} para cuando haga falta.`);
+          return;
+        }
+        if (this.inventario.quitar(id, 1)) {
+          const antes = this.jugador.salud;
+          this.jugador.salud = Math.min(100, antes + def.cura);
+          if (def.hidrata) this.jugador.sed = Math.min(100, this.jugador.sed + def.hidrata);
+          if (def.nutre) this.jugador.hambre = Math.min(100, this.jugador.hambre + def.nutre);
+          this.hud?.aviso(`Te curaste con ${def.nombre.toLowerCase()}`,
+            `Salud ${antes.toFixed(0)} → ${this.jugador.salud.toFixed(0)} · lo aprendiste identificando la planta, y eso no se pierde`);
+        }
       }
       this.pintar();
     });
@@ -107,20 +158,38 @@ export class Bolso {
       return;
     }
 
+    // Los grupos son los que hay, con `ORDEN` mandando nada más que la
+    // secuencia. Lo que no tenga categoría cae en «Otros» y se ve: antes se
+    // perdía sin dejar rastro.
+    const cats = [...new Set(items.map(i => i.cat || 'otros'))]
+      .sort((a, b) => {
+        const ia = ORDEN.indexOf(a), ib = ORDEN.indexOf(b);
+        return (ia < 0 ? ORDEN.length : ia) - (ib < 0 ? ORDEN.length : ib);
+      });
+
     let html = '';
-    for (const cat of ['alimento', 'material']) {
-      const grupo = items.filter(i => i.cat === cat);
+    for (const cat of cats) {
+      const grupo = items.filter(i => (i.cat || 'otros') === cat);
       if (!grupo.length) continue;
       html += `<h3>${TITULOS[cat] || cat}</h3>`;
+      // Un recurso que cura no lleva además el botón de comer. La infusión de
+      // canelo está declarada como alimento (nutre 4) y encima cura 8, así que
+      // quedaba con los dos botones pegados; el de comer no aplica la curación,
+      // o sea que apretar el de al lado tiraba 8 de salud a la basura. «Curarte»
+      // ya suma lo que nutre y lo que hidrata además de curar: no se pierde nada.
       for (const it of grupo) {
         const def = RECURSOS[it.id];
         const nutre = def?.nutre ? ` · nutre ${def.nutre}` : '';
         const hidrata = def?.hidrata ? ` · hidrata ${def.hidrata}` : '';
+        // Cuánto cura se dice acá y no en ningún otro lado: es el número por el
+        // que uno decide si vuelve al campamento o sigue.
+        const cura = def?.cura ? ` · cura ${def.cura}` : '';
         html += `<div class="bp-it">
-          <span>${it.nombre}<small style="color:var(--tinta-tenue)">${nutre}${hidrata}</small></span>
+          <span>${it.nombre}<small style="color:var(--tinta-tenue)">${nutre}${hidrata}${cura}</small></span>
           <span class="bp-n">${it.cantidad}</span>
           <span class="bp-kg">${(pesoDe(it.id) * it.cantidad).toFixed(1)} kg</span>
-          ${def?.nutre ? `<button data-accion="comer" data-id="${it.id}">Comer</button>` : ''}
+          ${def?.cura ? `<button data-accion="curar" data-id="${it.id}">Curarte</button>` : ''}
+          ${def?.nutre && !def?.cura ? `<button data-accion="comer" data-id="${it.id}">Comer</button>` : ''}
           <button data-accion="tirar" data-id="${it.id}" data-n="1">Tirar 1</button>
           <button data-accion="tirar" data-id="${it.id}" data-n="todo">Todo</button>
         </div>`;

@@ -121,17 +121,13 @@ export class Recoleccion {
       return { tipo: 'permiso', etiqueta: 'Sacar el permiso de pesca en la intendencia' };
     }
 
-    if (this.jugador.enAgua || this._aguaCerca()) {
-      // Si además hay un cardumen a mano, se avisa: pescar tiene tecla propia
-      const hay = this.pesca?.loQueHayCerca();
-      const sinPermiso = hay && !this.pesca?.tienePermiso;
-      return {
-        tipo: 'beber',
-        etiqueta: hay
-          ? (sinPermiso ? 'Beber agua · P para pescar (hace falta permiso)' : 'Beber agua · P para tirar la línea')
-          : 'Beber agua',
-      };
-    }
+    // El agua se queda con la tecla mientras la sed apriete, y sólo mientras
+    // apriete. Con la hidratación llena, «Beber agua» es una acción que el
+    // jugador puede hacer y que no hace nada, y encima le sacaba la tecla al
+    // tronco que estaba pisando: la orilla del lago es justo donde se junta la
+    // leña varada. Con sed, sigue primero — la sed mata.
+    const aguaAMano = this.jugador.enAgua || this._aguaCerca();
+    if (aguaAMano && this.jugador.sed < 92) return this._beber();
 
     // El tronco caído se atiende antes que la planta, y no es un capricho de
     // orden: es la única fuente de leña del bosque —la madera dura del coihue
@@ -162,18 +158,83 @@ export class Recoleccion {
     // La tecla de acción también la levanta. `R` sigue funcionando y sigue
     // explicando la ley cuando no se puede: la negativa no se toca, sólo deja de
     // depender de que el jugador adivine que la tecla existe.
-    if (this.mineria) {
-      if (this.mineria.hayChatarra(p.x, p.z)) {
-        return { tipo: 'chatarra', etiqueta: 'Levantar chatarra (o R)', tecla: 'R' };
-      }
-      const yac = this.mineria.yacimientoEn(p.x, p.z);
-      if (yac) return { tipo: 'cantera', etiqueta: `Abrir ${yac.nombre.toLowerCase()} (o R)`, tecla: 'R' };
+    // Ojo: acá va SÓLO la chatarra, no el árido. Los dos salían por la misma
+    // rama y son casos opuestos, y ésa era la mitad del defecto que el dueño
+    // trajo con captura.
+    //
+    // La chatarra se queda arriba y con razón: está en el 13 % de las celdas de
+    // 40 m y sólo donde hubo gente, es el único hierro de esta comarca —el
+    // Batolito Norpatagónico no tiene mineralización explotable— y, sobre todo,
+    // `recuperarChatarra()` **no** consulta `evaluar()` ni pide herramienta: si
+    // el aviso aparece, la tecla funciona. Medido: se ofrece en el 12,5 % de las
+    // posiciones. Eso es un hallazgo, y el momento de decirlo es cuando uno lo
+    // pisa.
+    //
+    // El árido es exactamente lo contrario y se fue abajo. Ver la rama `cantera`
+    // más abajo.
+    // `chatarraAMano()` y no `hayChatarra()`: la segunda contesta por la
+    // geografía y sigue diciendo que sí con la veta agotada y adentro de un
+    // sitio patrimonial. Ver el comentario de ese método en `Mineria.js`.
+    if (this.mineria?.chatarraAMano(p.x, p.z, ahora)) {
+      return { tipo: 'chatarra', etiqueta: 'Levantar chatarra (o R)', tecla: 'R' };
     }
 
     const planta = this.vegetacion.masCercana(p, 7);
     if (planta && !this._enDescanso(planta.x, planta.z, ahora)) {
       return { tipo: 'planta', etiqueta: `Recolectar ${planta.esp.nombreComun.toLowerCase()}`, planta };
     }
+
+    // El árido, y sólo cuando de verdad se puede sacar.
+    //
+    // Éste es el defecto de la captura, con sus números. `yacimientoEn()`
+    // devolvía algo en el **70,9 %** de las posiciones alrededor del punto de
+    // partida, y esta rama estaba por encima de la planta, así que se comía el
+    // **56,9 %** de la tecla de acción y tapaba el resto del juego. Y lo peor no
+    // era la frecuencia: el punto de partida está en **reserva**, donde
+    // `evaluar()` niega **siempre**, así que de esas 70,9 % de posiciones eran
+    // extraíbles el **0,0 %**. Se le estaba ofreciendo al jugador, casi todo el
+    // tiempo, una tecla que no podía funcionar nunca.
+    //
+    // Dos cosas cambian. Primero, se consulta `evaluar()` antes de ofrecer: no
+    // se anuncia nada que la jurisdicción vaya a negar. La ley no se suaviza ni
+    // se esconde —sigue entera en `evaluar()` y sale por `hud.negativa()`— pero
+    // se enseña cuando el jugador aprieta `R` a propósito, que es donde ya
+    // estaba escrita y funciona bien.
+    //
+    // Segundo, baja debajo de la planta, por la misma vara con la que subió la
+    // chatarra: lo que decide no es cuánto vale sino cuál se puede juntar en
+    // otro lado. Donde el árido es legal —jurisdicción provincial— hay yacimiento
+    // en el 83,5 % de las posiciones. Algo que está en cuatro de cada cinco pasos
+    // no necesita que se lo anuncien: espera.
+    if (this.mineria) {
+      const v = this.mineria.evaluar(p.x, p.z, ahora);
+      if (v.permitido) {
+        return { tipo: 'cantera', etiqueta: `Abrir ${v.yacimiento.nombre.toLowerCase()} (o R)`, tecla: 'R' };
+      }
+    }
+
+    // El agua sin sed: acá, y no más abajo. Con la sed llena beber no suma
+    // hidratación, pero **sí llena la cantimplora**: `agregar('agua', 1)` existe
+    // en un solo lugar de todo `src/`, que es el caso `beber` de `actuar()`, y
+    // el agua la piden seis recetas —el agua hervida, la infusión de canelo, el
+    // lavado de michay y el emplasto de maqui, o sea la botica entera—. Y la
+    // cadena «P para tirar la línea» también sale de un solo lugar, que es
+    // `_beber()`: es la única forma que tiene el jugador de descubrir la pesca.
+    //
+    // Esto había quedado debajo de las dos ramas de `mata`, y la segunda retorna
+    // sin condición. Con un coirón por metro cuadrado, la probabilidad de llegar
+    // hasta acá era e^−78,5 ≈ 8×10⁻³⁵: código muerto. Era exactamente el defecto
+    // que este mismo archivo acababa de arreglar en la arcilla, reintroducido
+    // por el arreglo de la cantera —al bajar el árido debajo de la planta, el
+    // agua se fue con él—.
+    //
+    // Va acá arriba y no más arriba todavía porque la vara es la de siempre: no
+    // cuánto vale, sino cuál se puede hacer en otro lado. El tronco, la
+    // chatarra, la planta y el frente de cantera son hallazgos o están atados a
+    // un lugar, así que le ganan al agua. La piedra, el michay, el helecho y el
+    // coirón están en todas partes y esperan: el agua les gana. Y con sed, el
+    // agua sigue ganándole a todo desde la rama de arriba, porque la sed mata.
+    if (aguaAMano) return this._beber();
 
     // Lo que vale, después de la planta: piedra, michay, helecho
     if (mata && mata.vale > 0) {
@@ -188,13 +249,43 @@ export class Recoleccion {
 
     // El animal ya conocido: volver a mirarlo muestra la ficha otra vez, que es
     // informativo, pero no da puntos ni le saca la tecla a nada.
+    //
+    // Y es acá donde se nombra la `H`, que era una de las teclas que el juego
+    // tenía y no decía en ninguna parte. El momento es éste y no el de
+    // identificar: identificar es lo que hay que hacer la primera vez y no
+    // conviene ensuciarlo. Esta rama, en cambio, salta justo cuando el jugador
+    // está al lado de un animal que ya conoce y no tiene nada mejor que hacer,
+    // que es cuando se aprende una tecla. Lo que pase después es contenido: la
+    // fauna nativa no se caza nunca, y `Caza.evaluar()` lo explica entero.
     if (animal) {
-      return { tipo: 'ficha', etiqueta: `Repasar ${animal.esp.nombreComun.toLowerCase()}`, animal };
+      return {
+        tipo: 'ficha',
+        etiqueta: `Repasar ${animal.esp.nombreComun.toLowerCase()} · H para evaluar la caza`,
+        animal,
+      };
     }
 
     if (planta) return { tipo: 'espera', etiqueta: `${planta.esp.nombreComun}: dale un descanso` };
 
     return null;
+  }
+
+  /**
+   * El aviso del agua, que se arma en dos lugares de la cadena —arriba con sed,
+   * abajo sin ella— y por eso vive acá y no repetido.
+   *
+   * Si además hay un cardumen a mano se dice, porque pescar tiene tecla propia y
+   * nadie la descubre solo: el momento de nombrar la `P` es cuando sirve.
+   */
+  _beber() {
+    const hay = this.pesca?.loQueHayCerca();
+    const sinPermiso = hay && !this.pesca?.tienePermiso;
+    return {
+      tipo: 'beber',
+      etiqueta: hay
+        ? (sinPermiso ? 'Beber agua · P para pescar (hace falta permiso)' : 'Beber agua · P para tirar la línea')
+        : 'Beber agua',
+    };
   }
 
   _aguaCerca() {
@@ -205,6 +296,58 @@ export class Recoleccion {
     return this.mundo.cauceEn(p.x, p.z) > 0.25;
   }
 
+  /**
+   * ¿Estamos en la orilla? Doce metros, no tres.
+   *
+   * Ojo que esto NO es `_aguaCerca()` con otro número, y la diferencia era un
+   * defecto de los que no se ven. La arcilla salía de levantar una piedra
+   * preguntando `_aguaCerca()`, la misma función que usa la rama de beber, que
+   * está más arriba en la cadena y hace `return`. O sea que llegar a la piedra
+   * implicaba que `_aguaCerca()` había dado falso, y la condición de la arcilla
+   * se evaluaba sobre la misma función, la misma posición y el mismo tick:
+   * **probabilidad exactamente cero**. No era poco probable, era imposible, y
+   * por eso el dueño nunca vio arcilla. Con ella no hay carbonera ni fragua, o
+   * sea que se cortaba la cadena entera del metal.
+   *
+   * Doce metros además es lo correcto y no un parche: la arcilla se deposita en
+   * la planicie de inundación y en la barranca, no en la línea del agua. Es el
+   * mismo radio con el que `Mineria.yacimientoEn()` decide un banco de arena.
+   */
+  _orillaCerca() {
+    const p = this.jugador.posicion;
+    return this.mundo.orillaCerca(p.x, p.z);
+  }
+
+  /**
+   * La tecla que faltaba: `G`.
+   *
+   * De los cuatro sistemas con gesto propio, el taller era el único sin ninguna
+   * forma de descubrirse. Y no es un panel más: `grep` sobre todo `src/` dice
+   * que `construccion.levantar()`, `guardarTodo()` y `retirar()` los llama
+   * **únicamente** `src/ui/Taller.js`, o sea que sin `G` el jugador no
+   * construye, no guarda, no retira y —lo que importa— **no prende fuego**.
+   * Sin fuego no hay comida cocida, ni agua hervida, ni calor, ni carbón, ni
+   * nada de la cadena del metal.
+   *
+   * La bienvenida se redujo a dos teclas a propósito, y está bien: seis teclas
+   * de un tirón no las retiene nadie. Pero entonces el resto tiene que
+   * enseñarse en el momento en que sirve, que es la regla que el propio
+   * `main.js` se escribió. El momento de nombrar `G` es exactamente éste: el
+   * paso en que el bolso completa la primera fogata. Una sola vez, y nunca más.
+   */
+  _avisarTaller() {
+    if (this._talleraAvisado || !this.fundicion) return;
+    // Si ya levantó algo, es que encontró el taller solo: no hace falta.
+    if (this.fundicion.hornos?.length) { this._talleraAvisado = true; return; }
+    const fogata = this.fundicion.hornoPorId?.('fogata');
+    if (!fogata || this.fundicion.faltaPara(fogata).length) return;
+    this._talleraAvisado = true;
+    const q = (fogata.materiales || [])
+      .map(m => `${m.cantidad} × ${nombreDe(m.recurso).toLowerCase()}`).join(' y ');
+    this.hud.aviso('Ya te alcanza para una fogata',
+      `Tenés ${q}. Con G se abre el taller, y ahí se levanta y se prende. Sin fuego no hay comida cocida ni agua hervida ni con qué pasar la noche.`, 9000);
+  }
+
   /** Ejecuta la acción disponible. */
   actuar(ahora) {
     const acc = this.quePuedoHacer(ahora);
@@ -212,6 +355,14 @@ export class Recoleccion {
       this.hud.aviso('Nada a mano', 'Acercate a un animal, una planta o el agua');
       return;
     }
+    // Se agenda con retraso, no en el mismo tick.
+    //
+    // `HUD.aviso()` es **una sola ranura**: sobreescribe el texto y reinicia el
+    // reloj. Con `setTimeout(…, 0)` el aviso del taller pisaba al de la propia
+    // acción —«4 × Leña»— antes de que se leyera un solo carácter. Los 4,5 s le
+    // dan a cada uno su turno, y quedan escalonados con el del códice, que sale
+    // a los 1,5 s: acción → códice → taller, en vez de los tres encimados.
+    setTimeout(() => this._avisarTaller(), 4500);
 
     switch (acc.tipo) {
       case 'identificar': {
@@ -281,7 +432,10 @@ export class Recoleccion {
           if (acc.mata.y > 1500 && Math.random() < 0.28) {
             cosecha.push({ recurso: 'obsidiana', cantidad: 1 });
           }
-          if (this._aguaCerca() && Math.random() < 0.45) {
+          // `_orillaCerca()`, no `_aguaCerca()`: ver el comentario de esa
+          // función. Con `_aguaCerca()` esta línea era inalcanzable por orden de
+          // ramas y la arcilla no existía en el juego.
+          if (this._orillaCerca() && Math.random() < 0.45) {
             cosecha.push({ recurso: 'arcilla', cantidad: 2 });
           }
         }
@@ -317,6 +471,20 @@ export class Recoleccion {
     let p = 2;
     if (['CR', 'EN', 'VU'].includes(esp.estadoConservacion)) p += 4;
     this.saberes.otorgar(p, `${esp.nombreComun} identificado`);
+
+    // La primera vez que el jugador gana puntos, decirle para qué sirven.
+    //
+    // El aviso de `saberes.alCambiar` dice «+2 puntos de saber · total 2» y no
+    // dice dónde se gastan. `Tab` abre el códice, que es donde vive el árbol de
+    // tecnologías entero, y era otra tecla que el juego tenía y no nombraba en
+    // ninguna parte. Éste es el momento: el punto recién ganado es lo que le da
+    // sentido a la frase. Se difiere para no pisar el aviso de los puntos, y se
+    // hace una sola vez.
+    if (!this._saberAvisado) {
+      this._saberAvisado = true;
+      setTimeout(() => this.hud.aviso('Eso que aprendiste vale',
+        'Con Tab se abre el códice: ahí están las fichas de todo lo que reconociste y el árbol de saberes donde se gastan los puntos. Lo aprendido no se pierde ni cuando te morís.', 9000), 1500);
+    }
   }
 
   /** Comer lo mejor que haya en el bolso. */

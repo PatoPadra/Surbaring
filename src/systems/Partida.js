@@ -184,6 +184,15 @@ export class Partida {
           fuego: h.fuego?.hasta ?? null,
           trabajo: this._serializarTrabajo(h.trabajo),
         })),
+      // Los dos avisos que enseñan una tecla se dan una vez y nunca más. Sin
+      // guardarlos, «una vez» era «una vez por sesión»: quien cerrara con seis
+      // leña y cuatro piedra en el bolso y sin ningún horno levantado se comía
+      // el aviso del taller, nueve segundos, en cada arranque. Enseñar dos veces
+      // lo mismo es la clase de cortesía que se vuelve estorbo.
+      enseniado: {
+        taller: !!this.recoleccion?._talleraAvisado,
+        saber: !!this.recoleccion?._saberAvisado,
+      },
       muerte: this.ultimaMuerte,
     };
   }
@@ -290,6 +299,11 @@ export class Partida {
         }
         for (const id of d.codice?.identificadas || []) this.codice.identificadas.add(id);
         for (const id of d.codice?.lugares || []) this.codice.lugares.add(id);
+      }
+
+      if (this.recoleccion) {
+        this.recoleccion._talleraAvisado = !!d.enseniado?.taller;
+        this.recoleccion._saberAvisado = !!d.enseniado?.saber;
       }
 
       this._reponerObras(d.obras || []);
