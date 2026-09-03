@@ -1,5 +1,48 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **3/9/2026 — LA RONDA 2 CERRÓ.** Tres jefes —carta, mundo, juego— más una
+> revisión independiente. El encargo está en `RONDA2.md`; las bitácoras son
+> `r2-carta.md`, `r2-mundo.md`, `r2-juego.md` y `r2-revision-juego.md`. Rama
+> `mejoras/ronda2-jugabilidad-graficos`, **sin commitear**. Lo de más abajo es el
+> cierre de la ronda 1 y sigue valiendo como diagnóstico e historia.
+>
+> **La lección cara de esta ronda:** el que escribe el arreglo, el banco que lo
+> mide y el informe que lo aprueba no pueden ser el mismo. La revisión
+> independiente encontró una rama muerta nueva **creada por el arreglo del
+> ripio** —y que estrangulaba la única fuente de agua del juego—, un banco que
+> declaraba 17/17 sin ejercitar 3 de 5 tipos porque construía sus dependencias a
+> mano y las consultaba con `?.`, y un número mezclado de dos corridas distintas
+> que caía del lado cómodo. Ninguna de las tres la podía ver su propio autor.
+>
+> **Variante nueva de la trampa nº 3:** un banco que arma sus dependencias a mano
+> y las consulta con encadenamiento opcional **da verde sin ejercitar nada**. El
+> banco de hallazgos lo estaba imprimiendo —«arena 0 · chatarra 70»— y nadie leyó
+> el cero. Toda medición de esta flota necesita una guarda de cobertura.
+
+## Lo que hay que mirar JUGANDO, todo junto — ronda 2
+
+El panel del navegador no compone cuadros, así que nada de esto se pudo ver. Es
+lo único que la ronda no pudo cerrar sola.
+
+1. **Que el cartel de ripio haya desaparecido.** Es el defecto que trajo el
+   dueño con captura. Medido: de un aviso cada 47 m al 6,2 % del recorrido.
+2. **El ritmo de los avisos nuevos** de `G` (taller), `Tab` (códice) y `H`
+   (caza). Escalonados a 1,5 s y 4,5 s; si se pisan o molestan, se toca ahí.
+3. **El bosque caminando**, franja de 100 a 140 m: el pico de cambios
+   simultáneos bajó de 105 a 15.
+4. **El lago lejano contra un cerro**, en Baja. Y si la veta del agua queda
+   manchada, es **un solo número**: `Agua.js:717`.
+5. **La línea de espuma de la orilla**: tres bandas o un canto duro. Viene
+   pendiente desde la ronda 1 y nunca se pudo verificar.
+6. **El suelo a tres o cuatro metros**: el grano de gravilla tenía que estirarse
+   de 5,6 m a 11 m.
+7. **La estepa al este seco**, que antes no tenía una sola especie leñosa apta.
+8. **El mapa**: contraste del sombreado a cada nivel de zoom, si 50 m de
+   equidistancia raya la zona de cumbres, si los seis glifos se distinguen a
+   640 px, y si la X de las obras tiene el tamaño que el dueño quería. Los
+   cuatro son cambios de tres líneas.
+
+
 ## Al 2/9/2026 — LA FLOTA CERRÓ. Los siete agentes están terminados.
 
 **Todo está en GitHub y todo está en `main`.** `origin/main` había quedado 19
