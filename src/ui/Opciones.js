@@ -225,6 +225,10 @@ export class Opciones {
         break;
       case 'olvidarMapa':
         this.exploracion.olvidar();
+        // Las marcas del mapa se olvidan con el mapa: si no, quedan latentes y
+        // reaparecen solas al volver a explorar la zona, que es peor que un
+        // borrado incompleto — es un borrado que miente.
+        this.hallazgos?.olvidar();
         this.hud?.aviso('Mapa borrado', 'Vuelve a empezar en blanco');
         break;
       case 'reiniciar':

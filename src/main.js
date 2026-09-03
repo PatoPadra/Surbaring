@@ -47,6 +47,7 @@ import { Audio } from './engine/Audio.js';
 import { PasoOclusion, PasoColor } from './engine/Posproceso.js';
 import { Calidad, detectarPlaca } from './engine/Calidad.js';
 import { Exploracion } from './systems/Exploracion.js';
+import { Hallazgos } from './systems/Hallazgos.js';
 import { Mapa } from './ui/Mapa.js';
 import { Opciones } from './ui/Opciones.js';
 import { Bolso } from './ui/Bolso.js';
@@ -337,6 +338,11 @@ async function iniciar() {
   recoleccion.caza = caza;
   recoleccion.mineria = mineria;
   recoleccion.pesca = pesca;
+  // Para que la tecla del taller se enseñe sola en el momento en que sirve: es
+  // la única del juego que no tenía ninguna forma de descubrirse, y sin ella no
+  // se construye, no se guarda y sobre todo no se prende fuego.
+  // Ver `Recoleccion._avisarTaller()`.
+  recoleccion.fundicion = fundicion;
 
   // Los tres datasets de normativa, ya cargados, a la pestaña que los muestra
   codice.normativa = {
@@ -348,7 +354,13 @@ async function iniciar() {
   // Exploración, mapa, bolso, opciones y final. El mapa arranca en blanco y se
   // revela caminando; lo explorado se guarda en el navegador.
   const exploracion = new Exploracion(mundo);
-  const mapa = new Mapa({ mundo, jugador, tiempo, exploracion, codice });
+  // Lo que el jugador vio dónde. Va aparte de la exploración a propósito: el velo
+  // se abre a kilómetros desde un mirador, y desde un mirador no se distingue si
+  // esa playa tiene arena o canto rodado.
+  const hallazgos = new Hallazgos({ mundo, mineria, vegetacion, sotobosque });
+  const mapa = new Mapa({
+    mundo, jugador, tiempo, exploracion, codice, construccion, hallazgos,
+  });
   const bolso = new Bolso({ inventario, jugador, hud, recoleccion });
   const fin = new Fin({ jugador, mundo, tiempo, hud, codice, saberes, construccion });
 
@@ -378,7 +390,7 @@ async function iniciar() {
   // tecnologías, mapa— no se pierde nunca: ésa es la tesis del juego.
   const partida = new Partida({
     jugador, inventario, saberes, codice, construccion, fundicion, tiempo,
-    mundo, hud, exploracion,
+    mundo, hud, exploracion, recoleccion,
     obras: { agregar: dibujarObra },
     hornos: { agregar: dibujarHorno },
   });
@@ -548,7 +560,7 @@ async function iniciar() {
   const reconstruirCuerpo = () => cuerpo.aplicar(aspecto);
 
   const opciones = new Opciones({
-    calidad, audio, entrada, camara, jugador, tiempo, exploracion, hud, render,
+    calidad, audio, entrada, camara, jugador, tiempo, exploracion, hallazgos, hud, render,
     partida, aspecto,
     editarAspecto: () => personaje.abrir().then(reconstruirCuerpo),
     fps: () => fps,
@@ -732,6 +744,12 @@ async function iniciar() {
     // Lo que se conoce del parque: se revela caminando y mirando desde alto
     if (jugador.vivo) {
       exploracion.revisar(jugador.posicion, est, dt);
+      // Barato por construcción: sólo trabaja cuando el jugador cambia de celda de
+      // 128 m, o sea cada ~38 s caminando. Entre medio son dos sumas.
+      if (hallazgos.revisar(jugador.posicion, est, dt) > 0) {
+        hallazgos.guardar();
+        if (mapa.abierto) mapa.dibujar();
+      }
       if (exploracion.nuevasDesdeUltimoDibujo > 400) {
         exploracion.nuevasDesdeUltimoDibujo = 0;
         exploracion.guardar();
@@ -884,7 +902,7 @@ async function iniciar() {
     inventario, saberes, recoleccion, caza, audio,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima, oclusion, color, calidad,
-    exploracion, mapa, bolso, opciones, fin, partida, norma, relevamiento, cierre,
+    exploracion, hallazgos, mapa, bolso, opciones, fin, partida, norma, relevamiento, cierre,
   };
 
   if (import.meta.env.DEV) {

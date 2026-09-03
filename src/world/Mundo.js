@@ -265,6 +265,26 @@ export class Mundo {
     return k < 0 ? 0 : this.cauce[k] / 255;
   }
 
+  /**
+   * ¿Esto es orilla? Doce metros de agua a la redonda, o un cauce marcado.
+   *
+   * Vive acá y no en quien pregunta porque lo preguntan dos sistemas que no se
+   * conocen entre sí —la recolección, para dar arcilla; los hallazgos, para
+   * marcarla en el mapa— y ya se pagó una vez tenerlo escrito dos veces: uno de
+   * los dos quedó en 3 m cuando el otro pasó a 12, y el mapa habría marcado el
+   * 6 % de la arcilla que el juego entrega.
+   *
+   * Doce metros no es un número cómodo: la arcilla se deposita en la planicie de
+   * inundación y en la barranca, no en la línea del agua. Es el mismo radio con
+   * el que `Mineria.yacimientoEn()` decide un banco de arena.
+   */
+  orillaCerca(x, z) {
+    for (const [dx, dz] of [[0, 0], [12, 0], [-12, 0], [0, 12], [0, -12], [8, 8], [-8, -8]]) {
+      if (this.esAgua(x + dx, z + dz)) return true;
+    }
+    return this.cauceEn(x, z) > 0.15;
+  }
+
   /** Humedad relativa 0..1: 1 = selva valdiviana, 0 = estepa. */
   humedadEn(x, z) {
     const k = this.indiceDe(x, z);
