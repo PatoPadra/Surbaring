@@ -12,7 +12,7 @@
  * mecánica de recolección sería tratarla como un trofeo.
  */
 
-import { normalizar as normalizarRec } from '../systems/Recursos.js';
+import { normalizar as normalizarRec, nombreDe as nombreRec } from '../systems/Recursos.js';
 
 const ESTADOS_UICN = {
   EX: ['Extinta', '#4a4a4a'],
@@ -467,6 +467,37 @@ export class Codice {
         this._pintar();
       });
     });
+
+    // Saltar de una tecnología a otra. Con cinco eslabones de profundidad,
+    // seguir una cadena a mano —buscar el nombre, encontrarlo entre cuarenta y
+    // ocho fichas de seis eras— era el trabajo que hacía ilegible el árbol.
+    lista.querySelectorAll('.sab-ir').forEach(b => {
+      b.addEventListener('click', () => this._irASaber(b.dataset.ir));
+    });
+  }
+
+  /**
+   * Lleva la vista hasta una tecnología y la resalta un momento.
+   *
+   * El destello importa: sin él uno queda parado frente a una rejilla de fichas
+   * iguales sin saber a cuál llegó. Y si el filtro la está tapando, se limpia:
+   * es lo que el jugador quiso decir al hacer clic.
+   */
+  _irASaber(id) {
+    if (!id) return;
+    const destino = document.getElementById(`sab-${id}`);
+    if (!destino) return;
+    if (destino.classList.contains('cx-filtro-oculto')) {
+      this.filtro = '';
+      if (this.elBuscar) this.elBuscar.value = '';
+      this._aplicarFiltro();
+    }
+    destino.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    destino.classList.remove('sab-destello');
+    // Forzar un reflujo: sin esto, quitar y volver a poner la clase en el mismo
+    // cuadro no reinicia la animación y el segundo clic no destella.
+    void destino.offsetWidth;
+    destino.classList.add('sab-destello');
   }
 
   _pintarEspecies(entradas) {
@@ -742,8 +773,102 @@ export class Codice {
     return html;
   }
 
+  /**
+   * El mapa del árbol: quién abre a quién, y a qué profundidad está cada cosa.
+   *
+   * El dataset sólo guarda `requiere`, o sea las flechas hacia atrás. Con eso se
+   * puede contestar «¿qué me falta?» pero no «¿para qué me sirve?», que es la
+   * mitad que faltaba. El índice inverso se arma una vez por repintado: 48
+   * tecnologías con 5 eslabones de profundidad son unas dos mil operaciones, y
+   * el Códice se repinta cuando alguien cambia de pestaña, no por cuadro.
+   */
+  _indiceSaberes() {
+    const tecs = this.historia.tecnologias || [];
+    const porId = new Map(tecs.map(t => [t.id, t]));
+    const abre = new Map(tecs.map(t => [t.id, []]));
+    for (const t of tecs) {
+      for (const r of t.requiere || []) abre.get(r)?.push(t);
+    }
+
+    const prof = new Map();
+    const calcular = (id, pila) => {
+      if (prof.has(id)) return prof.get(id);
+      // Un ciclo en el dataset colgaría el Códice entero. No debería haberlo
+      // —lo comprueba `.claude/flota/r2-carta-arbol.mjs`— pero un panel que se
+      // cuelga por un dato mal escrito es una forma muy cara de enterarse.
+      if (pila.has(id)) return 0;
+      pila.add(id);
+      const req = (porId.get(id)?.requiere || []).filter(q => porId.has(q));
+      const d = req.length ? 1 + Math.max(...req.map(q => calcular(q, pila))) : 0;
+      pila.delete(id);
+      prof.set(id, d);
+      return d;
+    };
+    for (const t of tecs) calcular(t.id, new Set());
+
+    return { porId, abre, prof };
+  }
+
+  /**
+   * Todo lo que falta para llegar a una tecnología, **en el orden en que hay que
+   * hacerlo**.
+   *
+   * Ésta es la pregunta que el panel no sabía contestar. Antes, una tecnología
+   * trabada decía «Antes: herrería colonial» y ahí se terminaba: para saber qué
+   * pedía la herrería había que buscarla a mano, y lo que pedía ella, otra vez.
+   * Con cinco eslabones de profundidad eso es un acertijo, no una meta.
+   *
+   * Es un recorrido en posorden: cada tecnología se agrega después de sus
+   * requisitos, así que la lista que sale ya es el plan de trabajo. Lo que ya
+   * está aprendido se poda —no vuelve a pedirse— y `visto` evita contar dos
+   * veces lo que dos ramas comparten.
+   */
+  _rutaHacia(tec) {
+    const S = this.saberes;
+    if (!S) return { pasos: [], puntos: 0, materiales: [] };
+    const pasos = [];
+    const visto = new Set();
+    const bajar = (id) => {
+      if (visto.has(id)) return;
+      visto.add(id);
+      const t = S.porId.get(id);
+      if (!t || S.desbloqueadas.has(id)) return;
+      for (const r of t.requiere || []) bajar(r);
+      pasos.push(t);
+    };
+    bajar(tec.id);
+
+    // Los materiales se suman de toda la cadena porque cada paso consume los
+    // suyos: no alcanza con tener los del último.
+    const suma = new Map();
+    for (const t of pasos) {
+      for (const m of t.materiales || []) {
+        const k = normalizarRec(m.recurso);
+        suma.set(k, (suma.get(k) || 0) + m.cantidad);
+      }
+    }
+    const materiales = [...suma].map(([k, pide]) => {
+      const hay = this.inventario?.disponiblePara(k) ?? 0;
+      return { recurso: k, nombre: nombreRec(k), pide, hay, alcanza: hay >= pide };
+    }).sort((a, b) => (a.alcanza === b.alcanza ? 0 : a.alcanza ? 1 : -1));
+
+    return {
+      pasos,
+      puntos: pasos.reduce((n, t) => n + (t.costoSaber || 0), 0),
+      materiales,
+    };
+  }
+
+  /** Un nombre de tecnología en el que se puede hacer clic para ir hasta ella. */
+  _enlaceSaber(t) {
+    const hecho = this.saberes?.desbloqueadas.has(t.id);
+    return `<button class="sab-ir${hecho ? ' sab-ir-ok' : ''}" data-ir="${t.id}"`
+      + ` title="${hecho ? 'Ya aprendida' : 'Todavía no'}">${t.nombre}</button>`;
+  }
+
   _pintarSaberes() {
     const S = this.saberes;
+    const { abre, prof } = this._indiceSaberes();
     const porEra = new Map();
     for (const t of this.historia.tecnologias || []) {
       if (!porEra.has(t.era)) porEra.set(t.era, []);
@@ -759,13 +884,31 @@ export class Codice {
       existe en el mundo y ${r.inalcanzables} piden materiales que todavía no se
       pueden conseguir.</p></article>` : '';
 
+    // Lo que se puede aprender **ahora mismo**, arriba de todo. Estaba repartido
+    // entre seis eras y cuarenta y ocho fichas: el jugador tenía que recorrer el
+    // panel entero para descubrir que no le faltaba nada.
+    if (S) {
+      const listas = (this.historia.tecnologias || []).filter(t => S.estado(t).estado === 'lista');
+      if (listas.length) {
+        html += `<article class="cx-bloque sab-ahora" style="--c:#c8b45a">
+          <h3>Para aprender ahora <em>${listas.length}</em></h3>
+          <p class="sab-enlaces">${listas.map(t => this._enlaceSaber(t)).join('')}</p>
+        </article>`;
+      }
+    }
+
     for (const era of this.historia.eras || []) {
       const ts = porEra.get(era.id);
       if (!ts?.length) continue;
+      // Las eras ordenadas por eslabón: dentro de una era, lo que se apoya en
+      // menos cosas va primero. Es la lectura natural de un árbol y el dataset
+      // no la trae.
+      const orden = [...ts].sort((a, b) => (prof.get(a.id) - prof.get(b.id)) || 0);
+      const hechas = ts.filter(t => S?.desbloqueadas.has(t.id)).length;
       html += `<article class="cx-bloque" style="--c:${era.colorTema || '#8a5a3b'}">
-        <h3>${era.nombre}</h3></article>`;
+        <h3>${era.nombre} <em>${hechas} de ${ts.length}</em></h3></article>`;
       html += `<div class="cx-saberes">`;
-      for (const t of ts) {
+      for (const t of orden) {
         const e = S ? S.estado(t) : { estado: 'lista' };
         const mats = (t.materiales || []).map(m => {
           const info = e.materiales?.find(x => x.recurso === normalizarRec(m.recurso));
@@ -794,17 +937,66 @@ export class Codice {
             break;
         }
 
-        html += `<div class="cx-saber ${clase}">
+        const previas = (t.requiere || []).map(id => S?.porId.get(id)).filter(Boolean);
+        const hijas = abre.get(t.id) || [];
+        const eslabon = prof.get(t.id) ?? 0;
+
+        html += `<div class="cx-saber ${clase}" id="sab-${t.id}">
           <h4>${t.nombre} <span class="cx-costo">${t.costoSaber ?? 0}</span></h4>
+          <p class="sab-eslabon">${eslabon === 0 ? 'Punto de partida' : `Eslabón ${eslabon} de la cadena`}</p>
           <p class="cx-desc">${t.descripcion || ''}</p>
           ${t.contextoHistorico ? `<p class="cx-curioso">${t.contextoHistorico}</p>` : ''}
           <p class="cx-mats">${mats || 'sin materiales'}</p>
+          ${previas.length ? `<p class="sab-enlaces"><span class="sab-eti">Sale de</span>${previas.map(p => this._enlaceSaber(p)).join('')}</p>` : ''}
+          ${hijas.length ? `<p class="sab-enlaces"><span class="sab-eti">Abre</span>${hijas.map(p => this._enlaceSaber(p)).join('')}</p>` : ''}
+          ${this._panelRuta(t, e)}
           <div class="cx-pie-saber">${pie}</div>
         </div>`;
       }
       html += `</div>`;
     }
     return html;
+  }
+
+  /**
+   * El plan completo hacia una tecnología, plegado.
+   *
+   * Va en un `<details>` nativo y no en un panel aparte por tres motivos: se
+   * abre con el teclado sin que haya que escribir nada, no se lleva el foco del
+   * buscador, y su contenido sigue estando en el marcado aunque esté cerrado
+   * —así el filtro por texto lo encuentra igual, y buscar «obsidiana» pasa a
+   * responder «qué tecnologías la necesitan», que antes no se podía preguntar.
+   */
+  _panelRuta(tec, estado) {
+    if (!this.saberes || estado.estado === 'desbloqueada' || estado.estado === 'lista') return '';
+    const { pasos, puntos, materiales } = this._rutaHacia(tec);
+    if (!pasos.length) return '';
+
+    const previos = pasos.slice(0, -1);
+    const resumen = previos.length
+      ? `Qué falta para llegar acá · ${previos.length} ${previos.length === 1 ? 'saber previo' : 'saberes previos'} y ${puntos} de saber`
+      : `Qué falta para llegar acá · ${puntos} de saber`;
+
+    const lista = pasos.map((p, i) => {
+      const suyo = p.id === tec.id;
+      return `<li class="${suyo ? 'sab-paso-meta' : ''}">
+        <span class="sab-paso-n">${i + 1}</span>
+        ${suyo ? `<b>${p.nombre}</b>` : this._enlaceSaber(p)}
+        <span class="sab-paso-costo">${p.costoSaber ?? 0}</span>
+      </li>`;
+    }).join('');
+
+    const faltantes = materiales.filter(m => !m.alcanza);
+    const pie = faltantes.length
+      ? `<p class="sab-ruta-mats"><span class="sab-eti">Falta juntar</span>${
+          faltantes.map(m => `<span class="mat-falta">${m.pide - m.hay} ${m.nombre}</span>`).join('')}</p>`
+      : `<p class="sab-ruta-mats"><span class="mat-ok">Los materiales de toda la cadena ya los tenés</span></p>`;
+
+    return `<details class="sab-ruta">
+      <summary>${resumen}</summary>
+      <ol class="sab-pasos">${lista}</ol>
+      ${pie}
+    </details>`;
   }
 }
 
@@ -931,6 +1123,60 @@ const CSS = `
 .sab-btn:hover { background: rgba(200,180,90,.3); color: #fff; }
 .sab-marca { font-size: .7rem; color: #6fae7c; letter-spacing: .1em; text-transform: uppercase; }
 .sab-nota { font-size: .68rem; color: #8a9188; font-style: italic; }
+
+/* ── Legibilidad del árbol ────────────────────────────────────────────────
+   Cuarenta y ocho tecnologías con cinco eslabones de profundidad no se leen
+   como una rejilla de fichas sueltas. Lo que sigue dibuja las dos flechas que
+   faltaban —de dónde sale y qué abre— y el plan hacia una meta.            */
+
+.sab-eslabon { font-size: .62rem; color: #7d857c; letter-spacing: .08em;
+  text-transform: uppercase; margin-bottom: .3rem; }
+.sab-enlaces { display: flex; flex-wrap: wrap; gap: .26rem; align-items: baseline;
+  margin-bottom: .34rem; }
+.sab-eti { font-size: .62rem; color: #7d857c; letter-spacing: .08em;
+  text-transform: uppercase; margin-right: .1rem; }
+/* Los nombres son botones y no enlaces: no navegan a ningún lado, saltan
+   dentro del panel. Un <a> sin href además no recibe foco de teclado. */
+.sab-ir { background: rgba(74,143,181,.14); border: 1px solid rgba(74,143,181,.34);
+  color: #9fc7dd; font: inherit; font-size: .68rem; padding: .1rem .4rem;
+  border-radius: 2px; cursor: pointer; text-align: left; }
+.sab-ir:hover { background: rgba(74,143,181,.3); color: #fff; }
+.sab-ir-ok { background: rgba(111,174,124,.12); border-color: rgba(111,174,124,.34);
+  color: #8dc49a; }
+.sab-ir-ok:hover { background: rgba(111,174,124,.28); color: #fff; }
+
+.sab-ahora .sab-enlaces { margin: .3rem 0 0; }
+
+.sab-ruta { margin-bottom: .4rem; }
+.sab-ruta > summary { font-size: .68rem; color: #c8b98a; cursor: pointer;
+  list-style: none; padding: .22rem .34rem; border-radius: 2px;
+  background: rgba(200,180,90,.07); border: 1px solid rgba(200,180,90,.16); }
+.sab-ruta > summary::-webkit-details-marker { display: none; }
+.sab-ruta > summary::before { content: '▸ '; color: #8a8378; }
+.sab-ruta[open] > summary::before { content: '▾ '; }
+.sab-ruta > summary:hover { background: rgba(200,180,90,.14); color: #e0cf88; }
+.sab-pasos { list-style: none; margin: .34rem 0 .3rem; padding-left: .2rem; }
+.sab-pasos li { display: flex; align-items: baseline; gap: .34rem;
+  padding: .14rem 0; font-size: .7rem; }
+.sab-paso-n { flex: none; width: 1.1rem; height: 1.1rem; line-height: 1.1rem;
+  text-align: center; font-size: .6rem; border-radius: 50%; color: #b8b2a6;
+  background: rgba(255,255,255,.07); }
+.sab-paso-meta > b { color: #e8e4dc; font-weight: 500; }
+.sab-paso-costo { margin-left: auto; color: #6fae7c; font-size: .64rem; }
+.sab-ruta-mats { display: flex; flex-wrap: wrap; gap: .26rem; align-items: baseline;
+  font-size: .68rem; }
+.sab-ruta-mats span { padding: .06rem .34rem; border-radius: 2px; }
+
+/* El destello al saltar de una ficha a otra. Sin esto uno llega a una rejilla
+   de fichas iguales y no sabe a cuál llegó. */
+.sab-destello { animation: sabDestello 1.4s ease-out 1; }
+@keyframes sabDestello {
+  0%, 22% { box-shadow: 0 0 0 2px rgba(200,180,90,.75); background: rgba(200,180,90,.14); }
+  100% { box-shadow: 0 0 0 2px rgba(200,180,90,0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sab-destello { animation-duration: .01s; }
+}
 
 .cx-marco footer { padding: .75rem 1.6rem; border-top: 1px solid rgba(255,255,255,.08); font-size: .68rem; color: #7d857c; letter-spacing: .05em; }
 .cx-marco footer b { color: #e8e4dc; }

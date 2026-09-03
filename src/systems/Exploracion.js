@@ -31,7 +31,32 @@ export class Exploracion {
     this.conocido = new Uint8Array(CELDAS * CELDAS);
     this.nuevasDesdeUltimoDibujo = 0;
     this._acumulado = 0;
+    /**
+     * Sube cada vez que la grilla cambia. El mapa lo usa para no rehacer el
+     * velo —65.536 iteraciones— en cada cuadro de un arrastre.
+     */
+    this.version = 0;
+    /** Celdas con algo conocido, al día. Evita recorrer 65.536 para contarlas. */
+    this._conocidas = 0;
+    /** Hay cambios sin escribir en el almacenamiento. */
+    this._sucio = false;
     this.cargar();
+
+    // El guardado por umbral —cada 400 celdas nuevas, en `main.js`— pierde lo
+    // último que se caminó: quien descubre 399 celdas y cierra la pestaña las
+    // pierde todas. `Partida` ya se protege así de lo mismo, pero guarda su
+    // propia clave, no ésta. Sin esto, explorar de a poco no se acumulaba.
+    // Por `globalThis` y no a pelo: `document?.` no protege de un identificador
+    // que no existe —tira ReferenceError igual— y este módulo se importa desde
+    // los bancos de Node, donde no hay ni ventana ni documento.
+    const doc = globalThis.document;
+    if (typeof globalThis.addEventListener === 'function') {
+      globalThis.addEventListener('beforeunload', () => this.guardarSiHaceFalta());
+      // En móviles `beforeunload` no dispara: el evento fiable es éste
+      doc?.addEventListener('visibilitychange', () => {
+        if (doc.visibilityState === 'hidden') this.guardarSiHaceFalta();
+      });
+    }
   }
 
   _indice(x, z) {
@@ -47,10 +72,13 @@ export class Exploracion {
     return k < 0 ? 0 : this.conocido[k] / 255;
   }
 
+  /**
+   * Se lee al abrir el mapa, al abrir las opciones y al cerrar el año. Antes
+   * recorría las 65.536 celdas cada vez; ahora el contador se lleva al día en
+   * `revisar()`, que es el único lugar donde una celda pasa de cero a algo.
+   */
   get fraccionExplorada() {
-    let n = 0;
-    for (let k = 0; k < this.conocido.length; k++) if (this.conocido[k] > 0) n++;
-    return n / this.conocido.length;
+    return this._conocidas / this.conocido.length;
   }
 
   /**
@@ -97,7 +125,7 @@ export class Exploracion {
     const radioCeldas = Math.ceil(alcance / this.metrosPorCelda);
     const ci = Math.floor((pos.x + this.mundo.mitad) / this.metrosPorCelda);
     const cj = Math.floor((pos.z + this.mundo.mitad) / this.metrosPorCelda);
-    let nuevas = 0;
+    let nuevas = 0, cambio = false;
 
     for (let dj = -radioCeldas; dj <= radioCeldas; dj++) {
       for (let di = -radioCeldas; di <= radioCeldas; di++) {
@@ -112,23 +140,41 @@ export class Exploracion {
         const valor = Math.round(60 + nitidez * 195);
         const k = j * CELDAS + i;
         if (valor > this.conocido[k]) {
-          if (this.conocido[k] === 0) nuevas++;
+          if (this.conocido[k] === 0) { nuevas++; this._conocidas++; }
           this.conocido[k] = valor;
+          cambio = true;
         }
       }
     }
+    // Ojo con la diferencia: `nuevas` son celdas que pasaron de negro a algo,
+    // y es lo que decide cuándo guardar. `cambio` incluye además las que se
+    // afinaron —de intuidas a conocidas de cerca—, que no suman al conteo pero
+    // sí cambian el dibujo del velo. Contar sólo las primeras dejaba el mapa
+    // sin repintar mientras uno se acercaba a lo que ya había entrevisto.
+    if (cambio) { this.version++; this._sucio = true; }
     if (nuevas > 0) this.nuevasDesdeUltimoDibujo += nuevas;
     return nuevas;
+  }
+
+  /** Escribe sólo si hay algo sin escribir. La llaman el cierre y el bucle. */
+  guardarSiHaceFalta() {
+    if (this._sucio) this.guardar();
   }
 
   // ── Persistencia ──────────────────────────────────────────────────────────
 
   guardar() {
     try {
-      // Base64 de la grilla: 64 KB crudos, y comprime bien porque casi todo es cero
+      // Base64 de la grilla: 64 KB crudos, y comprime bien porque casi todo es
+      // cero. Se arma por tandas y no carácter por carácter: `fromCharCode` con
+      // 65.536 argumentos revienta la pila de llamadas en varios navegadores.
       let s = '';
-      for (let k = 0; k < this.conocido.length; k++) s += String.fromCharCode(this.conocido[k]);
+      const TANDA = 8192;
+      for (let k = 0; k < this.conocido.length; k += TANDA) {
+        s += String.fromCharCode.apply(null, this.conocido.subarray(k, k + TANDA));
+      }
       localStorage.setItem(CLAVE, btoa(s));
+      this._sucio = false;
     } catch { /* sin almacenamiento: el mapa vive sólo esta sesión */ }
   }
 
@@ -138,13 +184,24 @@ export class Exploracion {
       if (!s) return false;
       const bin = atob(s);
       if (bin.length !== this.conocido.length) return false;
-      for (let k = 0; k < bin.length; k++) this.conocido[k] = bin.charCodeAt(k);
+      let n = 0;
+      for (let k = 0; k < bin.length; k++) {
+        const v = bin.charCodeAt(k);
+        this.conocido[k] = v;
+        if (v > 0) n++;
+      }
+      this._conocidas = n;
+      this.version++;
+      this._sucio = false;
       return true;
     } catch { return false; }
   }
 
   olvidar() {
     this.conocido.fill(0);
+    this._conocidas = 0;
+    this.version++;
+    this._sucio = false;
     try { localStorage.removeItem(CLAVE); } catch { /* da igual */ }
   }
 }
