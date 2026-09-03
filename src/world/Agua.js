@@ -663,7 +663,60 @@ void main() {
   // azul inventado: bastaba mirar el agua un poco de arriba para que se pusiera
   // celeste. Con 1,15 el horizonte manda hasta bien alto, que además es como se
   // ve un cielo de verdad desde el agua.
-  vec3 domo = mix(uColorHorizonte, uColorCielo, pow(alturaR, 1.15));
+  // ── Rachas de viento: la estructura que le faltaba al lago lejano.
+  //
+  // Pasados 420 m la normal se aplana a (0,1,0) exacta. Ese aplanado es
+  // correcto y no se toca: el ruido de período 1,8 m ahí es subpíxel y
+  // hormiguea. Pero deja al agua lejana con UNA sola fuente de variación —el
+  // reguero del sol—, y el reguero sólo existe mirando hacia el sol. En
+  // cualquier otra dirección el lago vuelve a ser un degradé liso. Medido
+  // reimplementando este mismo camino en Node: la desviación de luminancia del
+  // agua abierta a más de 420 m era **cero exacto**, a cualquier distancia.
+  //
+  // Y eso importa más de lo que parece en la placa de destino: el Nahuel Huapi
+  // es enorme y el reflejo planar está APAGADO en Baja y Mínima (reflejoAgua = 0,
+  // medido: cuesta 0,0 ms). O sea que casi toda el agua que el dueño ve de
+  // verdad es agua de más de 420 m sin espejo, resuelta sólo por este camino.
+  //
+  // Lo que un lago tiene a esa distancia no son olas: son rachas, los manchones
+  // de agua rizada y agua vidriada de cientos de metros que dibuja el viento.
+  // Se modelan como RUGOSIDAD y no como geometría, y ahí está el punto: la
+  // rugosidad es un escalar de baja frecuencia —período ~285 m— así que no
+  // puede caer por debajo del píxel ni hormiguear por lejos que se mire. Es el
+  // detalle que faltaba, resuelto por el único lado que no reintroduce el
+  // aliasing que el aplanado vino a matar.
+  float lejos = 1.0 - nitidez;
+  float rugosidad = 0.0;
+  if (lejos > 0.01) {
+    // Dos escalas y un arrastre lento: las rachas cruzan el lago con el viento.
+    vec2 deriva = uViento * uTiempo * 0.0016;
+    rugosidad = ruido(vMundo.xz * 0.0035 + deriva) * 0.66
+              + ruido(vMundo.xz * 0.0091 - deriva * 1.7) * 0.34;
+    // Umbral alto a propósito: se busca la VETA, no un moteado parejo. Entre
+    // manchón y manchón el agua queda vidriada, que es como se ve de verdad.
+    //
+    // Ojo con el «* lejos»: es lo que garantiza que esto valga CERO en el campo
+    // cercano y que ahí no cambie un solo píxel de lo que ya estaba calibrado.
+    // Las olas de cerca ya tienen su normal de verdad; la racha es el sustituto
+    // de lo que se pierde al aplanarla, no un agregado encima.
+    rugosidad = smoothstep(0.40, 0.74, rugosidad) * lejos;
+  }
+
+  // Dónde entra la racha, que es la parte que costó acertar.
+  //
+  // El primer intento la mezclaba contra el color de horizonte y casi no se
+  // veía: medido, ±0,4 % de luminancia. La razón es que mirando rasante el domo
+  // reflejado YA es color de horizonte, así que mezclar hacia el horizonte no
+  // mueve nada. Donde sí hay contraste que romper es en la SILUETA DEL CERRO:
+  // la ladera reflejada es mucho más oscura que el cielo, y lo que hace el agua
+  // rizada es justamente romper esa imagen. Por eso la racha entra bajando
+  // «tapa» —el manchón de viento borronea el cerro reflejado— y subiendo la
+  // elevación efectiva del rayo, porque una superficie rizada devuelve un
+  // pedazo más ancho de cielo y no un punto.
+  float alturaRacha = mix(alturaR, mix(alturaR, 0.34, 0.48), rugosidad);
+  tapa *= 1.0 - rugosidad * 0.40;
+
+  vec3 domo = mix(uColorHorizonte, uColorCielo, pow(alturaRacha, 1.15));
   vec3 reflejo = mix(domo, ribera, tapa);
 
   // ── Espejo planar: el cerro de enfrente, que es lo que un lago de montaña
@@ -706,13 +759,23 @@ void main() {
   // interpolación: ni una lectura de textura ni una octava de ruido más.
   vec3 sol = normalize(uSol);
   float rd = max(0.0, dot(R, sol));
-  float dureza = mix(34.0, 420.0, nitidez);
+  // El manchón rizado ensancha el lóbulo y el vidriado lo cierra: es la misma
+  // rugosidad de arriba entrando por donde de verdad se nota, que es el ancho
+  // del reguero. Un lago con viento tiene el reguero deshilachado en las vetas
+  // y afilado entre ellas, y eso es lo que hace que el reguero se lea como
+  // superficie y no como una mancha pintada.
+  // Los dos factores de racha valen EXACTAMENTE 1 cuando «rugosidad» es 0, que
+  // es todo el campo cercano: así el reguero de cerca queda como estaba, y lo
+  // que se agrega es sólo lo que antes no existía.
+  float anchoRacha = 1.0 - rugosidad * 0.45;      // la veta rizada deshilacha
+  float brilloRacha = 1.0 - rugosidad * 0.22;     // y reparte la misma energía
+  float dureza = mix(34.0, 420.0, nitidez) * anchoRacha;
   float espec = pow(rd, dureza);
   float destello = pow(rd, 11.0) * 0.13;
   // La intensidad baja cuando el lóbulo se ensancha: un lóbulo ancho reparte la
   // misma energía en más ángulo. Sin esa compensación el reguero lejano se
-  // quemaba a blanco.
-  reflejo += uColorSol * (espec * mix(1.9, 6.5, nitidez) + destello)
+  // quemaba a blanco. Vale igual para el ensanchado por racha.
+  reflejo += uColorSol * (espec * mix(1.9, 6.5, nitidez) * brilloRacha + destello)
            * smoothstep(-0.05, 0.10, sol.y);
 
   vec3 color = mix(refraccion, reflejo, fresnel);

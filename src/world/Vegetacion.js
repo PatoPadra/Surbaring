@@ -13,8 +13,50 @@ import * as THREE from 'three';
 
 const TAM_CELDA = 96;         // metros por celda de siembra
 const RADIO_CELDAS = 13;      // celdas alrededor del jugador
-const MAX_POR_ESPECIE = 1200;   // malla completa: sólo los árboles cercanos
-const MAX_IMPOSTORES = 12000;   // carteleras: todo lo demás
+/**
+ * Topes por lote. Estaban sobredimensionados por dos órdenes de magnitud, y eso
+ * no es gratis: cada ranura reserva su matriz de 16 flotantes y su color de 3,
+ * en memoria de video de una placa integrada de 2012.
+ *
+ * La cota dura sale de la propia siembra y es aritmética, no una estimación:
+ * un lote no puede tener más instancias que candidatos hay en una resiembra, y
+ * los candidatos son **6.842** (529 celdas dentro del disco, 22 intentos en la
+ * del centro y menos hacia afuera). Con 12.000 por lote se reservaba casi el
+ * doble de lo que es posible **aunque una sola especie se llevara todo el
+ * mundo**. Medido en el juego: 4.194 carteleras y 103 mallas **entre los 26
+ * lotes juntos**.
+ *
+ * 7.000 sigue estando por encima de la cota dura de 6.842, así que desbordar es
+ * imposible; y las mallas, que además están limitadas por distancia —sólo entran
+ * las de menos de 140 m, medidas en ~161 en total—, quedan con 600, casi cuatro
+ * veces el peor caso.
+ *
+ * Lo que se libera es lo que paga las cuatro especies nuevas de más abajo.
+ */
+const MAX_POR_ESPECIE = 600;    // malla completa: sólo los árboles cercanos
+const MAX_IMPOSTORES = 7000;    // carteleras: todo lo demás
+
+/**
+ * Cuántas especies leñosas se instancian. Cada una cuesta un atlas de vistas de
+ * 512×768 con mipmaps (~2,0 MiB) más sus búferes de instancia, así que el cupo
+ * es una decisión de memoria de video y no de gusto.
+ *
+ * Con los topes de arriba corregidos, la cuenta cierra sola:
+ *
+ *   antes  26 × (2,0 + 0,870 + 0,087) = 76,9 MiB
+ *   ahora  30 × (2,0 + 0,507 + 0,044) = 76,5 MiB
+ *
+ * O sea: **cuatro especies más y 0,3 MiB MENOS**. Las cuatro se las paga el
+ * desperdicio que había en `MAX_IMPOSTORES`.
+ *
+ * Y hacían falta. Medido sobre el gradiente real del parque (altitud 700-2000 ×
+ * humedad 0-1, 567 celdas, con la misma función de aptitud que usa la siembra):
+ * con las 26 que entraban por orden de archivo, **la estepa pura —humedad 0— no
+ * tenía UNA SOLA especie apta**. Ni una. Media mitad del parque se dibujaba sin
+ * un arbusto, porque el corte por renglón se llevaba puesto todo el extremo seco
+ * del gradiente: neneo, quilembay, mata negra, espino negro, retamo.
+ */
+const CUPO_ESPECIES = 30;
 /**
  * Distancia a la que un árbol pasa de malla completa a cartelera.
  *
@@ -33,6 +75,45 @@ const MAX_IMPOSTORES = 12000;   // carteleras: todo lo demás
  */
 const DIST_IMPOSTOR = 120;
 const JITTER_IMPOSTOR = 0.34;
+
+/**
+ * Cada cuántos metros se rehace el REPARTO malla/cartelera, que no es lo mismo
+ * que resembrar.
+ *
+ * Acá estaba lo que quedaba del «los elementos aparecen y desaparecen». El
+ * reparto se decidía una sola vez por resiembra y midiendo desde el centro de
+ * la celda, así que la referencia se teletransportaba 96 m —135 en diagonal—
+ * contra un umbral de 120 m. Medido con la siembra real reproducida en Node:
+ * **cambiaban de estado ~100 instancias por cruce de celda, sobre 103 árboles
+ * de malla en total.** O sea: el bosque cercano entero se daba vuelta de un
+ * cuadro al otro. La comprobación analítica —la diferencia simétrica de dos
+ * discos de radio 120 con los centros a 96 m— da el 99 % por otro camino.
+ *
+ * Lo que NO era la causa, y se midió antes de descartarlo: usar la posición
+ * real del jugador en vez del centro de la celda baja los cambios de 100 a 96
+ * en línea recta. Casi nada, porque el problema no es DÓNDE está la referencia
+ * sino CADA CUÁNTO se actualiza.
+ *
+ * Con la resiembra —cara, porque consulta el mundo— separada del reparto
+ * —barato, sólo distancias—, el reparto puede correr cada pocos metros. Los
+ * cambios simultáneos caen en proporción al paso:
+ *
+ *   96 m → 99 %  (~102 instancias)      16 m → 17 %  (~17)
+ *   48 m → 51 %  (~52)                   8 m →  8 %  (~9)
+ *   24 m → 25 %  (~26)                   4 m →  4 %  (~4)
+ *
+ * 8 m es el punto donde el relevo pasa a ser de a uno —nueve árboles de cuatro
+ * mil— y todavía es un reparto cada 2,4 s caminando, o sea nada de trabajo.
+ */
+const PASO_REPARTO = 8;
+
+/**
+ * Banda muerta del umbral, en metros. Sin ella un árbol parado justo sobre su
+ * umbral rebota entre malla y cartelera cada vez que el jugador se mueve un
+ * paso adelante y otro atrás. Con el reparto corriendo cada 8 m eso pasaría a
+ * ser visible, así que la histéresis entra junto con el reparto fino.
+ */
+const HISTERESIS_IMPOSTOR = 3;
 
 /** Rotación nula, para las carteleras que se orientan solas. */
 const IDENTIDAD = new THREE.Quaternion();
@@ -62,10 +143,12 @@ export class Vegetacion {
 
     // Sólo las especies leñosas se dibujan como instancias; las hierbas van al
     // manto de pasto y las trepadoras y hongos quedan como objetos de recolección.
-    this.especies = flora.especies
-      .filter(e => ['arbol', 'arbusto', 'cana'].includes(e.tipo))
-      .filter(e => e.altitudMinM !== null && e.altitudMaxM !== null)
-      .slice(0, 26);
+    this.especies = elegirEspecies(
+      flora.especies
+        .filter(e => ['arbol', 'arbusto', 'cana'].includes(e.tipo))
+        .filter(e => e.altitudMinM !== null && e.altitudMaxM !== null),
+      CUPO_ESPECIES
+    );
 
     this.uniformes = {
       uTiempo: { value: 0 },
@@ -216,23 +299,9 @@ export class Vegetacion {
   }
 
   /** Aptitud de una especie en un punto: 0 = no crece, 1 = óptimo. */
+  /** Delega en `aptitudDe`: una sola fórmula, para que no puedan divergir. */
   _aptitud(esp, altitud, humedad, pendienteGrados) {
-    if (altitud < esp.altitudMinM || altitud > esp.altitudMaxM) return 0;
-    if (esp.pendienteMaxGrados && pendienteGrados > esp.pendienteMaxGrados) return 0;
-    if (humedad < (esp.humedadMin ?? 0)) return 0;
-
-    // Campana suave dentro del rango altitudinal
-    const centro = (esp.altitudMinM + esp.altitudMaxM) / 2;
-    const semi = Math.max(1, (esp.altitudMaxM - esp.altitudMinM) / 2);
-    const alt = 1 - Math.pow(Math.abs(altitud - centro) / semi, 2);
-
-    // La humedad por encima del mínimo favorece, pero satura
-    const hum = Math.min(1, (humedad - (esp.humedadMin ?? 0)) / 0.28 + 0.35);
-
-    // Las laderas suaves sostienen más biomasa
-    const pend = 1 - Math.min(1, pendienteGrados / 60) * 0.55;
-
-    return Math.max(0, alt) * hum * pend * (esp.densidadRelativa ?? 0.5);
+    return aptitudDe(esp, altitud, humedad, pendienteGrados);
   }
 
   /**
@@ -274,26 +343,60 @@ export class Vegetacion {
       lote.impostor.malla.material.uniforms.uCotaNieve.value = estado.cotaNieve ?? 1750;
     }
 
+    // Dos cadencias distintas, y esa separación es el arreglo entero:
+    //
+    // - **Resembrar** consulta el mundo —altura, pendiente, humedad, aptitud de
+    //   26 especies por candidato— y sólo hace falta cuando el disco sembrado
+    //   se corre de verdad, o sea cada celda de 96 m.
+    // - **Repartir** es sólo distancias y matrices. Es lo que decide si un árbol
+    //   se ve como malla o como cartelera, y es lo que tiene que ir al día con
+    //   el jugador, porque atrasarlo es exactamente lo que hacía que el bosque
+    //   se diera vuelta de golpe.
     const cx = Math.floor(posicion.x / TAM_CELDA);
     const cz = Math.floor(posicion.z / TAM_CELDA);
-    if (cx === this._celdaActual.x && cz === this._celdaActual.z) return;
-    this._celdaActual = { x: cx, z: cz };
-    this._sembrar(cx, cz);
+    if (cx !== this._celdaActual.x || cz !== this._celdaActual.z) {
+      this._celdaActual = { x: cx, z: cz };
+      this._sembrar(cx, cz, posicion.x, posicion.z);
+      return;
+    }
+    // La resiembra ya reparte, así que acá sólo se mira si el jugador se corrió
+    // lo suficiente desde el último reparto.
+    const r = this._reparteEn;
+    if (!r || Math.hypot(posicion.x - r.x, posicion.z - r.z) >= PASO_REPARTO) {
+      this._repartir(posicion.x, posicion.z);
+    }
   }
 
-  _sembrar(cx, cz) {
+  /**
+   * Siembra: decide QUÉ árbol hay y DÓNDE. Es la mitad cara —consulta el
+   * mundo—, y no depende de dónde esté parado el jugador dentro de la celda.
+   *
+   * No escribe en los búferes de instancia: deja los individuos en una lista
+   * plana y le pasa el trabajo a `_repartir`, que es la mitad barata y la que
+   * sí depende del jugador. Separarlas es lo que permite repartir cada 8 m sin
+   * pagar 178.000 evaluaciones de aptitud cada vez.
+   */
+  _sembrar(cx, cz, px, pz) {
     const m = this.mundo;
-    for (const lote of this.lotes) {
-      lote.n = 0;
-      if (lote.impostor) lote.impostor.n = 0;
+
+    // Cota dura de candidatos: 529 celdas dentro del disco, 22 intentos en la
+    // del centro y menos hacia afuera. Se reserva una vez y no se toca más.
+    if (!this._sPos) {
+      const cap = 7200;
+      this._sCap = cap;
+      this._sPos = new Float32Array(cap * 3);
+      this._sEsc = new Float32Array(cap * 3);
+      this._sCua = new Float32Array(cap * 4);
+      this._sCol = new Float32Array(cap * 3);
+      this._sUmbral = new Float32Array(cap);
+      this._sLote = new Uint8Array(cap);
+      this._sEsImpostor = new Uint8Array(cap);
+      this._incl = new THREE.Quaternion();
+      this._ejeIncl = new THREE.Vector3(1, 0, 0.3).normalize();
     }
 
-    // Centro del sembrado: el reparto entre malla y cartelera se mide desde acá
-    const centroX = (cx + 0.5) * TAM_CELDA;
-    const centroZ = (cz + 0.5) * TAM_CELDA;
-
     const color = new THREE.Color();
-    let total = 0;
+    let n = 0;
 
     for (let dz = -RADIO_CELDAS; dz <= RADIO_CELDAS; dz++) {
       for (let dx = -RADIO_CELDAS; dx <= RADIO_CELDAS; dx++) {
@@ -315,8 +418,19 @@ export class Vegetacion {
         for (let k = 0; k < intentos; k++) {
           const x = gx * TAM_CELDA + azar() * TAM_CELDA;
           const z = gz * TAM_CELDA + azar() * TAM_CELDA;
+          if (n >= this._sCap) continue;
           if (!m.dentro(x, z)) continue;
           if (m.esAgua(x, z)) continue;
+
+          // Claros del bosque: ruido de baja frecuencia abre huecos naturales.
+          //
+          // Va ANTES de la ruleta, y no después como estaba: descarta uno de
+          // cada cinco candidatos y cada descarte se ahorra las 26 aptitudes de
+          // la ruleta, que son el grueso del costo de resembrar. El resultado no
+          // cambia —el claro no depende de la especie elegida— y la resiembra
+          // sale más barata, que es justo lo que hay que financiar para poder
+          // repartir más seguido.
+          if (ruidoValor(x * 0.0042, z * 0.0042) < 0.24) continue;
 
           const altitud = m.alturaEn(x, z);
           const pendiente = m.pendienteEn(x, z) * 180 / Math.PI;
@@ -339,41 +453,15 @@ export class Vegetacion {
           }
           if (elegido < 0) continue;
 
-          const lote = this.lotes[elegido];
-
-          // Claros del bosque: ruido de baja frecuencia abre huecos naturales
-          const claro = ruidoValor(x * 0.0042, z * 0.0042);
-          if (claro < 0.24) continue;
-
-          // Nivel de detalle: cerca la malla completa, lejos la cartelera. El
-          // umbral lleva un desvío propio de este árbol, estable porque sale de
-          // su posición: el mismo árbol elige siempre el mismo umbral, así que
-          // cruzarlo es un evento único y no un rebote entre cuadros.
-          const dist = Math.hypot(x - centroX, z - centroZ);
-          const umbral = DIST_IMPOSTOR * (1 + (hashPos(x, z) - 0.5) * JITTER_IMPOSTOR);
-          const usaImpostor = lote.impostor && dist > umbral;
-          const destino = usaImpostor ? lote.impostor : lote;
-          const tope = usaImpostor ? MAX_IMPOSTORES : MAX_POR_ESPECIE;
-          if (destino.n >= tope) continue;
-
-          const esp = lote.esp;
+          const esp = this.lotes[elegido].esp;
           const alturaObj = esp.alturaMinM + azar() * (esp.alturaMaxM - esp.alturaMinM);
           const escala = alturaObj / Math.max(0.5, (esp.alturaMinM + esp.alturaMaxM) / 2);
 
           // Los árboles crecen inclinados hacia la luz y contra el viento oeste
           const inclinacion = (azar() - 0.5) * 0.10 + 0.045;
           this._cua.setFromAxisAngle(this._eje, azar() * Math.PI * 2);
-          const incl = new THREE.Quaternion().setFromAxisAngle(
-            new THREE.Vector3(1, 0, 0.3).normalize(), inclinacion
-          );
-          this._cua.multiply(incl);
-
-          this._pos.set(x, altitud - 0.15, z);
-          this._esc.set(escala * (0.86 + azar() * 0.3), escala, escala * (0.86 + azar() * 0.3));
-          // La cartelera no lleva la rotación aleatoria: se orienta sola hacia
-          // la cámara en el shader. Sólo le importan la posición y la escala.
-          this._matriz.compose(this._pos, usaImpostor ? IDENTIDAD : this._cua, this._esc);
-          destino.malla.setMatrixAt(destino.n, this._matriz);
+          this._incl.setFromAxisAngle(this._ejeIncl, inclinacion);
+          this._cua.multiply(this._incl);
 
           // Tinte: verdes más oscuros en umbría, más claros al sol, y sobre todo
           // un verde distinto por árbol.
@@ -388,13 +476,83 @@ export class Vegetacion {
           const v = 0.80 + azar() * 0.40;
           const tono = azar() * 2 - 1;          // −1 amarillento, +1 azulado
           color.setRGB(v * (1 - tono * 0.13), v * (1 + tono * 0.02), v * (1 + tono * 0.20));
-          destino.colores.setXYZ(destino.n, color.r, color.g, color.b);
-          destino.dist[destino.n] = dist;
 
-          destino.n++;
-          total++;
+          this._sPos[n * 3] = x; this._sPos[n * 3 + 1] = altitud - 0.15; this._sPos[n * 3 + 2] = z;
+          this._sEsc[n * 3] = escala * (0.86 + azar() * 0.3);
+          this._sEsc[n * 3 + 1] = escala;
+          this._sEsc[n * 3 + 2] = escala * (0.86 + azar() * 0.3);
+          this._sCua[n * 4] = this._cua.x; this._sCua[n * 4 + 1] = this._cua.y;
+          this._sCua[n * 4 + 2] = this._cua.z; this._sCua[n * 4 + 3] = this._cua.w;
+          this._sCol[n * 3] = color.r; this._sCol[n * 3 + 1] = color.g; this._sCol[n * 3 + 2] = color.b;
+          // El desvío del umbral sale de la posición, así que el mismo árbol
+          // elige siempre el mismo umbral por más que se lo reparta mil veces.
+          this._sUmbral[n] = DIST_IMPOSTOR * (1 + (hashPos(x, z) - 0.5) * JITTER_IMPOSTOR);
+          this._sLote[n] = elegido;
+          // Sin estado previo: en la primera repartición de esta siembra se
+          // clasifica sin banda muerta.
+          this._sEsImpostor[n] = 2;
+          n++;
         }
       }
+    }
+    this._sN = n;
+    this._repartir(px, pz);
+  }
+
+  /**
+   * Reparto: decide CÓMO se dibuja cada árbol —malla completa o cartelera— y
+   * llena los búferes de instancia. Es sólo distancias y matrices: ni una
+   * consulta al mundo, ni una evaluación de aptitud.
+   *
+   * Corre cada `PASO_REPARTO` metros, que es lo que mantiene la decisión al día
+   * con el jugador. Antes corría una sola vez por resiembra y medía desde el
+   * centro de la celda, y por eso ~100 de los 103 árboles de malla cambiaban de
+   * estado en el mismo cuadro cada vez que se cruzaba una celda.
+   */
+  _repartir(px, pz) {
+    for (const lote of this.lotes) {
+      lote.n = 0;
+      if (lote.impostor) lote.impostor.n = 0;
+    }
+
+    let total = 0;
+    for (let i = 0; i < this._sN; i++) {
+      const x = this._sPos[i * 3], z = this._sPos[i * 3 + 2];
+      const dist = Math.hypot(x - px, z - pz);
+      const u = this._sUmbral[i];
+
+      // Banda muerta: el árbol que ya es cartelera se queda en cartelera hasta
+      // acercarse de verdad, y al revés. Sin esto, uno parado justo sobre su
+      // umbral rebotaría con cada paso del jugador.
+      const previo = this._sEsImpostor[i];
+      const usa = previo === 2 ? dist > u
+                : previo === 1 ? dist > u - HISTERESIS_IMPOSTOR
+                               : dist > u + HISTERESIS_IMPOSTOR;
+
+      const lote = this.lotes[this._sLote[i]];
+      const usaImpostor = usa && !!lote.impostor;
+      this._sEsImpostor[i] = usaImpostor ? 1 : 0;
+
+      const destino = usaImpostor ? lote.impostor : lote;
+      const tope = usaImpostor ? MAX_IMPOSTORES : MAX_POR_ESPECIE;
+      if (destino.n >= tope) continue;
+
+      this._pos.set(x, this._sPos[i * 3 + 1], z);
+      this._esc.set(this._sEsc[i * 3], this._sEsc[i * 3 + 1], this._sEsc[i * 3 + 2]);
+      // La cartelera no lleva la rotación aleatoria: se orienta sola hacia la
+      // cámara en el shader. Sólo le importan la posición y la escala.
+      if (usaImpostor) {
+        this._matriz.compose(this._pos, IDENTIDAD, this._esc);
+      } else {
+        this._cua.set(this._sCua[i * 4], this._sCua[i * 4 + 1],
+                      this._sCua[i * 4 + 2], this._sCua[i * 4 + 3]);
+        this._matriz.compose(this._pos, this._cua, this._esc);
+      }
+      destino.malla.setMatrixAt(destino.n, this._matriz);
+      destino.colores.setXYZ(destino.n, this._sCol[i * 3], this._sCol[i * 3 + 1], this._sCol[i * 3 + 2]);
+      destino.dist[destino.n] = dist;
+      destino.n++;
+      total++;
     }
 
     let cercanos = 0, lejanos = 0;
@@ -409,12 +567,21 @@ export class Vegetacion {
       // instancias ya están ordenadas de cerca a lejos —el recorte por preset
       // depende de ese mismo orden—, cortar es fijar un número.
       lote.nSombra = this._cuantasHasta(lote, this.alcanceSombra ?? 400);
+      // Un lote sin instancias no se dibuja. Parece obvio y no lo era: con
+      // `count` en 0 la llamada de dibujo se emite igual, con su cambio de
+      // estado y su programa. Y esto es lo que hace que subir el cupo de
+      // especies sea barato: en cualquier punto del mapa sólo un puñado de las
+      // treinta es apta, así que el costo por cuadro lo fija la diversidad
+      // LOCAL y no el largo de la lista. En la estepa no se paga el bosque
+      // húmedo, y en el bosque húmedo no se paga la estepa.
+      lote.malla.visible = lote.n > 0;
       lote.malla.instanceMatrix.needsUpdate = true;
       lote.colores.needsUpdate = true;
       lote.malla.computeBoundingSphere();
       cercanos += lote.n;
       if (lote.impostor) {
         lote.impostor.malla.count = lote.impostor.n;
+        lote.impostor.malla.visible = lote.impostor.n > 0;
         lote.impostor.malla.instanceMatrix.needsUpdate = true;
         lote.impostor.colores.needsUpdate = true;
         lote.impostor.malla.computeBoundingSphere();
@@ -424,6 +591,7 @@ export class Vegetacion {
     this.totalInstancias = total;
     this.mallasCompletas = cercanos;
     this.impostores = lejanos;
+    this._reparteEn = { x: px, z: pz };
   }
 
   /**
@@ -1288,6 +1456,92 @@ function inyectarViento(mat, uniformes, esp) {
  * para que el mismo árbol —sembrado siempre con la misma semilla de celda—
  * saque siempre el mismo número por más que se lo pregunte en otra resiembra.
  */
+/**
+ * Aptitud de una especie en un punto del gradiente. Vive suelta y no como
+ * método a propósito: la usa la siembra en caliente Y la elección de especies de
+ * abajo, y si hubiera dos copias podrían divergir sin que nadie se entere.
+ */
+function aptitudDe(esp, altitud, humedad, pendienteGrados) {
+  if (altitud < esp.altitudMinM || altitud > esp.altitudMaxM) return 0;
+  if (esp.pendienteMaxGrados && pendienteGrados > esp.pendienteMaxGrados) return 0;
+  if (humedad < (esp.humedadMin ?? 0)) return 0;
+
+  // Campana suave dentro del rango altitudinal
+  const centro = (esp.altitudMinM + esp.altitudMaxM) / 2;
+  const semi = Math.max(1, (esp.altitudMaxM - esp.altitudMinM) / 2);
+  const alt = 1 - Math.pow(Math.abs(altitud - centro) / semi, 2);
+
+  // La humedad por encima del mínimo favorece, pero satura
+  const hum = Math.min(1, (humedad - (esp.humedadMin ?? 0)) / 0.28 + 0.35);
+
+  // Las laderas suaves sostienen más biomasa
+  const pend = 1 - Math.min(1, pendienteGrados / 60) * 0.55;
+
+  return Math.max(0, alt) * hum * pend * (esp.densidadRelativa ?? 0.5);
+}
+
+/**
+ * Qué especies se instancian, cuando no entran todas.
+ *
+ * Antes era `.slice(0, 26)`: las primeras 26 **del archivo**. Nadie había
+ * decidido eso, y el orden del archivo resultó estar correlacionado con la
+ * humedad, así que el corte se llevaba entero el extremo seco del gradiente y
+ * dejaba la estepa sin una sola especie apta.
+ *
+ * El criterio ahora es el nicho, medido con la misma aptitud que usa la siembra:
+ *
+ * 1. **No se saca ninguna de las que ya estaban.** Otros sistemas —el códice,
+ *    las recetas, el árbol de tecnologías— nombran especies concretas, y una
+ *    reordenación pura por nicho dejaba afuera al alerce y al arrayán, que son
+ *    el árbol emblema de la región y el bosque que le da nombre a un sitio de
+ *    este mismo parque. Un criterio que borra eso está optimizando el número
+ *    equivocado.
+ * 2. **Las plazas que sobran se llenan por escasez**: gana la especie que más
+ *    aporta donde la lista está más flaca, pesando cada celda del gradiente por
+ *    `1/(1 + cubierta²)`. Así el cupo se va solo al extremo seco, que es donde
+ *    faltaba todo, en vez de agregar el décimo árbol del bosque húmedo.
+ *
+ * Medido con `.claude/flota/r2-mundo-especies.mjs`: con 30 la cobertura del
+ * gradiente iguala a la de las 38 enteras —64 celdas sin especie apta, contra
+ * 89 con las 26— y ninguna franja de humedad empeora respecto de hoy.
+ */
+function elegirEspecies(lista, cupo) {
+  if (lista.length <= cupo) return lista;
+
+  // Malla del gradiente real del parque, con una pendiente típica de ladera.
+  const celdas = [];
+  for (let a = 700; a <= 2000; a += 50) {
+    for (let h = 0; h <= 1.0001; h += 0.05) celdas.push([a, h]);
+  }
+  const cubre = (esp) => celdas.map(c => aptitudDe(esp, c[0], c[1], 12) > 0.02);
+
+  const elegidas = lista.slice(0, Math.min(cupo, 26));
+  const veces = new Array(celdas.length).fill(0);
+  for (const esp of elegidas) {
+    const c = cubre(esp);
+    for (let i = 0; i < celdas.length; i++) if (c[i]) veces[i]++;
+  }
+
+  const resto = lista.slice(elegidas.length);
+  while (elegidas.length < cupo && resto.length) {
+    let mejor = null, mejorPuntaje = -1;
+    for (const esp of resto) {
+      const c = cubre(esp);
+      let p = 0;
+      for (let i = 0; i < celdas.length; i++) {
+        if (c[i]) p += 1 / (1 + veces[i] * veces[i]);
+      }
+      if (p > mejorPuntaje) { mejorPuntaje = p; mejor = esp; }
+    }
+    if (!mejor || mejorPuntaje <= 0) break;
+    elegidas.push(mejor);
+    const c = cubre(mejor);
+    for (let i = 0; i < celdas.length; i++) if (c[i]) veces[i]++;
+    resto.splice(resto.indexOf(mejor), 1);
+  }
+  return elegidas;
+}
+
 function hashPos(x, z) {
   let n = Math.round(x * 10) * 374761393 + Math.round(z * 10) * 668265263;
   n = (n ^ (n >> 13)) * 1274126177;

@@ -260,7 +260,6 @@ export class Terreno {
       uNieveSuavidad: { value: 220 },
       uLineaBosque: { value: 1620 },
       uEstacion: { value: 0 },          // 0 verano … 1 otoño … 2 invierno … 3 primavera
-      uMezclaEstacion: { value: 0 },
       uCeniza: { value: 0 },            // cobertura de ceniza volcánica 0..1
       uHumedadGlobal: { value: 0 },     // lluvia reciente: oscurece y satura
     };
@@ -352,11 +351,27 @@ export class Terreno {
         uniform float uNieveSuavidad;
         uniform float uLineaBosque;
         uniform float uEstacion;
-        uniform float uMezclaEstacion;
         uniform float uCeniza;
         uniform float uHumedadGlobal;
         varying vec3 vMundo;
         varying float vMorph;
+
+        // Dos lecturas que se hacían DOS VECES por fragmento, con la misma UV.
+        //
+        // El color se inyecta en <map_fragment> y la normal en
+        // <normal_fragment_begin>, que son dos trozos distintos del shader, y
+        // cada uno se leía sus texturas por su cuenta: «uTexNormal» completa y
+        // «uTexCobertura» completa, con la UV idéntica. Como three pone
+        // map_fragment ANTES que normal_fragment_begin —comprobado leyendo
+        // ShaderLib.physical— alcanza con guardarlas en un global del fragmento
+        // y releerlas de ahí. La salida es idéntica bit a bit: es la misma
+        // muestra, no una aproximación.
+        //
+        // En una HD 4000 esto no es una miseria: el terreno ocupa casi toda la
+        // pantalla y son texturas de punto flotante, que es de lo más caro que
+        // se puede pedir por píxel.
+        vec3 gNormalDEM;
+        vec4 gCobertura;
 
         // Hash de Hoskins. El clásico fract(p.x*p.y) produce franjas diagonales
         // muy visibles en superficies grandes, que era justo lo que ensuciaba
@@ -430,11 +445,13 @@ export class Terreno {
         `
         vec2 uvMundo = vMundo.xz / uTamanoMundo + 0.5;
         vec4 cob = texture2D(uTexCobertura, uvMundo);
+        gCobertura = cob;                 // la relee la sección de normal
         float esAgua = cob.r;
         float cauce = cob.g;
         float humedad = cob.b;
 
         vec3 nrm = normalize(texture2D(uTexNormal, uvMundo).xyz * 2.0 - 1.0);
+        gNormalDEM = nrm;                 // idem: una sola lectura por fragmento
         float pend = 1.0 - clamp(nrm.y, 0.0, 1.0);      // 0 llano, 1 vertical
         float alt = vMundo.y;
 
@@ -514,7 +531,24 @@ export class Terreno {
         // desenfocado, que era el peor defecto visual que quedaba: todo el
         // trabajo multiescala se terminaba antes de llegar a donde el jugador
         // realmente mira.
-        float pasoCorto = 1.0 - smoothstep(1.2 * alcance, 16.0 * alcance, distVista);
+        // «El suelo no tiene material bajo los pies», que estaba anotado en el
+        // ESTADO como diagnosticado y sin empezar. Acá está el porqué, y es un
+        // desajuste, no una falta de detalle:
+        //
+        // La gravilla del ALBEDO se recortaba con «alcance», que en Baja vale
+        // 0,35, así que moría a **5,6 m**. Pero la escala de la NORMAL que
+        // ilumina ese mismo grano —«f3», abajo en la sección de normal— no se
+        // recorta por preset y llega a **11 m**. O sea que entre 5,6 y 11 m la
+        // luz rasante engancha en un grano que **no tiene color**: el relieve
+        // está, el material no. Eso es exactamente «no tiene material».
+        //
+        // Se le pone un piso al alcance para que el albedo llegue a los mismos
+        // 11 m que la normal. No es un gusto: es hacer que las dos mitades del
+        // mismo fenómeno terminen en el mismo lugar. Y es la banda más barata de
+        // todas, porque son los últimos metros: mirando al frente ocupa la
+        // franja de abajo de la pantalla, no la pantalla.
+        float alcanceCerca = max(alcance, 0.69);   // 16 × 0,69 = 11,0 m, igual que f3
+        float pasoCorto = 1.0 - smoothstep(1.2 * alcanceCerca, 16.0 * alcanceCerca, distVista);
         if (pasoCorto > 0.004) gravilla = fbmTriCorto(vMundo, nrm, 8.2);   // ~12 cm
 
         float detalle = macro;
@@ -647,7 +681,8 @@ export class Terreno {
         // geometryNormal lo declara después <lights_fragment_begin>: repetirlo
         // acá rompe el enlace del programa.
         float faceDirection = gl_FrontFacing ? 1.0 : -1.0;
-        vec3 normal = normalize(texture2D(uTexNormal, vMundo.xz / uTamanoMundo + 0.5).xyz * 2.0 - 1.0);
+        // Ya la leyó <map_fragment>, que corre antes. Misma UV, misma muestra.
+        vec3 normal = gNormalDEM;
 
         // Relieve fino en dos escalas, atenuado con la distancia para que no
         // hormiguee. El DEM tiene 32 m por texel: todo lo que pasa por debajo
@@ -661,8 +696,8 @@ export class Terreno {
         // los vértices. Si se usara otro ruido, la luz contaría una historia
         // distinta de la que cuenta la silueta.
         if (f1 > 0.004) {
-          vec4 cobN = texture2D(uTexCobertura, vMundo.xz / uTamanoMundo + 0.5);
-          float enTierra = 1.0 - smoothstep(0.15, 0.6, cobN.r);
+          // Misma cobertura que ya leyó <map_fragment>: no hace falta pedirla otra vez.
+          float enTierra = 1.0 - smoothstep(0.15, 0.6, gCobertura.r);
           float e = uDetallePeriodo / 256.0;   // un texel del mosaico
           vec2 uvD = vMundo.xz / uDetallePeriodo;
           float dx = texture2D(uTexDetalle, uvD + vec2(e / uDetallePeriodo, 0.0)).r
@@ -705,7 +740,10 @@ export class Terreno {
         `
         float roughnessFactor = roughness;
         {
-          vec4 cobR = texture2D(uTexCobertura, vMundo.xz / uTamanoMundo + 0.5);
+          // Acá había una lectura de uTexCobertura cuyo resultado NO se usaba:
+          // se pedía una textura de punto flotante por fragmento de terreno para
+          // guardarla en una variable que nadie leía. La rugosidad sale de la
+          // altura y de la humedad global, y ninguna de las dos la necesita.
           float altR = vMundo.y;
           float nieveR = smoothstep(uNieveCota - uNieveSuavidad, uNieveCota + uNieveSuavidad, altR);
           roughnessFactor = mix(roughnessFactor, 0.42, nieveR * 0.8);
