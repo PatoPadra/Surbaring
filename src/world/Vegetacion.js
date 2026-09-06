@@ -163,6 +163,12 @@ export class Vegetacion {
     for (const esp of this.especies) {
       this.lotes.push(this._crearLote(esp));
     }
+    // Horneado terminado: nadie vuelve a escribir en esos objetivos, así que la
+    // profundidad compartida ya no hace falta ni un cuadro más. Ver
+    // `profundidadHorno()`. Es también lo que deja los treinta objetivos sin
+    // ninguna referencia común, de modo que un `dispose()` sobre cualquiera de
+    // ellos no puede llevarse por delante a los otros veintinueve.
+    this.profundidadLiberada = liberarProfundidadHorno(this.lotes);
 
     this._celdaActual = { x: 9999, z: 9999 };
     this._matriz = new THREE.Matrix4();
@@ -175,7 +181,7 @@ export class Vegetacion {
 
   _crearLote(esp) {
     const geo = construirPlanta(esp);
-    const claseHoja = clasificar(esp) === 'columnar' ? 'aguja' : 'lamina';
+    const claseHoja = claseHojaDe(esp);
     // Lambert y no Standard, y la razón es de presupuesto medido.
     //
     // Con rugosidad 0,88 y metalness 0 el lóbulo especular de GGX no aporta un
@@ -667,6 +673,76 @@ export class Vegetacion {
 // ── Impostores ──────────────────────────────────────────────────────────────
 
 /**
+ * Un solo buffer de profundidad para los treinta hornos, y devuelto en cuanto se
+ * termina de hornear.
+ *
+ * `WebGLRenderTarget` crea un renderbuffer de profundidad por objetivo
+ * (`depthBuffer: true` por defecto), el objetivo queda vivo dentro de
+ * `horneado.objetivo` y **nunca se libera**. Con `stencilBuffer: false` el
+ * formato es `DEPTH_COMPONENT24`, que el driver almacena padeado a 32 bits:
+ * 512·768·4 B = **1,5 MiB por especie**, ×30 = **45 MiB** que ningún preset baja
+ * y que el comentario de `CUPO_ESPECIES` no contaba. Es el número más grande de
+ * la ronda 3, y se paga sin dibujar un solo píxel distinto.
+ *
+ * Pero la profundidad **sólo hace falta mientras se hornea**: los dieciséis
+ * viewports se dibujan de a uno, en el constructor, y después la cartelera lee
+ * el color y nada más. Así que van dos cosas juntas:
+ *
+ * 1. **Compartir.** Una `THREE.DepthTexture` única para los treinta objetivos.
+ *    `setupDepthRenderbuffer()` de three, si el objetivo trae `depthTexture` y
+ *    nadie llamó a `setRenderTargetTextures()` —o sea con `__autoAllocateDepthBuffer`
+ *    sin definir—, **no crea renderbuffer** y adjunta la textura. Verificado en
+ *    `node_modules/three/build/three.module.js:25744`. Detalle de mecanismo que
+ *    manda el orden: `setupRenderTarget()` llama a `setupDepthRenderbuffer()`
+ *    mientras compone el framebuffer (`:26044`), así que la textura tiene que ir
+ *    en el descriptor de construcción; puesta después del primer
+ *    `setRenderTarget` no la mira nadie.
+ * 2. **Devolverla.** Terminado el último horno se desengancha de los treinta
+ *    objetivos y se libera. Los treinta ya tienen su color con mipmaps —three
+ *    los regenera al cerrar cada `render()`— y su framebuffer no se vuelve a
+ *    usar para escribir.
+ *
+ * Lo segundo no es adorno: **`deallocateRenderTarget()` de three llama a
+ * `renderTarget.depthTexture.dispose()`** (`three.module.js:24508`). Con la
+ * textura compartida y viva, `objetivo.dispose()` sobre UNO de los treinta
+ * liberaría la profundidad de los otros veintinueve. Hoy nadie llama a ese
+ * dispose —`Vegetacion.dispose()` sólo suelta geometría y material— pero es una
+ * trampa cargada para el que venga. Liberando al final, la trampa desaparece:
+ * cuando el constructor termina, ningún objetivo referencia nada compartido.
+ *
+ * Ahorro: **45,0 MiB**, sin tocar una vista ni un píxel.
+ *
+ * La contracara, escrita para que se sepa: después de liberar, **estos objetivos
+ * no se pueden volver a usar para renderizar**. Su framebuffer conserva un
+ * adjunto de profundidad que ya no existe, y `setupDepthRenderbuffer()` no se
+ * vuelve a llamar por sí solo sobre un objetivo ya compuesto. Si alguna vez hace
+ * falta rehornear en caliente —cambio de estación, LOD dinámico— hay que crear
+ * el objetivo de nuevo, no reusarlo.
+ */
+let _profundidadHorno = null;
+
+function profundidadHorno(ancho, alto) {
+  if (!_profundidadHorno) _profundidadHorno = new THREE.DepthTexture(ancho, alto);
+  return _profundidadHorno;
+}
+
+/** @returns {number} cuántos objetivos soltaron la profundidad compartida. */
+function liberarProfundidadHorno(lotes) {
+  if (!_profundidadHorno) return 0;
+  let n = 0;
+  for (const l of lotes) {
+    const objetivo = l.impostor?.horneado?.objetivo;
+    if (objetivo && objetivo.depthTexture === _profundidadHorno) {
+      objetivo.depthTexture = null;
+      n++;
+    }
+  }
+  _profundidadHorno.dispose();
+  _profundidadHorno = null;
+  return n;
+}
+
+/**
  * Hornea una especie a una textura: se dibuja el árbol una sola vez de costado,
  * con luz neutra, y esa imagen se usa después como cartelera.
  *
@@ -717,6 +793,10 @@ function hornearImpostor(render, geometria, mapaFollaje) {
     format: THREE.RGBAFormat,
     generateMipmaps: true,
     colorSpace: THREE.SRGBColorSpace,
+    // En el descriptor y no después: `setupRenderTarget()` compone el
+    // framebuffer en el primer `setRenderTarget` y ahí decide de una vez si
+    // adjunta la textura o crea un renderbuffer propio. Ver `profundidadHorno()`.
+    depthTexture: profundidadHorno(anchoTeja * COLS, altoTeja * FILAS),
   });
 
   const camara = new THREE.OrthographicCamera(
@@ -901,45 +981,233 @@ void main() {
 }
 `;
 
-// ── Textura de follaje ──────────────────────────────────────────────────────
+// ── Textura de follaje y corteza ────────────────────────────────────────────
 
 /**
- * Atlas de follaje dibujado a mano alzada en un lienzo.
+ * Reparto del atlas, y por qué la corteza es una franja y no un cuadrado.
+ *
+ * Hasta la ronda 3 la madera apuntaba a un cuadrado opaco BLANCO de 51×51 px en
+ * la esquina (`fillRect(N*0.90, N*0.90, ...)`), y `pintar()` mandaba TODOS los
+ * vértices del tronco al mismo punto: un tronco entero muestreando un texel.
+ *
+ * Poner corteza ahí pedía más resolución, y agrandar el cuadrado era el camino
+ * obvio y equivocado. Las tarjetas de follaje eligen su ventana con
+ * `u0 ∈ [0, 0.55]` y `uw ∈ [0.30, 0.44]`, así que **llegan hasta 0,99**: ya hoy
+ * el 0,58 % de las tarjetas muerde el cuadrado blanco y se ve como una mancha
+ * opaca en la copa. Con el parche al 20 % ese número sube al 5,3 %.
+ *
+ * La salida es al revés: se **acota la ventana de las tarjetas** a
+ * `FOLLAJE_U_MAX` y la corteza se queda con una franja vertical de 64 px de
+ * ancho por 512 de alto. Gana tres veces:
+ *
+ * 1. Desaparece el derrame del parche sobre el follaje.
+ * 2. Una franja alta es la forma correcta para corteza: las grietas corren a lo
+ *    largo del tronco, o sea que hacen falta muchos texels en V y pocos en U.
+ * 3. El follaje no cambia de aspecto: el dibujo es estadísticamente homogéneo y
+ *    muestrear [0 · 0,86] rinde lo mismo que muestrear [0 · 0,99].
+ */
+const CORTEZA_X0 = 0.875;          // 448/512: dónde arranca la franja
+const CORTEZA_GUARDA = 8 / 512;    // columnas de guarda contra el sangrado bilineal
+const FOLLAJE_U_MAX = 0.86;        // tope de la ventana de atlas de una tarjeta
+
+/**
+ * Atlas de follaje dibujado a mano alzada en un lienzo, más la franja de
+ * corteza. Se dibuja **una sola vez por clase de hoja** al arranque: lo que
+ * entre acá cuesta cero por cuadro.
  *
  * Los racimos de icosaedros sólidos daban esa silueta de goma de mascar que
  * delata a un prototipo. Un árbol real no tiene contorno liso: tiene miles de
  * huecos por donde pasa el cielo. Se resuelve con tarjetas recortadas por alfa,
  * que además salen más baratas que los sólidos que reemplazan.
  *
- * La esquina inferior derecha queda opaca a propósito: los troncos y las ramas
- * apuntan sus UV ahí y así comparten material con las hojas, que es lo que
- * permite dibujar el árbol entero en una sola instancia.
+ * Lo único que un atlas más cargado sí puede encarecer es la **cobertura de
+ * alfa**: con `alphaTest: 0.28`, cada fragmento que pasa el corte paga el
+ * Lambert entero. Por eso las capas nuevas se repartieron a cobertura igual y
+ * no a ojo. El número medido está en `.claude/flota/r3-flora.md`.
  */
 const _atlasCache = new Map();
 
-export function atlasFollaje(clase) {
-  if (_atlasCache.has(clase)) return _atlasCache.get(clase);
+function atlasDe(clase) {
+  let info = _atlasCache.get(clase);
+  if (!info) { info = construirAtlas(clase); _atlasCache.set(clase, info); }
+  return info;
+}
 
+export function atlasFollaje(clase) {
+  return atlasDe(clase).textura;
+}
+
+/** Ventana y compensación de brillo de la corteza de una clase de hoja. */
+function corteza(clase) {
+  return atlasDe(clase).corteza;
+}
+
+function construirAtlas(clase) {
   const N = 512;
   const lienzo = document.createElement('canvas');
   lienzo.width = lienzo.height = N;
   const c = lienzo.getContext('2d');
   c.clearRect(0, 0, N, N);
 
-  const azar = (a, b) => a + Math.random() * (b - a);
+  if (clase === 'aguja') dibujarAciculas(c, N);
+  else dibujarLaminas(c, N);
 
-  if (clase === 'aguja') {
-    // Conífera: ramillas con acículas a ambos lados del raquis
-    for (let r = 0; r < 54; r++) {
-      const x0 = azar(0.05, 0.95) * N, y0 = azar(0.05, 0.95) * N;
+  // La franja va última porque es opaca y tapa lo que le haya quedado debajo,
+  // exactamente igual que el parche blanco al que reemplaza.
+  const xIni = Math.round(CORTEZA_X0 * N);
+  const franja = dibujarCorteza(c, N, clase, xIni, N - xIni);
+
+  const tex = new THREE.CanvasTexture(lienzo);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 8;
+  tex.generateMipmaps = true;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.needsUpdate = true;
+
+  return {
+    textura: tex,
+    corteza: {
+      // La ventana la declara quien dibujó la franja, no una cuenta paralela.
+      u0: franja.u0,
+      u1: franja.u1,
+      // Medio texel adentro arriba y abajo: los pliegues del ping-pong caen
+      // sobre centros de texel y no sobre el borde, donde `ClampToEdge` mete
+      // medio texel de asimetría.
+      v0: 0.5 / N,
+      v1: 1 - 0.5 / N,
+      mediaLineal: franja.media,
+      maxLineal: franja.max,
+      // El tronco de antes leía un texel de valor 1,0, así que su albedo ERA
+      // `colorTronco`. Cualquier patrón tiene media < 1 y lo oscurecería: es el
+      // mismo pozo del tronco caído de la ronda 1 (albedo 0,047 → negro puro).
+      // Se compensa el color de vértice con 1/media —en LINEAL, que es donde
+      // multiplica el shader después de decodificar el texel sRGB— y el albedo
+      // MEDIO del tronco queda idéntico al de antes, especie por especie.
+      compensacion: 1 / Math.max(1e-3, franja.media),
+    },
+  };
+}
+
+// ── El follaje, en tres capas ───────────────────────────────────────────────
+
+/**
+ * Centros de agrupamiento. El follaje de hoy se reparte con centro uniforme
+ * sobre todo el lienzo, y eso da sopa homogénea: la silueta recortada por alfa
+ * sale pareja, sin grumos ni claros. Un dosel real viene en matas.
+ *
+ * Se devuelve además cuán al borde de su mata quedó cada hoja, que es lo que
+ * permite iluminar el contorno y ensombrecer el corazón sin una sola operación
+ * por píxel: el mismo truco que `tarjetasFollaje` usa para el volumen de la
+ * copa, aplicado un nivel más abajo.
+ */
+function matasFollaje(N, cantidad, azar) {
+  const lista = [];
+  for (let i = 0; i < cantidad; i++) {
+    lista.push({
+      x: azar(0.04, 0.90) * N,
+      y: azar(0.04, 0.96) * N,
+      r: azar(0.050, 0.115) * N,
+    });
+  }
+  return lista;
+}
+
+/** Un punto dentro de una mata —o suelto—, con su distancia relativa al centro. */
+function puntoEnMata(matas, N, azar, sueltos) {
+  if (!matas.length || Math.random() < sueltos) {
+    return [azar(0.02, 0.98) * N, azar(0.02, 0.98) * N, 0.75];
+  }
+  const m = matas[Math.floor(Math.random() * matas.length)];
+  // Sesgo hacia el centro: la mata es densa en el medio y se deshilacha afuera.
+  const rel = Math.pow(Math.random(), 0.62);
+  const ang = Math.random() * Math.PI * 2;
+  return [m.x + Math.cos(ang) * rel * m.r, m.y + Math.sin(ang) * rel * m.r, rel];
+}
+
+/**
+ * Latifoliada (Nothofagus): hojas ovales pequeñas y apretadas, en tres estratos.
+ *
+ * La capa de sombra va primero y es la que le da fondo a las otras dos: sin
+ * ella, una tarjeta de follaje es una calcomanía de hojas todas del mismo
+ * verde.
+ *
+ * **Los tres repartos están calibrados, no elegidos a ojo.** Lo que se paga por
+ * cuadro no es este dibujo —corre una vez por clase, al arranque— sino la
+ * cobertura de alfa: con `alphaTest: 0.28` cada fragmento que pasa el corte paga
+ * el Lambert entero, y los árboles son el 22 % del cuadro. Las 736 hojas de tres
+ * capas dejan **25,94 % ± 0,22** de la ventana de una tarjeta por encima del
+ * corte, contra **26,31 % ± 0,07** de las 620 de una sola capa: **−1,4 %**. La
+ * medida que manda es la de la ventana y no la del atlas entero, porque una
+ * tarjeta muestrea una ventana. El aparato y el método están en
+ * `.claude/flota/r3-flora.md`.
+ */
+function dibujarLaminas(c, N) {
+  const azar = (a, b) => a + Math.random() * (b - a);
+  const matas = matasFollaje(N, 30, azar);
+
+  const capa = (cantidad, rMin, rMax, vMin, vMax, calidez, nervadura) => {
+    for (let i = 0; i < cantidad; i++) {
+      const [x, y, rel] = puntoEnMata(matas, N, azar, 0.16);
+      const rx = azar(rMin, rMax), ry = rx * azar(0.52, 0.82);
       const ang = azar(0, Math.PI * 2);
-      const largo = azar(0.10, 0.22) * N;
-      // Claro a proposito: el tinte de la especie lo aporta el color por
-      // vertice, y si el atlas tambien viniera oscuro se multiplicarian entre
-      // si y el bosque quedaria negro.
-      const verde = Math.floor(azar(190, 250));
+      // 0,30 en el corazón de la mata, 1,00 en el borde.
+      const luz = 0.78 + 0.28 * (0.30 + 0.70 * rel);
+      const verde = Math.max(16, Math.min(255, Math.round(azar(vMin, vMax) * luz)));
+      const rojo = Math.min(255, Math.floor(verde * azar(calidez[0], calidez[1])));
+      const azul = Math.min(255, Math.floor(verde * azar(calidez[2], calidez[3])));
+      c.fillStyle = `rgba(${rojo},${verde},${azul},1)`;
+      c.beginPath();
+      c.ellipse(x, y, rx, ry, ang, 0, Math.PI * 2);
+      c.fill();
+      if (!nervadura) continue;
+      // Nervadura central: da textura al mirar de cerca
+      c.strokeStyle = `rgba(${Math.min(255, Math.floor(rojo * 0.78))},${Math.min(255, Math.floor(verde * 0.80))},${Math.floor(azul * 0.75)},0.5)`;
+      c.lineWidth = 1;
+      c.beginPath();
+      c.moveTo(x - Math.cos(ang) * rx, y - Math.sin(ang) * rx);
+      c.lineTo(x + Math.cos(ang) * rx, y + Math.sin(ang) * rx);
+      c.stroke();
+    }
+  };
+
+  // Fondo en sombra: hojas grandes, oscuras y más frías (la luz que llega al
+  // interior de una mata es cielo rebotado, no sol directo).
+  capa(173, 6.0, 10.5, 104, 156, [0.50, 0.72, 0.66, 0.92], false);
+  // Masa media: es exactamente la hoja que había, con su nervadura.
+  capa(345, 4.5, 9.5, 185, 252, [0.62, 0.88, 0.58, 0.82], true);
+  // Hojas al sol, chicas y encima de todo.
+  capa(218, 3.0, 6.0, 214, 248, [0.66, 0.90, 0.54, 0.76], false);
+}
+
+/**
+ * Conífera: ramillas con acículas a ambos lados del raquis, en tres estratos.
+ *
+ * Claro a propósito: el tinte de la especie lo aporta el color por vértice, y
+ * si el atlas también viniera oscuro se multiplicarían entre sí y el bosque
+ * quedaría negro. La capa de sombra es la excepción deliberada —es la que se ve
+ * ENTRE las ramillas iluminadas— y por eso es la más chica de las tres.
+ *
+ * Calibrado igual que las láminas, y hacía falta: el primer reparto que escribí
+ * (16 · 38 · 20) subía la cobertura de la ventana **un 38 %**. Una ramilla no
+ * cuesta como una hoja: su tinta va con `n · largo · grosor²`, así que la capa de
+ * sombra, que es la más gruesa y la más larga, pesa el doble de lo que sugiere
+ * su cuenta. Las 56 de ahora dejan **8,99 % ± 0,13** de la ventana por encima
+ * del corte contra **9,21 % ± 0,07** de las 54 de una sola capa: **−2,4 %**.
+ */
+function dibujarAciculas(c, N) {
+  const azar = (a, b) => a + Math.random() * (b - a);
+  const matas = matasFollaje(N, 20, azar);
+
+  const capa = (cantidad, lMin, lMax, vMin, vMax, grosor) => {
+    for (let r = 0; r < cantidad; r++) {
+      const [x0, y0, rel] = puntoEnMata(matas, N, azar, 0.18);
+      const ang = azar(0, Math.PI * 2);
+      const largo = azar(lMin, lMax) * N;
+      const luz = 0.80 + 0.26 * (0.30 + 0.70 * rel);
+      const verde = Math.max(16, Math.min(255, Math.round(azar(vMin, vMax) * luz)));
       c.strokeStyle = `rgba(${Math.floor(verde * 0.72)},${verde},${Math.floor(verde * 0.70)},1)`;
-      c.lineWidth = azar(1.6, 2.8);
+      c.lineWidth = azar(1.6, 2.8) * grosor;
       c.beginPath();
       c.moveTo(x0, y0);
       c.lineTo(x0 + Math.cos(ang) * largo, y0 + Math.sin(ang) * largo);
@@ -949,10 +1217,10 @@ export function atlasFollaje(clase) {
         const t = i / nAgujas;
         const px = x0 + Math.cos(ang) * largo * t;
         const py = y0 + Math.sin(ang) * largo * t;
-        const lAg = azar(3.5, 7.5) * (1 - t * 0.35);
+        const lAg = azar(3.5, 7.5) * (1 - t * 0.35) * grosor;
         for (const lado of [-1, 1]) {
           const a2 = ang + lado * azar(0.7, 1.25);
-          c.lineWidth = azar(1.0, 1.9);
+          c.lineWidth = azar(1.0, 1.9) * grosor;
           c.beginPath();
           c.moveTo(px, py);
           c.lineTo(px + Math.cos(a2) * lAg, py + Math.sin(a2) * lAg);
@@ -960,54 +1228,197 @@ export function atlasFollaje(clase) {
         }
       }
     }
-  } else {
-    // Latifoliada (Nothofagus): hojas ovales pequeñas y apretadas
-    for (let i = 0; i < 620; i++) {
-      const x = azar(0.03, 0.97) * N, y = azar(0.03, 0.97) * N;
-      const rx = azar(4.5, 9.5), ry = rx * azar(0.52, 0.82);
-      const ang = azar(0, Math.PI * 2);
-      const verde = Math.floor(azar(185, 252));
-      const rojo = Math.floor(verde * azar(0.62, 0.88));
-      const azul = Math.floor(verde * azar(0.58, 0.82));
-      c.fillStyle = `rgba(${rojo},${verde},${azul},1)`;
-      c.beginPath();
-      c.ellipse(x, y, rx, ry, ang, 0, Math.PI * 2);
-      c.fill();
-      // Nervadura central: da textura al mirar de cerca
-      c.strokeStyle = `rgba(${Math.min(255, Math.floor(rojo * 0.78))},${Math.min(255, Math.floor(verde * 0.80))},${Math.floor(azul * 0.75)},0.5)`;
-      c.lineWidth = 1;
-      c.beginPath();
-      c.moveTo(x - Math.cos(ang) * rx, y - Math.sin(ang) * rx);
-      c.lineTo(x + Math.cos(ang) * rx, y + Math.sin(ang) * rx);
-      c.stroke();
-    }
-  }
+  };
 
-  // Reserva opaca para troncos y ramas
-  c.fillStyle = '#ffffff';
-  c.fillRect(N * 0.90, N * 0.90, N * 0.10, N * 0.10);
+  capa(12, 0.14, 0.25, 96, 148, 1.16);    // ramillas de fondo, en sombra
+  capa(28, 0.10, 0.22, 190, 250, 1.00);   // las de siempre
+  capa(16, 0.06, 0.13, 216, 250, 0.78);   // puntas al sol
+}
 
-  const tex = new THREE.CanvasTexture(lienzo);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 8;
-  tex.generateMipmaps = true;
-  tex.minFilter = THREE.LinearMipmapLinearFilter;
-  tex.needsUpdate = true;
-  _atlasCache.set(clase, tex);
-  return tex;
+// ── La corteza ──────────────────────────────────────────────────────────────
+
+/** Generador reproducible: la corteza tiene que dar la misma media siempre. */
+function semillero(s) {
+  let a = s >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Hash de dos enteros a 0..1. El mismo que usa `ruidoValor` más abajo. */
+function hash2(a, b) {
+  let n = Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263);
+  n = Math.imul(n ^ (n >> 13), 1274126177);
+  return ((n ^ (n >> 16)) & 0x7fffffff) / 0x7fffffff;
+}
+
+/** sRGB → lineal, la curva exacta que aplica el muestreador de una textura sRGB. */
+function aLineal(v) {
+  return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
 }
 
 /**
- * UV del parche opaco, para la madera.
+ * Corteza en escala de gris, generada **píxel a píxel** y no con primitivas del
+ * lienzo. Dos motivos, los dos de método:
  *
- * La V va en 0,05 y no en 0,95 porque three invierte la textura en el eje Y
- * (flipY): el parche que se dibuja abajo a la derecha del lienzo termina
- * arriba a la derecha en coordenadas de textura. Con 0,95 los troncos
- * muestreaban una zona transparente y el recorte por alfa los hacía desaparecer
- * enteros.
+ * - Necesito la **media exacta en lineal** para compensar el brillo, y la
+ *   quiero calculada por el propio código y no a mano: así la compensación no
+ *   depende de que yo haya estimado bien nada.
+ * - Un bucle por píxel es aritmética pura, o sea que corre idéntico en Node y
+ *   en el navegador. Un lienzo de mentira no tiene que rasterizar nada.
+ *
+ * Gris y no color: el tono de especie ya viaja en el atributo de vértice
+ * (`colorTronco`, presente en las 63 fichas de `flora.json`). Un patrón gris
+ * multiplicado por ese color da corteza por especie **sin un byte de textura
+ * extra y sin un dibujo extra**, y como es gris la media es la misma en los
+ * tres canales y la compensación es un solo número.
+ *
+ * **Periódica en U por construcción**, y eso hay que forzarlo término por
+ * término: el cilindro duplica los vértices de la costura —u=0 y u=1 son dos
+ * columnas distintas— así que un patrón que no cierre deja una línea vertical a
+ * lo largo del tronco. Los surcos y las placas ya cerraban solos por el
+ * `dd -= Math.round(dd)`; el índice de bloque y las dos capas de fibra **no**,
+ * porque indexaban por la columna absoluta del lienzo. Se resuelve indexando
+ * todo por `xi`, la columna reducida al módulo de una vuelta.
+ *
+ * **Orientación en V.** `THREE.CanvasTexture` sube con `flipY`, así que la fila
+ * 0 del lienzo termina en v=1: `yn` corre al revés que v. Es indiferente —la
+ * corteza es estadísticamente simétrica arriba-abajo— pero conviene saberlo, y
+ * sobre todo conviene saber que **acá no se repite la trampa del parche**: la
+ * franja ocupa el alto entero del lienzo, así que cualquier v cae adentro. La
+ * constante vieja tenía que ir en 0,05 y no en 0,95 justamente porque el parche
+ * ocupaba una esquina y con 0,95 los troncos muestreaban una zona transparente,
+ * el recorte por alfa los borraba y desaparecían enteros.
+ *
+ * @returns {{media:number, max:number, u0:number, u1:number}} la ventana útil y
+ *   la media de su albedo, ya en lineal. La devuelve quien dibuja: si la ventana
+ *   se calculara aparte podría dejar de coincidir con lo dibujado sin aviso.
  */
-const UV_MADERA = [0.95, 0.05];
+function dibujarCorteza(ctx, N, clase, xIni, ancho) {
+  const alto = N;
+  const img = ctx.createImageData(ancho, alto);
+  const d = img.data;
+
+  const conifera = clase === 'aguja';
+  const azar = semillero(conifera ? 0x9e3779b9 : 0x85ebca77);
+
+  // Guarda a los DOS lados. La izquierda evita que el filtrado bilineal traiga
+  // verde del follaje al muestrear justo en `u0`; la derecha es la que hace que
+  // `u1` valga lo mismo que `u0` bajo el filtro, que es lo que cierra la costura.
+  // Las dos llevan la continuación periódica del patrón, no una copia del borde.
+  const guarda = Math.round(CORTEZA_GUARDA * N);
+  const xUtil = xIni + guarda;                 // primera columna que el tronco muestrea
+  const anchoUtil = N - xUtil - guarda;        // una vuelta al tronco
+
+  // Surcos verticales. La conífera va con pocos surcos hondos y anchos —placas
+  // gruesas de alerce o ponderosa—; la latifoliada con muchos y superficiales,
+  // que es la corteza lisa y estriada de un Nothofagus o un arrayán.
+  const nSurcos = conifera ? 5 : 9;
+  const surcos = [];
+  for (let k = 0; k < nSurcos; k++) {
+    surcos.push({
+      pos: (k + 0.5 + (azar() - 0.5) * 0.55) / nSurcos,
+      ancho: (conifera ? 0.062 : 0.030) * (0.62 + azar() * 0.85),
+      hondo: (conifera ? 0.44 : 0.21) * (0.65 + azar() * 0.7),
+      // Ningún surco de corteza es recto: serpentea a lo largo del tronco.
+      serpAmp: (conifera ? 0.030 : 0.016) * (0.35 + azar() * 1.3),
+      serpFrec: 0.55 + azar() * 1.9,
+      serpFase: azar() * Math.PI * 2,
+    });
+  }
+
+  // Descamado: placas claras que se desprenden. Es el arrayán en placas, el
+  // ponderosa anaranjado y el palo santo corchoso de `flora.json`.
+  const nPlacas = conifera ? 9 : 14;
+  const placas = [];
+  for (let k = 0; k < nPlacas; k++) {
+    placas.push({
+      x: azar(),
+      y: azar(),
+      rx: 0.16 + azar() * 0.26,
+      ry: 0.020 + azar() * 0.060,
+      claro: (conifera ? 0.14 : 0.10) * (0.5 + azar()),
+    });
+  }
+
+  const base = conifera ? 0.90 : 0.93;
+  const bandasY = conifera ? 13 : 24;   // cuántas placas a lo alto de una teja
+  let suma = 0, cuenta = 0, maxLineal = 0;
+
+  for (let y = 0; y < alto; y++) {
+    const yn = y / alto;
+    for (let x = 0; x < ancho; x++) {
+      // Columna reducida al módulo de una vuelta. Todo lo que indexe por texel
+      // —el bloque de placa y las dos capas de fibra— tiene que pasar por acá,
+      // que es lo que hace que la columna de guarda valga exactamente lo mismo
+      // que la columna útil que le corresponde una vuelta más allá.
+      const xi = (((x + xIni - xUtil) % anchoUtil) + anchoUtil) % anchoUtil;
+      const xp = xi / anchoUtil;                  // 0..1 = una vuelta al tronco
+      let g = base;
+
+      for (let k = 0; k < nSurcos; k++) {
+        const s = surcos[k];
+        const p = s.pos + s.serpAmp * Math.sin(s.serpFrec * yn * Math.PI * 2 + s.serpFase);
+        let dd = xp - p;
+        dd -= Math.round(dd);                       // distancia periódica
+        const t = Math.abs(dd) / s.ancho;
+        if (t < 1) { const q = 1 - t; g -= s.hondo * q * q; }
+      }
+
+      // Placas: bloques de brillo entre surco y surco, cortados por grietas
+      // horizontales. Es lo que separa una corteza de un rayado vertical.
+      // El `% nSurcos` es lo que cierra la costura: sin él la media columna de
+      // xp≈0 y la media columna de xp≈1 son la MISMA placa partida al medio, y
+      // cada mitad recibía un brillo distinto. Se veía como una raya vertical.
+      const ci = Math.floor(xp * nSurcos + 0.5) % nSurcos;
+      const cj = Math.floor(yn * bandasY + hash2(ci, 7) * 0.7);
+      g += (hash2(ci, cj) - 0.5) * (conifera ? 0.17 : 0.085);
+      const bordeY = Math.abs((yn * bandasY + hash2(ci, 7) * 0.7) - cj - 0.5);
+      if (bordeY > 0.42) g -= (conifera ? 0.20 : 0.09) * (bordeY - 0.42) / 0.08;
+
+      for (let k = 0; k < nPlacas; k++) {
+        const pl = placas[k];
+        let ddx = xp - pl.x; ddx -= Math.round(ddx);
+        const ddy = yn - pl.y;
+        const q = (ddx / pl.rx) * (ddx / pl.rx) + (ddy / pl.ry) * (ddy / pl.ry);
+        if (q < 1) g += pl.claro * (1 - q);
+      }
+
+      // Fibra: ruido estirado en vertical, que es como corre la fibra de la
+      // madera, más un grano fino de un texel.
+      g += (hash2(xi, (y * 0.14) | 0) - 0.5) * 0.075;
+      g += (hash2(xi * 3 + 7, y * 5 + 13) - 0.5) * 0.055;
+
+      g = g < 0.06 ? 0.06 : g > 1 ? 1 : g;
+      const b = Math.round(g * 255);
+      const o = (y * ancho + x) * 4;
+      d[o] = d[o + 1] = d[o + 2] = b;
+      d[o + 3] = 255;
+
+      // La media se toma SÓLO sobre la parte que el tronco muestrea. Las dos
+      // guardas existen para el filtrado y no forman parte del albedo; contarlas
+      // no cambiaría el número —son copias de columnas útiles— pero sí lo haría
+      // depender del ancho de la guarda, que es un detalle de filtrado.
+      const col = x + xIni;
+      if (col >= xUtil && col < xUtil + anchoUtil) {
+        const lin = aLineal(b / 255);
+        suma += lin; cuenta++;
+        if (lin > maxLineal) maxLineal = lin;
+      }
+    }
+  }
+
+  ctx.putImageData(img, xIni, 0);
+  return {
+    media: suma / cuenta,
+    max: maxLineal,
+    u0: xUtil / N,
+    u1: (xUtil + anchoUtil) / N,
+  };
+}
 
 /**
  * Tarjetas de follaje repartidas en el volumen de la copa.
@@ -1053,9 +1464,18 @@ function tarjetasFollaje({ centro, radioH, radioV, cantidad, tamano, color, vari
       [px + ux + vx, py + vy, pz + uz + vz],
       [px - ux + vx, py + vy, pz - uz + vz],
     ];
-    // Ventana del atlas: cada tarjeta toma un recorte distinto
-    const u0 = Math.random() * 0.55, v0 = Math.random() * 0.55;
+    // Ventana del atlas: cada tarjeta toma un recorte distinto.
+    //
+    // El tope en U es `FOLLAJE_U_MAX` y no 1. Con `u0 ∈ [0 · 0,55]` y
+    // `uw ∈ [0,30 · 0,44]` la ventana llegaba hasta **0,99**, o sea que mordía
+    // la esquina opaca del atlas: el 0,58 % de las tarjetas salía con una mancha
+    // maciza del tinte de la hoja en medio de la copa. Con la franja de corteza
+    // ahí el número sería mucho peor, porque la franja es diez veces más ancha
+    // que el parche al que reemplaza. En V no hace falta tope: la franja ocupa
+    // todo el alto del lienzo, así que no hay nada que esquivar en esa dirección.
     const uw = 0.30 + Math.random() * 0.14;
+    const u0 = Math.random() * Math.max(0, FOLLAJE_U_MAX - uw);
+    const v0 = Math.random() * 0.55;
     const uvs = [[u0, v0], [u0 + uw, v0], [u0 + uw, v0 + uw], [u0, v0 + uw]];
 
     // Oclusión interna de la copa. Hasta acá todas las tarjetas se iluminaban
@@ -1111,6 +1531,8 @@ function construirPlanta(esp) {
   const colHoja = new THREE.Color(esp.colorHojaVerano || '#2d5a2a');
 
   const arquetipo = clasificar(esp);
+  // El mismo atlas que le va a poner `_crearLote()` al material. Ver `pintar()`.
+  const claseHoja = claseHojaDe(esp);
 
   if (arquetipo === 'cana') {
     // Haz de cañas: la colihue forma matas densas e impenetrables
@@ -1126,7 +1548,11 @@ function construirPlanta(esp) {
       );
       g.applyMatrix4(incl);
       g.translate(Math.cos(a) * r, 0, Math.sin(a) * r);
-      pintar(g, colHoja, 0.75);
+      // La caña va por el camino de la madera —lo hacía ya antes de la ronda 3,
+      // con el texel blanco— y ahora recoge las estrías verticales de la franja
+      // sobre el verde del culmo, que es como se ve una colihue de cerca.
+      // `heightSegments = 1`, así que el único `repV` legal es 1.
+      pintar(g, colHoja, 0.75, { clase: claseHoja });
       partes.push(g);
       // Hojas lanceoladas cerca de la punta
       for (let j = 0; j < 3; j++) {
@@ -1136,7 +1562,7 @@ function construirPlanta(esp) {
           new THREE.Euler(0, Math.random() * 6.28, -0.3 - Math.random() * 0.5)
         ));
         hoja.translate(Math.cos(a) * r, h * (0.6 + j * 0.13), Math.sin(a) * r);
-        pintar(hoja, colHoja, 1.0, 0, 'hoja');
+        pintar(hoja, colHoja, 1.0, { modoUV: 'hoja', clase: claseHoja });
         partes.push(hoja);
       }
     }
@@ -1149,7 +1575,22 @@ function construirPlanta(esp) {
   const segmentos = 7;
   const tronco = troncoCurvo(radioBase, radioBase * 0.32, alturaTronco, segmentos,
     arquetipo === 'retorcido' ? 0.32 : 0.09);
-  pintar(tronco, colTronco, 0.0);
+  // Cuántas veces se repite la franja de corteza a lo alto del tronco.
+  //
+  // No es libre: el pliegue de la onda triangular tiene que caer sobre un anillo
+  // de vértices, si no el cuadrilátero que lo contiene interpola la franja
+  // entera al revés. `CylinderGeometry` pone anillos en v = i/segs y los
+  // pliegues caen en v = n/repV, así que **repV = segs/m con m entero**.
+  //
+  // De los valores legales (7 · 3,5 · 2,33 · 1,75 · 1,4 · 1,17 · 1) se elige por
+  // anisotropía: la franja útil son 48 texels por vuelta contra 512 a lo alto, y
+  // el tronco mide `alturaTronco = 0,52·alturaRef` contra un perímetro de
+  // 2π·0,032·alturaRef. La razón de densidad de texels queda en
+  // (512·repV/0,52) / (48/0,201) = 4,12·repV, y la textura va con
+  // `anisotropy = 8`: con repV = 1,75 da **7,2**, que el filtro cubre entero.
+  // Con el siguiente valor legal (2,33) da 9,6 y el filtro ya no llega.
+  const repTronco = segmentos / 4;
+  pintar(tronco, colTronco, 0.0, { clase: claseHoja, repV: repTronco });
   partes.push(tronco);
 
   // ── Ramas
@@ -1170,7 +1611,8 @@ function construirPlanta(esp) {
     g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, 0, -elevacion)));
     g.applyMatrix4(new THREE.Matrix4().makeRotationY(ang));
     g.translate(0, alturaTronco * t, 0);
-    pintar(g, colTronco, 0.0);
+    // `heightSegments = 1`: el único `repV` legal es 1 (ver `repTronco`).
+    pintar(g, colTronco, 0.0, { clase: claseHoja });
     partes.push(g);
   }
 
@@ -1231,6 +1673,19 @@ function construirPlanta(esp) {
   return fusionar(partes);
 }
 
+/**
+ * Qué atlas le toca a una especie —y con él qué franja de corteza y qué
+ * compensación de brillo.
+ *
+ * Una sola definición a propósito. La usan `_crearLote()`, para el `map` del
+ * material, y `construirPlanta()`, para las UV y la compensación. Si fueran dos
+ * expresiones parecidas y una se moviera, el tronco compensaría con la media de
+ * un atlas y muestrearía del otro: saldría con el brillo mal y sin ningún error.
+ */
+function claseHojaDe(esp) {
+  return clasificar(esp) === 'columnar' ? 'aguja' : 'lamina';
+}
+
 function clasificar(esp) {
   const id = esp.id || '';
   if (esp.tipo === 'cana') return 'cana';
@@ -1260,21 +1715,64 @@ function troncoCurvo(rBase, rTope, altura, segs, curvatura) {
 }
 
 /**
- * Asigna color, peso de flexión al viento (0 tronco rígido, 1 hoja suelta) y
- * coordenadas de textura.
+ * Onda triangular 0 → 1 → 0 con los pliegues en los enteros.
  *
- * La madera apunta al parche opaco del atlas: así el tronco y las hojas
- * comparten un solo material y el árbol entero se dibuja de una sola vez.
+ * Es lo que permite repetir la franja de corteza a lo largo del tronco sin un
+ * `frac()`. Un `frac()` por vértice **no sirve**: el vértice donde v salta de
+ * 0,99 a 0 deja un cuadrilátero que interpola la textura entera al revés, de
+ * punta a punta. El ping-pong tiene el mismo problema **salvo que el pliegue
+ * caiga exactamente sobre un anillo de vértices**, y de ahí sale la condición de
+ * `repV` que documenta `construirPlanta()`.
  */
-function pintar(geo, color, flexion, variacion = 0, modoUV = 'madera') {
+function pingPong(s) {
+  const r = s - 2 * Math.floor(s / 2);
+  return r <= 1 ? r : 2 - r;
+}
+
+/**
+ * Asigna color, peso de flexión al viento (0 tronco rígido, 1 hoja suelta) y
+ * coordenadas de textura. Tronco y hojas comparten un solo material, así que el
+ * árbol entero se dibuja de una sola vez.
+ *
+ * **`'madera'`** mapea la UV cilíndrica que la geometría YA trae a la franja de
+ * corteza. Hasta la ronda 3 la pisaba con una constante —los dos canales al
+ * mismo valor— y el tronco, las ramas y las cañas de las 63 especies leían **un
+ * solo texel blanco**: la geometría traía la parametrización y `pintar()` la
+ * tiraba a la basura.
+ *
+ * - **U** va sin envolver, de `u0` a `u1`, porque el cilindro duplica los
+ *   vértices de la costura (u=0 y u=1 son dos columnas de vértices distintas) y
+ *   un `frac()` mandaría la segunda a 0, dejando un cuadrilátero que recorre la
+ *   franja al revés. La costura no se ve porque el patrón se genera periódico
+ *   en U y la franja lleva guarda replicada de los dos lados.
+ * - **V** va en ping-pong con `repV` repeticiones.
+ *
+ * **`clase` no es decorativa.** La compensación de brillo se calcula con la
+ * media de UN atlas y la malla muestrea el atlas que le puso `_crearLote()`. Si
+ * fueran distintos el tronco saldría con el brillo mal, así que las dos puntas
+ * salen de `claseHojaDe()` y no de dos expresiones parecidas.
+ */
+function pintar(geo, color, flexion, opciones = {}) {
+  const { variacion = 0, modoUV = 'madera', clase = 'lamina', repV = 1 } = opciones;
   const n = geo.attributes.position.count;
   const col = new Float32Array(n * 3);
   const flex = new Float32Array(n);
   const uv = new Float32Array(n * 2);
   const c = color.clone();
 
-  const u0 = Math.random() * 0.55, v0 = Math.random() * 0.55;
+  const madera = modoUV === 'madera';
+  const fr = madera ? corteza(clase) : null;
+  // El texel de antes valía 1,0, así que el albedo del tronco ERA `colorTronco`.
+  // Cualquier patrón tiene media < 1 y lo oscurecería: es el mismo pozo del
+  // tronco caído de la ronda 1 (albedo 0,047 → negro puro). Ver `construirAtlas`.
+  if (madera) c.multiplyScalar(fr.compensacion);
+
+  // Ventana del atlas para el camino `'hoja'`, acotada a `FOLLAJE_U_MAX`: si la
+  // hoja pudiera llegar hasta 0,97 muerde la franja de corteza y sale con una
+  // mancha de madera en el medio.
   const uw = 0.28 + Math.random() * 0.14;
+  const u0 = Math.random() * Math.max(0, FOLLAJE_U_MAX - uw);
+  const v0 = Math.random() * 0.55;
   const uvOriginal = geo.attributes.uv;
 
   for (let i = 0; i < n; i++) {
@@ -1284,13 +1782,17 @@ function pintar(geo, color, flexion, variacion = 0, modoUV = 'madera') {
     col[i * 3 + 2] = c.b * v;
     flex[i] = flexion;
 
-    if (modoUV === 'madera') {
-      uv[i * 2] = UV_MADERA[0];
-      uv[i * 2 + 1] = UV_MADERA[1];
+    // Parametrización original de la pieza. Todas las que llegan acá la traen
+    // (cilindro o plano); el respaldo es para que una pieza sin `uv` caiga en
+    // una esquina de la ventana y no en un punto degenerado.
+    const su = uvOriginal ? uvOriginal.getX(i) : (i % 2);
+    const sv = uvOriginal ? uvOriginal.getY(i) : ((i >> 1) % 2);
+
+    if (madera) {
+      const u = su < 0 ? 0 : su > 1 ? 1 : su;
+      uv[i * 2] = fr.u0 + u * (fr.u1 - fr.u0);
+      uv[i * 2 + 1] = fr.v0 + pingPong(sv * repV) * (fr.v1 - fr.v0);
     } else {
-      // Recorte del atlas, respetando la parametrización original de la pieza
-      const su = uvOriginal ? uvOriginal.getX(i) : (i % 2);
-      const sv = uvOriginal ? uvOriginal.getY(i) : ((i >> 1) % 2);
       uv[i * 2] = u0 + su * uw;
       uv[i * 2 + 1] = v0 + sv * uw;
     }
