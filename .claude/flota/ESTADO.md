@@ -1,5 +1,53 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **6/9/2026 — RONDA 3 ABIERTA: definición y realismo de animales y árboles.**
+> Un jefe con tres subagentes —`horno`, `fauna`, `flora`—, en la rama
+> `mejoras/ronda3-graficos`. El encargo está en `RONDA3.md`; las bitácoras son
+> `r3-horno.md`, `r3-fauna.md`, `r3-flora.md`.
+>
+> Tres cosas la distinguen de las anteriores:
+>
+> 1. **Se cierra de a una fase**, por pedido del dueño. `fauna` y `flora` no
+>    arrancan hasta que `horno` esté medido, revisado y commiteado. No es
+>    prolijidad: `horno` produce los atlas que las otras dos consumen.
+> 2. **El banco lo escribe el jefe, no el agente**, desde el primer día. Es la
+>    lección de la ronda 2 aplicada de entrada y no como revisión final.
+> 3. **La mejora se paga con textura, no con shader.** Está medido: esta máquina
+>    pierde 8× en matemática de shader y gana 2,3× en ancho de banda de texturas.
+>    Cualquier idea que sume `pow`/`noise`/`fbm` por píxel va contra el hardware.
+>
+> Se descartó la fotogrametría —una foto suelta no da un modelo 3D— y también
+> descargar fotos ajenas. El origen es **procedural desde referencia documentada,
+> horneado offline**: decisión del dueño el 6/9/2026.
+>
+> **FASE 1 (`horno`) CERRADA el 6/9/2026.** La fábrica de atlas existe y corre
+> con `npm run hornear`: `tools/hornear-texturas.mjs`, `src/data/pelajes.json`
+> (44 especies, todas con campo `fuente`), tres atlas de 1024×1024 en
+> `public/tex/` y el cargador `src/util/atlas.js`. **16,00 MiB de VRAM con
+> mipmaps contra el techo de 24 MB**, recalculado desde el IHDR de los PNG y no
+> leído del manifiesto. Determinista: dos horneadas dan bytes idénticos. Nadie
+> importa `atlas.js` todavía —eso es de la fase 2— y `vite build` pasa limpio,
+> así que el arranque no cambió. Banco: `.claude/flota/banco-r3-fase1.mjs`.
+>
+> **Trampa nº 8, y esta vez estaba dentro del instrumento.** El banco de
+> degradación de la fase 1 daba **verde sin ejercitar nada**, y el agente lo
+> reportó como verde bueno. Causa: stubeaba `Image`, pero `THREE.TextureLoader`
+> usa `document.createElementNS(…,'img')`. El control se iba por la rama de
+> error, el cargador devolvía `disponible: false`, y como `cargarAtlasFauna()`
+> memoiza su promesa, los otros dos escenarios recibían esa misma respuesta
+> guardada sin pedir nada por red: **los tres escenarios medían el mismo fallo.**
+> El banco imprimía «pedidos de red: 0» y la guarda no lo leía. La lección no es
+> nueva —es la nº 3 otra vez— pero la variante sí: *una guarda de cobertura que
+> sólo pregunta «¿corrió?» y no «¿el camino feliz llegó a funcionar?» no es una
+> guarda.* Ahora el banco exige que el control llegue a `disponible: true` con
+> sus tres texturas y que cada escenario de fallo falle por el motivo plantado.
+> El código del agente no tenía el defecto: lo tenía el banco.
+>
+> Queda anotado un desvío del reparto: `horno` escribió el encabezado de la
+> ronda 3 en este mismo archivo, que no es suyo. El contenido era correcto y se
+> conservó, pero la regla es que un archivo ajeno se pide por
+> `pendiente-r3-<fase>.md` y no se toca.
+
 > **3/9/2026 — LA RONDA 2 CERRÓ.** Tres jefes —carta, mundo, juego— más una
 > revisión independiente. El encargo está en `RONDA2.md`; las bitácoras son
 > `r2-carta.md`, `r2-mundo.md`, `r2-juego.md` y `r2-revision-juego.md`. Rama

@@ -1,0 +1,473 @@
+{
+  "version": 1,
+  "atlasPx": 1024,
+  "grid": {
+    "cols": 8,
+    "rows": 8,
+    "cellPx": 128,
+    "guardaPx": 8
+  },
+  "archivos": {
+    "albedo": "albedo.png",
+    "normal": "normal.png",
+    "rugosidadOclusion": "rugosidad_oclusion.png"
+  },
+  "convencion": "Celda cuadrada por especie. Eje V (0=arriba de la celda, 1=abajo): banda cabeza [0,0.14] (colorAcento si bandaAcento=\"cabeza\", o el patrón si zonaPatron=\"cabeza\"), banda dorso [0.14,0.62] (colorDorso, + patrón si zonaPatron es \"cuerpo\" o \"dorso\"), banda vientre [0.62,0.86] (colorVientre, + patrón si zonaPatron es \"cuerpo\" o \"vientre\"), banda cola [0.86,1.0] (colorAcento si bandaAcento=\"cola\"). bandaAcento=\"media\" superpone una franja angosta en V∈[0.42,0.58] (alas, flancos). Es una aproximación consciente: no hay UV real de modelo todavía (la define fase 2), así que se usa un único eje longitudinal genérico cabeza→cola.",
+  "sangradoMips": {
+    "guardaPx": 8,
+    "metodo": "borde de la celda replicado (clamp) hacia el contenido interior; sin gutter extra entre celdas. Sostiene separación limpia mientras el tamaño de celda en ese nivel de mip sea mayor que 8px (niveles 1024→512→256→128→64, cuatro reducciones desde el atlas completo antes de que una celda de 128px baje de 16px). Por debajo se funde con la vecina; a esa escala el animal ocupa unos pocos texels en pantalla y no se nota."
+  },
+  "presupuestoVRAM": {
+    "atlasPx": 1024,
+    "bytesPorAtlasSinMip": 4194304,
+    "factorMip": 1.3333333333333333,
+    "bytesPorAtlasConMip": 5592405.333333333,
+    "cantidadAtlas": 3,
+    "totalBytes": 16777216,
+    "totalMB": 16.777216,
+    "techoMB": 24,
+    "dentroDelTecho": true
+  },
+  "especies": {
+    "huemul": {
+      "col": 0,
+      "row": 0,
+      "u0": 0,
+      "v0": 0,
+      "u1": 0.125,
+      "v1": 0.125,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "pudu": {
+      "col": 1,
+      "row": 0,
+      "u0": 0.125,
+      "v0": 0,
+      "u1": 0.25,
+      "v1": 0.125,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "puma": {
+      "col": 2,
+      "row": 0,
+      "u0": 0.25,
+      "v0": 0,
+      "u1": 0.375,
+      "v1": 0.125,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "zorro_colorado": {
+      "col": 3,
+      "row": 0,
+      "u0": 0.375,
+      "v0": 0,
+      "u1": 0.5,
+      "v1": 0.125,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "zorro_gris_chico": {
+      "col": 4,
+      "row": 0,
+      "u0": 0.5,
+      "v0": 0,
+      "u1": 0.625,
+      "v1": 0.125,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "huillin": {
+      "col": 5,
+      "row": 0,
+      "u0": 0.625,
+      "v0": 0,
+      "u1": 0.75,
+      "v1": 0.125,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "monito_del_monte": {
+      "col": 6,
+      "row": 0,
+      "u0": 0.75,
+      "v0": 0,
+      "u1": 0.875,
+      "v1": 0.125,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "coipo": {
+      "col": 7,
+      "row": 0,
+      "u0": 0.875,
+      "v0": 0,
+      "u1": 1,
+      "v1": 0.125,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "chinchillon_anaranjado": {
+      "col": 0,
+      "row": 1,
+      "u0": 0,
+      "v0": 0.125,
+      "u1": 0.125,
+      "v1": 0.25,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "chinchillon_comun": {
+      "col": 1,
+      "row": 1,
+      "u0": 0.125,
+      "v0": 0.125,
+      "u1": 0.25,
+      "v1": 0.25,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "tuco_tuco_colonial": {
+      "col": 2,
+      "row": 1,
+      "u0": 0.25,
+      "v0": 0.125,
+      "u1": 0.375,
+      "v1": 0.25,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "tuco_tuco_de_haig": {
+      "col": 3,
+      "row": 1,
+      "u0": 0.375,
+      "v0": 0.125,
+      "u1": 0.5,
+      "v1": 0.25,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "comadrejita_patagonica": {
+      "col": 4,
+      "row": 1,
+      "u0": 0.5,
+      "v0": 0.125,
+      "u1": 0.625,
+      "v1": 0.25,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "gato_huina": {
+      "col": 5,
+      "row": 1,
+      "u0": 0.625,
+      "v0": 0.125,
+      "u1": 0.75,
+      "v1": 0.25,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "guanaco": {
+      "col": 6,
+      "row": 1,
+      "u0": 0.75,
+      "v0": 0.125,
+      "u1": 0.875,
+      "v1": 0.25,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "zorrino_patagonico": {
+      "col": 7,
+      "row": 1,
+      "u0": 0.875,
+      "v0": 0.125,
+      "u1": 1,
+      "v1": 0.25,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "condor_andino": {
+      "col": 0,
+      "row": 2,
+      "u0": 0,
+      "v0": 0.25,
+      "u1": 0.125,
+      "v1": 0.375,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "aguila_mora": {
+      "col": 1,
+      "row": 2,
+      "u0": 0.125,
+      "v0": 0.25,
+      "u1": 0.25,
+      "v1": 0.375,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "aguilucho_comun": {
+      "col": 2,
+      "row": 2,
+      "u0": 0.25,
+      "v0": 0.25,
+      "u1": 0.375,
+      "v1": 0.375,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "carancho": {
+      "col": 3,
+      "row": 2,
+      "u0": 0.375,
+      "v0": 0.25,
+      "u1": 0.5,
+      "v1": 0.375,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "chimango": {
+      "col": 4,
+      "row": 2,
+      "u0": 0.5,
+      "v0": 0.25,
+      "u1": 0.625,
+      "v1": 0.375,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "carpintero_gigante": {
+      "col": 5,
+      "row": 2,
+      "u0": 0.625,
+      "v0": 0.25,
+      "u1": 0.75,
+      "v1": 0.375,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "carpintero_pitio": {
+      "col": 6,
+      "row": 2,
+      "u0": 0.75,
+      "v0": 0.25,
+      "u1": 0.875,
+      "v1": 0.375,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "chucao": {
+      "col": 7,
+      "row": 2,
+      "u0": 0.875,
+      "v0": 0.25,
+      "u1": 1,
+      "v1": 0.375,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "huet_huet": {
+      "col": 0,
+      "row": 3,
+      "u0": 0,
+      "v0": 0.375,
+      "u1": 0.125,
+      "v1": 0.5,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "churrin": {
+      "col": 1,
+      "row": 3,
+      "u0": 0.125,
+      "v0": 0.375,
+      "u1": 0.25,
+      "v1": 0.5,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "cachana": {
+      "col": 2,
+      "row": 3,
+      "u0": 0.25,
+      "v0": 0.375,
+      "u1": 0.375,
+      "v1": 0.5,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "bandurria_austral": {
+      "col": 3,
+      "row": 3,
+      "u0": 0.375,
+      "v0": 0.375,
+      "u1": 0.5,
+      "v1": 0.5,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "cauquen_comun": {
+      "col": 4,
+      "row": 3,
+      "u0": 0.5,
+      "v0": 0.375,
+      "u1": 0.625,
+      "v1": 0.5,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "pato_de_los_torrentes": {
+      "col": 5,
+      "row": 3,
+      "u0": 0.625,
+      "v0": 0.375,
+      "u1": 0.75,
+      "v1": 0.5,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "maca_plateado": {
+      "col": 6,
+      "row": 3,
+      "u0": 0.75,
+      "v0": 0.375,
+      "u1": 0.875,
+      "v1": 0.5,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "bigua": {
+      "col": 7,
+      "row": 3,
+      "u0": 0.875,
+      "v0": 0.375,
+      "u1": 1,
+      "v1": 0.5,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "gaviota_cocinera": {
+      "col": 0,
+      "row": 4,
+      "u0": 0,
+      "v0": 0.5,
+      "u1": 0.125,
+      "v1": 0.625,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "martin_pescador_grande": {
+      "col": 1,
+      "row": 4,
+      "u0": 0.125,
+      "v0": 0.5,
+      "u1": 0.25,
+      "v1": 0.625,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "zorzal_patagonico": {
+      "col": 2,
+      "row": 4,
+      "u0": 0.25,
+      "v0": 0.5,
+      "u1": 0.375,
+      "v1": 0.625,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "cometocino_patagonico": {
+      "col": 3,
+      "row": 4,
+      "u0": 0.375,
+      "v0": 0.5,
+      "u1": 0.5,
+      "v1": 0.625,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "rayadito": {
+      "col": 4,
+      "row": 4,
+      "u0": 0.5,
+      "v0": 0.5,
+      "u1": 0.625,
+      "v1": 0.625,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "colilarga": {
+      "col": 5,
+      "row": 4,
+      "u0": 0.625,
+      "v0": 0.5,
+      "u1": 0.75,
+      "v1": 0.625,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "paloma_araucana": {
+      "col": 6,
+      "row": 4,
+      "u0": 0.75,
+      "v0": 0.5,
+      "u1": 0.875,
+      "v1": 0.625,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "ciervo_colorado": {
+      "col": 7,
+      "row": 4,
+      "u0": 0.875,
+      "v0": 0.5,
+      "u1": 1,
+      "v1": 0.625,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "jabali_europeo": {
+      "col": 0,
+      "row": 5,
+      "u0": 0,
+      "v0": 0.625,
+      "u1": 0.125,
+      "v1": 0.75,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "vison_americano": {
+      "col": 1,
+      "row": 5,
+      "u0": 0.125,
+      "v0": 0.625,
+      "u1": 0.25,
+      "v1": 0.75,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "liebre_europea": {
+      "col": 2,
+      "row": 5,
+      "u0": 0.25,
+      "v0": 0.625,
+      "u1": 0.375,
+      "v1": 0.75,
+      "cellPx": 128,
+      "guardaPx": 8
+    },
+    "perro_asilvestrado": {
+      "col": 3,
+      "row": 5,
+      "u0": 0.375,
+      "v0": 0.625,
+      "u1": 0.5,
+      "v1": 0.75,
+      "cellPx": 128,
+      "guardaPx": 8
+    }
+  }
+}
