@@ -76,9 +76,12 @@ lo pedido.
 
 ### A · Lo que más hace al juego
 
-1. **Los gestos que faltan.** Caza, pesca, saberes, relevamiento y exploración no
-   tienen gesto propio; la chatarra y la cantera ya tienen el suyo desde la ronda
-   2. Es lo que más se nota jugando, porque es lo que hacés todo el tiempo.
+1. **Los gestos que faltan — lo que queda es menos de lo que decía acá.** La
+   ronda 2 cerró caza (`H`), pesca (`P`, que se anuncia otra vez desde que se
+   destrabó la rama de beber), taller (`G`) y códice (`Tab`): los cuatro tenían
+   tecla y ninguno se nombraba. **Siguen sin gesto propio saberes, relevamiento y
+   exploración**, que son los tres que no tienen nada que apretar. Es lo que más
+   se nota jugando, porque es lo que hacés todo el tiempo.
 2. **El `hueso` no lo pide ninguna receta.** Tiene ficha, se ve y se junta —lo
    entrega `caza.json` en tres lugares— y no sirve para nada. Es la clase de cabo
    suelto que el jugador lee como «el juego está incompleto».
@@ -103,10 +106,13 @@ lo pedido.
 7. **`Mineria._ultimoFrente` es un memo de una sola ranura con dos consumidores**
    (`Hallazgos` y `quePuedoHacer`). Hoy no cuesta nada porque pasa cada 128 m,
    pero es la misma forma del punto anterior.
-8. **Los 12 m de la orilla están escritos dos veces.** `Hallazgos.js:80` ya
-   exporta `orillaCerca()`; `Recoleccion._orillaCerca()` puede importarlo y
-   quedar en dos líneas. Dónde vive el predicado lo decide `juego`; lo que
-   importa es que el número esté en un solo lugar. Ya nos costó un defecto.
+8. ~~Los 12 m de la orilla escritos dos veces.~~ **HECHO** en `93fe80e`. El
+   predicado vive en `Mundo.orillaCerca()`, que es donde correspondía: los dos
+   que preguntan dependen del terreno y ninguno del otro. `Hallazgos.js:80` y
+   `Recoleccion._orillaCerca()` delegan ahí, así que el número está en un solo
+   lugar. Queda anotado porque el defecto que causó —el mapa marcando el 6 % de
+   la arcilla real— es el ejemplo más barato de por qué una constante duplicada
+   se cobra sola.
 
 ### D · Decisiones que son tuyas, no de un agente
 
