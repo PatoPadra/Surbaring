@@ -657,6 +657,8 @@ async function trabajador(modo) {
 
   // Renderizador espía
   const objetivos = [];
+  const instantaneas = [];        // estado de cada objetivo al componerse
+  const profundidades = new Map();  // DepthTexture -> { liberada, usos }
   const vistasPorHorneada = [];
   let nRender = 0, nRenderDesdeUltimo = 0;
   const render = {
@@ -666,8 +668,38 @@ async function trabajador(modo) {
     getClearColor: (c) => { c.setRGB(0, 0, 0); return c; },
     getClearAlpha: () => 1,
     setRenderTarget(t) {
-      if (t) { objetivos.push(t); nRenderDesdeUltimo = 0; }
-      else if (objetivos.length) { vistasPorHorneada.push(nRenderDesdeUltimo); }
+      if (t) {
+        objetivos.push(t);
+        // INSTANTÁNEA, y no una lectura al final. three compone el framebuffer
+        // —y decide si adjunta una textura de profundidad o crea un
+        // renderbuffer propio— en el primer `setRenderTarget` del objetivo
+        // (`setupRenderTarget` → `setupDepthRenderbuffer`). Lo que valga
+        // `objetivo.depthTexture` DESPUÉS no cambia lo que ya se asignó.
+        //
+        // Y acá importa de verdad: el código puede compartir la profundidad
+        // para hornear y soltarla al terminar. Leyendo al final se vería
+        // `depthTexture === null` en los treinta y se les cobraría un
+        // renderbuffer propio a cada uno — 45 MiB que no existen. El banco
+        // habría informado «no hay ahorro» justo cuando el ahorro es total.
+        instantaneas.push({
+          rt: t, w: t.width, h: t.height,
+          depthBuffer: t.depthBuffer, stencilBuffer: t.stencilBuffer,
+          depthTexture: t.depthTexture || null,
+        });
+        if (t.depthTexture && !profundidades.has(t.depthTexture)) {
+          const dt = t.depthTexture;
+          const est = { tex: dt, liberada: false, usos: 0 };
+          profundidades.set(dt, est);
+          // `Texture.dispose()` emite 'dispose'. Es la única señal fiable de
+          // que la memoria se devolvió, y es la que distingue «compartida y
+          // viva» de «compartida y ya soltada».
+          if (typeof dt.addEventListener === 'function') {
+            dt.addEventListener('dispose', () => { est.liberada = true; });
+          }
+        }
+        if (t.depthTexture) profundidades.get(t.depthTexture).usos++;
+        nRenderDesdeUltimo = 0;
+      } else if (objetivos.length) { vistasPorHorneada.push(nRenderDesdeUltimo); }
     },
     setClearColor() {}, clear() {}, clearDepth() {}, clearColor() {},
     setViewport() {}, setScissor() {}, setScissorTest() {}, setPixelRatio() {},
@@ -830,45 +862,39 @@ async function trabajador(modo) {
   // —compartir un solo búfer de profundidad entre los 30 hornos— porque el
   // ahorro cae entero fuera de lo que el banco suma. Un banco ciego a la
   // mejora que existe para medir da verde diga lo que diga el código.
-  const bytesProfundidadDe = (t) => {
-    if (t.depthBuffer === false) return 0;
-    if (t.depthTexture) {
-      // Con `depthTexture` three adjunta la textura y NO crea renderbuffer
-      // (`setupDepthRenderbuffer` → `setupDepthTexture`). Si es compartida se
-      // paga una sola vez: la dedupe la hace quien llama.
-      const bpp = String(t.depthTexture.type) === String(THREE.UnsignedShortType) ? 2 : 4;
-      return t.width * t.height * bpp;
-    }
-    // Sin stencil el formato es DEPTH_COMPONENT24 (`getInternalDepthFormat`),
-    // que el hardware almacena padeado a 32 bits. Es el único supuesto de
-    // hardware de toda esta cuenta y queda anotado como tal.
-    return t.width * t.height * (t.stencilBuffer ? 4 : 4);
-  };
-
   const rts = objetivos.map(t => ({
     w: t.width, h: t.height,
     mip: !!(t.texture && t.texture.generateMipmaps),
     tipo: t.texture ? String(t.texture.type) : '?',
-    prof: bytesProfundidadDe(t),
-    compartida: !!t.depthTexture,
   }));
   const bytesRT = rts.reduce((s, t) => s + t.w * t.h * 4 * (t.mip ? 4 / 3 : 1), 0);
 
-  // Profundidad, deduplicando las texturas compartidas por identidad.
-  const profVistas = new Set();
+  // ── Profundidad, sobre las INSTANTÁNEAS del momento de componer ──────
+  //
+  // Tres estados posibles, y los tres cuestan distinto:
+  //   · sin compartir  → un renderbuffer por objetivo, vivo para siempre.
+  //   · compartida     → una sola textura para los treinta, viva.
+  //   · compartida y liberada → cero: se soltó al terminar de hornear.
   let bytesProf = 0, objetivosConProfCompartida = 0, profPropias = 0;
-  for (const t of objetivos) {
-    if (t.depthTexture) {
-      objetivosConProfCompartida++;
-      if (profVistas.has(t.depthTexture)) continue;
-      profVistas.add(t.depthTexture);
-    } else if (t.depthBuffer !== false) {
-      // Sin `depthTexture` three le crea un renderbuffer propio a cada uno.
-      profPropias++;
-    }
-    bytesProf += bytesProfundidadDe(t);
+  for (const s of instantaneas) {
+    if (s.depthBuffer === false) continue;
+    if (s.depthTexture) { objetivosConProfCompartida++; continue; }
+    // Sin `depthTexture`, three le crea un renderbuffer propio a cada uno. Sin
+    // stencil el formato es DEPTH_COMPONENT24 (`getInternalDepthFormat`), que
+    // el hardware almacena padeado a 32 bits: es el único supuesto de hardware
+    // de toda esta cuenta, y queda anotado como tal.
+    profPropias++;
+    bytesProf += s.w * s.h * 4;
   }
-  const profundidadesDistintas = profVistas.size + profPropias;
+  let profCompartidasVivas = 0, profCompartidasLiberadas = 0;
+  for (const [dt, est] of profundidades) {
+    if (est.liberada) { profCompartidasLiberadas++; continue; }
+    profCompartidasVivas++;
+    const bpp = String(dt.type) === String(THREE.UnsignedShortType) ? 2 : 4;
+    bytesProf += (dt.image ? dt.image.width : 0) * (dt.image ? dt.image.height : 0) * bpp
+      || (instantaneas[0] ? instantaneas[0].w * instantaneas[0].h * bpp : 0);
+  }
+  const profundidadesDistintas = profCompartidasVivas + profPropias;
 
   const lienzosUnicos = new Set();
   for (const l of lienzos) if (l.__medida.primitivas > 0) lienzosUnicos.add(l);
@@ -917,6 +943,9 @@ async function trabajador(modo) {
     bytesProfundidad: bytesProf,
     profundidadesDistintas,
     objetivosConProfCompartida,
+    profCompartidasVivas,
+    profCompartidasLiberadas,
+    profPropias,
   };
   salida.vram = {
     bytesImpostores: bytesRT,
@@ -1222,16 +1251,30 @@ function banco3Vram(ahora, base) {
   // Que el búfer sólo haga falta MIENTRAS se hornea y quede vivo para siempre
   // es todo el hallazgo. Se hornea de a uno, así que nunca hay dos objetivos
   // escribiendo la misma profundidad a la vez.
-  const compartida = i.profundidadesDistintas === 1 && i.objetivosConProfCompartida === i.objetivos;
-  const sinProfundidad = va.bytesProfundidad === 0 && i.objetivos > 0;
+  // Que TODOS los objetivos hayan horneado CON profundidad es la condición de
+  // imagen: el follaje se tapa a sí mismo y sin prueba de profundidad saldría
+  // en orden de dibujo. Que quede poca o ninguna VIVA después es la condición
+  // de memoria. Son dos cosas distintas y se comprueban por separado.
+  const horneoConProfundidad = i.objetivosConProfCompartida === i.objetivos || i.profPropias === i.objetivos;
+  const compartida = i.objetivosConProfCompartida === i.objetivos && i.objetivos > 0;
+  const liberada = compartida && i.profCompartidasVivas === 0 && i.profCompartidasLiberadas > 0;
+  const ahorro = vb.bytesProfundidad !== undefined ? vb.bytesProfundidad - va.bytesProfundidad : 0;
   L.push('');
-  if (compartida) {
-    L.push('  Sub-gate: los ' + i.objetivos + ' hornos comparten UN búfer de profundidad → verde' +
-      (vb.bytesProfundidad ? '   (ahorro medido: ' + fmt((vb.bytesProfundidad - va.bytesProfundidad) / MiB) + ' MiB)' : ''));
-  } else if (sinProfundidad) {
-    L.push('  Sub-gate: ROJO — no hay búfer de profundidad en absoluto. Ojo: el horneado');
-    L.push('    dibuja follaje que se tapa a sí mismo, y sin prueba de profundidad sale en');
-    L.push('    orden de dibujo. Esto no es el ahorro: es una imagen mal horneada.');
+  if (liberada) {
+    L.push('  Sub-gate: VERDE, y mejor que lo pedido — los ' + i.objetivos + ' hornos compartieron');
+    L.push('    UN búfer de profundidad y además se LIBERÓ al terminar de hornear.' +
+      (ahorro ? ' Ahorro medido: ' + fmt(ahorro / MiB) + ' MiB.' : ''));
+    L.push('    (la profundidad sólo hace falta mientras se hornea; después la cartelera');
+    L.push('     lee el color y nada más.)');
+  } else if (compartida) {
+    L.push('  Sub-gate: VERDE — los ' + i.objetivos + ' hornos comparten UN búfer de profundidad' +
+      (ahorro ? '. Ahorro medido: ' + fmt(ahorro / MiB) + ' MiB.' : '.'));
+    L.push('    Queda vivo: se podría liberar al terminar de hornear y ahorrar el resto.');
+  } else if (!horneoConProfundidad && i.objetivos > 0) {
+    L.push('  Sub-gate: ROJO — ' + i.profPropias + ' de ' + i.objetivos + ' objetivos hornearon SIN');
+    L.push('    profundidad compartida. Ojo si es porque no hay profundidad en absoluto: el');
+    L.push('    horneado dibuja follaje que se tapa a sí mismo, y sin prueba de profundidad');
+    L.push('    sale en orden de dibujo. Eso no es el ahorro: es una imagen mal horneada.');
   } else {
     L.push('  Sub-gate: ROJO — ' + i.profundidadesDistintas + ' búfer(es) de profundidad para ' +
       i.objetivos + ' objetivos. El ahorro de la fase (compartir uno solo) no está entregado.');
