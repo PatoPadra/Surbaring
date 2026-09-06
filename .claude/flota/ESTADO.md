@@ -3,10 +3,11 @@
 > **3/9/2026 — LA RONDA 2 CERRÓ.** Tres jefes —carta, mundo, juego— más una
 > revisión independiente. El encargo está en `RONDA2.md`; las bitácoras son
 > `r2-carta.md`, `r2-mundo.md`, `r2-juego.md` y `r2-revision-juego.md`. Rama
-> `mejoras/ronda2-jugabilidad-graficos`: **cinco commits, empujada a `origin` el
-> 3/9/2026, y NO fusionada a `main`**. La fusión espera a que el dueño la juegue,
-> porque nada de esta ronda se vio en pantalla. Cómo cerrarla —y qué viene
-> después— está en `SEGUIR.md`. Lo de más abajo es el cierre de la ronda 1 y
+> `mejoras/ronda2-jugabilidad-graficos`, **fusionada a `main` y empujada el
+> 3/9/2026** (avance rápido, `1a12624`). Ojo con esto: se fusionó **antes** de
+> que el dueño la jugara, por decisión suya, así que `main` lleva trabajo que
+> nadie vio en pantalla. Las ocho cosas para mirar están acá abajo y en
+> `SEGUIR.md`; si alguna quedó fea, se arregla sobre `main`. Lo de más abajo es el cierre de la ronda 1 y
 > sigue valiendo como diagnóstico e historia.
 >
 > **La lección cara de esta ronda:** el que escribe el arreglo, el banco que lo

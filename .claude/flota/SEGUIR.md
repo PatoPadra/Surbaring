@@ -17,15 +17,17 @@ exactamente la clase de trabajo donde el ojo encuentra en diez segundos lo que
 un banco no mira. Si algo se ve mal, no es que la medición mintió: es que medía
 otra cosa.
 
-Rama `mejoras/ronda2-jugabilidad-graficos`, cinco commits, en `origin` desde el
-3/9/2026. `main` sigue en `e3e1b45` y no se toca hasta que la juegues.
+Está en `main` desde el 3/9/2026 y empujada. Se fusionó **antes** de jugarla,
+por decisión del dueño: lo que sigue abierto no es dónde vive el código, es que
+nadie lo vio todavía. Si alguna de las ocho queda fea, se arregla sobre `main`.
+La rama `mejoras/ronda2-jugabilidad-graficos` quedó como mojón y se puede borrar.
 
 ---
 
 ## Paso 1 · Jugarla
 
 ```sh
-git checkout mejoras/ronda2-jugabilidad-graficos
+git checkout main
 npm run dev
 ```
 
@@ -56,15 +58,13 @@ Tres cosas que muerden si no se saben:
 
 ## Paso 2 · Según lo que veas
 
-**Si está todo bien**, la fusión es avance rápido y no hay conflicto posible:
-
-```sh
-git checkout main && git merge --ff-only mejoras/ronda2-jugabilidad-graficos && git push
-```
+**Si está todo bien**, no hay nada que hacer: ya está en `main` y en GitHub.
 
 **Si algo se ve mal**, no hace falta abrir una ronda entera: los ocho puntos de
-arriba son de una línea a tres. Se arregla sobre la misma rama y recién después
-se fusiona.
+arriba son de una línea a tres, y cada uno dice qué archivo se toca. Se arregla
+sobre `main` y se commitea aparte, para que quede escrito qué encontró el ojo y
+no encontró el banco. Es la información más cara de esta ronda, porque es la
+única que ningún script pudo dar.
 
 ---
 
