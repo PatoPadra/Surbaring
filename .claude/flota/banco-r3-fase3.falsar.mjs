@@ -128,13 +128,27 @@ function defectos() {
   });
 
   // ── Banco 1 ───────────────────────────────────────────────────────────
+  /**
+   * La ventana de la madera queda transparente.
+   *
+   * Ataca las DOS formas de pintarla, y eso no es exceso. Hasta la ronda 3 la
+   * reserva de madera era un `fillRect` blanco; la fase 3 la reemplazó por una
+   * franja generada píxel a píxel y volcada con `putImageData`. Un defecto que
+   * sólo anulara `fillRect` se planta **con éxito** y no toca la corteza: el
+   * banco sigue verde y el falsador lo cantaría como punto ciego cuando en
+   * realidad es un defecto obsoleto apuntando a un mecanismo que ya no existe.
+   * Es la misma confusión que el falsador dice evitar entre «no lo vio» y «no se
+   * pudo plantar», sólo que escondida un nivel más abajo.
+   */
   D.push({
-    id: 'D2', que: 'la zona del atlas donde cae la madera queda transparente (se anula fillRect)',
+    id: 'D2', que: 'la ventana de la madera queda transparente (se anulan putImageData y fillRect)',
     veg: copiaConInyeccion('D2-Vegetacion.js', `
 { const _ce = globalThis.document.createElement.bind(globalThis.document);
   globalThis.document.createElement = (t) => { const c = _ce(t);
     if (t === 'canvas') { const _gc = c.getContext.bind(c);
-      c.getContext = (k) => { const x = _gc(k); if (x) x.fillRect = () => {}; return x; }; }
+      c.getContext = (k) => { const x = _gc(k);
+        if (x) { x.fillRect = () => {}; x.putImageData = () => {}; }
+        return x; }; }
     return c; }; }`, VEG),
     soto: SOTO, esperaRojo: [1],
   });

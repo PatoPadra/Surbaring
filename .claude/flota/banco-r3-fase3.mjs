@@ -555,6 +555,42 @@ function medirVentana(lienzo, x0, y0, x1, y1) {
   };
 }
 
+/**
+ * Cuán AGRUPADO está el dibujo: coeficiente de variación de la cobertura
+ * medida por tejas.
+ *
+ * Es la medida directa del defecto que la fase vino a arreglar. El follaje de
+ * la línea de base reparte sus 620 hojas con centro uniforme sobre todo el
+ * lienzo, y eso da «sopa homogénea»: la silueta recortada por alfa sale pareja,
+ * sin grumos ni claros. Un dosel real viene en matas.
+ *
+ * Con centros uniformes la cobertura por teja es casi constante y el
+ * coeficiente de variación tiende a 0; con matas, unas tejas se llenan y otras
+ * quedan vacías y el coeficiente sube. No mide «cuántas capas se dibujaron»
+ * —que es una propiedad del código— sino si el resultado quedó agrupado, que
+ * es la propiedad de la imagen que se pidió.
+ */
+function medirAgrupamiento(lienzo, tejas = 16, fracAncho = 1) {
+  const { a, N } = lienzo.__medida.canal();
+  const paso = Math.max(1, Math.floor(N / tejas));
+  const ancho = Math.max(paso, Math.floor(N * fracAncho));
+  const cobs = [];
+  for (let ty = 0; ty + paso <= N; ty += paso) {
+    for (let tx = 0; tx + paso <= ancho; tx += paso) {
+      let cub = 0, n = 0;
+      for (let y = ty; y < ty + paso; y++) for (let x = tx; x < tx + paso; x++) {
+        n++; if (a[y * N + x] >= 0.28) cub++;
+      }
+      if (n) cobs.push(cub / n);
+    }
+  }
+  if (!cobs.length) return 0;
+  const m = cobs.reduce((s, v) => s + v, 0) / cobs.length;
+  if (!(m > 0)) return 0;
+  const varz = cobs.reduce((s, v) => s + (v - m) * (v - m), 0) / cobs.length;
+  return Math.sqrt(varz) / m;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // TRABAJADOR — un proceso por escenario
 // ═══════════════════════════════════════════════════════════════════════════
@@ -753,6 +789,10 @@ async function trabajador(modo) {
         colorSpace: t1 ? t1.colorSpace : null,
         // Estadística de todo el lienzo
         todo: lz ? medirVentana(lz, 0, 0, lz.__medida.N, lz.__medida.N) : null,
+        // Sólo la parte que las tarjetas de follaje pueden muestrear: la franja
+        // de corteza es opaca por definición y falsearía las dos medidas.
+        follaje: lz ? medirVentana(lz, 0, 0, lz.__medida.N * FOLLAJE_U_MAX_BANCO, lz.__medida.N) : null,
+        agrupamiento: lz ? medirAgrupamiento(lz, 16, FOLLAJE_U_MAX_BANCO) : 0,
       };
       salida['_lz_' + clase] = null;
       atlasPorClase[clase]._ref = lz;
@@ -803,6 +843,45 @@ async function trabajador(modo) {
       }
     }
 
+    // ── Superficie degenerada, que es lo que «muestrear un solo texel» significa
+    //
+    // Contar VÉRTICES que comparten una UV mide mal: `CylinderGeometry` emite un
+    // vértice central por segmento en cada tapa, todos con uv (0,5 · 0,5), así
+    // que las tapas de un tronco y de sus siete ramas aportan decenas de
+    // vértices con UV idéntica **por construcción de three**, en discos que no
+    // se ven. Con esa métrica un árbol correcto da 12,9 % y parece defectuoso.
+    //
+    // Lo que importa es la SUPERFICIE: un triángulo cuyos tres vértices caen en
+    // la misma UV lee un texel único por más grande que sea en pantalla. Es
+    // exactamente el defecto de la línea de base —donde da el 100 %— y es cero
+    // en cuanto la parametrización cilíndrica llega viva al atributo.
+    let areaMadera = 0, areaDegenerada = 0, trisMadera = 0, trisDeg = 0;
+    if (uv && flex) {
+      const idx = g.index;
+      const nTri = idx ? idx.count / 3 : nv / 3;
+      const pos3 = pos;
+      for (let t = 0; t < nTri; t++) {
+        const ia = idx ? idx.getX(t * 3) : t * 3;
+        const ib = idx ? idx.getX(t * 3 + 1) : t * 3 + 1;
+        const ic = idx ? idx.getX(t * 3 + 2) : t * 3 + 2;
+        if (flex.getX(ia) > 0.05 || flex.getX(ib) > 0.05 || flex.getX(ic) > 0.05) continue;
+        // Área del triángulo en el espacio, que es su peso real en pantalla.
+        const ax = pos3.getX(ia), ay = pos3.getY(ia), az = pos3.getZ(ia);
+        const bx = pos3.getX(ib), by = pos3.getY(ib), bz = pos3.getZ(ib);
+        const cx = pos3.getX(ic), cy = pos3.getY(ic), cz = pos3.getZ(ic);
+        const e1x = bx - ax, e1y = by - ay, e1z = bz - az;
+        const e2x = cx - ax, e2y = cy - ay, e2z = cz - az;
+        const nx = e1y * e2z - e1z * e2y, ny = e1z * e2x - e1x * e2z, nz = e1x * e2y - e1y * e2x;
+        const area = 0.5 * Math.sqrt(nx * nx + ny * ny + nz * nz);
+        if (!(area > 0)) continue;
+        areaMadera += area; trisMadera++;
+        // Área que ese triángulo abarca en el atlas. Cero ⇒ un solo texel.
+        const du1 = uv.getX(ib) - uv.getX(ia), dv1 = uv.getY(ib) - uv.getY(ia);
+        const du2 = uv.getX(ic) - uv.getX(ia), dv2 = uv.getY(ic) - uv.getY(ia);
+        if (Math.abs(du1 * dv2 - du2 * dv1) < 1e-12) { areaDegenerada += area; trisDeg++; }
+      }
+    }
+
     const clase = lote.malla.material.map;
     especies.push({
       id: lote.esp.id, tipo: lote.esp.tipo,
@@ -815,6 +894,8 @@ async function trabajador(modo) {
       maderaUVUnicas: uvMadera.size,
       maderaCaja: maderaN ? [u0, v0, u1, v1] : null,
       maderaAreaUV: maderaN ? Math.max(0, u1 - u0) * Math.max(0, v1 - v0) : 0,
+      fracAreaDegenerada: areaMadera > 0 ? areaDegenerada / areaMadera : 0,
+      trisMadera, trisDeg,
       claseAtlas: clase === (atlasPorClase.aguja && atlasPorClase.aguja._ref &&
         (atlasPorClase.aguja.hay ? modVeg.atlasFollaje('aguja') : null)) ? 'aguja' : null,
       mapas: mapasDe(lote.malla.material).cuales,
@@ -1062,11 +1143,40 @@ const fmt = (n, d = 2) => Number(n).toFixed(d).replace('.', ',');
 /** Umbral de «un solo texel»: ninguna coordenada UV puede llevarse tantos
  *  vértices. Hoy la madera entera cae en un punto: 20-30 % de la malla. */
 const TECHO_FRAC_UV = 0.06;
+/**
+ * Y el que manda: cuánta SUPERFICIE de madera puede quedar en una UV degenerada.
+ *
+ * La métrica por vértices no sirve de gate. `CylinderGeometry` emite un vértice
+ * central por segmento en cada tapa, todos con uv (0,5 · 0,5): las tapas del
+ * tronco y de las siete ramas juntan decenas de vértices con UV idéntica **por
+ * construcción de three**, en discos que además quedan dentro de la copa. Un
+ * árbol perfectamente texturado da 12,9 % por esa vía y parecería roto.
+ *
+ * Un triángulo cuyos tres vértices caen en la misma UV lee un texel único por
+ * grande que sea en pantalla: ésa es la definición del defecto. En la línea de
+ * base da 100 % —toda la madera en un punto— y con la parametrización viva da
+ * cero. Un 1 % de tolerancia cubre slivers numéricos y nada más.
+ */
+const TECHO_AREA_DEGENERADA = 0.01;
 /** Variación mínima de luminancia en la ventana de corteza. Un parche liso da
  *  exactamente 0; cualquier corteza dibujada da bastante más. */
 const MIN_SIGMA_CORTEZA = 0.015;
 /** Y la ventana tiene que ser opaca, o el alphaTest se come el tronco entero. */
 const MIN_OPACIDAD_CORTEZA = 0.90;
+/** Hasta dónde en U puede llegar una tarjeta de follaje. Más allá empieza la
+ *  franja de corteza, que es opaca por definición: medir el follaje incluyéndola
+ *  infla la cobertura y el agrupamiento, y taparía justo la regresión que hay
+ *  que vigilar. Es el mismo número que `FOLLAJE_U_MAX` de Vegetacion.js. */
+const FOLLAJE_U_MAX_BANCO = 0.86;
+/**
+ * Cuánto puede subir la cobertura de alfa del follaje antes de ser regresión.
+ *
+ * No es cero porque acotar la ventana de las tarjetas a `FOLLAJE_U_MAX` cambia
+ * levemente qué parte del lienzo se muestrea, y eso mueve el número solo. Pero
+ * es chico: los árboles son el 22 % del cuadro y cada fragmento que pasa el
+ * corte paga el Lambert entero con sus cuatro cascadas de sombra.
+ */
+const TOLERANCIA_COBERTURA = 0.03;
 
 function banco1Corteza(ahora, base) {
   const L = [];
@@ -1084,11 +1194,11 @@ function banco1Corteza(ahora, base) {
   }
   // COBERTURA: la línea de base TIENE que mostrar el defecto, o el instrumento
   // no está midiendo lo que dice medir.
-  const peorBase = Math.max(...baseConMadera.map(e => e.fracMaxGrupoUV), 0);
-  L.push('  el defecto en la línea de base: hasta el ' + fmt(peorBase * 100, 1) +
-    ' % de los vértices de una especie comparten UNA sola UV' +
-    (peorBase >= 0.12 ? '   (el instrumento ve el defecto)' : '   >>> LA BASE NO MUESTRA EL DEFECTO'));
-  if (peorBase < 0.12) {
+  const peorBase = Math.max(...baseConMadera.map(e => e.fracAreaDegenerada), 0);
+  L.push('  el defecto en la línea de base: el ' + fmt(peorBase * 100, 1) +
+    ' % de la SUPERFICIE de madera cae en una UV degenerada (un solo texel)' +
+    (peorBase >= 0.90 ? '   (el instrumento ve el defecto)' : '   >>> LA BASE NO MUESTRA EL DEFECTO'));
+  if (peorBase < 0.90) {
     return { ok: false, ejercitado: 0, lineas: L,
       motivo: 'la línea de base no reproduce el defecto que este banco dice medir' };
   }
@@ -1098,7 +1208,9 @@ function banco1Corteza(ahora, base) {
   for (const e of conMadera) {
     const c = e.corteza;
     const razones = [];
-    if (e.fracMaxGrupoUV > TECHO_FRAC_UV) razones.push('UV degenerada ' + fmt(e.fracMaxGrupoUV * 100, 1) + ' %');
+    if (e.fracAreaDegenerada > TECHO_AREA_DEGENERADA) {
+      razones.push('superficie degenerada ' + fmt(e.fracAreaDegenerada * 100, 1) + ' %');
+    }
     if (e.maderaUVUnicas < 8) razones.push('sólo ' + e.maderaUVUnicas + ' UV distintas en la madera');
     if (!c) razones.push('no se pudo medir la ventana');
     else {
@@ -1119,8 +1231,13 @@ function banco1Corteza(ahora, base) {
   L.push('  UV distintas por madera      base ' + fmt(baseUV, 1).padStart(8) + '  →  ahora ' + fmt(mediaUV, 1));
   L.push('  σ de luminancia en la ventana base ' + fmt(baseSigma, 4).padStart(6) + '  →  ahora ' + fmt(mediaSigma, 4));
   L.push('  opacidad de la ventana                      →  ahora ' + fmt(mediaOpac * 100, 1) + ' %');
-  L.push('  máx. fracción de vértices en UNA UV  base ' + fmt(peorBase * 100, 1) + ' %  →  ahora ' +
-    fmt(Math.max(...conMadera.map(e => e.fracMaxGrupoUV)) * 100, 1) + ' %   (techo ' + fmt(TECHO_FRAC_UV * 100, 0) + ' %)');
+  L.push('  superficie de madera en UNA sola UV  base ' + fmt(peorBase * 100, 1) + ' %  →  ahora ' +
+    fmt(Math.max(...conMadera.map(e => e.fracAreaDegenerada)) * 100, 2) + ' %   (techo ' +
+    fmt(TECHO_AREA_DEGENERADA * 100, 0) + ' %)');
+  L.push('  (los vértices que comparten UV bajaron del ' + fmt(Math.max(...baseConMadera.map(e => e.fracMaxGrupoUV)) * 100, 1) +
+    ' % al ' + fmt(Math.max(...conMadera.map(e => e.fracMaxGrupoUV)) * 100, 1) +
+    ' %; el resto son los vértices centrales de las tapas de cilindro,');
+  L.push('   que three emite todos con uv (0,5 · 0,5) y que no cubren superficie)');
   for (const m of malos.slice(0, 8)) L.push('    >>> ' + m);
   if (malos.length > 8) L.push('    … y ' + (malos.length - 8) + ' más');
 
@@ -1142,15 +1259,51 @@ function banco2Follaje(ahora, base) {
       ok = false; continue;
     }
     ejercitado += a.primitivas;
-    const pa = a.todo.profMedia, pb = b && b.todo ? b.todo.profMedia : 0;
-    const ca = a.todo.fracCubierta, cb = b && b.todo ? b.todo.fracCubierta : 0;
+    // Se mide SOBRE LA REGIÓN DE FOLLAJE, no sobre el lienzo entero: la franja
+    // de corteza es opaca por definición y, contada, sube la cobertura y el
+    // agrupamiento sola — taparía exactamente la regresión que hay que vigilar.
+    const fa = a.follaje || a.todo, fb = (b && (b.follaje || b.todo)) || null;
+    const pa = fa.profMedia, pb = fb ? fb.profMedia : 0;
+    // `fracOpaca` y no `fracCubierta`: lo que cuesta por cuadro es el fragmento
+    // que PASA el `alphaTest: 0.28` y paga el Lambert entero con sus cuatro
+    // cascadas de sombra. Un texel con alfa 0,05 se descarta y no cuesta eso.
+    const oa = fa.fracOpaca, ob = fb ? fb.fracOpaca : 0;
+    const sa = fa.lumSigma, sb = fb ? fb.lumSigma : 0;
+    const ga = a.agrupamiento || 0, gb = b ? (b.agrupamiento || 0) : 0;
     L.push('  ' + clase.padEnd(7) + ' primitivas ' + String(a.primitivas).padStart(6) +
       (b ? ' (base ' + b.primitivas + ')' : '') +
       '   lienzo ' + a.N + '²' + (b && b.N !== a.N ? ' (base ' + b.N + '²)' : ''));
-    L.push('          profundidad media de capas  base ' + fmt(pb, 2) + '  →  ahora ' + fmt(pa, 2) +
-      (pa >= pb * 1.5 ? '   más de una capa' : '   >>> NO GANÓ CAPAS'));
-    L.push('          cobertura del lienzo        base ' + fmt(cb * 100, 1) + ' %  →  ahora ' + fmt(ca * 100, 1) + ' %');
-    if (!(pa >= pb * 1.5)) ok = false;
+    L.push('          COSTO · cobertura de alfa   base ' + fmt(ob * 100, 1).padStart(5) + ' %  →  ahora ' +
+      fmt(oa * 100, 1) + ' %   ' + (ob > 0 ? '(' + (oa > ob ? '+' : '') + fmt((oa / ob - 1) * 100, 1) + ' %)' : ''));
+    // El CV por tejas sólo distingue «agrupado» de «al azar» si en cada teja
+    // cae más de un objeto. Con la cobertura de la conífera —74 ramillas sobre
+    // 256 tejas— la mayoría de las tejas tiene 0 ó 1, y entonces el CV mide
+    // ruido de Poisson (≈1/√λ) y no agrupamiento: da alto tanto para un dibujo
+    // agrupado como para uno uniforme y ralo. Gatear con él ahí sería exigirle
+    // al agente que mueva un número que no significa lo que dice.
+    const cvSirve = ob >= 0.12;
+    L.push('          MEJORA · agrupamiento (CV)  base ' + fmt(gb, 3).padStart(5) + '    →  ahora ' + fmt(ga, 3) +
+      (!cvSirve ? '   (no concluyente: ' + fmt(ob * 100, 1) + ' % de cobertura, <1 objeto por teja)'
+        : ga > gb * 1.15 ? '   matas y claros' : '   >>> SIGUE SIENDO SOPA HOMOGÉNEA'));
+    L.push('          MEJORA · σ de luminancia    base ' + fmt(sb, 4).padStart(5) + '   →  ahora ' + fmt(sa, 4) +
+      (sa > sb * 1.05 ? '   estratos de tono' : '   >>> UN SOLO ESTRATO DE TONO'));
+    L.push('          (informativo) capas apiladas base ' + fmt(pb, 2) + '  →  ahora ' + fmt(pa, 2));
+
+    // GATE DE COSTO. Es el presupuesto de la fase, y sale de la propia D6 de
+    // `r3-flora.md`: «cero si la cobertura de alfa no sube». Los árboles son el
+    // 22 % del cuadro, así que más fragmentos que sobreviven al corte es más
+    // Lambert y más muestreo de sombra en la pieza más cara del cuadro.
+    if (ob > 0 && oa > ob * (1 + TOLERANCIA_COBERTURA)) {
+      L.push('          >>> ROJO: la cobertura de alfa subió ' + fmt((oa / ob - 1) * 100, 1) +
+        ' %, y el tope es ' + fmt(TOLERANCIA_COBERTURA * 100, 0) + ' %.');
+      ok = false;
+    }
+    // GATE DE MEJORA. Las dos cosas que el diagnóstico pidió: que deje de ser
+    // sopa homogénea (agrupamiento) y que tenga más de un estrato de tono (σ).
+    // No se mide «cuántas capas dibujó el código» —eso es una propiedad del
+    // código, no de la imagen, y da verde con tres capas superpuestas idénticas.
+    if (cvSirve && !(ga > gb * 1.15)) ok = false;
+    if (!(sa > sb * 1.05)) ok = false;
     if (a.N > (b ? b.N : 512)) {
       L.push('          >>> el lienzo creció: eso sale del presupuesto de VRAM (banco 3)');
     }

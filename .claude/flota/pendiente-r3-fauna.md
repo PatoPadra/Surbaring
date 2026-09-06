@@ -49,6 +49,26 @@ sueltas en dos archivos.
 
 ## 3 · El manifiesto no declara la **orientación** de sus bandas, y eso cuesta
 
+> **POSTERGADO A LA RONDA 4 — 6/9/2026, jefe de la fase 3.** Decisión mía, con
+> el motivo, porque el coordinador me autorizó a tocar `tools/hornear-texturas.mjs`
+> y `src/util/atlas.js` para esto y elijo no hacerlo **ahora**.
+>
+> El precio de hacerlo no es escribir el campo: es que cambiar la salida del
+> horno obliga a rehornear y a correr **enteros** `banco-r3-fase1.mjs` y
+> `banco-r3-fase2.mjs`, que son dos fases ya cerradas y medidas. La fase 3 se
+> cortó **dos veces** por límite de uso antes de llegar a su propio falsador, y
+> el saldo de esta sesión —45,0 MiB de VRAM y la corteza de 63 especies— vale
+> más que dos franjas dorsales en un zorrino.
+>
+> Lo que sí queda decidido, para que la ronda 4 no vuelva a discutirlo: **el
+> arreglo correcto es el campo `orientacionV` en el manifiesto**, no redibujar
+> el patrón. La fase 2 eligió V dorsoventral por una razón medida (el
+> contrasombreado `colorDorso`/`colorVientre` cae bien en las 44 especies) y esa
+> elección se queda; lo que falta es que el acuerdo esté **escrito en el
+> archivo** y no en dos bitácoras, y que el horno dibuje el patrón sobre el eje
+> que el manifiesto declare. Mientras tanto el zorrino patagónico tiene dos
+> cinturones en vez de dos franjas dorsales, y es lo único que se ve.
+
 `manifiesto.convencion` describe qué hay en cada tramo de V —cabeza, dorso,
 vientre, cola— pero da por sentado que V corre **a lo largo** del animal, que es
 lo que hacía la UV por defecto de `SphereGeometry`. La fase 2 rehizo la
