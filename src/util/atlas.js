@@ -31,12 +31,28 @@
  *     if (t) {
  *       material.map = t.albedo;
  *       material.normalMap = t.normal;
- *       material.roughnessMap = t.rugosidadOclusion;  // canal R = rugosidad
- *       material.aoMap = t.rugosidadOclusion;          // canal G = oclusión
- *       // aoMap en three.js necesita un segundo set de UV (uv2) igual al
- *       // primero si el mismo atributo uv ya sirve; ver documentación de
- *       // THREE.MeshStandardMaterial.aoMap.
+ *       material.roughnessMap = t.rugosidadOclusion;  // three lee el canal G
+ *       material.aoMap = t.rugosidadOclusion;          // three lee el canal R
  *     }
+ *
+ * ── Los canales del mapa combinado, corregidos el 6/9/2026 ───────────────
+ * Estas dos líneas decían al revés cuál canal es cuál, y el horno horneaba
+ * al revés para hacerles juego: R=rugosidad, G=oclusión. three.js lee el
+ * mapa combinado con la convención ORM de glTF y no acepta otra —
+ * `aomap_fragment.glsl.js` dice «reads channel R» y
+ * `roughnessmap_fragment.glsl.js` dice «reads channel G» (three 0.169)—,
+ * así que enchufar los dos mapas a esta textura hacía que la rugosidad la
+ * manejara la oclusión y viceversa, **sin un error ni un aviso**. Se
+ * corrigió en `tools/hornear-texturas.mjs`, que ahora hornea
+ * **R = oclusión, G = rugosidad, B = 0**, y el manifiesto lo declara en su
+ * campo `canales`. El nombre del archivo quedó como estaba.
+ *
+ * ── Y `aoMap` NO necesita un segundo set de UV ────────────────────────────
+ * Acá decía que hacía falta `uv2`. Eso valía en three anterior a r151. En
+ * three 0.169 cada mapa lleva `texture.channel`, que arranca en 0
+ * (`Texture.js`), y el canal 0 es el atributo `uv` de siempre
+ * (`WebGLPrograms.js` → `aoMapUv: getChannel(material.aoMap.channel)`). Con
+ * el `uv` que ya traen las primitivas alcanza; no hay que duplicar nada.
  *   }
  *   // atlas.region('huemul') → {col,row,u0,v0,u1,v1,cellPx,guardaPx} | null
  *   // atlas.convencion → string con la convención de bandas de la celda

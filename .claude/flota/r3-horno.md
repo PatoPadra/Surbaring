@@ -240,6 +240,78 @@ dos archivos juntos, no de leer un informe.
    vez del nombre del archivo, porque `err?.message` no existe en el evento de
    error de `TextureLoader`. Cosmético, no afecta la degradación.
 
+## Corrección de la fase 1 hecha DESPUÉS de cerrarla — 6/9/2026
+
+> La escribe el **jefe de la fase 2**. `horno` ya no existe y la fase 1 estaba
+> cerrada, así que el dueño de la ronda delegó estos dos archivos al jefe en vez
+> de dárselos a `fauna` (que no puede tocar `tools/` ni `src/util/atlas.js`).
+> Queda acá y no en `r3-fauna.md` porque el defecto es de la fase 1.
+
+**Los canales del mapa combinado estaban cruzados.** Lo encontró `fauna`
+leyendo, y se confirmó abriendo los dos lados:
+
+- `tools/hornear-texturas.mjs:323` horneaba **R = rugosidad, G = oclusión**.
+- three 0.169 lee la convención ORM de glTF y **no acepta otra**: el canal de
+  `aoMap` y el de `roughnessMap` son fijos, no se eligen desde JavaScript.
+  `aomap_fragment.glsl.js` dice «reads channel R» y
+  `roughnessmap_fragment.glsl.js` dice «reads channel G» (leído en
+  `node_modules`, no de memoria).
+
+Enchufar los dos mapas a la misma textura hacía que **la rugosidad la manejara
+la oclusión y viceversa, sin un error ni un aviso**. Es el mismo tipo de defecto
+silencioso que la nº 1 y la nº 2 de la lista de arriba.
+
+**No se puede arreglar del lado del consumidor.** O se hornea en el orden que
+three espera, o hace falta un shader propio — y un shader propio va justo contra
+el hardware de esta máquina, que pierde 8× en ALU de fragmento. Por eso se
+arregla en el horno, donde se paga una sola vez.
+
+**Qué se cambió, exactamente:**
+
+1. `tools/hornear-texturas.mjs` hornea ahora **R = oclusión, G = rugosidad,
+   B = 0** (metalidad sin uso: la fauna no es metálica), con el porqué escrito
+   al lado de las tres líneas.
+2. El manifiesto declara un campo nuevo, `canales`, para que el orden se pueda
+   auditar sin abrir el horneador ni el navegador. El **nombre del archivo
+   quedó como estaba** (`rugosidad_oclusion.png`): renombrarlo mientras `fauna`
+   escribía código contra `texturasParaEspecie(…).rugosidadOclusion` era mover
+   la API por una razón cosmética.
+3. `src/util/atlas.js`: el ejemplo de la cabecera decía al revés cuál canal era
+   cuál. Y **decía que `aoMap` necesita un segundo set de UV (`uv2`)**, que
+   valía en three anterior a r151 y hoy es falso: en 0.169 cada mapa lleva
+   `texture.channel`, que arranca en 0, y el canal 0 es el atributo `uv` de
+   siempre. Con el `uv` que ya traen las primitivas alcanza.
+
+**Medido, no supuesto** — `.claude/flota/comprobar-canales-orm.mjs`, que mide
+dos firmas independientes entre sí sobre los píxeles horneados:
+
+| firma | de dónde sale | canal R | canal G |
+|---|---|---|---|
+| valle de oclusión en los bordes de banda (v = 0,14 / 0,62 / 0,86) | la forma que impone el horneador | **caída 50,5** | caída 2,5 |
+| seguir la `rugosidad` de `pelajes.json` (bigua 0,50 · jabalí 0,95) | `src/data/pelajes.json` | error **127,5** | error **0,4 y 0,6** |
+
+Las dos caen donde tienen que caer. Y la comprobación **está falsada**: corrida
+con `ORM_TEX` contra una copia del atlas con R y G intercambiados a mano —que es
+literalmente el estado previo al arreglo— se pone **roja por las dos firmas a la
+vez** y sale con código 1.
+
+**La fase 1 no quedó rota por esto.** El banco `banco-r3-fase1.mjs` se corrió
+entero después de rehornear: **los cuatro en verde**. Determinismo 4/4 archivos
+byte a byte entre dos horneadas desde cero (1840 y 2308 ms); presupuesto
+**16,00 MiB con mipmaps contra el techo de 24 MB**, margen 8 MiB, recalculado
+desde el IHDR; cobertura 44/44 con 0 fuera del atlas y 0 solapadas; degradación
+en sus tres escenarios. Cambiaron los bytes de exactamente los dos archivos que
+tenían que cambiar: `rugosidad_oclusion.png` (`b641561…` → `b7e37e00216ceea7`) y
+`manifiesto.json` (por el campo `canales`). **`albedo.png` y `normal.png` siguen
+con el hash de antes** (`488c9f7a…` y `941283fd…`), que es la prueba de que el
+cambio no se derramó a donde no tenía que ir.
+
+**Honestidad sobre el estatus:** el que escribió el arreglo es el mismo que
+escribió su comprobación, que es justo lo que la regla 1 de RONDA3 prohíbe. No
+había agente independiente disponible para la fase 1. Se hizo lo único que vale
+por sí solo —dos firmas falsables derivadas de dos archivos fuente distintos— y
+queda dicho que **no es una revisión independiente**.
+
 ## Descartado
 
 - **Fotogrametría / descargar fotos**: decisión del dueño, ya escrita en

@@ -5,3 +5,4 @@ capturas/
 *.log
 .DS_Store
 .vite/
+.claude/flota/.tmp-*/

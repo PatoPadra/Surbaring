@@ -12,6 +12,15 @@
     "normal": "normal.png",
     "rugosidadOclusion": "rugosidad_oclusion.png"
   },
+  "canales": {
+    "rugosidadOclusion": {
+      "R": "oclusion (aoMap)",
+      "G": "rugosidad (roughnessMap)",
+      "B": "metalidad, sin uso (0)",
+      "A": "255"
+    },
+    "convencion": "ORM de glTF — la que leen aomap_fragment (R) y roughnessmap_fragment (G) de three.js"
+  },
   "convencion": "Celda cuadrada por especie. Eje V (0=arriba de la celda, 1=abajo): banda cabeza [0,0.14] (colorAcento si bandaAcento=\"cabeza\", o el patrón si zonaPatron=\"cabeza\"), banda dorso [0.14,0.62] (colorDorso, + patrón si zonaPatron es \"cuerpo\" o \"dorso\"), banda vientre [0.62,0.86] (colorVientre, + patrón si zonaPatron es \"cuerpo\" o \"vientre\"), banda cola [0.86,1.0] (colorAcento si bandaAcento=\"cola\"). bandaAcento=\"media\" superpone una franja angosta en V∈[0.42,0.58] (alas, flancos). Es una aproximación consciente: no hay UV real de modelo todavía (la define fase 2), así que se usa un único eje longitudinal genérico cabeza→cola.",
   "sangradoMips": {
     "guardaPx": 8,

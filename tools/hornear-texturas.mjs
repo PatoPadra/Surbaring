@@ -320,16 +320,32 @@ function pintarEspecie(capas, atlasPx, colOffsetPx, rowOffsetPx, pelaje, especie
       capas.normal[idx + 2] = clampByte((nz * 0.5 + 0.5) * 255);
       capas.normal[idx + 3] = 255;
 
-      // ── rugosidad (R) + oclusión (G) ──
+      // ── mapa combinado: convención ORM de glTF — R = oclusión, G = rugosidad ──
+      //
+      // OJO, esto estuvo cruzado y es un defecto que no avisa. three.js lee el
+      // mapa combinado con la convención ORM de glTF, y lo dice en su propio
+      // código: `aomap_fragment.glsl.js` → «reads channel R», y
+      // `roughnessmap_fragment.glsl.js` → «reads channel G» (verificado en
+      // node_modules, three 0.169). Este horno escribía al revés —R=rugosidad,
+      // G=oclusión—, así que enchufar `roughnessMap` y `aoMap` a la misma
+      // textura hacía que la rugosidad la manejara la oclusión y viceversa,
+      // **sin un error ni un aviso en consola**. Corregido el 6/9/2026 por el
+      // jefe de la fase 2, que fue quien lo encontró (fase 1 ya estaba cerrada).
+      //
+      // No se puede arreglar del lado del consumidor: en three el canal de cada
+      // uno de esos dos mapas es fijo, no se elige. O se hornea en el orden que
+      // three espera, o hace falta un shader propio — y un shader propio va
+      // justo contra el hardware de esta máquina (pierde 8× en ALU de
+      // fragmento). Por eso se arregla acá, donde se paga una sola vez.
       const granoRug = (hash2D(semilla ^ 0x1234abcd, Math.round(u * 256), Math.round(v * 256)) - 0.5) * 0.08;
       const rug = clamp01(pelaje.rugosidad + granoRug);
       const distBorde = Math.min(
         Math.abs(v - BANDA.CABEZA[1]), Math.abs(v - BANDA.DORSO[1]), Math.abs(v - BANDA.VIENTRE[1])
       );
       const ocl = 1 - 0.22 * (1 - suave(0, 0.035, distBorde));
-      capas.rugOcl[idx] = clampByte(rug * 255);
-      capas.rugOcl[idx + 1] = clampByte(ocl * 255);
-      capas.rugOcl[idx + 2] = 0;
+      capas.rugOcl[idx] = clampByte(ocl * 255);      // R = oclusión  (aoMap)
+      capas.rugOcl[idx + 1] = clampByte(rug * 255);  // G = rugosidad (roughnessMap)
+      capas.rugOcl[idx + 2] = 0;                     // B = metalidad (sin uso: la fauna no es metálica)
       capas.rugOcl[idx + 3] = 255;
     }
   }
@@ -395,6 +411,14 @@ function hornear(fauna, pelajesDoc) {
     atlasPx: ATLAS_PX,
     grid: { cols: GRID, rows: GRID, cellPx: CELL_PX, guardaPx: GUARDA_PX },
     archivos: { albedo: 'albedo.png', normal: 'normal.png', rugosidadOclusion: 'rugosidad_oclusion.png' },
+    // El nombre del archivo dice «rugosidad_oclusion» por orden histórico, pero
+    // el ORDEN DE LOS CANALES es el de glTF (ORM), que es el único que three.js
+    // sabe leer: aoMap del canal R, roughnessMap del canal G. Se declara acá
+    // para que se pueda auditar sin abrir el horneador ni el navegador.
+    canales: {
+      rugosidadOclusion: { R: 'oclusion (aoMap)', G: 'rugosidad (roughnessMap)', B: 'metalidad, sin uso (0)', A: '255' },
+      convencion: 'ORM de glTF — la que leen aomap_fragment (R) y roughnessmap_fragment (G) de three.js',
+    },
     convencion: pelajesDoc.convencion,
     sangradoMips: {
       guardaPx: GUARDA_PX,

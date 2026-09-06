@@ -47,6 +47,59 @@
 > ronda 3 en este mismo archivo, que no es suyo. El contenido era correcto y se
 > conservó, pero la regla es que un archivo ajeno se pide por
 > `pendiente-r3-<fase>.md` y no se toca.
+>
+> **FASE 2 (`fauna`) CERRADA el 6/9/2026.** Los seis bancos de
+> `.claude/flota/banco-r3-fase2.mjs` en verde con cobertura demostrada, corridos
+> por el coordinador y no por su autor. `src/entities/Fauna.js` es el único
+> archivo de entidades tocado: `Cuerpo.js` y `Peces.js` quedaron intactos a
+> propósito, porque el atlas no tiene celda para los siete peces ni para el
+> jugador.
+>
+> **Los números, que fueron al revés de lo que se temía.** La fase no gastó del
+> presupuesto de 2 ms: lo devolvió. Mallas de los 44 modelos **393 → 263**
+> (−33 %), materiales **114 → 44** con una sola variante de programa, y la cota
+> que manda con `MAX_VIVOS = 52` y cuatro cascadas, **dibujos 3 380 → 1 820**.
+> Triángulos 22 282 → 21 822: el mamífero queda en 628 exactos, los mismos de
+> antes, mejor repartidos. Lo único que sube es lectura de textura, que es la
+> moneda barata de esta máquina.
+>
+> **La silueta era el defecto grande, y no la textura.** El tronco del huemul era
+> un elipsoide de 1,12 m de ancho y **546 kg** sobre un animal que la ficha
+> declara de 75. Ahora son **0,228 m y 48,7 kg**, el 65 % de su masa declarada;
+> el cóndor pasó de 78 cm de ancho de cuerpo a 25, que es la medida real. El
+> ancho salía sólo de `largoM` y **`pesoKg` estaba en las 44 fichas sin usarse
+> para nada de la forma**. El techo del tronco cae exactamente en `alturaCruzM`
+> en las 21 especies que lo declaran, y se conservó el respaldo `?? L*0.6` para
+> las **6** que lo tienen en `null`.
+>
+> **Dos defectos silenciosos que encontró escribiendo, no midiendo:**
+> `fusionarGeometrias()` copiaba `position`, `normal` e `index` pero **no `uv`**,
+> así que una malla fusionada con mapa muestreaba un solo texel. Y
+> `SphereGeometry` corrige el U de sus polos ±0,5/widthSegments, con lo que el
+> hocico salía con U entre −0,071 y 1,071: ese sobrante **cae en la celda vecina
+> del atlas**, y `ClampToEdgeWrapping` no salva porque recorta contra el borde
+> del atlas y no el de la celda.
+>
+> **El cruce ORM de la fase 1, arreglado.** El horno hornea ahora
+> **R = oclusión, G = rugosidad, B = 0** y el manifiesto lo declara en un campo
+> `canales`. Rehorneado y con el banco de la fase 1 entero de vuelta en verde;
+> `albedo.png` y `normal.png` conservan su hash de `858ae717`, así que el arreglo
+> no se derramó. Lo encontró la fase 2 al enchufar lo que la fase 1 había cerrado
+> — que es exactamente para lo que sirve que las fases se revisen entre sí.
+>
+> **El falsador quedó con una zona sin falsar, y se cierra declarándola:** el
+> defecto «la geometría fusionada pierde `uv`» ya no se puede plantar, porque el
+> arreglo copia la **unión** de atributos y no queda dónde engancharlo. El banco 1
+> sí está falsado por otros defectos. No es lo mismo que un punto ciego, y el
+> informe del falsador ahora separa `lo vio` / `NO lo vio` / `no se pudo plantar`
+> en vez de mezclarlos, que era lo que hacía parecer ciego a un banco sano.
+>
+> **Lo que la fase 2 le debe a la 3:** el manifiesto no declara la
+> **orientación** de sus bandas. La fase 2 eligió V dorsoventral, porque el
+> contrasombreado `colorDorso`/`colorVientre` es un dato real en las 44 especies;
+> el precio es que un patrón de franja longitudinal ya no corre a lo largo del
+> lomo, y **el zorrino patagónico pierde sus dos franjas dorsales**. Arreglarlo
+> bien es del lado del horno. Está entero en `pendiente-r3-fauna.md`, punto 3.
 
 > **3/9/2026 — LA RONDA 2 CERRÓ.** Tres jefes —carta, mundo, juego— más una
 > revisión independiente. El encargo está en `RONDA2.md`; las bitácoras son

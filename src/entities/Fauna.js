@@ -13,6 +13,7 @@
  */
 
 import * as THREE from 'three';
+import { cargarAtlasFauna, texturasParaEspecie } from '../util/atlas.js';
 
 const MAX_VIVOS = 52;
 const RADIO_APARICION = 340;
@@ -65,6 +66,25 @@ export class Fauna {
     this._silencio = 0;
     this._cantos = 0;       // cuántas frases se pidieron (para medir)
     this._alarmas = 0;
+
+    /**
+     * El atlas de textura de la fase 1 se pide **una sola vez por sesión y desde
+     * acá**. `cargarAtlasFauna()` memoiza también el fracaso, así que quien lo
+     * llama primero define el resultado para todos: si se lo invocara antes de
+     * que `public/tex/` esté servido, la fauna quedaría con colores planos hasta
+     * recargar.
+     *
+     * No se lo espera: el arranque no puede depender de que el horneador haya
+     * corrido. Cuando resuelve se **mutan los materiales ya cacheados** en vez
+     * de reconstruir modelos, y como `_crear()` clona compartiendo material, los
+     * animales que ya están vivos se visten solos. Si no está el atlas, no queda
+     * ni un mapa colgado y el juego arma las 44 especies igual que siempre.
+     */
+    this.atlasListo = false;
+    cargarAtlasFauna().then(atlas => {
+      aplicarAtlas(atlas);
+      this.atlasListo = !!(atlas && atlas.disponible);
+    }).catch(() => { /* el cargador no rechaza; si algún día lo hiciera, colores planos */ });
   }
 
   /** ¿La especie depende del agua para vivir? */
@@ -623,10 +643,214 @@ export class Fauna {
   }
 }
 
+
+// ── Textura: un material por especie, vestido cuando llega el atlas ─────────
+//
+// El cargador (`src/util/atlas.js`) memoiza también el fracaso y para toda la
+// sesión, así que **quien lo llama primero define el resultado para todos**.
+// Por eso se lo llama en un solo lugar —el constructor de `Fauna`— y no se lo
+// espera: si `public/tex/` no está horneado, el juego arranca igual con los
+// colores planos de siempre y ni un mapa queda colgado.
+//
+// Cuando el atlas llega, no se reconstruye ningún modelo: se **mutan los
+// materiales ya cacheados**. Como `_crear()` hace `clone(true)` —que comparte
+// el material con el modelo de la especie— los animales que ya están vivos se
+// visten solos, y el orden de llegada deja de importar.
+
+/** Materiales de piel, uno por especie. Compartidos por todos los individuos. */
+const MATERIALES = new Map();
+
+/** El atlas, si llegó. `null` mientras tanto; nunca vuelve a `null`. */
+let ATLAS = null;
+
+/** Cuántas especies quedaron con mapas puestos. Se lee desde `Fauna`. */
+let VESTIDAS = 0;
+
+/**
+ * Anisotropía de los mapas de fauna.
+ *
+ * El terreno usa 16 (`Mundo.js:578`) y el follaje 8 (`Vegetacion.js:993`). Un
+ * animal no es un plano infinito visto de canto como el suelo: es un volumen
+ * chico, en movimiento, y su celda de atlas mide 128 px. 16 paga muestras extra
+ * para una superficie que casi nunca está en el ángulo que las justifica; 0 lo
+ * deja más borroso que el pasto que tiene al lado. 8 es la del vecino visual
+ * directo, se paga en ancho de banda —donde esta máquina gana 2,3×— y three la
+ * recorta sola al máximo del driver, así que no puede pedir de más.
+ */
+const ANISOTROPIA = 8;
+
+/**
+ * Material de una especie. Uno solo, con `vertexColors`: el tono de cada pieza
+ * (hocico, pezuña, oreja, pico, asta) viaja en un atributo por vértice en vez
+ * de en un material aparte.
+ *
+ * El motivo es el presupuesto de dibujos, no la elegancia: `compactar()` sólo
+ * puede fusionar piezas que comparten material, y con cuatro cascadas de sombra
+ * cada malla se dibuja cinco veces. Con un material por especie un cuadrúpedo
+ * pasa de 12–13 mallas a 7. En el fragmento, el color por vértice es una
+ * multiplicación —no una lectura de textura ni ALU cara—, que es la moneda
+ * barata en esta máquina.
+ *
+ * `color` queda en blanco puro a propósito: un albedo negro por cualquier luz
+ * sigue siendo negro, y ése es el artefacto que la ronda 1 pagó con las piedras.
+ */
+function materialDeEspecie(esp) {
+  const yaEsta = MATERIALES.get(esp.id);
+  if (yaEsta) return yaEsta;
+  const m = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: esp.clase === 'ave' ? 0.72 : 0.85,
+    metalness: 0,
+    vertexColors: true,
+  });
+  m.name = `fauna:${esp.id}`;
+  MATERIALES.set(esp.id, m);
+  if (ATLAS) vestir(m, esp.id);
+  return m;
+}
+
+/**
+ * Le enchufa a un material los tres mapas de su especie.
+ *
+ * El mapa combinado va a `roughnessMap` **y** a `aoMap` sin tocar un canal: el
+ * horno escribe la convención ORM de glTF (R = oclusión, G = rugosidad) y three
+ * lee exactamente eso —`aomap_fragment` toma el canal R, `roughnessmap_fragment`
+ * el G—. Nada de `onBeforeCompile` ni de swizzles.
+ *
+ * `aoMap` usa el atributo `uv` (canal 0) en three 0.169: `Texture.channel = 0`
+ * y `WebGLPrograms` deriva `aoMapUv` de ahí. La nota de la cabecera de
+ * `atlas.js` que habla de un segundo set `uv2` es de three anterior a r151 y ya
+ * no aplica; no hace falta duplicar ningún atributo.
+ *
+ * @returns {boolean} si la especie tenía celda horneada
+ */
+function vestir(material, especieId) {
+  const t = texturasParaEspecie(ATLAS, especieId);
+  if (!t) return false;
+  for (const tex of [t.albedo, t.normal, t.rugosidadOclusion]) tex.anisotropy = ANISOTROPIA;
+  material.map = t.albedo;
+  material.normalMap = t.normal;
+  material.roughnessMap = t.rugosidadOclusion;
+  material.aoMap = t.rugosidadOclusion;
+  // Con mapa de rugosidad el escalar multiplica al texel; dejarlo en 0.85
+  // aplanaría lo que el horno se tomó el trabajo de variar. El mapa manda.
+  material.roughness = 1;
+  material.needsUpdate = true;   // cambia el programa: de ahora en más lee mapas
+  VESTIDAS++;
+  return true;
+}
+
+/**
+ * Viste todos los materiales ya cacheados. Se llama una sola vez, cuando
+ * resuelve `cargarAtlasFauna()`.
+ * @returns {number} especies vestidas
+ */
+function aplicarAtlas(atlas) {
+  if (!atlas || !atlas.disponible) return 0;
+  ATLAS = atlas;
+  let n = 0;
+  for (const [id, m] of MATERIALES) if (vestir(m, id)) n++;
+  return n;
+}
+
+/**
+ * Cuántas especies tienen los mapas puestos ahora mismo. No es lo mismo que lo
+ * que devolvió `aplicarAtlas()`: el atlas suele llegar **antes** de que se arme
+ * el primer modelo, así que en ese momento no hay ni un material cacheado y las
+ * especies se visten después, una por una, al construirse.
+ */
+export function especiesVestidas() {
+  return VESTIDAS;
+}
+
+/** Sólo para los bancos: deja el módulo como recién importado. */
+export function _reiniciarAtlasFauna() {
+  for (const m of MATERIALES.values()) m.dispose();
+  MATERIALES.clear();
+  ATLAS = null;
+  VESTIDAS = 0;
+}
+
 // ── Modelos procedurales ────────────────────────────────────────────────────
 
-function material(color, rugosidad = 0.85) {
-  return new THREE.MeshStandardMaterial({ color, roughness: rugosidad, metalness: 0 });
+/**
+ * Escribe el color de una geometría como atributo por vértice.
+ * `THREE.Color` ya convierte de sRGB al espacio lineal de trabajo (la gestión
+ * de color está activa: `main.js` fija `outputColorSpace = SRGBColorSpace`), que
+ * es justo el espacio en el que el shader espera el atributo. Sin atlas el
+ * resultado en pantalla es idéntico al color plano de antes.
+ */
+function pintar(geo, color) {
+  const n = geo.attributes.position.count;
+  const c = color.isColor ? color : new THREE.Color(color);
+  const a = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; }
+  geo.setAttribute('color', new THREE.BufferAttribute(a, 3));
+  return geo;
+}
+
+/**
+ * Escribe el V de una pieza ya colocada en su pivote, remapeándolo a la banda
+ * del atlas que le toca a esa parte del animal.
+ *
+ * V sale de la **posición del vértice sobre un eje declarado** —la altura, casi
+ * siempre—: eso es lo que produce el contrasombreado, porque el atlas trae el
+ * dorso en V∈[0.14,0.62] y el vientre en [0.62,0.86] y acá se decide qué vértice
+ * cae en cuál. U se conserva del primitivo, que es el eje sobre el que el horno
+ * dibuja el patrón y las estrías de pelo.
+ *
+ * `desde` mapea a `v0` y `hasta` a `v1`; para la altura eso significa pasar el
+ * techo en `desde` y el piso en `hasta`. Fuera del rango se recorta, así que una
+ * pieza que sobresale (un asta) queda en el borde de su banda y nunca se escapa
+ * a la banda vecina.
+ *
+ * De paso **recorta U a [0,1]**, y no es cosmético: `SphereGeometry` corrige el
+ * U de sus polos con ±0.5/widthSegments, así que el hocico —una esfera de 7
+ * segmentos— sale con U entre −0,071 y 1,071. Como `texturasParaEspecie()` mapea
+ * [0,1] a la celda de la especie con `offset`/`repeat`, ese sobrante cae **en la
+ * celda vecina del atlas**: el hocico de un animal muestreando el pelaje de
+ * otro, sin error y sin aviso. El `ClampToEdgeWrapping` de las texturas no
+ * salva, porque recorta contra el borde del atlas entero, no contra el de la
+ * celda.
+ */
+function banda(geo, { v0, v1, eje = 'y', desde, hasta }) {
+  const p = geo.attributes.position;
+  const n = p.count;
+  let uv = geo.attributes.uv;
+  if (!uv) {
+    uv = new THREE.BufferAttribute(new Float32Array(n * 2), 2);
+    geo.setAttribute('uv', uv);
+  }
+  const rango = hasta - desde;
+  for (let i = 0; i < n; i++) {
+    const w = eje === 'ax' ? Math.abs(p.getX(i))
+            : eje === 'az' ? Math.abs(p.getZ(i))
+            : p.getY(i);
+    let t = Math.abs(rango) < 1e-9 ? 0.5 : (w - desde) / rango;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    uv.setY(i, v0 + t * (v1 - v0));
+    const u = uv.getX(i);
+    if (u < 0) uv.setX(i, 0); else if (u > 1) uv.setX(i, 1);
+  }
+  uv.needsUpdate = true;
+  return geo;
+}
+
+/**
+ * Coloca la geometría de una pieza en el espacio de su pivote, horneando la
+ * transformación en los vértices en vez de dejarla en la malla.
+ *
+ * Se hace así para que `banda()` pueda leer la altura real del vértice dentro
+ * del animal —una oreja rotada 0,35 rad no tiene su Y local alineada con la Y
+ * del modelo— y para que `compactar()` fusione sobre una matriz identidad.
+ */
+function pieza(geo, { x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1 } = {}) {
+  if (sx !== 1 || sy !== 1 || sz !== 1) geo.scale(sx, sy, sz);
+  if (rx) geo.rotateX(rx);
+  if (ry) geo.rotateY(ry);
+  if (rz) geo.rotateZ(rz);
+  if (x || y || z) geo.translate(x, y, z);
+  return geo;
 }
 
 /**
@@ -640,19 +864,27 @@ function compactar(raiz) {
   raiz.traverse(o => { if (o.isGroup || o === raiz) pivotes.push(o); });
 
   for (const pivote of pivotes) {
-    const mallas = pivote.children.filter(c => c.isMesh && c.children.length === 0);
+    // Una malla **con nombre** nunca se fusiona. `_animar()` busca `cuerpo` por
+    // `getObjectByName` y le lee `userData.y0`; fusionarla borraría las dos
+    // cosas sin lanzar nada y el animal se quedaría quieto para siempre. Con un
+    // material por especie eso pasaría de verdad: en el cóndor, `cuerpo` y el
+    // collar son mallas hermanas que antes no se fusionaban sólo porque tenían
+    // colores distintos. Cuesta un dibujo en una especie y cierra el agujero.
+    const mallas = pivote.children.filter(c => c.isMesh && !c.name && c.children.length === 0);
     if (mallas.length < 2) continue;
 
-    // Agrupamos por color de material: mantener dos o tres tonos por animal
-    // conserva el contraste (pelaje, hocico, pezuñas) sin volver a explotar.
-    const porColor = new Map();
+    // Se agrupa por **identidad de material**, no por color. Con mapas, dos
+    // piezas del mismo color pueden estar mirando celdas distintas del atlas:
+    // fusionarlas bajo `grupo[0].material` deja a una con el pelaje de la otra,
+    // sin error y sin aviso.
+    const porMaterial = new Map();
     for (const m of mallas) {
-      const clave = m.material.color.getHexString();
-      if (!porColor.has(clave)) porColor.set(clave, []);
-      porColor.get(clave).push(m);
+      const clave = m.material.uuid;
+      if (!porMaterial.has(clave)) porMaterial.set(clave, []);
+      porMaterial.get(clave).push(m);
     }
 
-    for (const [, grupo] of porColor) {
+    for (const [, grupo] of porMaterial) {
       if (grupo.length < 2) continue;
       const geos = [];
       for (const m of grupo) {
@@ -672,21 +904,63 @@ function compactar(raiz) {
   }
 }
 
+/**
+ * Relleno neutro por atributo, para la pieza que llegue sin él.
+ * `uv` va al centro de la celda y no a la esquina `(0,0)`: la esquina cae dentro
+ * de los 8 px de guarda replicada del atlas, el centro es contenido real.
+ */
+const RELLENO = { uv: [0.5, 0.5], uv1: [0.5, 0.5], uv2: [0.5, 0.5], color: [1, 1, 1], normal: [0, 1, 0] };
+
+/**
+ * Une geometrías copiando la **unión** de sus atributos, no la intersección.
+ *
+ * Antes copiaba `position`, `normal` e `index` y nada más. Con `map` puesto, una
+ * malla fusionada **sin `uv`** recibe (0,0) en todos sus vértices y muestrea un
+ * único texel: el animal entero sale de un color plano, sin error ni aviso. Es
+ * el mismo defecto silencioso que arregla la clave de `compactar()`, diez líneas
+ * más arriba.
+ *
+ * Por eso tampoco se intersecta: si una sola pieza del grupo viniera sin `uv`,
+ * intersectar dejaría **toda** la malla fusionada sin `uv` y reintroduciría el
+ * defecto por la puerta de atrás. Con la unión, el daño queda acotado a la pieza
+ * que faltaba, y con un relleno neutro que además es visible-correcto.
+ */
 function fusionarGeometrias(geos) {
   let nv = 0, ni = 0;
   for (const g of geos) {
     nv += g.attributes.position.count;
     ni += g.index ? g.index.count : g.attributes.position.count;
   }
-  const pos = new Float32Array(nv * 3);
-  const nor = new Float32Array(nv * 3);
+
+  const tam = new Map();   // nombre de atributo -> itemSize
+  for (const g of geos) {
+    for (const nombre of Object.keys(g.attributes)) {
+      const a = g.attributes[nombre];
+      if (!tam.has(nombre)) tam.set(nombre, a.itemSize);
+    }
+  }
+
+  const buffers = new Map();
+  for (const [nombre, size] of tam) buffers.set(nombre, new Float32Array(nv * size));
   const idx = new Uint32Array(ni);
+
   let vo = 0, io = 0;
   for (const g of geos) {
-    const p = g.attributes.position, n = g.attributes.normal;
-    const c = p.count;
-    pos.set(p.array.subarray(0, c * 3), vo * 3);
-    if (n) nor.set(n.array.subarray(0, c * 3), vo * 3);
+    const c = g.attributes.position.count;
+    for (const [nombre, size] of tam) {
+      const destino = buffers.get(nombre);
+      const a = g.attributes[nombre];
+      const copiable = a && a.itemSize === size && !a.normalized && ArrayBuffer.isView(a.array)
+        && typeof a.array.subarray === 'function' && !(a.array instanceof Uint8Array);
+      if (copiable) {
+        destino.set(Float32Array.from(a.array.subarray(0, c * size)), vo * size);
+      } else {
+        const def = RELLENO[nombre] || new Array(size).fill(0);
+        for (let i = 0; i < c; i++) {
+          for (let k = 0; k < size; k++) destino[(vo + i) * size + k] = def[k] ?? 0;
+        }
+      }
+    }
     if (g.index) {
       for (let i = 0; i < g.index.count; i++) idx[io + i] = g.index.array[i] + vo;
       io += g.index.count;
@@ -696,85 +970,325 @@ function fusionarGeometrias(geos) {
     }
     vo += c;
   }
+
   const out = new THREE.BufferGeometry();
-  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  for (const [nombre, size] of tam) {
+    out.setAttribute(nombre, new THREE.BufferAttribute(buffers.get(nombre), size));
+  }
   out.setIndex(new THREE.BufferAttribute(idx, 1));
   out.computeBoundingSphere();
   return out;
 }
 
+// ── Silueta ─────────────────────────────────────────────────────────────────
+//
+// El tronco dejó de ser una esfera escalada. `SphereGeometry(1,12,9)` con
+// `scale(L*0.34, H*0.34, L*0.46)` daba, en el huemul, un elipsoide de 0,546 m³:
+// a densidad de mamífero, **546 kg de tronco sobre un animal que la ficha
+// declara de 75**. Y no era sólo el ancho: el semilargo `L*0.46` hacía un tronco
+// del 92 % del largo del animal —con la cabeza naciendo adentro— y el semialto
+// `H*0.34` metía el 68 % de la alzada en el pecho, dejándole al huemul 29 cm de
+// pata. `pesoKg` estaba en las 44 fichas sin usarse para nada de la forma.
+//
+// Ahora las tres medidas del tronco salen de los datos: el largo y el fondo de
+// proporciones de cuadrúpedo, y **el ancho despejado del volumen**.
+
+/** Fracción de la masa corporal que va en el tronco (el resto: cabeza, cuello, patas, cola). */
+const FRACCION_MASA_TRONCO = 0.65;
+/** Densidad de un mamífero, kg/m³. */
+const DENSIDAD_MAMIFERO = 1000;
+/**
+ * Densidad efectiva del cuerpo emplumado de un ave, kg/m³. No es agua: los sacos
+ * aéreos y la pluma inflan el contorno visible muy por encima de la masa.
+ * Contrastada con el cóndor —12 kg y 1,2 m dan 22 cm de ancho de cuerpo, que es
+ * la medida real— y con el rayadito en el otro extremo.
+ */
+const DENSIDAD_AVE = 500;
+const FRACCION_MASA_TRONCO_AVE = 0.85;
+
+/**
+ * Perfil del tronco de un cuadrúpedo, de pecho (s=0) a grupa (s=1).
+ * `w` es el semiancho relativo; `t` y `p` son el techo y el piso de la sección,
+ * en unidades del semialto. La **cruz** está en s=0.28 (el techo más alto), el
+ * **lomo** baja en 0.64 y la **grupa** vuelve a subir en 0.82; la panza se
+ * recoge hacia atrás. Eso es lo que separa un cuadrúpedo de una cápsula, y con
+ * 12 radiales sale en 192 triángulos: **exactamente los mismos** que la esfera
+ * de 12×9 que reemplaza (12·9·2 − 24 = 192).
+ */
+const PERFIL_TRONCO = [
+  { s: 0.00, w: 0.42, t: 0.55, p: -0.50 },
+  { s: 0.12, w: 0.88, t: 0.92, p: -0.92 },
+  { s: 0.28, w: 1.00, t: 1.06, p: -1.00 },
+  { s: 0.46, w: 0.95, t: 0.98, p: -0.98 },
+  { s: 0.64, w: 0.90, t: 0.95, p: -0.94 },
+  { s: 0.82, w: 0.94, t: 1.02, p: -0.80 },
+  { s: 0.94, w: 0.66, t: 0.86, p: -0.55 },
+  { s: 1.00, w: 0.22, t: 0.40, p: -0.20 },
+];
+
+/** Perfil del cuerpo de un ave: quilla honda adelante, afinándose a la cola. */
+const PERFIL_AVE = [
+  { s: 0.00, w: 0.55, t: 0.62, p: -0.55 },
+  { s: 0.15, w: 0.94, t: 0.95, p: -0.96 },
+  { s: 0.34, w: 1.00, t: 1.00, p: -1.00 },
+  { s: 0.55, w: 0.93, t: 0.96, p: -0.88 },
+  { s: 0.74, w: 0.76, t: 0.86, p: -0.66 },
+  { s: 1.00, w: 0.26, t: 0.42, p: -0.26 },
+];
+
+/**
+ * `dieta` es el tercer campo de forma que estaba en la ficha sin usarse para la
+ * silueta (los otros dos son `pesoKg` y `alturaCruzM/largoM`). Un rumiante tiene
+ * panza; un felino tiene el pecho hondo y el abdomen recogido. Hoy `dieta` sólo
+ * decidía si el animal pasta.
+ */
+function perfilSegunDieta(dieta) {
+  const p = PERFIL_TRONCO.map(e => ({ ...e }));
+  if (dieta === 'herbivoro' || dieta === 'frugivoro') {
+    for (const e of p) if (e.s > 0.40 && e.s < 0.92) { e.p *= 1.10; e.w *= 1.06; }
+  } else if (dieta === 'carnivoro' || dieta === 'piscivoro') {
+    for (const e of p) {
+      if (e.s < 0.40) { e.p *= 1.08; e.w *= 1.03; }
+      if (e.s > 0.55) { e.p *= 0.80; e.w *= 0.92; }
+    }
+  }
+  return p;
+}
+
+/**
+ * Volumen del barrido, en unidades de (semiancho · semialto · largo total).
+ * Se integra numéricamente sobre el perfil real —∫ π·w·h ds— y **no** con la
+ * fórmula del elipsoide, porque la geometría ya no es un elipsoide: usar
+ * (4/3)πabc sobre un tronco con cruz y grupa daría un ancho equivocado.
+ */
+function volumenPerfil(perfil) {
+  let v = 0;
+  for (let i = 1; i < perfil.length; i++) {
+    const a = perfil[i - 1], b = perfil[i];
+    const fa = a.w * (a.t - a.p) / 2;
+    const fb = b.w * (b.t - b.p) / 2;
+    v += (fa + fb) / 2 * (b.s - a.s);
+  }
+  return Math.PI * v;
+}
+
+/**
+ * El semiancho del tronco, despejado de la masa de la ficha.
+ * Con clamp a [0.25, 1.6] veces el semialto: por debajo es una plancha, por
+ * encima un barril. Ninguna de las 21 especies de mamífero llega al clamp — está
+ * para que un dato raro o ausente no produzca un monstruo.
+ */
+function semianchoTronco(pesoKg, semialto, largoTronco, perfil) {
+  const k = volumenPerfil(perfil) * semialto * largoTronco;
+  const objetivo = FRACCION_MASA_TRONCO * (pesoKg ?? 0) / DENSIDAD_MAMIFERO;
+  const a = (k > 1e-9 && objetivo > 0) ? objetivo / k : semialto * 0.55;
+  return Math.min(semialto * 1.6, Math.max(semialto * 0.25, a));
+}
+
+/** Volumen encerrado por una malla cerrada, por el teorema de la divergencia. */
+function volumenMalla(geo) {
+  const p = geo.attributes.position, ix = geo.index;
+  if (!ix) return 0;
+  let v6 = 0;
+  for (let k = 0; k < ix.count; k += 3) {
+    const A = ix.array[k], B = ix.array[k + 1], C = ix.array[k + 2];
+    const ax = p.getX(A), ay = p.getY(A), az = p.getZ(A);
+    const bx = p.getX(B), by = p.getY(B), bz = p.getZ(B);
+    const cx = p.getX(C), cy = p.getY(C), cz = p.getZ(C);
+    v6 += ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx);
+  }
+  return Math.abs(v6) / 6;
+}
+
+/**
+ * Ajusta la sección del tronco hasta que su volumen sea el que la ficha pide,
+ * **medido sobre la malla real** y no sobre la integral del perfil.
+ *
+ * La diferencia no es un decimal: la sección es un polígono de 12 lados inscrito
+ * en la elipse (95,5 % de su área) y las estaciones se comprimen a [0.06,0.94]
+ * para que el tronco cierre en punta. Entre las dos cosas se pierde un 14 % de
+ * volumen, y la masa entregada quedaba en el 55 % del cuerpo en vez del 65 %
+ * declarado. Medir la malla cierra el número: si el ancho tiene que salir de la
+ * masa, tiene que salir de la masa que el tronco **tiene**, no de la que
+ * tendría si fuera un elipsoide perfecto.
+ *
+ * @param {'x'|'xy'} ejes 'x' en el cuadrúpedo, donde el fondo lo fija la alzada;
+ *                        'xy' en el ave, que tiene sección redonda.
+ * @param {[number,number]} limites clamp del factor
+ * @returns {number} el factor aplicado
+ */
+function escalarAVolumen(geo, objetivo, ejes, limites) {
+  const v = volumenMalla(geo);
+  if (!(v > 1e-12) || !(objetivo > 0)) return 1;
+  let k = ejes === 'xy' ? Math.sqrt(objetivo / v) : objetivo / v;
+  k = Math.min(limites[1], Math.max(limites[0], k));
+  if (Math.abs(k - 1) < 1e-6) return k;
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    p.setX(i, p.getX(i) * k);
+    if (ejes === 'xy') p.setY(i, p.getY(i) * k);
+  }
+  p.needsUpdate = true;
+  geo.computeVertexNormals();
+  return k;
+}
+
+/** Lo mismo para un ave, que además tiene el semialto atado al semiancho. */
+function semianchoAve(pesoKg, L) {
+  const largo = 2 * 0.24 * L;
+  const k = volumenPerfil(PERFIL_AVE) * 1.15 * largo;
+  const objetivo = FRACCION_MASA_TRONCO_AVE * (pesoKg ?? 0) / DENSIDAD_AVE;
+  const a = (k > 1e-9 && objetivo > 0) ? Math.sqrt(objetivo / k) : L * 0.10;
+  return Math.min(L * 0.22, Math.max(L * 0.055, a));
+}
+
+/**
+ * Barrido de secciones elípticas a lo largo de Z, con polo en cada punta.
+ *
+ * `s=0` es el pecho (+Z, hacia donde mira el animal) y `s=1` la grupa (−Z).
+ * El UV que produce es el del acuerdo de la fase 2, escrito una sola vez acá:
+ * **U es longitudinal** (0 pecho → 1 grupa), que es el eje sobre el que el horno
+ * dibuja patrón y estrías, y **V es dorsoventral**, que es el eje sobre el que
+ * el atlas tiene las bandas de tono. V se termina de escribir en `banda()` con
+ * el techo y el piso reales del tronco, para que el lomo caiga en la banda de
+ * dorso y la panza en la de vientre en todas las especies.
+ */
+function geometriaTronco(perfil, semiancho, semialto, semilargo, radiales = 12) {
+  const centroY = (e) => (e.t + e.p) / 2 * semialto;
+  const altoY = (e) => (e.t - e.p) / 2 * semialto;
+
+  // Dos polos y las estaciones del perfil comprimidas adentro, para que el
+  // tronco cierre en punta sin estirarse más allá de su largo declarado.
+  const filas = [];
+  filas.push({ s: 0, w: 0, cy: centroY(perfil[0]), hy: 0 });
+  for (const e of perfil) {
+    filas.push({ s: 0.06 + e.s * 0.88, w: e.w, cy: centroY(e), hy: altoY(e) });
+  }
+  filas.push({ s: 1, w: 0, cy: centroY(perfil[perfil.length - 1]), hy: 0 });
+
+  const cols = radiales + 1;              // columna repetida para cerrar el UV
+  const nv = filas.length * cols;
+  const pos = new Float32Array(nv * 3);
+  const uv = new Float32Array(nv * 2);
+  const idx = [];
+
+  for (let r = 0; r < filas.length; r++) {
+    const f = filas[r];
+    const z = semilargo * (1 - 2 * f.s);
+    for (let j = 0; j < cols; j++) {
+      const th = (j / radiales) * Math.PI * 2;   // 0 = lomo, π = panza
+      const i = r * cols + j;
+      pos[i * 3] = Math.sin(th) * f.w * semiancho;
+      pos[i * 3 + 1] = f.cy + Math.cos(th) * f.hy;
+      pos[i * 3 + 2] = z;
+      uv[i * 2] = f.s;        // U longitudinal; V lo escribe banda()
+      uv[i * 2 + 1] = 0;
+    }
+  }
+
+  for (let r = 0; r < filas.length - 1; r++) {
+    const polo0 = filas[r].w === 0, polo1 = filas[r + 1].w === 0;
+    for (let j = 0; j < radiales; j++) {
+      const a = r * cols + j, b = a + 1;
+      const c = (r + 1) * cols + j, d = c + 1;
+      if (!polo0) idx.push(a, c, b);
+      if (!polo1) idx.push(b, c, d);
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// Bandas del atlas, con un margen adentro para no muestrear justo el borde
+// entre dos. La convención completa está en el manifiesto y en la bitácora.
+const B_CABEZA = [0.005, 0.135];
+const B_DORSO = [0.14, 0.62];
+const B_TRONCO = [0.14, 0.86];   // dorso + vientre: el contrasombreado entero
+const B_MEDIA = [0.42, 0.58];    // acento de alas y flancos
+const B_COLA = [0.865, 0.995];
+
 function construirCuadrupedo(esp) {
   const g = new THREE.Group();
   const L = esp.largoM ?? 1;
+  // El respaldo sostiene a seis mamíferos que no tienen alzada en la ficha
+  // (monito del monte, los dos chinchillones, los dos tuco-tucos, la
+  // comadrejita). Sin él, esas seis especies se rompen.
   const H = esp.alturaCruzM ?? L * 0.6;
-  const ancho = L * 0.34;
+  const mat = materialDeEspecie(esp);
 
-  const cPrincipal = new THREE.Color(esp.colorPrincipal || '#7a6248');
-  const cSecundario = new THREE.Color(esp.colorSecundario || '#3d3128');
-  const matCuerpo = material(cPrincipal);
-  const matOscuro = material(cSecundario);
+  const cPelaje = new THREE.Color(esp.colorPrincipal || '#7a6248');
+  const cOscuro = new THREE.Color(esp.colorSecundario || '#3d3128');
+  const cAsta = new THREE.Color('#6b5a3e');
 
-  // Tronco: elipsoide alargado
-  const cuerpo = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 9), matCuerpo);
-  cuerpo.scale.set(ancho, H * 0.34, L * 0.46);
-  cuerpo.position.y = H * 0.74;
+  const perfil = perfilSegunDieta(esp.dieta);
+  const semialto = H * 0.225;          // profundidad de pecho = 45 % de la alzada
+  const semilargo = L * 0.29;          // tronco = 58 % del largo cabeza-cuerpo
+  const a0 = semianchoTronco(esp.pesoKg, semialto, semilargo * 2, perfil);
+
+  // ── Tronco. El techo del tronco queda exactamente en la alzada de la ficha:
+  // `alturaCruzM` pasa a significar lo que dice que significa.
+  const techo = semialto * 1.06, piso = semialto * -1.03;
+  const geoTronco = geometriaTronco(perfil, a0, semialto, semilargo);
+  const a = a0 * escalarAVolumen(
+    geoTronco, FRACCION_MASA_TRONCO * (esp.pesoKg ?? 0) / DENSIDAD_MAMIFERO, 'x',
+    [semialto * 0.25 / a0, semialto * 1.6 / a0]);
+  banda(geoTronco, { v0: B_TRONCO[0], v1: B_TRONCO[1], desde: techo, hasta: piso });
+  const cuerpo = new THREE.Mesh(pintar(geoTronco, cPelaje), mat);
+  cuerpo.position.set(0, H - techo, -L * 0.06);
   cuerpo.name = 'cuerpo';
   cuerpo.userData.y0 = cuerpo.position.y;
   cuerpo.castShadow = true;
   g.add(cuerpo);
 
-  // Cuello y cabeza como un pivote articulado
+  // ── Cuello y cabeza como un pivote articulado
   const pivoteCabeza = new THREE.Group();
-  pivoteCabeza.position.set(0, H * 0.86, L * 0.40);
+  pivoteCabeza.position.set(0, H * 0.88, L * 0.22);
   pivoteCabeza.name = 'cabeza';
   g.add(pivoteCabeza);
 
-  const cuello = new THREE.Mesh(new THREE.CylinderGeometry(ancho * 0.30, ancho * 0.42, H * 0.34, 7), matCuerpo);
-  cuello.position.set(0, H * 0.13, L * 0.06);
-  cuello.rotation.x = -0.55;
-  cuello.castShadow = true;
-  pivoteCabeza.add(cuello);
+  const cabezaTecho = H * 0.30, cabezaPiso = -H * 0.16;
+  const enCabeza = (geo, color) => {
+    banda(geo, { v0: B_CABEZA[0], v1: B_CABEZA[1], desde: cabezaTecho, hasta: cabezaPiso });
+    const m = new THREE.Mesh(pintar(geo, color), mat);
+    m.castShadow = true;
+    pivoteCabeza.add(m);
+    return m;
+  };
 
-  const craneo = new THREE.Mesh(new THREE.SphereGeometry(1, 9, 7), matCuerpo);
-  craneo.scale.set(ancho * 0.42, ancho * 0.40, L * 0.15);
-  craneo.position.set(0, H * 0.27, L * 0.16);
-  craneo.castShadow = true;
-  pivoteCabeza.add(craneo);
+  enCabeza(pieza(new THREE.CylinderGeometry(a * 0.62, a * 0.86, H * 0.32, 7),
+    { rx: -0.5, y: 0, z: L * 0.015 }), cPelaje);
+  enCabeza(pieza(new THREE.SphereGeometry(1, 9, 7),
+    { sx: a * 0.55, sy: a * 0.62, sz: L * 0.085, y: H * 0.16, z: L * 0.10 }), cPelaje);
+  enCabeza(pieza(new THREE.SphereGeometry(1, 7, 6),
+    { sx: a * 0.32, sy: a * 0.30, sz: L * 0.055, y: H * 0.13, z: L * 0.185 }), cOscuro);
 
-  const hocico = new THREE.Mesh(new THREE.SphereGeometry(1, 7, 6), matOscuro);
-  hocico.scale.set(ancho * 0.22, ancho * 0.20, L * 0.10);
-  hocico.position.set(0, H * 0.24, L * 0.27);
-  pivoteCabeza.add(hocico);
-
-  // Orejas
   for (const lado of [-1, 1]) {
-    const oreja = new THREE.Mesh(new THREE.ConeGeometry(ancho * 0.13, H * 0.15, 5), matOscuro);
-    oreja.position.set(lado * ancho * 0.26, H * 0.40, L * 0.12);
-    oreja.rotation.z = lado * 0.35;
-    pivoteCabeza.add(oreja);
+    enCabeza(pieza(new THREE.ConeGeometry(a * 0.30, H * 0.16, 5),
+      { rz: lado * 0.35, x: lado * a * 0.75, y: H * 0.27, z: L * 0.06 }), cOscuro);
   }
 
   // Astas del huemul macho: cornamenta bífida, su rasgo distintivo
   if (/huemul|ciervo/.test(esp.id)) {
     for (const lado of [-1, 1]) {
-      const asta = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.022, H * 0.36, 4), material('#6b5a3e'));
-      asta.position.set(lado * ancho * 0.22, H * 0.55, L * 0.10);
-      asta.rotation.z = lado * 0.45;
-      asta.rotation.x = -0.25;
-      pivoteCabeza.add(asta);
-      const punta = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.014, H * 0.2, 4), material('#6b5a3e'));
-      punta.position.set(lado * (ancho * 0.22 + H * 0.13), H * 0.70, L * 0.06);
-      punta.rotation.z = lado * 0.95;
-      pivoteCabeza.add(punta);
+      enCabeza(pieza(new THREE.CylinderGeometry(0.012, 0.022, H * 0.36, 4),
+        { rz: lado * 0.45, rx: -0.25, x: lado * a * 0.70, y: H * 0.36, z: L * 0.04 }), cAsta);
+      enCabeza(pieza(new THREE.CylinderGeometry(0.008, 0.014, H * 0.20, 4),
+        { rz: lado * 0.95, x: lado * (a * 0.70 + H * 0.13), y: H * 0.52, z: 0 }), cAsta);
     }
   }
 
-  // Patas
+  // ── Patas. El radio no puede seguir saliendo del ancho del tronco: con el
+  // tronco corregido, `a*0.15` daría patas de un centímetro y medio.
+  const rPata = Math.max(H * 0.040, a * 0.30);
   const nombres = ['pd1', 'pi1', 'pd2', 'pi2'];
   const posiciones = [
-    [ancho * 0.62, L * 0.30], [-ancho * 0.62, L * 0.30],
-    [ancho * 0.62, -L * 0.28], [-ancho * 0.62, -L * 0.28],
+    [a * 0.85, L * 0.16], [-a * 0.85, L * 0.16],
+    [a * 0.85, -L * 0.26], [-a * 0.85, -L * 0.26],
   ];
   for (let i = 0; i < 4; i++) {
     const pivote = new THREE.Group();
@@ -782,25 +1296,26 @@ function construirCuadrupedo(esp) {
     pivote.name = nombres[i];
     g.add(pivote);
 
-    const muslo = new THREE.Mesh(new THREE.CylinderGeometry(ancho * 0.15, ancho * 0.10, H * 0.62, 6), matCuerpo);
-    muslo.position.y = -H * 0.31;
-    muslo.castShadow = true;
-    pivote.add(muslo);
-
-    const pezuna = new THREE.Mesh(new THREE.CylinderGeometry(ancho * 0.10, ancho * 0.12, H * 0.07, 6), matOscuro);
-    pezuna.position.y = -H * 0.60;
-    pivote.add(pezuna);
+    const enPata = (geo, color) => {
+      banda(geo, { v0: B_DORSO[0] + 0.02, v1: B_DORSO[1] - 0.02, desde: 0, hasta: -H * 0.67 });
+      const m = new THREE.Mesh(pintar(geo, color), mat);
+      m.castShadow = true;
+      pivote.add(m);
+    };
+    enPata(pieza(new THREE.CylinderGeometry(rPata, rPata * 0.62, H * 0.60, 6),
+      { y: -H * 0.30 }), cPelaje);
+    enPata(pieza(new THREE.CylinderGeometry(rPata * 0.66, rPata * 0.80, H * 0.07, 6),
+      { y: -H * 0.635 }), cOscuro);
   }
 
-  // Cola
+  // ── Cola
   const cola = new THREE.Group();
-  cola.position.set(0, H * 0.78, -L * 0.44);
+  cola.position.set(0, H - semialto * 0.30, -L * 0.34);
   cola.name = 'cola';
   g.add(cola);
-  const colaMalla = new THREE.Mesh(new THREE.ConeGeometry(ancho * 0.16, L * 0.24, 6), matOscuro);
-  colaMalla.position.y = -L * 0.10;
-  colaMalla.rotation.x = Math.PI;
-  cola.add(colaMalla);
+  const geoCola = pieza(new THREE.ConeGeometry(a * 0.30, L * 0.20, 6), { rx: Math.PI, y: -L * 0.09 });
+  banda(geoCola, { v0: B_COLA[0], v1: B_COLA[1], desde: 0, hasta: -L * 0.20 });
+  cola.add(new THREE.Mesh(pintar(geoCola, cOscuro), mat));
 
   g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return g;
@@ -810,62 +1325,82 @@ function construirAve(esp) {
   const g = new THREE.Group();
   const L = esp.largoM ?? 0.3;
   const envergadura = (esp.pesoKg ?? 0.3) > 3 ? L * 3.4 : L * 1.9;
+  const mat = materialDeEspecie(esp);
 
-  const cPrincipal = new THREE.Color(esp.colorPrincipal || '#3a3a3a');
-  const cSecundario = new THREE.Color(esp.colorSecundario || '#1a1a1a');
-  const matCuerpo = material(cPrincipal, 0.72);
-  const matAla = material(cSecundario, 0.78);
+  const cPluma = new THREE.Color(esp.colorPrincipal || '#3a3a3a');
+  const cAla = new THREE.Color(esp.colorSecundario || '#1a1a1a');
 
-  const cuerpo = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), matCuerpo);
-  cuerpo.scale.set(L * 0.26, L * 0.26, L * 0.52);
+  // El cuerpo medía `L*0.52` de semilargo, o sea el 104 % del largo del ave, y
+  // `L*0.26` de semiancho: en el cóndor, 62 cm de ancho de cuerpo. Ahora sale
+  // de la masa igual que en el cuadrúpedo, con la densidad de un cuerpo
+  // emplumado.
+  const semilargo = L * 0.24;
+  const a0 = semianchoAve(esp.pesoKg, L);
+  const geoCuerpo = geometriaTronco(PERFIL_AVE, a0, a0 * 1.15, semilargo, 10);
+  const k = escalarAVolumen(
+    geoCuerpo, FRACCION_MASA_TRONCO_AVE * (esp.pesoKg ?? 0) / DENSIDAD_AVE, 'xy',
+    [L * 0.055 / a0, L * 0.22 / a0]);
+  const semiancho = a0 * k;
+  const semialto = semiancho * 1.15;
+
+  const techo = semialto, piso = -semialto;
+  banda(geoCuerpo, { v0: B_TRONCO[0], v1: B_TRONCO[1], desde: techo, hasta: piso });
+  const cuerpo = new THREE.Mesh(pintar(geoCuerpo, cPluma), mat);
   cuerpo.name = 'cuerpo';
   cuerpo.userData.y0 = 0;
   g.add(cuerpo);
 
   const cabeza = new THREE.Group();
-  cabeza.position.set(0, L * 0.14, L * 0.44);
+  cabeza.position.set(0, L * 0.10, semilargo + semiancho * 0.55);
   cabeza.name = 'cabeza';
   g.add(cabeza);
-  const craneo = new THREE.Mesh(new THREE.SphereGeometry(L * 0.16, 8, 6), matCuerpo);
-  cabeza.add(craneo);
-  const pico = new THREE.Mesh(new THREE.ConeGeometry(L * 0.06, L * 0.20, 6), material('#c8a24a', 0.5));
-  pico.rotation.x = Math.PI / 2;
-  pico.position.z = L * 0.19;
-  cabeza.add(pico);
+
+  const enCabeza = (geo, color) => {
+    banda(geo, { v0: B_CABEZA[0], v1: B_CABEZA[1], desde: semiancho * 0.95, hasta: -semiancho * 0.95 });
+    cabeza.add(new THREE.Mesh(pintar(geo, color), mat));
+  };
+  enCabeza(new THREE.SphereGeometry(semiancho * 0.62, 8, 6), cPluma);
+  enCabeza(pieza(new THREE.ConeGeometry(semiancho * 0.26, L * 0.14, 6),
+    { rx: Math.PI / 2, z: L * 0.085 }), new THREE.Color('#c8a24a'));
 
   // El cóndor tiene collar blanco: es su marca inconfundible
   if (/condor/.test(esp.id)) {
-    const collar = new THREE.Mesh(new THREE.TorusGeometry(L * 0.19, L * 0.055, 6, 14), material('#f0efe8', 0.9));
-    collar.rotation.x = Math.PI / 2;
-    collar.position.set(0, L * 0.04, L * 0.34);
-    g.add(collar);
+    const geoCollar = pieza(new THREE.TorusGeometry(semiancho * 0.92, semiancho * 0.26, 6, 14),
+      { rx: Math.PI / 2, y: semialto * 0.12, z: semilargo * 0.72 });
+    banda(geoCollar, { v0: B_CABEZA[0], v1: B_CABEZA[1], desde: semialto, hasta: -semialto });
+    g.add(new THREE.Mesh(pintar(geoCollar, new THREE.Color('#f0efe8')), mat));
   }
 
   for (const [nombre, lado] of [['ala_d', 1], ['ala_i', -1]]) {
     const pivote = new THREE.Group();
-    pivote.position.set(lado * L * 0.16, L * 0.08, 0);
+    pivote.position.set(lado * semiancho * 0.85, semialto * 0.45, 0);
     pivote.name = nombre;
     g.add(pivote);
-    const ala = new THREE.Mesh(new THREE.BoxGeometry(envergadura * 0.5, L * 0.035, L * 0.42), matAla);
-    ala.position.x = lado * envergadura * 0.25;
-    ala.castShadow = true;
-    pivote.add(ala);
-    // Plumas primarias abiertas en la punta, como los dedos del cóndor planeando
+
+    // Las alas usan la banda de acento medio del atlas (V∈[0.42,0.58]), que el
+    // horno reserva justamente para «alas, flancos», y el V corre a lo largo de
+    // la envergadura: de la inserción al borde de la pluma primaria.
+    const enAla = (geo) => {
+      banda(geo, { v0: B_MEDIA[0], v1: B_MEDIA[1], eje: 'ax', desde: 0, hasta: envergadura * 0.62 });
+      const m = new THREE.Mesh(pintar(geo, cAla), mat);
+      m.castShadow = true;
+      pivote.add(m);
+    };
+    enAla(pieza(new THREE.BoxGeometry(envergadura * 0.5, L * 0.030, L * 0.34),
+      { x: lado * envergadura * 0.25 }));
     for (let i = 0; i < 5; i++) {
-      const pluma = new THREE.Mesh(new THREE.BoxGeometry(envergadura * 0.13, L * 0.02, L * 0.07), matAla);
-      pluma.position.set(lado * (envergadura * 0.5 + envergadura * 0.06), 0, (i - 2) * L * 0.08);
-      pluma.rotation.y = lado * (i - 2) * 0.10;
-      pivote.add(pluma);
+      enAla(pieza(new THREE.BoxGeometry(envergadura * 0.13, L * 0.02, L * 0.07),
+        { ry: lado * (i - 2) * 0.10, x: lado * envergadura * 0.56, z: (i - 2) * L * 0.07 }));
     }
   }
 
   const cola = new THREE.Group();
-  cola.position.set(0, 0, -L * 0.48);
+  cola.position.set(0, 0, -semilargo * 0.95);
   cola.name = 'cola';
   g.add(cola);
-  const colaMalla = new THREE.Mesh(new THREE.BoxGeometry(L * 0.30, L * 0.025, L * 0.30), matAla);
-  colaMalla.position.z = -L * 0.14;
-  cola.add(colaMalla);
+  const geoCola = pieza(new THREE.BoxGeometry(L * 0.26, L * 0.022, L * 0.30), { z: -L * 0.14 });
+  banda(geoCola, { v0: B_COLA[0], v1: B_COLA[1], eje: 'az', desde: 0, hasta: L * 0.30 });
+  cola.add(new THREE.Mesh(pintar(geoCola, cAla), mat));
 
   g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return g;
