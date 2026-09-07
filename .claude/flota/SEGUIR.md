@@ -1,4 +1,4 @@
-# CÓMO SEGUIR — al 6/9/2026
+# CÓMO SEGUIR — al 7/9/2026
 
 Esto **no es un encargo**: es el inventario de lo que quedó abierto, para que el
 dueño elija por dónde sigue. El encargo de la ronda 2 está en `RONDA2.md`, el de
@@ -7,16 +7,22 @@ que hay que leer siempre.
 
 ---
 
-## LA RONDA 3 CERRÓ el 6/9/2026, y NO está en `main`
+## LA RONDA 3 CERRÓ, SE VIO Y ESTÁ EN `main`
 
 Las tres fases —`horno`, `fauna`, `flora`— están medidas, revisadas y
-commiteadas en la rama **`mejoras/ronda3-graficos`**. A diferencia de la ronda 2,
-**no se fusionó**: queda a la vista para que la mires antes.
+commiteadas. **El dueño la jugó el 7/9/2026 antes de fusionarla, y su veredicto
+fue «está espectacular, al menos a primera vista».** Recién entonces entró a
+`main`, por avance rápido.
 
-```sh
-git checkout mejoras/ronda3-graficos
-npm run dev
-```
+**Ése es el cambio de método que conviene conservar.** La ronda 2 se fusionó
+antes de que nadie la viera, y quedó cuatro días sin saber si estaba bien. Ésta
+esperó al ojo. Esperar costó un comando; no esperar habría costado descubrir en
+`main` que un tronco quedó negro.
+
+Lo que sigue se escribió *antes* de que la jugara y se conserva tal cual, porque
+es la lista de lo que había que mirar. Quedó mirado por encima: una segunda
+pasada con tiempo todavía puede encontrar algo, sobre todo el punto 2, que es el
+único que un banco no puede decidir.
 
 **Lo que hay que mirar, que es lo que ningún banco puede ver:**
 

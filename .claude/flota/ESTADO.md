@@ -1,5 +1,18 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **7/9/2026 — LA RONDA 3 SE JUGÓ Y ENTRÓ A `main`.** El dueño la miró en
+> pantalla **antes** de fusionarla: *«está espectacular, al menos a primera
+> vista»*. Fusión por avance rápido, ocho commits. La rama
+> `mejoras/ronda3-graficos` queda como mojón y se puede borrar.
+>
+> **Es la primera ronda de las tres que se ve antes de entrar.** La 1 y la 2 se
+> fusionaron a ciegas; la 2 estuvo cuatro días en `main` sin que nadie supiera si
+> estaba bien. El costo de esperar fue un comando. Conservar ese orden.
+>
+> Queda una salvedad honesta: «a primera vista» no es una revisión. El punto 2 de
+> `SEGUIR.md` —si el tronco quedó más oscuro o más claro— es el único que ningún
+> banco puede decidir y el que más fácil se escapa en una mirada rápida.
+
 > **6/9/2026 — RONDA 3 ABIERTA: definición y realismo de animales y árboles.**
 > Un jefe con tres subagentes —`horno`, `fauna`, `flora`—, en la rama
 > `mejoras/ronda3-graficos`. El encargo está en `RONDA3.md`; las bitácoras son
