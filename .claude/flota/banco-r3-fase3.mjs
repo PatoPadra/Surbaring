@@ -1177,6 +1177,21 @@ const FOLLAJE_U_MAX_BANCO = 0.86;
  * corte paga el Lambert entero con sus cuatro cascadas de sombra.
  */
 const TOLERANCIA_COBERTURA = 0.03;
+/**
+ * Y cuánto puede BAJAR antes de ser otra regresión.
+ *
+ * La cobertura de alfa es la silueta de la copa: no es sólo un costo, es lo que
+ * el jugador ve. Subir cuesta cuadros; bajar adelgaza el dosel. Las dos cosas
+ * son regresión, así que la banda es de dos lados.
+ *
+ * Es más ancha para abajo que para arriba porque abajo no hay riesgo de
+ * presupuesto y porque redistribuir las marcas en estratos mueve el número
+ * naturalmente unos puntos. Un dibujo que perdiera la mitad de sus marcas cae
+ * muy afuera de esto.
+ */
+const PISO_COBERTURA = 0.15;
+/** Y una red aparte: el atlas no puede perder un cuarto de sus primitivas. */
+const PISO_PRIMITIVAS = 0.75;
 
 function banco1Corteza(ahora, base) {
   const L = [];
@@ -1296,6 +1311,23 @@ function banco2Follaje(ahora, base) {
     if (ob > 0 && oa > ob * (1 + TOLERANCIA_COBERTURA)) {
       L.push('          >>> ROJO: la cobertura de alfa subió ' + fmt((oa / ob - 1) * 100, 1) +
         ' %, y el tope es ' + fmt(TOLERANCIA_COBERTURA * 100, 0) + ' %.');
+      ok = false;
+    }
+    // Y la banda es de DOS lados. La cobertura es la silueta de la copa: subir
+    // cuesta cuadros, pero bajar adelgaza el dosel, y las dos cosas son
+    // regresión. Con un gate de un solo lado, «el atlas pierde la mitad de sus
+    // marcas» pasa en verde — y es un defecto que el falsador planta.
+    if (ob > 0 && oa < ob * (1 - PISO_COBERTURA)) {
+      L.push('          >>> ROJO: la cobertura de alfa cayó ' + fmt((1 - oa / ob) * 100, 1) +
+        ' %: el dosel adelgazó, no es la misma copa.');
+      ok = false;
+    }
+    // Red independiente, por si la cobertura se mantuviera moviendo el tamaño
+    // de las marcas en vez de su cantidad: el atlas no puede perder un cuarto
+    // de sus primitivas.
+    if (b && b.primitivas > 0 && a.primitivas < b.primitivas * PISO_PRIMITIVAS) {
+      L.push('          >>> ROJO: el atlas pasó de ' + b.primitivas + ' a ' + a.primitivas +
+        ' primitivas (' + fmt((1 - a.primitivas / b.primitivas) * 100, 1) + ' % menos).');
       ok = false;
     }
     // GATE DE MEJORA. Las dos cosas que el diagnóstico pidió: que deje de ser

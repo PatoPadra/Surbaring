@@ -101,6 +101,127 @@
 > lomo, y **el zorrino patagónico pierde sus dos franjas dorsales**. Arreglarlo
 > bien es del lado del horno. Está entero en `pendiente-r3-fauna.md`, punto 3.
 
+> **FASE 3 (`flora`) CERRADA el 6/9/2026 — y con ella la ronda 3.** Los seis
+> bancos de `.claude/flota/banco-r3-fase3.mjs` en verde con cobertura demostrada,
+> corridos por el jefe y no por su autor. Único archivo de mundo tocado:
+> `src/world/Vegetacion.js`. **`Sotobosque.js` quedó intacto a propósito** —ya
+> había bajado al 4,5 % del cuadro y es la pieza con más instancias del juego:
+> agregarle un `map` es sumar una lectura por fragmento a la que más fragmentos
+> emite. Decisión escrita con el motivo, no por olvido.
+>
+> **La corteza: 63 especies muestreaban UN texel blanco.** `troncoCurvo()` genera
+> el tronco con `CylinderGeometry` —que parametriza u alrededor y v en altura— y
+> `pintar()` **pisaba esa UV con una constante**, los dos canales al mismo valor,
+> apuntando al centro del cuadrado opaco de 51×51 px de la esquina del atlas.
+> Tronco, ramas y cañas de todo el bosque leían ese punto. Medido sobre la
+> superficie: **el 100,0 % de la madera caía en una UV degenerada; ahora es el
+> 0,00 %**. La franja de corteza no agrega ni una lectura ni una instrucción de
+> ALU por fragmento —cambia el valor del texel que ya se leía— y de yapa arregla
+> la selección de mip, porque la derivada de UV era 0 y el tronco leía siempre el
+> nivel 0.
+>
+> **El número grande de la ronda, y estaba escondido: 45,0 MiB de profundidad.**
+> `WebGLRenderTarget` crea un renderbuffer de profundidad por objetivo
+> (`depthBuffer: true` es el defecto), el objetivo queda vivo dentro de
+> `horneado.objetivo` y **nunca se libera**. Pero la profundidad **sólo hace falta
+> mientras se hornea**: después la cartelera lee el color y nada más. Se comparte
+> una `DepthTexture` entre los treinta hornos y se libera al terminar el último.
+> **VRAM real de la vegetación: 125,07 → 80,07 MiB.** Sin tocar una vista ni un
+> píxel: bajar de 16 a 8 vistas habría costado el pestañeo de 45° que la ronda
+> anterior ya había arreglado.
+>
+> Liberar no fue adorno: **`deallocateRenderTarget()` de three llama a
+> `renderTarget.depthTexture.dispose()`**, así que con la textura compartida y
+> viva, un `objetivo.dispose()` sobre **uno** de los treinta le sacaría la
+> profundidad a los otros veintinueve. Hoy nadie llama a ese dispose, pero
+> quedaba cargada. Contracara escrita al lado del código: **esos objetivos ya no
+> se pueden reusar para renderizar**.
+>
+> ### Trampa nº 9: TRES números de VRAM, y los tres caían del lado cómodo
+>
+> Es la nº 3 de la ronda 2 —«un número mezclado de dos corridas que caía del lado
+> cómodo»— pero en una variante peor, porque acá **ninguno de los números estaba
+> mal calculado**: los tres estaban bien, y medían cosas distintas sin decirlo.
+>
+> | número | qué contaba | qué le faltaba |
+> |---|---|---|
+> | **62,67 MiB** (jefe anterior) | color + mipmaps de los 30 objetivos + atlas de follaje | profundidad **y** búferes de instancia |
+> | **121,5 MiB** (`r3-flora.md`) | color + mipmaps + profundidad + instancias | los dos atlas de follaje |
+> | **76,5 MiB** (cabecera de `CUPO_ESPECIES`) | color + mipmaps + instancias | la profundidad |
+> | **125,07 MiB** | **todo, más la geometría (0,87)** | — |
+>
+> El 62,67 no era una estimación de nadie: **el banco de la fase lo calculaba
+> así**, con `w*h*4*(mip?4/3:1)` y nada más. O sea que el instrumento escrito para
+> auditar la memoria **era ciego justo a la partida más grande**, y el jefe
+> reportó de buena fe lo que su propio banco le imprimía. La lección: *un número
+> sin su desglose no es un número, es una opinión con decimales.* El banco ahora
+> imprime las cinco partidas y la reconciliación de los tres números, siempre.
+>
+> **Y una del mismo día, del otro lado del mismo espejo.** El banco leía
+> `objetivo.depthTexture` **al final** de la construcción. Eso sirve mientras la
+> textura quede enganchada, y deja de servir en cuanto alguien hace lo correcto:
+> compartir y liberar. Leído al final se ve `null` en los treinta y se les cobra
+> un renderbuffer propio a cada uno — 45 MiB que ya no existen. El banco habría
+> informado «no hay ahorro» **justo cuando el ahorro es total**. Se arregló
+> tomando la instantánea en el primer `setRenderTarget` (que es cuando three
+> compone el framebuffer y decide) y escuchando el evento `dispose`.
+>
+> ### Y una tercera, que es la que más fácil se repite
+>
+> Los bancos 1 y 2 **medían la unidad equivocada**, y los dos daban rojo contra un
+> código correcto:
+>
+> - El banco 1 contaba qué fracción de **vértices** comparte una UV.
+>   `CylinderGeometry` emite un vértice central por segmento en cada tapa, todos
+>   con uv (0,5 · 0,5): las tapas del tronco y de sus siete ramas juntan decenas
+>   de vértices con UV idéntica **por construcción de three**, en discos que ni se
+>   ven. Un árbol perfecto daba 12,9 % y parecía roto. «Muestrear un solo texel»
+>   es una propiedad de la **superficie**, no del conteo de vértices.
+> - El banco 2 medía el follaje **sobre el lienzo entero, incluida la franja de
+>   corteza**, que es opaca por definición. Con eso la cobertura de alfa «subía»
+>   de 23,1 % a 31,4 % y parecía una regresión clara del 22 % del cuadro. Medida
+>   sobre lo que las tarjetas pueden muestrear, la lámina **baja** de 23,2 % a
+>   21,5 %. **La regresión no existía: la había inventado el instrumento.**
+>
+> *Antes de creerle a un banco que dice que el agente rompió algo, hay que
+> comprobar que el banco esté midiendo la pieza que nombra.*
+>
+> **El falsador, que es lo que hace que todo lo de arriba valga.**
+> `.claude/flota/banco-r3-fase3.falsar.mjs`: **los 15 defectos plantados, los 15
+> vistos; cero puntos ciegos, cero zonas sin falsar, y los seis bancos con al
+> menos un defecto que los pone rojos.** Para llegar ahí encontró dos puntos
+> ciegos reales y los dos se cerraron. Uno era un defecto **obsoleto**: D2
+> anulaba `fillRect`, que era como se pintaba la reserva de madera hasta la ronda
+> 2; la fase 3 la genera píxel a píxel, así que el defecto se plantaba **con
+> éxito** y no tocaba nada — y el falsador lo cantaba como punto ciego cuando era
+> el defecto el que había quedado viejo. El otro fue culpa del jefe: al
+> reemplazar el gate de «capas» por uno de cobertura de alfa, lo dejó de **un solo
+> lado**, y «el atlas pierde la mitad de sus marcas» pasaba en verde. La banda es
+> de dos lados: subir cuesta cuadros, bajar adelgaza el dosel. Y el falsador ganó
+> una regla: **un banco que ya estaba rojo en el control no demuestra nada al
+> ponerse rojo con el defecto** —habría dado rojo igual sin plantar nada—, así que
+> ahora se descuenta antes de juzgar.
+>
+> **Lo que la ronda 3 deja sin cerrar**, todo con su número y su archivo:
+>
+> 1. **Ningún preset baja un solo byte de la VRAM de la vegetación.**
+>    `Calidad.recortarInstancias()` sólo toca `malla.count`: baja el trabajo por
+>    cuadro y no la memoria. «Mínima» entrega la misma VRAM que «Alta». Las tres
+>    palancas están medidas en `pendiente-r3-flora.md` (**30,61 + 26,25 + 6,52
+>    MiB**), pero lo que falta **no es la constante: es el conducto** desde
+>    `main.js`/`Calidad.js` al constructor de `Vegetacion`. Es del coordinador.
+> 2. **`Vegetacion.dispose()` no libera casi nada** —~63 MiB de objetivos,
+>    materiales y mallas—. Hoy nadie lo llama, y por eso `flora` no lo tocó en una
+>    fase de cero regresión. Queda para cuando exista un banco que lo ejercite.
+> 3. **La orientación de las bandas del manifiesto** (`pendiente-r3-fauna.md`,
+>    punto 3): el zorrino patagónico sigue con dos cinturones en vez de dos
+>    franjas dorsales. **Postergado a la ronda 4 con el motivo escrito**: tocarlo
+>    obliga a rehornear y a correr enteros los bancos de dos fases ya cerradas, y
+>    la fase 3 se cortó dos veces por límite de uso antes de llegar a su falsador.
+> 4. **Nada de esta ronda se vio en pantalla.** Ni la fauna de la fase 2 ni la
+>    corteza de la 3. Todo está verificado por mecanismo y con bancos de Node,
+>    que es la regla, pero **la regla no reemplaza mirar el bosque**.
+
 > **3/9/2026 — LA RONDA 2 CERRÓ.** Tres jefes —carta, mundo, juego— más una
 > revisión independiente. El encargo está en `RONDA2.md`; las bitácoras son
 > `r2-carta.md`, `r2-mundo.md`, `r2-juego.md` y `r2-revision-juego.md`. Rama

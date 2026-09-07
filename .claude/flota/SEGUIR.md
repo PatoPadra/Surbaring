@@ -1,8 +1,52 @@
-# CÓMO SEGUIR — al 3/9/2026
+# CÓMO SEGUIR — al 6/9/2026
 
 Esto **no es un encargo**: es el inventario de lo que quedó abierto, para que el
-dueño elija por dónde sigue. El encargo de la ronda 2 está en `RONDA2.md`, y el
-estado general en `ESTADO.md`, que es lo primero que hay que leer siempre.
+dueño elija por dónde sigue. El encargo de la ronda 2 está en `RONDA2.md`, el de
+la ronda 3 en `RONDA3.md`, y el estado general en `ESTADO.md`, que es lo primero
+que hay que leer siempre.
+
+---
+
+## LA RONDA 3 CERRÓ el 6/9/2026, y NO está en `main`
+
+Las tres fases —`horno`, `fauna`, `flora`— están medidas, revisadas y
+commiteadas en la rama **`mejoras/ronda3-graficos`**. A diferencia de la ronda 2,
+**no se fusionó**: queda a la vista para que la mires antes.
+
+```sh
+git checkout mejoras/ronda3-graficos
+npm run dev
+```
+
+**Lo que hay que mirar, que es lo que ningún banco puede ver:**
+
+1. **La corteza de los troncos.** Hasta ahora las 63 especies leñosas
+   muestreaban un solo texel blanco: el tronco era color plano. Ahora tiene
+   grietas verticales y placas, con el tono de cada especie. Acercate a un
+   coihue y a un alerce: tienen corteza distinta a propósito —la conífera va en
+   placas gruesas, la latifoliada lisa y estriada.
+2. **Que el tronco no haya quedado ni más oscuro ni más claro.** El albedo medio
+   está compensado por construcción, pero eso es aritmética: el ojo decide.
+3. **La costura del tronco.** Tiene que no existir. Si ves una raya vertical
+   recorriendo un tronco de arriba abajo, es eso.
+4. **La copa.** El follaje ahora va en matas con claros entre ellas, y en tres
+   estratos de tono, en vez de repartido parejo. Miralo de lejos, contra el
+   cielo.
+5. **Los animales de la fase 2**, que tampoco se vieron nunca: un huemul a
+   cinco metros tenía que dejar de ser una cápsula gris.
+
+**Lo que NO vas a ver y está bien:** 45 MiB menos de memoria de video. Es el
+resultado más grande de la ronda y es invisible por definición.
+
+**Lo que sí quedó feo y ya está anotado:** el zorrino patagónico tiene dos
+cinturones alrededor del cuerpo en vez de sus dos franjas dorsales. Está
+diagnosticado con el arreglo escrito en `pendiente-r3-fauna.md`, punto 3, y
+postergado a la ronda 4 a propósito.
+
+El detalle entero —incluidas las tres trampas de medición que costó esta ronda—
+está en `ESTADO.md`, arriba de todo.
+
+---
 
 ---
 
