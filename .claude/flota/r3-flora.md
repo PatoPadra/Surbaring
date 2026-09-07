@@ -475,6 +475,33 @@ son, en rigor, **indistinguibles de cero**. Eso es exactamente lo que se pedía 
 misma cobertura, más capas—, no una mejora de rendimiento que no hay que
 prometerle a nadie.
 
+## Dos números de este diagnóstico, corregidos por el jefe de la fase
+
+> Ninguno cambia una decisión —las dos decisiones eran correctas—, pero los dos
+> se van a releer, y esta ronda ya pagó caro un número que nadie volvió a mirar.
+
+**1 · El derrame del punto 2 era 0,95 %, no 0,58 %.** El cálculo está hecho del
+lado equivocado del flip. `CanvasTexture` hereda `flipY = true` de `Texture`
+(`three.module.js:2067`, y `CanvasTexture` no lo toca), así que el parche que
+`fillRect(N·0,90, N·0,90, …)` dibuja **abajo** a la derecha del lienzo queda en
+`v ∈ [0 · 0,10]` de la textura, no en `[0,90 · 1]`. Es exactamente lo que decía
+el comentario de `UV_MADERA`. La condición no es «`u0+uw > 0,90` **y**
+`v0+uw > 0,90`» sino «`u0+uw > 0,90` **y** `v0 < 0,10`». Monte Carlo con 2·10⁷
+muestras: **0,573 %** con el supuesto viejo y **0,954 %** con el flip bien puesto.
+El defecto era **1,7× más grande** de lo reportado, o sea que D1 estaba **más**
+justificada, no menos.
+
+**2 · La comparación con «bajar de 16 a 8 vistas» estaba en bases distintas.**
+Los 43,5 MiB de compartir la profundidad incluyen la profundidad; los 30 MiB de
+bajar a 8 vistas cuentan **sólo color + mipmaps**. En la misma base, 8 vistas
+(atlas 512×384) bajan color, mipmaps **y** profundidad de 3,5 a 1,75 MiB por
+especie: **52,5 MiB**, más que los 43,5. La conclusión igual se sostiene, pero
+por el otro motivo: compartir la profundidad es **gratis en imagen** y bajar las
+vistas cuesta el pestañeo de 45° que la ronda anterior arregló. Y una vez hecha
+la liberación, bajar a 8 vistas ya sólo ahorraría los 30 MiB de color+mipmaps,
+porque la profundidad ya no está. **La decisión era la correcta; el número que
+la justificaba, no.**
+
 ## Descartado, con el motivo
 
 - **Tocar `Sotobosque.js`. Confirmado: no se toca, y no se abrió el archivo.**
