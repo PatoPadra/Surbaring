@@ -251,8 +251,8 @@ resuelve enteramente por el camino procedural.
    16 vistas lo suavizaría a costa de memoria.
 2. **El árbol de saberes llega hasta la mitad y ahí se corta por honestidad.**
    Con la caza regulada, la carroña, la cantera, la fragua y ahora el árbol de
-   herramientas, **27 de las 48** tecnologías tienen todos sus materiales al
-   alcance. Las 21 restantes piden batería, motor, radio, sensor, panel o
+   herramientas, **28 de las 48** tecnologías tienen todos sus materiales al
+   alcance. Las 20 restantes piden batería, motor, radio, sensor, panel o
    combustible nuclear, y ninguna de esas cosas sale de un bosque: para llegar
    ahí haría falta industria, no otro sistema de recolección. El árbol tampoco
    se lee bien: 48 nodos en un panel sin jerarquía visual.
@@ -265,8 +265,9 @@ resuelve enteramente por el camino procedural.
    caídos y el `tronco` pasó a existir de verdad. Tener nombre no es tener
    fuente, y ahora el árbol distingue las dos cosas en vez de suponerlas.
 
-   Sigue faltando la `lana`, que no la entrega ninguna especie de `fauna.json`,
-   y de ella cuelga el telar mapuche.
+   La `lana` ya tiene fuente: es fibra de guanaco enganchada en el coirón, que
+   se junta del suelo sin tocar al animal, y con eso el telar mapuche existe por
+   primera vez. Las plumas salen del pastizal húmedo, y sin ellas no hay flechas.
 3. **No hay música.** El audio es enteramente sintetizado —ambiente, acciones y
    voces de fauna—, y no hay ni va a haber una pista grabada.
 4. **El suelo no tiene material bajo los pies.** Roca, pasto y nieve se caminan

@@ -352,6 +352,7 @@ async function iniciar() {
   // El árbol de herramientas deja de ser un archivo acá: la recolección le
   // pregunta qué hay en la mano antes de decidir qué rinde y cómo se llama.
   recoleccion.equipo = equipo;
+  caza.equipo = equipo;
   recoleccion.herramientas = herramientas;
   const fabricacion = new Fabricacion(herramientas, {
     inventario, saberes, equipo, fundicion, hud,

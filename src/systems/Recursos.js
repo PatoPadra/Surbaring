@@ -237,10 +237,6 @@ export const SIN_FUENTE_AUN = new Set([
   // movimiento: la cabaña pide 12 troncos, o sea 72 kg sobre un bolso de 38, y
   // `Construccion.faltaPara()` no mira lo que hay guardado en un depósito. Sacar
   // la equivalencia sin arreglar eso deja tres obras imposibles.
-  // Ninguna especie de fauna.json la entrega, y de ella cuelga el telar
-  'lana',
-  // Se juntarían del suelo y de los restos de ave; ningún sistema las da
-  'pluma',
   // Salen de la colmena, que pide una entidad de mundo con reloj de 168 h
   'miel', 'cera', 'propoleo',
 ]);

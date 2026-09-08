@@ -515,6 +515,23 @@ export class Recoleccion {
           }
         }
 
+        // Las dos fuentes que el arbol daba por sentadas y no entregaba nadie.
+        // Ninguna de las dos pide matar, que es la condicion del lugar.
+        //
+        // La lana es fibra de guanaco enganchada en el coiron: el guanaco muda
+        // en primavera y deja el vellon prendido en las matas por donde se
+        // rasca. Se junta del suelo, y es lo que destraba el telar mapuche, que
+        // estaba en el arbol sin producir nada.
+        if (acc.mata.tipo.id === 'coiron' && Math.random() < 0.16) {
+          cosecha.push({ recurso: 'lana', cantidad: 1 });
+        }
+        // Las plumas se juntan del pastizal humedo, que es donde hay aves. Sin
+        // ellas no hay flechas: un astil sin emplumar cabecea y no va a ningun
+        // lado.
+        if (acc.mata.tipo.id === 'pasto_humedo' && Math.random() < 0.22) {
+          cosecha.push({ recurso: 'pluma', cantidad: 2 });
+        }
+
         const obtenido = [];
         for (const c of cosecha) {
           const n = this.inventario.agregar(c.recurso, c.cantidad);

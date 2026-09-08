@@ -195,6 +195,16 @@ export class Caza {
       return false;
     }
 
+    // El arma decide si el tiro entra. Hasta acá `intentar()` era determinista:
+    // si la ley dejaba, el animal caía, y las nueve armas del árbol eran el
+    // mismo objeto con nueve nombres. Ahora el alcance, el porte de la presa y
+    // la munición mandan.
+    const tiro = this._tiro(animal);
+    if (!tiro.ok) {
+      this.hud.aviso(tiro.titulo, tiro.motivo);
+      return false;
+    }
+
     const rinde = this._faena(animal.esp);
     const obtenido = [];
     for (const r of rinde) {
@@ -205,6 +215,84 @@ export class Caza {
     this.hud.aviso(`${animal.esp.nombreComun} abatido`,
       v.nota || obtenido.join(' · ') || 'Sin aprovechamiento');
     return true;
+  }
+
+  /**
+   * ¿Entra el tiro?
+   *
+   * Las nueve armas del árbol declaran `alcanceM`, `danio`, `sigilo`,
+   * `presaMaxKg` y a veces `municion`, y hasta acá no las leía nadie: `Caza.js`
+   * preguntaba un solo bit —«¿sabés cazar?»— así que el garrote y el arco eran
+   * lo mismo. Acá se paga esa deuda, que la propia ronda se había puesto como
+   * regla de cierre: o el efecto declarado se implementa, o el objeto se recorta.
+   *
+   * Tres cosas deciden, y ninguna es azar puro:
+   *
+   * - **El alcance.** Más allá del alcance del arma no se tira, y se dice a qué
+   *   distancia está el animal y hasta dónde llega el arma.
+   * - **El porte.** Cada arma tiene una presa máxima. Una honda contra un ciervo
+   *   colorado de 180 kg lo lastima y lo hace huir: eso no es cazar, es dejar un
+   *   animal herido en el monte, y el juego lo nombra así.
+   * - **La munición.** El arco sin flechas no dispara, y la flecha se gasta.
+   *
+   * Si no hay arma equipada con estadísticas, se resuelve como antes. Es a
+   * propósito: una partida vieja no se rompe porque el sistema nuevo exista.
+   */
+  _tiro(animal) {
+    const arma = this.equipo?.enRanura('arma');
+    if (!arma?.alcanceM) return { ok: true };
+
+    if (arma.municion) {
+      if (this.inventario.disponiblePara(arma.municion) < 1) {
+        return {
+          ok: false, titulo: `${arma.nombre} sin munición`,
+          motivo: `Te quedaste sin ${arma.municion}. Se fabrican en el bolso.`,
+        };
+      }
+    }
+
+    const p = this.jugador?.posicion;
+    const d = (p && animal.x != null)
+      ? Math.hypot(animal.x - p.x, animal.z - p.z) : 0;
+    if (d > arma.alcanceM) {
+      return {
+        ok: false, titulo: 'Demasiado lejos',
+        motivo: `${arma.nombre} llega a ${arma.alcanceM} m y el animal está a ${d.toFixed(0)} m. `
+          + `Acercate agachado: el sigilo del arma es ${(arma.sigilo * 100).toFixed(0)} %.`,
+      };
+    }
+
+    // Desde acá el tiro sale, así que la munición se gasta salga bien o mal:
+    // una flecha errada tampoco vuelve sola.
+    if (arma.municion) this.inventario.consumirPara(arma.municion, 1);
+    this.equipo?.desgastar?.();
+
+    const kg = animal.esp.pesoKg || 20;
+    if (kg > (arma.presaMaxKg || Infinity)) {
+      return {
+        ok: false, titulo: `${animal.esp.nombreComun}: demasiado animal`,
+        motivo: `${arma.nombre} sirve hasta unos ${arma.presaMaxKg} kg y éste anda por los `
+          + `${kg.toFixed(0)}. Lo herís y se va: un animal herido en el monte no es una presa, `
+          + `es un daño que nadie aprovecha.`,
+      };
+    }
+
+    // La boleadora no hiere: enreda. Dentro de su porte y su alcance no falla,
+    // y ésa es la razón por la que fue el arma de esta estepa.
+    if (arma.enreda) return { ok: true };
+
+    // Cerca es más fácil, y el arma silenciosa deja acercarse más. No es azar
+    // puro: es el azar que queda después de que el jugador hizo bien las cosas.
+    const cerca = 1 - (d / arma.alcanceM) * 0.5;
+    const porte = 1 - Math.min(0.6, kg / (arma.presaMaxKg * 2));
+    if (Math.random() > cerca * porte * (0.55 + arma.sigilo * 0.45)) {
+      return {
+        ok: false, titulo: `Erraste el tiro`,
+        motivo: `${animal.esp.nombreComun} salió corriendo. A ${d.toFixed(0)} m con `
+          + `${arma.nombre.toLowerCase()} el tiro no es seguro.`,
+      };
+    }
+    return { ok: true };
   }
 
   /** Qué rinde la faena, escalado con el porte del animal. */
