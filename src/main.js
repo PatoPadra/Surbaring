@@ -24,12 +24,15 @@ import flora from './data/flora.json';
 import fauna from './data/fauna.json';
 import geografia from './data/geografia.json';
 import historia from './data/historia.json';
+import herramientas from './data/herramientas.json';
 import { Jugador } from './entities/Jugador.js';
 import { Entrada } from './engine/Entrada.js';
 import { Tiempo } from './world/Tiempo.js';
 import { HUD } from './ui/HUD.js';
 import { Inventario } from './systems/Inventario.js';
 import { Saberes } from './systems/Saberes.js';
+import { Equipo } from './systems/Equipo.js';
+import { Fabricacion } from './systems/Fabricacion.js';
 import { Recoleccion } from './systems/Recoleccion.js';
 import { Caza } from './systems/Caza.js';
 import { Limites } from './world/Limites.js';
@@ -266,6 +269,9 @@ async function iniciar() {
   const hud = new HUD(mundo, jugador, tiempo);
   const inventario = new Inventario(38);
   const saberes = new Saberes(historia, inventario);
+  // El bolso dice qué materiales tenés; el equipo dice qué podés hacer con las
+  // manos que tenés. Eran la misma pregunta y son dos.
+  const equipo = new Equipo(herramientas, { inventario });
   // La ley del parque, con panel propio y registro que sobrevive a la muerte.
   // La negativa es el contenido del juego y hasta acá duraba 4,2 segundos.
   const norma = new Norma();
@@ -343,6 +349,13 @@ async function iniciar() {
   // se construye, no se guarda y sobre todo no se prende fuego.
   // Ver `Recoleccion._avisarTaller()`.
   recoleccion.fundicion = fundicion;
+  // El árbol de herramientas deja de ser un archivo acá: la recolección le
+  // pregunta qué hay en la mano antes de decidir qué rinde y cómo se llama.
+  recoleccion.equipo = equipo;
+  recoleccion.herramientas = herramientas;
+  const fabricacion = new Fabricacion(herramientas, {
+    inventario, saberes, equipo, fundicion, hud,
+  });
 
   // Los tres datasets de normativa, ya cargados, a la pestaña que los muestra
   codice.normativa = {
@@ -361,7 +374,7 @@ async function iniciar() {
   const mapa = new Mapa({
     mundo, jugador, tiempo, exploracion, codice, construccion, hallazgos,
   });
-  const bolso = new Bolso({ inventario, jugador, hud, recoleccion });
+  const bolso = new Bolso({ inventario, jugador, hud, recoleccion, equipo, fabricacion });
   const fin = new Fin({ jugador, mundo, tiempo, hud, codice, saberes, construccion });
 
   // El arco del juego: un año con un cuaderno. No es una trama pegada encima —el
@@ -429,7 +442,8 @@ async function iniciar() {
     // La cestería de junco no es un adorno histórico: un canasto es capacidad
     // de carga, y por eso es de las primeras cosas que se hacen en cualquier
     // lugar del mundo donde haya fibra.
-    inventario.capacidadKg = CAPACIDAD_BASE + saberes.suma('capacidadExtraKg');
+    inventario.capacidadKg = CAPACIDAD_BASE + saberes.suma('capacidadExtraKg')
+      + equipo.suma('capacidadExtraKg');
   };
   const desbloquearOriginal = saberes.desbloquear.bind(saberes);
   saberes.desbloquear = (tec) => {
@@ -805,7 +819,10 @@ async function iniciar() {
     hornos.actualizar(tiempo.segundosTotales);
     for (const caida of construccion.actualizar()) obras.quitar(caida);
     // Lo que abriga alrededor entra en el modelo térmico del jugador
-    jugador.abrigo = construccion.abrigoEn(jugador.posicion.x, jugador.posicion.z);
+    // Lo que abriga alrededor, más lo que se lleva puesto: el quillango y los
+    // tamangos entran en el mismo modelo térmico que el techo de una obra.
+    jugador.abrigo = Math.min(1, construccion.abrigoEn(jugador.posicion.x, jugador.posicion.z)
+      + equipo.suma('abrigo'));
     // El fuego se mide una vez y lo usan los dos que lo necesitan: el cuerpo,
     // que se calienta y se seca, y el oído, que escucha las llamas.
     jugador.fuego = fuegoCercano(est);
@@ -899,7 +916,7 @@ async function iniciar() {
   window.SurviBar = {
     escena, camara, render, mundo, terreno, cielo, agua, vegetacion, sotobosque,
     fauna: bichos, jugador, cuerpo, aspecto, personaje, tiempo, compositor, csm, hud, codice, entrada,
-    inventario, saberes, recoleccion, caza, audio,
+    inventario, saberes, recoleccion, caza, audio, equipo, fabricacion, bolso,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima, oclusion, color, calidad,
     exploracion, hallazgos, mapa, bolso, opciones, fin, partida, norma, relevamiento, cierre,

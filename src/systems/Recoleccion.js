@@ -41,6 +41,16 @@ const DESCANSO_S = 150;   // segundos de juego antes de volver a cosechar lo mis
  */
 const VALE = { tronco: 4, piedra: 3, michay: 2, helecho: 1, coiron: 0, pasto_humedo: 0 };
 
+/**
+ * Qué mata del sotobosque se trabaja con qué verbo del árbol de herramientas.
+ *
+ * Sólo el tronco caído por ahora, y es el que importa: el recurso `tronco` no lo
+ * entregaba nada en todo el juego, y de él cuelgan la cabaña, la canoa y —vía
+ * aserradero— la tabla y el poste. A mano se le sacan las ramas; con hacha se
+ * troza el fuste. La misma mata, dos rindes.
+ */
+const ACCION_POR_MATA = { tronco: 'trozar' };
+
 export class Recoleccion {
   constructor({ mundo, jugador, vegetacion, sotobosque, fauna, inventario, saberes, codice, hud }) {
     Object.assign(this, { mundo, jugador, vegetacion, sotobosque, fauna, inventario, saberes, codice, hud });
@@ -49,6 +59,63 @@ export class Recoleccion {
   }
 
   _clave(x, z) { return `${Math.round(x * 4)}:${Math.round(z * 4)}`; }
+
+  /** La ficha de una acción del árbol de herramientas, si el dataset está cableado. */
+  _accion(id) {
+    return this.herramientas?.acciones?.find(a => a.id === id) || null;
+  }
+
+  /**
+   * Qué rinde una mata, según lo que haya en la mano.
+   *
+   * Acá es donde el árbol de herramientas deja de ser un archivo y pasa a ser
+   * juego: `COSECHA_SOTOBOSQUE` era una constante y ahora es una pregunta. El
+   * mismo tronco caído da cuatro de leña a mano limpia y dos rollizos con el
+   * hacha, y el jugador ve la diferencia sin que nadie se la explique.
+   *
+   * Si el dataset no está cableado se devuelve la constante de siempre, así el
+   * juego sigue andando igual que antes de esta ronda.
+   */
+  _rinde(tipoId) {
+    const base = COSECHA_SOTOBOSQUE[tipoId] || [];
+    const accionId = ACCION_POR_MATA[tipoId];
+    const acc = accionId && this._accion(accionId);
+    if (!acc) return base;
+    const rama = this.equipo?.puede(accionId) ? acc.conHerramienta : acc.sinHerramienta;
+    return Array.isArray(rama?.rinde) ? rama.rinde : base;
+  }
+
+  /**
+   * Cómo se llama lo que haría la tecla sobre esta mata.
+   *
+   * Es la mitad barata de «que se note qué hace cada herramienta»: el indicador
+   * ya existía y ya se dibujaba, sólo que decía siempre lo mismo.
+   */
+  _etiquetaMata(mata) {
+    const accionId = ACCION_POR_MATA[mata.tipo.id];
+    if (accionId && this._accion(accionId)) {
+      const acc = this._accion(accionId);
+      if (this.equipo?.puede(accionId)) {
+        return `${acc.nombre} · ${this.equipo.enRanura('mano')?.nombre.toLowerCase()}`;
+      }
+      return `Juntar ramas del ${mata.tipo.nombre.toLowerCase()}`;
+    }
+    return `Juntar ${mata.tipo.nombre.toLowerCase()}`;
+  }
+
+  /**
+   * Gasta un uso de lo que está en la mano y avisa UNA vez cuando se rompe.
+   *
+   * El aviso importa: una herramienta que deja de funcionar en silencio se lee
+   * como un juego roto. Que se rompa y lo diga se lee como que hay que reparar.
+   */
+  _gastarHerramienta() {
+    if (!this.equipo?.desgastar()) return;
+    const def = this.equipo.enRanura('mano');
+    this.hud?.aviso(`Se te gastó ${def?.nombre.toLowerCase() || 'la herramienta'}`,
+      `Reparala en el bolso con ${this.equipo.costoReparar(def.id)
+        .map(m => `${m.cantidad} × ${nombreDe(m.recurso)}`).join(' · ')}`);
+  }
 
   _enDescanso(x, z, ahora) {
     const t = this.descansando.get(this._clave(x, z));
@@ -111,7 +178,11 @@ export class Recoleccion {
     // Un solo barrido del suelo para las dos cosas que se sacan de él
     const { mata, carronia: resto } = this._delSuelo(p, ahora);
     if (resto) {
-      return { tipo: 'carronia', etiqueta: 'Aprovechar los restos', resto };
+      return {
+        tipo: 'carronia', resto,
+        etiqueta: this.equipo?.puede('descuerar')
+          ? 'Aprovechar los restos' : 'Juntar los huesos · sin filo no sale más',
+      };
     }
 
     // El permiso de pesca sólo se saca donde se saca, así que cuando el jugador
@@ -135,7 +206,7 @@ export class Recoleccion {
     // 1939 m² contra una planta cada pocos metros. La planta sigue ahí cuando
     // uno vuelva; el tronco es el que hay que levantar mientras se lo pisa.
     if (mata && mata.vale >= 4) {
-      return { tipo: 'sotobosque', etiqueta: `Juntar ${mata.tipo.nombre.toLowerCase()}`, mata };
+      return { tipo: 'sotobosque', etiqueta: this._etiquetaMata(mata), mata };
     }
 
     // El material del suelo va ANTES de todo lo que se junta caminando, y ésa
@@ -238,13 +309,13 @@ export class Recoleccion {
 
     // Lo que vale, después de la planta: piedra, michay, helecho
     if (mata && mata.vale > 0) {
-      return { tipo: 'sotobosque', etiqueta: `Juntar ${mata.tipo.nombre.toLowerCase()}`, mata };
+      return { tipo: 'sotobosque', etiqueta: this._etiquetaMata(mata), mata };
     }
 
     // Y recién ahora el relleno: coirón y pastizal, que dan fibra y están en
     // todos lados.
     if (mata) {
-      return { tipo: 'sotobosque', etiqueta: `Juntar ${mata.tipo.nombre.toLowerCase()}`, mata };
+      return { tipo: 'sotobosque', etiqueta: this._etiquetaMata(mata), mata };
     }
 
     // El animal ya conocido: volver a mirarlo muestra la ficha otra vez, que es
@@ -417,12 +488,16 @@ export class Recoleccion {
 
       case 'carronia': {
         this.descansando.set(this._clave(acc.resto.x, acc.resto.z), ahora);
-        this.caza?.aprovechar({ fuenteId: 'presa_puma' });
+        const conFilo = this.equipo?.puede('descuerar');
+        this.caza?.aprovechar({ soloHueso: !conFilo });
+        if (conFilo) this._gastarHerramienta();
         return;
       }
 
       case 'sotobosque': {
-        const cosecha = [...(COSECHA_SOTOBOSQUE[acc.mata.tipo.id] || [])];
+        const cosecha = [...this._rinde(acc.mata.tipo.id)];
+        const accionMata = ACCION_POR_MATA[acc.mata.tipo.id];
+        if (accionMata && this.equipo?.puede(accionMata)) this._gastarHerramienta();
         this.descansando.set(this._clave(acc.mata.x, acc.mata.z), ahora);
 
         // Extras según dónde está la piedra. No es azar decorativo: la

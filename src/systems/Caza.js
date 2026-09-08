@@ -225,13 +225,56 @@ export class Caza {
    * cualquier carroñero del bosque. Un puma deja el 40 % de su presa, y de ahí
    * comen el cóndor, el zorro y el chimango. Tomar una parte no rompe nada.
    */
+  /**
+   * Sortea qué clase de resto es, con las probabilidades que declara el dataset.
+   *
+   * Antes el único llamador pasaba `presa_puma` cableado a mano, así que las
+   * otras tres fuentes de `caza.json` no salían nunca. No era cosmético: el
+   * desmogue es la única fuente de `asta` del juego, y el asta es la compuerta
+   * de las dos herramientas de nivel 3. Media rama del árbol estaba apagada por
+   * una cadena literal.
+   */
+  sortearFuente() {
+    const fuentes = this.n?.carronia?.fuentes || [];
+    if (!fuentes.length) return null;
+    const total = fuentes.reduce((s, f) => s + (f.probabilidadRelativa || 1), 0);
+    let r = Math.random() * total;
+    for (const f of fuentes) {
+      r -= (f.probabilidadRelativa || 1);
+      if (r <= 0) return f;
+    }
+    return fuentes[fuentes.length - 1];
+  }
+
+  /**
+   * @param {{fuenteId?: string, fuente?: object, soloHueso?: boolean}} resto
+   */
   aprovechar(resto) {
-    const fuente = (this.n?.carronia?.fuentes || []).find(f => f.id === resto.fuenteId)
+    const fuente = resto.fuente
+      || (this.n?.carronia?.fuentes || []).find(f => f.id === resto.fuenteId)
+      || this.sortearFuente()
       || { rinde: [{ recurso: 'cuero', cantidad: 1 }, { recurso: 'tendon', cantidad: 1 }] };
+
+    // A mano limpia se junta el hueso limpio y nada más: el cuero no se arranca,
+    // se corta. Es el eslabón que trababa el juego entero —el arco pide tendón,
+    // el tendón sale de acá— y ahora la lasca lo destraba.
+    let rinde = fuente.rinde || [];
+    if (resto.soloHueso) {
+      rinde = rinde.filter(r => r.recurso === 'hueso');
+      if (!rinde.length) rinde = [{ recurso: 'hueso', cantidad: 1 }];
+    }
+
     const obtenido = [];
-    for (const r of fuente.rinde || []) {
+    for (const r of rinde) {
       const n = this.inventario.agregar(r.recurso, r.cantidad);
       if (n > 0) obtenido.push(`${n} × ${r.recurso}`);
+    }
+    if (resto.soloHueso) {
+      this.hud.aviso(fuente.nombre || 'Restos aprovechados',
+        'Sin filo sólo se junta el hueso limpio: el cuero no se arranca, se corta.');
+      this.aprovechamientos++;
+      this.saberes.otorgar(1, 'Aprovechaste restos');
+      return obtenido.length > 0;
     }
     this.aprovechamientos++;
     this.saberes.otorgar(1, 'Aprovechaste restos');

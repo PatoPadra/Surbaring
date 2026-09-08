@@ -11,7 +11,7 @@
  * instancia nada—, así que el aviso lo dice sin disimular.
  */
 
-import { RECURSOS, pesoDe } from '../systems/Recursos.js';
+import { RECURSOS, pesoDe, nombreDe } from '../systems/Recursos.js';
 
 const CSS = `
   #bolsoPanel { position: fixed; inset: 0; z-index: 72; display: none;
@@ -138,9 +138,107 @@ export class Bolso {
           this.hud?.aviso(`Te curaste con ${def.nombre.toLowerCase()}`,
             `Salud ${antes.toFixed(0)} → ${this.jugador.salud.toFixed(0)} · lo aprendiste identificando la planta, y eso no se pierde`);
         }
+      } else if (accion === 'fabricar') {
+        const obj = this.fabricacion?.catalogo.find(o => o.id === id);
+        if (obj) {
+          const r = this.fabricacion.fabricar(obj);
+          if (r.estado === 'hecho') {
+            const que = r.salida?.length
+              ? r.salida.map(s => `${s.cantidad} × ${nombreDe(s.recurso)}`).join(' · ')
+              : 'Lo tenés en la mano';
+            this.hud?.aviso(`Hiciste ${obj.nombre.toLowerCase()}`, que);
+          } else {
+            this.hud?.aviso(obj.nombre, r.motivo || 'Todavía no');
+          }
+        }
+      } else if (accion === 'equipar') {
+        this.equipo?.equipar(id);
+      } else if (accion === 'desequipar') {
+        this.equipo?.desequipar(id);
+      } else if (accion === 'reparar') {
+        const def = this.equipo?.definicion(id);
+        if (this.equipo?.reparar(id)) {
+          this.hud?.aviso(`Reparaste ${def.nombre.toLowerCase()}`, 'Vuelve a servir');
+        } else {
+          this.hud?.aviso(def?.nombre || id,
+            `Te faltan materiales: ${this.equipo.costoReparar(id)
+              .map(m => `${m.cantidad} × ${nombreDe(m.recurso)}`).join(' · ')}`);
+        }
       }
       this.pintar();
     });
+  }
+
+  /**
+   * Lo que se lleva encima.
+   *
+   * Va primero y siempre, incluso con el bolso vacío, porque es la respuesta a
+   * la pregunta que el juego no contestaba: «¿con qué?». Una herramienta
+   * guardada no sirve —el nivel lo decide lo que está en la mano— y eso hay que
+   * poder verlo de un vistazo.
+   */
+  _pintarEquipo() {
+    if (!this.equipo) return '';
+    const puestos = this.equipo.listar();
+    if (!puestos.length) return '';
+
+    let html = `<h3>Equipo · trabajás en nivel ${this.equipo.nivel}</h3>`;
+    for (const it of puestos) {
+      const usos = it.tope === Infinity ? '' : `${it.usos}/${it.tope} usos`;
+      const estado = it.gastado ? '<b style="color:#c8503f">gastada</b>'
+        : it.puesto ? '<b style="color:#6fae7c">en la mano</b>' : '';
+      html += `<div class="bp-it">
+        <span>${it.nombre}<small style="color:var(--tinta-tenue)"> · nivel ${it.nivel}${estado ? ' · ' : ''}${estado}</small></span>
+        <span class="bp-kg">${usos}</span>
+        ${it.gastado ? `<button data-accion="reparar" data-id="${it.id}">Reparar</button>` : ''}
+        ${it.ranura && !it.puesto && !it.gastado ? `<button data-accion="equipar" data-id="${it.id}">Sacar</button>` : ''}
+        ${it.puesto ? `<button data-accion="desequipar" data-id="${it.ranura}">Guardar</button>` : ''}
+      </div>`;
+    }
+    return html;
+  }
+
+  /**
+   * Qué se puede hacer con lo que hay.
+   *
+   * Se listan también las que no alcanzan, con el motivo escrito: enterarse de
+   * que te faltan dos fibras es una meta; que la receta no aparezca es una pared
+   * invisible. Es el mismo criterio que ya usa el árbol de saberes.
+   */
+  _pintarFabricacion() {
+    if (!this.fabricacion) return '';
+    const posibles = this.fabricacion.disponibles();
+    if (!posibles.length) return '';
+
+    const listas = [], faltan = [];
+    for (const obj of posibles) {
+      const e = this.fabricacion.estado(obj);
+      (e.estado === 'lista' ? listas : faltan).push({ obj, e });
+    }
+    // Primero lo que se puede hacer ahora: es lo que el jugador vino a buscar.
+    const orden = [...listas, ...faltan].slice(0, 14);
+
+    let html = `<h3>Se fabrica a mano${listas.length ? ` · ${listas.length} listas` : ''}</h3>`;
+    for (const { obj, e } of orden) {
+      const receta = (obj.materiales || [])
+        .map(m => `${m.cantidad} ${nombreDe(m.recurso).toLowerCase()}`).join(' · ');
+      const sale = obj.produce
+        ? obj.produce.map(p => `${p.cantidad} ${nombreDe(p.recurso).toLowerCase()}`).join(' · ')
+        : `herramienta de nivel ${obj.nivel}`;
+      const porque = e.estado === 'faltan_materiales'
+        ? e.falta.map(f => `${nombreDe(f.recurso)} ${f.hay}/${f.pide}`).join(', ')
+        : e.motivo || '';
+      html += `<div class="bp-it">
+        <span>${obj.nombre}<small style="color:var(--tinta-tenue)"><br>${receta} → ${sale}</small></span>
+        <button data-accion="fabricar" data-id="${obj.id}" ${e.estado === 'lista' ? '' : 'disabled'}>
+          ${e.estado === 'lista' ? 'Hacer' : 'No'}</button>
+      </div>${porque ? `<div class="bp-kg" style="padding:0 0 .4rem;font-size:.68rem">${porque}</div>` : ''}`;
+    }
+    if (posibles.length > orden.length) {
+      html += `<div class="bp-kg" style="font-size:.68rem;padding:.3rem 0">
+        y ${posibles.length - orden.length} más, que aparecen a medida que juntás</div>`;
+    }
+    return html;
   }
 
   pintar() {
@@ -152,9 +250,13 @@ export class Bolso {
     barra.classList.toggle('lleno', kg > inv.capacidadKg * 0.92);
     barra.querySelector('i').style.width = `${Math.min(100, kg / inv.capacidadKg * 100)}%`;
 
+    // El equipo y el taller van SIEMPRE, aunque el bolso esté vacío: con las
+    // manos vacías es justamente cuando hace falta saber qué se puede hacer.
+    const cabecera = this._pintarEquipo() + this._pintarFabricacion();
+
     if (!items.length) {
-      this.el.querySelector('#bp-cuerpo').innerHTML =
-        `<div class="bp-vacio">Vacío. Acercate a una planta, a una mata o al agua y pulsá E.</div>`;
+      this.el.querySelector('#bp-cuerpo').innerHTML = cabecera
+        + `<div class="bp-vacio">El bolso está vacío. Acercate a una planta, a una mata o al agua y pulsá E.</div>`;
       return;
     }
 
@@ -167,7 +269,7 @@ export class Bolso {
         return (ia < 0 ? ORDEN.length : ia) - (ib < 0 ? ORDEN.length : ib);
       });
 
-    let html = '';
+    let html = cabecera;
     for (const cat of cats) {
       const grupo = items.filter(i => (i.cat || 'otros') === cat);
       if (!grupo.length) continue;

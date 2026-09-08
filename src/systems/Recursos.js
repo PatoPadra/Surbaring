@@ -227,8 +227,16 @@ export const OBTENIBLES = new Set(
  * nuevo en el mundo, o una entidad que los genere con el tiempo.
  */
 export const SIN_FUENTE_AUN = new Set([
-  // Lo entrega `trozar` un caído, que pide hacha y todavía no existe
-  'tronco',
+  // `tronco` salió de esta lista: `Recoleccion._rinde()` ya lo entrega al trozar
+  // un caído con el hacha, y dejarlo acá pasó a ser la mentira contraria.
+  //
+  // Queda pendiente lo otro que el revisor pidió junto con esto: sacar la
+  // equivalencia `madera_dura → tronco` de más arriba, que hace que una rama de
+  // 0,8 kg cuente como un rollizo de 6 kg. No se saca todavía a propósito,
+  // porque destapa un problema de peso que hay que resolver en el mismo
+  // movimiento: la cabaña pide 12 troncos, o sea 72 kg sobre un bolso de 38, y
+  // `Construccion.faltaPara()` no mira lo que hay guardado en un depósito. Sacar
+  // la equivalencia sin arreglar eso deja tres obras imposibles.
   // Ninguna especie de fauna.json la entrega, y de ella cuelga el telar
   'lana',
   // Se juntarían del suelo y de los restos de ave; ningún sistema las da
