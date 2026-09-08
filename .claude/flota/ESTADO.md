@@ -1,8 +1,8 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
 > **8/9/2026 — RONDA 4: CUATRO FASES CERRADAS Y COMMITEADAS.** El arbol de
-> herramientas dejo de ser un archivo.  y  existen, se
-> fabrica desde el bolso,  rinde por nivel, el indicador de
+> herramientas dejó de ser un archivo. `Equipo.js` y `Fabricacion.js` existen, se
+> fabrica desde el bolso, `COSECHA_SOTOBOSQUE` rinde por nivel, el indicador de
 > accion cambia solo --"Juntar ramas del tronco caido" contra "Trozar un caido ·
 > hacha de piedra"--, las nueve armas leen alcance, porte y municion, y las
 > cuatro tecnologias nuevas entraron al codice encadenadas. El arbol de saberes
@@ -10,7 +10,9 @@
 > explicado en el README.
 >
 > **Cuatro bancos, los cuatro con mutacion plantada y detectada:**
-> , ,  y .
+> `r4-banco-saberes.mjs`, `r4-banco-fabricacion.mjs`, `r4-banco-cadena.mjs` y
+> `r4-banco-arma.mjs`. El de la cadena camina la pregunta original del dueño
+> —«necesito tablones», «tengo que cazar con qué»— contra los sistemas reales.
 >
 > **Trampa n.º 10, en el banco del arma.** La primera version no le daba piedra a
 > la honda, asi que el sistema cortaba en la comprobacion de municion y dos
@@ -19,14 +21,14 @@
 > es peor que una falla, porque nadie lo va a mirar.*
 >
 > **Lo que NO se hizo y hay que hacer junto:** sacar la equivalencia
-> . Hay que pagarla con el peso en el mismo movimiento,
-> porque la cabana pide 12 troncos --72 kg sobre un bolso de 38-- y
->  no mira los depositos. Sacarla sola deja tres obras
-> imposibles. Esta anotado en el codigo, donde alguien lo va a leer.
+> `madera_dura → tronco`. Hay que pagarla con el peso en el mismo movimiento,
+> porque la cabaña pide 12 troncos —72 kg sobre un bolso de 38— y
+> `Construccion.faltaPara()` no mira los depósitos. Sacarla sola deja tres obras
+> imposibles. Está anotado en el código, donde alguien lo va a leer.
 >
-> Queda sin sistema la luz puntual (antorcha, candil, velas declaran radio y
-> duracion y no hay iluminacion en ) y la colmena, que pide una entidad de
-> mundo con reloj de 168 h.
+> Queda sin sistema la luz puntual (antorcha, candil y velas declaran radio y
+> duración, y no hay ninguna luz puntual en `src/`) y la colmena, que pide una
+> entidad de mundo con reloj de 168 h.
 
 > **7/9/2026 — RONDA 4 ABIERTA: la cadena de fabricación.** A pedido del dueño:
 > *«no hay una sucesión de eventos lógico para poder construir; necesito tablones
