@@ -1,0 +1,301 @@
+
+══════════════════════════════════════════════════════════════════════════
+0 · DE DÓNDE SALE CADA RECURSO
+══════════════════════════════════════════════════════════════════════════
+nivel 0 según el CÓDIGO   (19): agua, arcilla, cana, chatarra, corteza, cuero, fibra, fruto, hueso, lena, madera_blanda, madera_dura, obsidiana, piedra, pinocha, resina, semilla, tendon, yesca
+nivel 0 según el DATASET  (15): agua, arcilla, chatarra, corteza, fibra, fruto, hongo, hueso, lena, miel, piedra, pinocha, pluma, semilla, yesca
+prometidos por el dataset y SIN fuente en el código: hongo, pluma, miel
+entregados por el código y no declarados en el dataset: obsidiana, madera_dura, madera_blanda, resina, cana, cuero, tendon
+
+══════════════════════════════════════════════════════════════════════════
+1 · ALCANZABILIDAD DESDE CERO (cierre transitivo)
+══════════════════════════════════════════════════════════════════════════
+
+── mundo A «HOY» (herramientas.json sin implementar) ──
+   recursos alcanzables: 44 · tecnologías 22/48
+   materiales que alguna receta pide y HOY nada produce (45):
+   cordel, mango, grasa, brea, tiento, punta, asta, bola, cuero_curtido, pluma, anzuelo, lana, aguja, cera, miel, plata, bronce, papel, tinta, bateria, leche, sal, cable, motor, cobre, valvula, radio, botiquin, mapa, pintura, combustible_nuclear, cacao, cebada, lupulo, sensor, carcasa, anillo, planilla, receptor, camara, panel, motobomba, plantin, carne, pescado
+
+── mundo B «ÁRBOL IMPLEMENTADO» ── punto fijo en 16 vueltas · nivel de herramienta alcanzado: 4
+   base de nivel 0 (19): agua, arcilla, chatarra, corteza, fibra, fruto, hongo, hueso, lena, madera_blanda, madera_dura, miel, obsidiana, piedra, pinocha, pluma, resina, semilla, yesca
+   objetos alcanzables 55/57 · tecnologías 31/53
+   estaciones que se levantan: bolso, fogata, carbonera, parapeto, fragua, vivac_nieve, toldo, canasto, aserradero, molino, colmena_tronco, galpon, cabana_troncos, refugio_montana, ahumadero, colmena_cuadros, horno_barro, casa_piedra
+   ✗ moscas               n4 — material sin fuente: lana
+   ✗ poncho_witral        n3 — tecnología «telar_witral» no alcanzable | material sin fuente: lana
+   tecnologías fuera del cierre (22): telar_witral, plateria_mapuche, teodolito, cartografia_expedicion, telegrafo, quesera_alpina, andarivel, radio_onda_corta, estacion_meteorologica, guardaparque, sendero_marcado, reactor_investigacion, chocolateria_artesanal, cerveceria_artesanal, camara_trampa, anillado_aves, gps_navegacion, drone_relevamiento, panel_solar, brigada_incendios, sensor_sismico, restauracion_nativa
+
+── mundo C «SÓLO LO QUE EL DATASET DECLARA» ── nivel alcanzado 0, objetos 3/57
+   recursos que el dataset USA y nunca dice de dónde salen: madera, madera_dura, obsidiana, resina, lana, junco
+
+materiales pedidos por alguna receta y sin fuente en el cierre DATASET (29): lana, plata, bronce, papel, tinta, bateria, leche, sal, cable, motor, cobre, valvula, radio, botiquin, mapa, pintura, combustible_nuclear, cacao, cebada, lupulo, sensor, carcasa, anillo, planilla, receptor, camara, panel, motobomba, plantin
+   de esos, 1 los pide ESTE archivo; 28 ya estaban huérfanos antes (plata, bronce, reactor…)
+
+══════════════════════════════════════════════════════════════════════════
+2 · CANDADOS CIRCULARES
+══════════════════════════════════════════════════════════════════════════
+No hay ciclos de producción entre objetos/recetas.
+
+Candados de herramienta (material que sólo llega por una acción que el propio objeto habilita):
+   ninguno.
+
+Objetos cuyo `nivel` declarado no coincide con el nivel que sus materiales exigen:
+  · punzon_hueso         declara n1, la cadena lo pone en n0
+  · anzuelo_hueso        declara n1, la cadena lo pone en n0
+  · mango_labrado        declara n1, la cadena lo pone en n0
+  · boleadora_dos        declara n2, la cadena lo pone en n1
+  · boleadora_tres       declara n2, la cadena lo pone en n1
+  · arco_colihue_obj     declara n2, la cadena lo pone en n1
+  · eslabon              declara n4, la cadena lo pone en n1
+  · taladro_arco         declara n1, la cadena lo pone en n0
+  ✗ candil_grasa         declara n2, la cadena lo pone en n3 — por ceramica(n3)
+  · linea_mano           declara n1, la cadena lo pone en n0
+  · red_fibra            declara n2, la cadena lo pone en n1
+  · equipo_mosca         declara n4, la cadena lo pone en n1
+  · quillango            declara n2, la cadena lo pone en n1
+  · tamangos             declara n2, la cadena lo pone en n1
+  · mochila_cuero        declara n2, la cadena lo pone en n1
+  · odre_cuero           declara n2, la cadena lo pone en n1
+  · rastra               declara n2, la cadena lo pone en n1
+  ✗ ahumador             declara n2, la cadena lo pone en n3 — por ceramica(n3)
+  · careta_velo          declara n2, la cadena lo pone en n1
+  · velas_cera           declara n2, la cadena lo pone en n1
+  · encerado             declara n2, la cadena lo pone en n1
+  ✗ hidromiel_receta     declara n2, la cadena lo pone en n3 — por ceramica(n3)
+
+Criticidad — se prohíbe un recurso y se cuenta cuántos de los 57 objetos caen:
+   sin «obsidiana»: caen 49 objetos, techo de herramienta n0
+   sin «cuero»: caen 34 objetos, techo de herramienta n1
+   sin «arcilla»: caen 20 objetos, techo de herramienta n3
+   sin «resina»: caen 12 objetos, techo de herramienta n4
+   sin «hueso»: caen 10 objetos, techo de herramienta n4
+   sin «chatarra»: caen 10 objetos, techo de herramienta n3
+   sin «tendon»: caen  8 objetos, techo de herramienta n4 — punta_litica, lanza_colihue, estolica, arco_colihue_obj, flechas, arpon_hueso, quillango, odre_cuero
+   sin «cera»: caen  4 objetos, techo de herramienta n4 — palanca_apicultor, velas_cera, encerado, hidromiel_receta
+   sin «asta»: caen  3 objetos, techo de herramienta n4 — estolica, maza_cuna, pico_asta
+   sin «arena»: caen  3 objetos, techo de herramienta n4 — candil_grasa, ahumador, hidromiel_receta
+   sin «pluma»: caen  2 objetos, techo de herramienta n4 — flechas, equipo_mosca
+   sin «miel»: caen  1 objetos, techo de herramienta n4 — hidromiel_receta
+   sin «lana»: caen  0 objetos, techo de herramienta n4
+   sin «hongo»: caen  0 objetos, techo de herramienta n4
+
+Sensibilidad — sacando la equivalencia madera_dura → tronco (lo pide el propio archivo):
+   piden «tronco» 6 recetas: cabana_troncos, colmena_tronco, canoa_troncos, capilla_troncos, construccion_troncos, apicultura_rustica
+   nivel al que la cadena entrega tronco de verdad (acción trozar/talar): n0
+   ! cabana_troncos: 92.4 kg con tronco a 6,0 kg (antes 30.00 kg con la equivalencia puesta)
+   ! capilla_troncos: 60.24 kg con tronco a 6,0 kg (antes 8.24 kg con la equivalencia puesta)
+   ! construccion_troncos: 92.4 kg con tronco a 6,0 kg (antes 30.00 kg con la equivalencia puesta)
+
+══════════════════════════════════════════════════════════════════════════
+3 · PRESUPUESTO DE PESO (bolso 38 kg)
+══════════════════════════════════════════════════════════════════════════
+bonos de capacidad: canasto_junco_obj +6, mochila_cuero +12, rastra +30  →  techo teórico 86 kg
+(rastra: `requiereSuelo` y penaliza pendiente — no siempre disponible)
+
+IMPOSIBLES (ni con todos los contenedores, 86 kg): 1
+  ✗ tecnologia/reactor_investigacion: 144.5 kg — 30×hormigon@4 + 20×acero@1.2 + 1×combustible_nuclear@0.5
+OBLIGAN A MÁS DE UN VIAJE (>38 kg de bolso base): 5
+  ! tecnologia/estilo_bustillo: 72.1 kg — 20×piedra@1.4 + 15×tabla@2.5 + 6×mortero@1.1
+  ! obra/casa_piedra: 69.18 kg — 20×piedra@1.4 + 15×tabla@2.5 + 12×clavo@0.04 + 4×vidrio@0.8
+  ! tecnologia/refugio_montana: 46.4 kg — 12×piedra@1.4 + 8×tabla@2.5 + 6×chapa@1.6
+  ! obra/refugio_montana: 46.4 kg — 12×piedra@1.4 + 8×tabla@2.5 + 6×chapa@1.6
+  ! tecnologia/sendero_marcado: 39.2 kg — 2×pintura@0.5 + 6×poste@4.5 + 8×piedra@1.4
+AL FILO (entra con el material liviano, no con el pesado): 3
+  ~ tecnologia/construccion_troncos: 30–92.4 kg — 12×tronco@0.8-6 + 10×clavo@0.04 + 8×tabla@2.5
+  ~ obra/cabana_troncos: 30–92.4 kg — 12×tronco@0.8-6 + 10×clavo@0.04 + 8×tabla@2.5
+  ~ tecnologia/capilla_troncos: 8.24–60.24 kg — 10×tronco@0.8-6 + 6×clavo@0.04
+
+Top 10 por peso mínimo:
+    144.5 kg  tecnologia/reactor_investigacion
+     72.1 kg  tecnologia/estilo_bustillo
+    69.18 kg  obra/casa_piedra
+     46.4 kg  tecnologia/refugio_montana
+     46.4 kg  obra/refugio_montana
+     39.2 kg  tecnologia/sendero_marcado
+     37.8 kg  tecnologia/alambrado
+     36.8 kg  obra/galpon
+       30 kg  tecnologia/construccion_troncos
+       30 kg  obra/cabana_troncos
+
+Recetas que agrega ESTE archivo (64) — la más pesada:
+    20.68 kg  tecnologia/apicultura_cuadros — 8×tabla@2.5 + 12×clavo@0.04 + 2×cera@0.1
+    20.68 kg  obra/colmena_cuadros — 8×tabla@2.5 + 12×clavo@0.04 + 2×cera@0.1
+      8.1 kg  objeto/hidromiel_receta — 4×miel@0.35 + 6×agua_segura@1 + 1×ceramica@0.7
+      6.8 kg  tecnologia/canteria_litica — 2×asta@0.6 + 4×piedra@1.4
+     6.68 kg  objeto/maza_cuna — 4×piedra@1.4 + 1×mango@0.4 + 4×tiento@0.02 + 1×asta@0.6
+     6.58 kg  objeto/red_fibra — 16×fibra@0.05 + 6×cordel@0.03 + 4×piedra@1.4
+   ninguna de este archivo pasa de 20.68 kg: el problema de peso es PREEXISTENTE, no lo trae este dataset.
+
+Objetos del archivo por peso de materiales (top 8):
+      8.1 kg  hidromiel_receta — 4×miel@0.35 + 6×agua_segura@1 + 1×ceramica@0.7
+     6.68 kg  maza_cuna — 4×piedra@1.4 + 1×mango@0.4 + 4×tiento@0.02 + 1×asta@0.6
+     6.58 kg  red_fibra — 16×fibra@0.05 + 6×cordel@0.03 + 4×piedra@1.4
+      5.5 kg  barreta — 4×hierro@1.2-1.2 + 2×carbon@0.35
+      5.1 kg  sierra — 3×hierro@1.2-1.2 + 2×mango@0.4 + 2×carbon@0.35
+      4.7 kg  pico_hierro — 3×hierro@1.2-1.2 + 1×mango@0.4 + 2×carbon@0.35
+     4.41 kg  quillango — 6×cuero_curtido@0.7 + 4×tendon@0.05 + 1×aguja@0.01
+     3.88 kg  rastra — 4×madera@0.5-0.8 + 2×cuero@0.9 + 4×tiento@0.02
+
+objetos con peso declarado: 0 de 57
+   Inventario.js limita por PESO (38 kg) y ninguno de los 57 objetos declara kg.
+   Si un objeto pesara lo que pesan sus materiales, el juego de herramientas de hierro (hacha_hierro, sierra, martillo, pico_hierro, pala_hierro, barreta)
+   sumaría 24.75 kg — el 65 % del bolso, sin contar un solo material.
+   hacha_hierro 3.15 · sierra 5.1 · martillo 3.15 · pico_hierro 4.7 · pala_hierro 3.15 · barreta 5.5
+
+⚠ materiales sin ficha de peso (cayeron en el 0,5 kg por defecto): plata, bronce, papel, tinta, bateria, leche, sal, cable, motor, cobre, valvula, radio, botiquin, mapa, pintura, combustible_nuclear, cacao, cebada, lupulo, sensor, carcasa, anillo, planilla, receptor, camara, panel, motobomba, plantin
+
+══════════════════════════════════════════════════════════════════════════
+4 · COSTO DE SABER
+══════════════════════════════════════════════════════════════════════════
+flora  : 63 especies × 2 = 126  (ninguna tiene estadoConservacion → el +4 nunca se aplica)
+fauna  : 61 especies → 154  (2 base, +4 en las 8 CR/EN/VU)
+lugares: 63 accidentes × 3 = 189  (cota ALTA: Codice fusiona duplicados y descarta los de fuera del mundo)
+POOL de una sola vez = 469 puntos
+(hay fuentes repetibles: pesca +5/+3/+2, obra +4, hornada +3, restos +1 — pero todas piden herramientas que el árbol todavía no dio)
+
+nivel 0:  3 objetos · 0 tecnologías propias (0 pts) · ACUMULADO desde cero: 0 pts (0.0 % del pool)
+nivel 1: 23 objetos · 6 tecnologías propias (64 pts) · ACUMULADO desde cero: 64 pts (13.6 % del pool)
+nivel 2: 18 objetos · 12 tecnologías propias (206 pts) · ACUMULADO desde cero: 218 pts (46.5 % del pool)
+nivel 3:  3 objetos · 4 tecnologías propias (70 pts) · ACUMULADO desde cero: 264 pts (56.3 % del pool)
+nivel 4: 10 objetos · 8 tecnologías propias (170 pts) · ACUMULADO desde cero: 294 pts (62.7 % del pool)
+
+para tener «lasca» (nivel 1): 1 tecnología(s) [lasca_obsidiana], 8 puntos — 1.7 % del pool
+para tener «hacha_piedra» (nivel 2): 2 tecnología(s) [hacha_pulida ← lasca_obsidiana], 24 puntos — 5.1 % del pool
+para tener «maza_cuna» (nivel 3): 3 tecnología(s) [canteria_litica ← hacha_pulida ← lasca_obsidiana], 46 puntos — 9.8 % del pool
+para tener «hacha_hierro» (nivel 4): 1 tecnología(s) [herreria_colonial], 20 puntos — 4.3 % del pool
+
+¿Cada nivel exige el anterior? (requiere de la tecnología que da la herramienta de mano)
+   n1 «lasca_obsidiana» requiere: [—] · ¿contiene n0? n/a · costo 8
+   n2 «hacha_pulida» requiere: [lasca_obsidiana] · ¿contiene n1? sí · costo 16
+   n3 «canteria_litica» requiere: [hacha_pulida] · ¿contiene n2? sí · costo 22
+   n4 «herreria_colonial» requiere: [—] · ¿contiene n3? NO · costo 20
+
+Prueba de salto — borradas TODAS las herramientas de mano n1..n3 (lasca, raspador, cuchillo, hacha_piedra, azuela, pala_omoplato, maza_cuna, pico_asta):
+   con las compuertas del dataset: ¿se llega al hacha de hierro? no  (nivel alcanzado n0)
+   con el mundo del código de hoy:  ¿se llega al hacha de hierro? SÍ  (nivel alcanzado n4)
+
+costoSaber de LAS 53 TECNOLOGÍAS JUNTAS = 1480   vs   pool de 469   →   FALTAN 1011 puntos
+de esos, 126 los agregan las 5 tecnologías nuevas de este archivo (+9.3 % sobre lo que ya había)
+
+══════════════════════════════════════════════════════════════════════════
+5 · CURVA
+══════════════════════════════════════════════════════════════════════════
+nivel 0 —  3 objetos ███
+         insumo:1 arma:1 fuego:1
+         cordel_fibra, garrote, antorcha
+nivel 1 — 23 objetos ███████████████████████
+         herramienta:3 insumo:7 arma:5 municion:2 fuego:1 pesca:4 contenedor:1
+         lasca, raspador, punzon_hueso, anzuelo_hueso, tiento_cuero, mango_labrado, brea_resina, punta_litica, curtido, cuchillo, honda, lanza_colihue, estolica, bola_perdida, bola_forrada, flechas, trampa_lazo, taladro_arco, linea_mano, cana_colihue, arpon_hueso, nasa_junco, canasto_junco_obj
+nivel 2 — 18 objetos ██████████████████
+         arma:3 herramienta:3 fuego:2 pesca:1 abrigo:2 contenedor:3 apicultura:3 insumo:1
+         boleadora_dos, boleadora_tres, arco_colihue_obj, hacha_piedra, azuela, pala_omoplato, candil_grasa, red_fibra, quillango, tamangos, mochila_cuero, odre_cuero, rastra, ahumador, careta_velo, velas_cera, encerado, hidromiel_receta
+nivel 3 —  3 objetos ███
+         herramienta:2 abrigo:1
+         maza_cuna, pico_asta, poncho_witral
+nivel 4 — 10 objetos ██████████
+         herramienta:6 fuego:1 pesca:1 municion:1 apicultura:1
+         hacha_hierro, sierra, martillo, pico_hierro, pala_hierro, barreta, eslabon, equipo_mosca, moscas, palanca_apicultor
+
+total 57 objetos (el resumen del archivo dice 57)
+reparto 3 / 23 / 18 / 3 / 10 — media 11.4
+salto 0→1: +20 objetos · costoSaber 0 → 64 (+64)
+salto 1→2: -5 objetos · costoSaber 64 → 218 (+154)
+salto 2→3: -15 objetos · costoSaber 218 → 264 (+46)
+salto 3→4: +7 objetos · costoSaber 264 → 294 (+30)
+
+✓ acciones: declarados 29, reales 29
+✓ tecnologias: declarados 5, reales 5
+✓ recursos: declarados 16, reales 16
+✓ obras: declarados 2, reales 2
+✗ engancheAlCodigo manda agregar 11 recursos, pero recursosNuevos trae 16
+
+══════════════════════════════════════════════════════════════════════════
+6 · ACCIONES SIN HERRAMIENTA QUE LAS HABILITE
+══════════════════════════════════════════════════════════════════════════
+· juntar_suelto      nivel 0, se hace a mano
+✗ equipo_mosca usa munición «mosca» que no tiene ficha de recurso
+
+objetos que ninguna tecnología declara habilitar (9): cordel_fibra[tec:null], garrote[tec:null], anzuelo_hueso[tec:null], tiento_cuero[tec:null], honda[tec:null], trampa_lazo[tec:null], antorcha[tec:null], linea_mano[tec:null], cana_colihue[tec:null]
+
+══════════════════════════════════════════════════════════════════════════
+6b · RECURSOS NUEVOS: ¿SE PRODUCEN? ¿SE CONSUMEN?
+══════════════════════════════════════════════════════════════════════════
+✓ cordel         producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✓ mango          producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✓ tiento         producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✓ cuero_curtido  producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✓ brea           producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✓ punta          producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✓ flecha         producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✓ bola           producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✓ anzuelo        producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✓ aguja          producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✓ pluma          producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✓ miel           producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✓ cera           producido: sí · consumido: sí · sin ficha en Recursos.js (la agrega este archivo)
+✗ propoleo       producido: sí · consumido: NO · sin ficha en Recursos.js (la agrega este archivo)
+✗ hidromiel      producido: sí · consumido: NO · sin ficha en Recursos.js (la agrega este archivo)
+✗ vela           producido: sí · consumido: NO · sin ficha en Recursos.js (la agrega este archivo)
+✗ «moscas» produce «mosca», que no está ni en Recursos.js ni en recursosNuevos
+✗ munición «mosca» de equipo_mosca: sin ficha
+
+══════════════════════════════════════════════════════════════════════════
+7 · LO QUE ESTE BANCO NO SUPO LEER
+══════════════════════════════════════════════════════════════════════════
+  ? accion catar.conHerramienta: no supe leer «el ciclo completo de la colmena» dentro de «el ciclo completo de la colmena»
+
+══════════════════════════════════════════════════════════════════════════
+8 · MUTACIONES (¿el banco mide algo?)
+══════════════════════════════════════════════════════════════════════════
+  ✓ detecta el candado arco↔tendón si se reintroduce
+  ✓ detecta una receta de 120 kg
+  ✓ no marca imposible una receta de 5 kg
+  ✓ detecta un material sin fuente
+  ✓ detecta un costoSaber por encima del pool
+  ✓ detecta una estación imposible
+  ✓ el parser confiesa lo que no entiende
+
+mutaciones: 7 detectadas, 0 ciegas
+
+══════════════════════════════════════════════════════════════════════════
+RESUMEN POR GRAVEDAD
+══════════════════════════════════════════════════════════════════════════
+── CRITICA (12)
+   [alcanzabilidad] objeto fuera del cierre: moscas :: nivel 4
+   [alcanzabilidad] objeto fuera del cierre: poncho_witral :: nivel 3
+   [alcanzabilidad] material «lana» no lo produce nada y ESTE archivo lo pide :: 2 recetas nuevas
+   [alcanzabilidad] «cera» es compuerta de 4 objetos y HOY no lo produce nada :: 4/57 objetos caen sin él
+   [alcanzabilidad] «asta» es compuerta de 3 objetos y HOY no lo produce nada :: 3/57 objetos caen sin él
+   [alcanzabilidad] «pluma» es compuerta de 2 objetos y HOY no lo produce nada :: 2/57 objetos caen sin él
+   [alcanzabilidad] «miel» es compuerta de 1 objetos y HOY no lo produce nada :: 1/57 objetos caen sin él
+   [peso] cabana_troncos deja de entrar en el bolso cuando se saca la equivalencia madera_dura→tronco :: 92.4 kg
+   [peso] construccion_troncos deja de entrar en el bolso cuando se saca la equivalencia madera_dura→tronco :: 92.4 kg
+   [peso] tecnologia reactor_investigacion no entra ni con todos los contenedores :: 144.5 kg > 86 kg
+   [saber] el nivel 4 NO exige el nivel 3: la escalera de herramientas no está encadenada :: herreria_colonial.requiere = [vacío], costoSaber 20
+   [saber] se llega al hacha de hierro sin fabricar una sola herramienta de piedra :: 20 puntos (herreria_colonial) = 10 especies identificadas, 4.3 % del pool
+── GRAVE (17)
+   [alcanzabilidad] Recursos que el dataset declara de nivel 0 y el código no entrega :: hongo, pluma, miel
+   [alcanzabilidad] el dataset no declara la fuente de materiales que él mismo pide :: madera, madera_dura, obsidiana, resina, lana, junco
+   [curva] «candil_grasa» está etiquetado por debajo de lo que cuesta :: declara nivel 2, alcanzable recién en nivel 3
+   [curva] «ahumador» está etiquetado por debajo de lo que cuesta :: declara nivel 2, alcanzable recién en nivel 3
+   [curva] «hidromiel_receta» está etiquetado por debajo de lo que cuesta :: declara nivel 2, alcanzable recién en nivel 3
+   [peso] capilla_troncos deja de entrar en el bolso cuando se saca la equivalencia madera_dura→tronco :: 60.24 kg
+   [peso] tecnologia estilo_bustillo no entra en el bolso base :: 72.1 kg > 38 kg
+   [peso] obra casa_piedra no entra en el bolso base :: 69.18 kg > 38 kg
+   [peso] tecnologia refugio_montana no entra en el bolso base :: 46.4 kg > 38 kg
+   [peso] obra refugio_montana no entra en el bolso base :: 46.4 kg > 38 kg
+   [peso] tecnologia sendero_marcado no entra en el bolso base :: 39.2 kg > 38 kg
+   [peso] ninguno de los 57 objetos declara peso :: 0/57 con kg
+   [peso] materiales sin peso declarado :: plata, bronce, papel, tinta, bateria, leche, sal, cable, motor, cobre, valvula, radio, botiquin, mapa, pintura, combustible_nuclear, cacao, cebada, lupulo, sensor, carcasa, anillo, planilla, receptor, camara, panel, motobomba, plantin
+   [saber] el árbol entero cuesta más puntos de los que el juego reparte una sola vez :: 1480 pedidos vs 469 disponibles → faltan 1011
+   [curva] engancheAlCodigo pide agregar menos recursos de los que el archivo define :: dice 11, hay 16
+   [acciones] munición sin ficha: mosca :: equipo_mosca
+   [recursos] «mosca» se produce y no tiene ficha en ningún lado :: lo hace moscas
+── MEDIA (4)
+   [curva] nivel 0 flaco :: 3 objetos vs media 11.4
+   [curva] nivel 1 inflado :: 23 objetos vs media 11.4
+   [curva] nivel 3 flaco :: 3 objetos vs media 11.4
+   [recursos] «vela» se produce, es cat:material y nada lo consume
+── MENOR (1)
+   [alcanzabilidad] materiales huérfanos preexistentes (no los trae este archivo) :: 28 materiales
+
+TOTAL: 34 hallazgos

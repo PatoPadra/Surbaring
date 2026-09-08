@@ -1,0 +1,2651 @@
+{
+  "resumen": "El árbol de fabricación: qué se puede tocar del mundo y con qué. Hasta acá el juego tenía 48 tecnologías históricas y sólo dos compuertas reales —la herramienta de la cantera y el arco de la caza—, así que todo lo demás se juntaba a mano limpia desde el primer minuto y no había progresión que sentir. Este dataset no reemplaza el árbol de saberes de historia.json: se engancha a él. Aquel dice qué SABE el jugador; éste dice qué PUEDE hacer con las manos que tiene. Se aprende una tecnología, y recién entonces se fabrica el objeto que esa tecnología describe.",
+  "tesis": "El progreso corre por dos ejes que se multiplican, y ésa es la diferencia con cualquier survival de bosque genérico. El eje del PODER es la herramienta: sin filo no hay tendón, sin hacha no hay rollizo, sin cuña no hay cantera. El eje del PERMISO es la jurisdicción, que el juego ya dibuja en el mapa: dentro del Parque sólo se junta lo caído, en la Reserva algunas cosas se autorizan, y fuera del área protegida rige el dominio provincial y talar o abrir cantera es legal y regulado. Herramienta sin permiso es furtivismo; permiso sin herramienta no sirve de nada. La ley deja de ser un cartel que interrumpe y pasa a ser la mitad del árbol.",
+  "notaDeContenido": "El catálogo no se inventó: casi todo son objetos de la cultura material real de la cordillera norpatagónica —boleadora, quillango, tamango, witral, canoa monóxila, caña de colihue— o de la etapa colonial y de parque. Donde el objeto es genérico de la tecnología lítica y no específicamente local, la ficha lo dice. Donde no se pudo verificar el uso regional concreto, se declara en `certeza`. La mosca artificial es tan real como la boleadora: Bariloche es destino mundial de pesca con mosca, y ésa es su tecnología de parque.",
+  "fabricacion": {
+    "regla": "Se fabrica desde el bolso, sin banco de trabajo. El gesto de nivel 0 es «esto lo hago con las manos», y meter una mesa de carpintero entre el jugador y su primer cordel sería inventar una fricción que la realidad no tiene: una lasca se saca sentado en una piedra.",
+    "estaciones": [
+      {
+        "id": "bolso",
+        "nombre": "A mano",
+        "requisito": null,
+        "nota": "Todo lo lítico, lo de fibra, lo de hueso y lo de cuero. La mayoría del árbol."
+      },
+      {
+        "id": "fogata",
+        "nombre": "Junto al fuego",
+        "requisito": "fogata encendida a menos de 8 m",
+        "nota": "Lo que pide calor sin pedir temperatura: cocer la brea, ablandar la resina, curar un mango."
+      },
+      {
+        "id": "fragua",
+        "nombre": "En la fragua",
+        "requisito": "fragua encendida a menos de 8 m",
+        "nota": "Todo el hierro. Ya existe como horno en mineria.json."
+      },
+      {
+        "id": "aserradero",
+        "nombre": "En el aserradero",
+        "requisito": "obra levantada",
+        "nota": "Tabla y poste. Ya existe en construccion.json."
+      }
+    ],
+    "desgaste": {
+      "regla": "Cada uso consume un punto de durabilidad. Al llegar a cero el objeto no desaparece: queda «gastado» y se puede reparar con la mitad de los materiales, salvo la parte que se rompió de verdad.",
+      "porQue": "Un hacha que se evapora es un contador; un hacha que hay que reafilar es un motivo para volver al campamento. Es lo que mantiene vivo el bucle después de llegar al último nivel.",
+      "reparacion": "Mitad de los materiales originales, redondeando para arriba, en la misma estación donde se fabricó."
+    },
+    "ranuras": [
+      {
+        "id": "mano",
+        "nombre": "En la mano",
+        "nota": "La herramienta activa. Es la que decide el rinde de cada acción."
+      },
+      {
+        "id": "arma",
+        "nombre": "Al hombro",
+        "nota": "El arma de caza o el equipo de pesca. Se saca sin guardar la herramienta."
+      },
+      {
+        "id": "abrigo",
+        "nombre": "Encima",
+        "nota": "Lo que se lleva puesto. Suma aislamiento contra el frío y contra la mojadura."
+      },
+      {
+        "id": "espalda",
+        "nombre": "A la espalda",
+        "nota": "Contenedores. Suman capacidad al bolso."
+      }
+    ]
+  },
+  "niveles": [
+    {
+      "nivel": 0,
+      "nombre": "Manos",
+      "descripcion": "Lo que se levanta del suelo sin nada: fibra, yesca, frutos, hongos, leña suelta, piedra suelta, agua, arcilla de barranca. Alcanza para pasar la primera noche, que es exactamente lo que tiene que alcanzar."
+    },
+    {
+      "nivel": 1,
+      "nombre": "Filo de piedra",
+      "descripcion": "El primer salto y el más grande de la historia humana: algo que corta. Abre la carroña y la caña, y con eso el cuero, el tendón, la cestería y las primeras armas."
+    },
+    {
+      "nivel": 2,
+      "nombre": "Percusión con mango",
+      "descripcion": "Piedra atada a un palo: multiplica la fuerza del brazo. Convierte un tronco caído en rollizos y, fuera del área protegida, permite talar."
+    },
+    {
+      "nivel": 3,
+      "nombre": "Cuña y maza",
+      "descripcion": "Partir la roca en vez de juntarla. Abre la cantera de áridos, la arcilla en volumen y con eso el horno de barro, el ladrillo y la construcción durable."
+    },
+    {
+      "nivel": 4,
+      "nombre": "Hierro",
+      "descripcion": "No hay mineral de hierro en la comarca y no lo va a haber: todo el metal de este juego es chatarra recuperada y reforjada en la fragua. El hierro no abre un recurso nuevo, abre una precisión nueva —la sierra, el clavo, la junta a escuadra— y con eso el aserradero, la tabla y el poste."
+    }
+  ],
+  "categorias": [
+    {
+      "id": "insumo",
+      "nombre": "Insumos",
+      "nota": "No se usan: se gastan haciendo otra cosa. Son la mitad invisible del árbol."
+    },
+    {
+      "id": "herramienta",
+      "nombre": "Herramientas",
+      "nota": "Van en la mano y deciden el rinde de cada acción."
+    },
+    {
+      "id": "arma",
+      "nombre": "Armas de caza",
+      "nota": "Fabricarlas es legal en todos lados. Usarlas no: eso lo decide Caza.js según la especie y la jurisdicción, y ésa sigue siendo la lección."
+    },
+    {
+      "id": "municion",
+      "nombre": "Munición",
+      "nota": "Se consume al usarse y se fabrica de a lotes. Es el bucle corto que obliga a volver a juntar."
+    },
+    {
+      "id": "pesca",
+      "nombre": "Equipo de pesca",
+      "nota": "El juego tiene el sistema de pesca entero —permiso, temporada, ambiente, devolución— y no tiene con qué pescar."
+    },
+    {
+      "id": "abrigo",
+      "nombre": "Abrigo y calzado",
+      "nota": "La hipotermia ya está modelada con gradiente térmico, viento y mojadura. Esto es la respuesta que faltaba."
+    },
+    {
+      "id": "contenedor",
+      "nombre": "Contenedores y transporte",
+      "nota": "El bolso son 38 kg y frena al subir. Todo lo que suba ese techo es progresión de verdad."
+    },
+    {
+      "id": "fuego",
+      "nombre": "Fuego y luz",
+      "nota": "Encender y ver de noche."
+    },
+    {
+      "id": "apicultura",
+      "nombre": "Apicultura",
+      "nota": "La abeja de la miel es exótica y compite con los polinizadores nativos. Producir miel acá no es neutral, y esa tensión es el contenido."
+    }
+  ],
+  "recursosNuevos": [
+    {
+      "id": "cordel",
+      "nombre": "Cordel de fibra",
+      "kg": 0.03,
+      "cat": "material",
+      "nota": "Fibra de junquillo o de coirón torcida a dos cabos. Es el insumo invisible de toda la tecnología lítica: sin algo que ate, la piedra y el palo son dos cosas separadas. La ñocha, la fibra de cestería más buscada del sur, es chilena y no crece de este lado: como la obsidiana, cruzaba la cordillera por intercambio. Acá se tuerce lo que hay.",
+      "corrigeTambien": "historia.json (cesteria_junco) también dice «fibras de ñocha» y hereda el mismo error: Greigia landbeckii es endémica de Chile y ninguna de las 63 especies de flora.json es ñocha."
+    },
+    {
+      "id": "mango",
+      "nombre": "Mango labrado",
+      "kg": 0.4,
+      "cat": "material",
+      "nota": "Una rama elegida por veta y curada. El mango que se parte al tercer golpe es la razón por la que elegir la madera era un saber en sí mismo."
+    },
+    {
+      "id": "tiento",
+      "nombre": "Tiento",
+      "kg": 0.02,
+      "cat": "material",
+      "nota": "Tira fina de cuero crudo cortada en espiral de una sola pieza. Se ata en húmedo y al secar aprieta solo: es el remache de la Patagonia."
+    },
+    {
+      "id": "cuero_curtido",
+      "nombre": "Cuero curtido",
+      "kg": 0.7,
+      "cat": "material",
+      "nota": "El cuero crudo se pudre y se endurece como una tabla. Curtido con grasa y ceniza queda flexible y aguanta el agua, y recién ahí sirve para vestir."
+    },
+    {
+      "id": "brea",
+      "nombre": "Brea de resina",
+      "kg": 0.05,
+      "cat": "material",
+      "nota": "Resina cocida con carbón molido y un poco de grasa. Es el adhesivo que sostiene una punta en su astil: sin él, el enmangue no aguanta el impacto."
+    },
+    {
+      "id": "punta",
+      "nombre": "Punta lítica",
+      "kg": 0.02,
+      "cat": "material",
+      "nota": "Pedúnculo y aletas para que entre y no salga. Las del Nahuel Huapi son casi todas de obsidiana traída de lejos, y por eso una punta perdida se buscaba."
+    },
+    {
+      "id": "flecha",
+      "nombre": "Flecha",
+      "kg": 0.04,
+      "cat": "material",
+      "nota": "Astil de colihue, punta enmangada con brea y tiento, y plumas para que no cabecee. Se recupera parte de las tiradas: la que da en el hueso no vuelve."
+    },
+    {
+      "id": "bola",
+      "nombre": "Bola forrada",
+      "kg": 0.5,
+      "cat": "material",
+      "nota": "Piedra redondeada con surco ecuatorial, forrada en cuero crudo. El surco no es adorno: es lo que impide que el tiento se corra al girar."
+    },
+    {
+      "id": "anzuelo",
+      "nombre": "Anzuelo",
+      "kg": 0.01,
+      "cat": "material",
+      "nota": "De espina de calafate o de astilla de hueso. Antes del anzuelo curvo existió el gorjal: un palito afilado en los dos extremos que se atraviesa cuando el pez traga."
+    },
+    {
+      "id": "aguja",
+      "nombre": "Aguja de hueso",
+      "kg": 0.01,
+      "cat": "material",
+      "nota": "Con ojo perforado. Es lo que separa envolverse en un cuero de tener ropa cosida, y en esta latitud esa diferencia es la vida."
+    },
+    {
+      "id": "pluma",
+      "nombre": "Plumas",
+      "kg": 0.01,
+      "cat": "material",
+      "nota": "Se juntan del suelo y de los restos. Emplumar una flecha y atar una mosca son el mismo gesto separado por seis mil años."
+    },
+    {
+      "id": "miel",
+      "nombre": "Miel",
+      "kg": 0.35,
+      "cat": "alimento",
+      "nutre": 30,
+      "hidrata": 2,
+      "cura": 4,
+      "nota": "No se pudre nunca: se encontró miel comestible en tumbas de tres mil años. Alimento denso y antiséptico de herida, y por eso entra también en la botica."
+    },
+    {
+      "id": "cera",
+      "nombre": "Cera de abejas",
+      "kg": 0.1,
+      "cat": "material",
+      "nota": "Diez kilos de miel consumidos por la colmena dan uno de cera. Impermeabiliza cuero, sella vasijas, hace velas que no chorrean y entra en la brea del enmangue."
+    },
+    {
+      "id": "propoleo",
+      "nombre": "Propóleo",
+      "kg": 0.05,
+      "cat": "remedio",
+      "cura": 14,
+      "nota": "Resina de yema de árbol que las abejas juntan y modifican para sellar la colmena. Es antibiótico real, y sale de los mismos árboles de los que ya juntás resina."
+    },
+    {
+      "id": "vela",
+      "nombre": "Vela de cera",
+      "kg": 0.06,
+      "cat": "material",
+      "nota": "Arde limpia y sin olor, al revés del candil de grasa."
+    },
+    {
+      "id": "mosca",
+      "nombre": "Mosca artificial",
+      "kg": 0.01,
+      "cat": "material",
+      "nota": "Anzuelo vestido con pluma y lana para imitar un insecto. Se produce de a cuatro y no tenía ficha: el validador la había puesto a mano en la lista blanca y por eso no la vio nadie."
+    }
+  ],
+  "objetos": [
+    {
+      "id": "lasca_rodado",
+      "nombre": "Lasca de rodado",
+      "categoria": "herramienta",
+      "nivel": 1,
+      "ranura": "mano",
+      "tecnologia": "lasca_obsidiana",
+      "donde": "bolso",
+      "kg": 0.3,
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 12,
+      "habilita": [
+        "cortar",
+        "descuerar",
+        "cortar_cana"
+      ],
+      "nota": "Un rodado de arroyo partido por percusión. Corta mucho peor que la obsidiana y dura un tercio, pero se hace con dos piedras del suelo en el primer minuto de juego.",
+      "porQueExiste": "Sin esto, 52 de los 57 objetos quedaban detrás de una caminata de 6,4 km y 700 m de desnivel hasta la cota 1500 donde aparece la obsidiana: entre 30 y 37 minutos reales antes de poder fabricar lo primero. Medido por el revisor de diseño. El arranque no puede ser una caminata.",
+      "notaGeologica": "La comarca es volcánica y los arroyos bajan rodados de basalto y andesita: cualquier roca volcánica de grano fino astilla con filo. La obsidiana es la mejor y por eso se traía de lejos, no la única."
+    },
+    {
+      "id": "cordel_fibra",
+      "nombre": "Cordel de fibra",
+      "categoria": "insumo",
+      "nivel": 0,
+      "tecnologia": null,
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "fibra",
+          "cantidad": 3
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "cordel",
+          "cantidad": 2
+        }
+      ],
+      "nota": "No es una herramienta, es lo que hace posible a las demás. Se tuerce a mano y no pide saber nada: por eso no cuelga de ninguna tecnología.",
+      "esReceta": true
+    },
+    {
+      "id": "garrote",
+      "nombre": "Garrote",
+      "categoria": "arma",
+      "nivel": 0,
+      "ranura": "arma",
+      "tecnologia": null,
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "madera",
+          "cantidad": 2
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 30,
+      "habilita": [
+        "rematar"
+      ],
+      "nota": "Una rama con peso en la punta. No sirve para cazar nada de porte y no pretende: existe para que el nivel 0 tenga un arma y para rematar lo que ya cayó en una trampa.",
+      "certeza": "genérico",
+      "alcanceM": 1.5,
+      "danio": 8,
+      "sigilo": 0.2,
+      "presaMaxKg": 10,
+      "kg": 1.2
+    },
+    {
+      "id": "lasca",
+      "nombre": "Lasca de obsidiana",
+      "categoria": "herramienta",
+      "nivel": 1,
+      "ranura": "mano",
+      "tecnologia": "lasca_obsidiana",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "obsidiana",
+          "cantidad": 1
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 40,
+      "habilita": [
+        "cortar",
+        "descuerar",
+        "cortar_cana",
+        "labrar"
+      ],
+      "nota": "La obsidiana es vidrio volcánico: da el filo más agudo que existe en la naturaleza y se astilla en cuanto toca hueso. Corta pero no golpea, y esa limitación es el techo exacto del nivel 1.",
+      "notaGeografica": "No hay obsidiana en el Nahuel Huapi: la de los sitios arqueológicos vino del norte neuquino por redes de intercambio de cientos de kilómetros. En el juego aparece levantando piedra por encima de los 1500 m, así que el nivel 1 se paga subiendo un cerro.",
+      "kg": 0.2
+    },
+    {
+      "id": "raspador",
+      "nombre": "Raspador",
+      "categoria": "herramienta",
+      "nivel": 1,
+      "ranura": "mano",
+      "tecnologia": "lasca_obsidiana",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "obsidiana",
+          "cantidad": 1
+        },
+        {
+          "recurso": "mango",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 60,
+      "habilita": [
+        "descarnar"
+      ],
+      "nota": "Filo romo en ángulo alto: no corta, arranca. Es la herramienta más abundante de cualquier sitio arqueológico de la estepa porque limpiar un cuero lleva horas y gasta filos.",
+      "kg": 0.4
+    },
+    {
+      "id": "punzon_hueso",
+      "nombre": "Punzón y agujas",
+      "categoria": "insumo",
+      "nivel": 1,
+      "tecnologia": "lasca_obsidiana",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "hueso",
+          "cantidad": 1
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "aguja",
+          "cantidad": 2
+        }
+      ],
+      "nota": "Se parte el hueso largo a lo largo, se afila contra arenisca y se perfora el ojo girando una lasca fina. Con esto empieza la ropa.",
+      "esReceta": true
+    },
+    {
+      "id": "anzuelo_hueso",
+      "nombre": "Anzuelos",
+      "categoria": "insumo",
+      "nivel": 1,
+      "tecnologia": null,
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "hueso",
+          "cantidad": 1
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "anzuelo",
+          "cantidad": 3
+        }
+      ],
+      "nota": "De astilla de hueso o de espina de calafate. Sin tecnología previa: el anzuelo es más viejo que casi todo lo demás.",
+      "esReceta": true
+    },
+    {
+      "id": "tiento_cuero",
+      "nombre": "Tiento",
+      "categoria": "insumo",
+      "nivel": 1,
+      "tecnologia": null,
+      "donde": "bolso",
+      "requiereHerramienta": 1,
+      "materiales": [
+        {
+          "recurso": "cuero",
+          "cantidad": 1
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "tiento",
+          "cantidad": 4
+        }
+      ],
+      "nota": "Se corta en espiral desde el borde para sacar una tira larga de una sola pieza. Pide filo: a mano no se corta cuero.",
+      "esReceta": true
+    },
+    {
+      "id": "mango_labrado",
+      "nombre": "Mango labrado",
+      "categoria": "insumo",
+      "nivel": 1,
+      "tecnologia": "lasca_obsidiana",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "madera",
+          "cantidad": 2
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 1
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "mango",
+          "cantidad": 1
+        }
+      ],
+      "nota": "Hace falta un filo para labrarlo, y por eso vive en el nivel 1 aunque sea de madera. Es la dependencia que ordena todo el árbol: primero se corta, después se ata.",
+      "esReceta": true
+    },
+    {
+      "id": "brea_resina",
+      "nombre": "Brea de resina",
+      "categoria": "insumo",
+      "nivel": 1,
+      "tecnologia": "fuego_friccion",
+      "donde": "fogata",
+      "materiales": [
+        {
+          "recurso": "resina",
+          "cantidad": 3
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 1
+        },
+        {
+          "recurso": "grasa",
+          "cantidad": 1
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "brea",
+          "cantidad": 4
+        }
+      ],
+      "nota": "Resina cocida con carbón molido y grasa. Sola es quebradiza y salta con el frío; el carbón le da cuerpo y la grasa la vuelve elástica. Es una fórmula, no una mezcla.",
+      "esReceta": true
+    },
+    {
+      "id": "punta_litica",
+      "nombre": "Puntas de proyectil",
+      "categoria": "insumo",
+      "nivel": 1,
+      "tecnologia": "punta_proyectil",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "obsidiana",
+          "cantidad": 1
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "punta",
+          "cantidad": 3
+        }
+      ],
+      "nota": "Retoque a presión con un punzón de asta, no a golpes. Cada lasca da tres puntas si la mano es buena y ninguna si no lo es.",
+      "esReceta": true
+    },
+    {
+      "id": "curtido",
+      "nombre": "Curtir cuero",
+      "categoria": "insumo",
+      "nivel": 1,
+      "tecnologia": "curtido_cuero",
+      "donde": "fogata",
+      "materiales": [
+        {
+          "recurso": "cuero",
+          "cantidad": 3
+        },
+        {
+          "recurso": "grasa",
+          "cantidad": 2
+        },
+        {
+          "recurso": "ceniza",
+          "cantidad": 2
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "cuero_curtido",
+          "cantidad": 3
+        }
+      ],
+      "nota": "La tecnología «curtido de cuero» ya existía en el árbol y no producía absolutamente nada. El cuero crudo se pudre y se endurece; curtido con sesos, grasa y humo queda flexible para siempre.",
+      "arregla": "curtido_cuero no tenía salida en todo el juego.",
+      "esReceta": true
+    },
+    {
+      "id": "cuchillo",
+      "nombre": "Cuchillo enmangado",
+      "categoria": "herramienta",
+      "nivel": 1,
+      "ranura": "mano",
+      "tecnologia": "lasca_obsidiana",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "obsidiana",
+          "cantidad": 2
+        },
+        {
+          "recurso": "mango",
+          "cantidad": 1
+        },
+        {
+          "recurso": "brea",
+          "cantidad": 1
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 90,
+      "habilita": [
+        "cortar",
+        "descuerar",
+        "cortar_cana",
+        "labrar",
+        "descarnar"
+      ],
+      "nota": "La misma piedra que la lasca, pero con mango: la mano deja de cortarse y el filo dura el doble porque se apoya donde uno quiere.",
+      "kg": 0.5
+    },
+    {
+      "id": "honda",
+      "nombre": "Honda",
+      "categoria": "arma",
+      "nivel": 1,
+      "ranura": "arma",
+      "tecnologia": null,
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cordel",
+          "cantidad": 2
+        },
+        {
+          "recurso": "cuero",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 60,
+      "habilita": [
+        "caza_menor"
+      ],
+      "municion": "piedra",
+      "nota": "Dos cordeles y una badana. Alcanza para un ave o una liebre y no para nada más grande, y la munición está tirada en el suelo en todas partes.",
+      "certeza": "genérico",
+      "alcanceM": 25,
+      "danio": 6,
+      "sigilo": 0.6,
+      "presaMaxKg": 5,
+      "kg": 0.15
+    },
+    {
+      "id": "lanza_colihue",
+      "nombre": "Lanza de colihue",
+      "categoria": "arma",
+      "nivel": 1,
+      "ranura": "arma",
+      "tecnologia": "punta_proyectil",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cana",
+          "cantidad": 2
+        },
+        {
+          "recurso": "punta",
+          "cantidad": 1
+        },
+        {
+          "recurso": "brea",
+          "cantidad": 1
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 3
+        }
+      ],
+      "durabilidad": 40,
+      "habilita": [
+        "caza_mayor"
+      ],
+      "nota": "El colihue seco es liviano, recto y duro: fue el astil de las lanzas de la cordillera y el asta de las de caballería mapuche, que llegaban a los cuatro metros.",
+      "alcanceM": 12,
+      "danio": 22,
+      "sigilo": 0.4,
+      "presaMaxKg": 90,
+      "kg": 1.1
+    },
+    {
+      "id": "estolica",
+      "nombre": "Estólica",
+      "categoria": "arma",
+      "nivel": 1,
+      "ranura": "arma",
+      "tecnologia": "punta_proyectil",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "madera",
+          "cantidad": 2
+        },
+        {
+          "recurso": "asta",
+          "cantidad": 1
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 70,
+      "habilita": [
+        "caza_mayor"
+      ],
+      "municion": "flecha",
+      "nota": "Un palo con un tope que alarga el brazo y duplica el alcance del dardo. Es anterior al arco en toda América y el arco la reemplazó, así que tenerla y después aprender el arco es recorrer la secuencia real.",
+      "certeza": "documentado en Patagonia temprana; desplazado por el arco",
+      "alcanceM": 30,
+      "danio": 26,
+      "sigilo": 0.5,
+      "presaMaxKg": 120,
+      "kg": 0.6
+    },
+    {
+      "id": "bola_perdida",
+      "nombre": "Bola perdida",
+      "categoria": "arma",
+      "nivel": 1,
+      "ranura": "arma",
+      "tecnologia": "boleadora",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "bola",
+          "cantidad": 1
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 50,
+      "habilita": [
+        "caza_menor"
+      ],
+      "nota": "Una sola bola con manija corta, para tiro cercano y de mano. Es la más vieja de las tres y la única que también sirve de maza.",
+      "alcanceM": 15,
+      "danio": 12,
+      "sigilo": 0.45,
+      "presaMaxKg": 25,
+      "kg": 0.7
+    },
+    {
+      "id": "boleadora_dos",
+      "nombre": "Boleadora de dos (ñanducera)",
+      "categoria": "arma",
+      "nivel": 2,
+      "ranura": "arma",
+      "tecnologia": "boleadora",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "bola",
+          "cantidad": 2
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 4
+        },
+        {
+          "recurso": "cuero",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 80,
+      "habilita": [
+        "caza_menor",
+        "caza_mayor"
+      ],
+      "nota": "Dos bolas desiguales: la chica se sostiene en la mano y se voltea la grande. Se llama ñanducera porque se hizo para el choique, y enreda las patas en vez de herir.",
+      "alcanceM": 35,
+      "danio": 16,
+      "sigilo": 0.4,
+      "presaMaxKg": 60,
+      "enreda": true,
+      "kg": 1.3
+    },
+    {
+      "id": "boleadora_tres",
+      "nombre": "Boleadora de tres (potreadora)",
+      "categoria": "arma",
+      "nivel": 2,
+      "ranura": "arma",
+      "tecnologia": "boleadora",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "bola",
+          "cantidad": 3
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 6
+        },
+        {
+          "recurso": "cuero_curtido",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 100,
+      "habilita": [
+        "caza_mayor"
+      ],
+      "nota": "Tres ramales desde un nudo central. Es la de caballo y la de presa grande: un guanaco, un ciervo. Que sea el arma más eficaz del árbol y que casi nunca se pueda usar legalmente dentro del parque no es una contradicción, es el contenido.",
+      "alcanceM": 45,
+      "danio": 20,
+      "sigilo": 0.35,
+      "presaMaxKg": 200,
+      "enreda": true,
+      "kg": 2
+    },
+    {
+      "id": "bola_forrada",
+      "nombre": "Bolas forradas",
+      "categoria": "municion",
+      "nivel": 1,
+      "tecnologia": "boleadora",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 1
+        },
+        {
+          "recurso": "cuero",
+          "cantidad": 1
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "bola",
+          "cantidad": 1
+        }
+      ],
+      "nota": "Se pica un surco ecuatorial y se forra en cuero crudo mojado, que al secar aprieta. El surco impide que el tiento se corra cuando la bola gira a toda velocidad.",
+      "esReceta": true
+    },
+    {
+      "id": "arco_colihue_obj",
+      "nombre": "Arco de colihue",
+      "categoria": "arma",
+      "nivel": 2,
+      "ranura": "arma",
+      "tecnologia": "arco_colihue",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cana",
+          "cantidad": 3
+        },
+        {
+          "recurso": "tendon",
+          "cantidad": 2
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 150,
+      "habilita": [
+        "caza_mayor",
+        "caza_menor"
+      ],
+      "municion": "flecha",
+      "nota": "La tecnología ya estaba en el árbol y era la única compuerta de caza del juego. Ahora además hay que fabricarlo, y sin flechas no dispara.",
+      "notaCuerda": "La cuerda de tendón estira con la humedad y se afloja: en día de lluvia el arco pierde potencia. Por eso se llevaba una de repuesto seca bajo la ropa.",
+      "alcanceM": 40,
+      "danio": 30,
+      "sigilo": 0.75,
+      "presaMaxKg": 200,
+      "kg": 0.9
+    },
+    {
+      "id": "flechas",
+      "nombre": "Flechas",
+      "categoria": "municion",
+      "nivel": 1,
+      "tecnologia": "punta_proyectil",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cana",
+          "cantidad": 1
+        },
+        {
+          "recurso": "punta",
+          "cantidad": 2
+        },
+        {
+          "recurso": "pluma",
+          "cantidad": 2
+        },
+        {
+          "recurso": "brea",
+          "cantidad": 1
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "flecha",
+          "cantidad": 2
+        }
+      ],
+      "recuperacion": 0.6,
+      "nota": "El bucle corto del juego: se gastan, se recuperan seis de cada diez y hay que sentarse a hacer más. Emplumar no es adorno — sin plumas el astil cabecea y no va a ningún lado.",
+      "esReceta": true
+    },
+    {
+      "id": "trampa_lazo",
+      "nombre": "Trampa de lazo",
+      "categoria": "arma",
+      "nivel": 1,
+      "tecnologia": null,
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cordel",
+          "cantidad": 3
+        },
+        {
+          "recurso": "cana",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 1,
+      "habilita": [
+        "trampear"
+      ],
+      "nota": "Se deja armada y se vuelve al rato. Es la única forma de conseguir carne mientras se hace otra cosa, y la única que no pide estar presente.",
+      "jurisdiccion": "El trampeo de fauna nativa está prohibido en todo el Parque sin excepción, y el Reglamento Único de caza (RD APN 277/2011, art. 50) prohíbe expresamente trampas y lazos incluso sobre las exóticas habilitadas. Fuera del área protegida la liebre europea tiene temporada —1 de mayo a 31 de julio— y cupo de 10 piezas, y la resolución provincial se escribe sobre arma de fuego con licencia: la trampa queda afuera igual. En el juego funciona, bajo la misma licencia que el arco (ver licenciasDeJuego.armaTradicional), y el aviso explica por qué un método que no elige a quién agarra no entra en ningún reglamento del mundo real.",
+      "fuente": "Res. 7/DFS-2026, Dirección de Fauna Silvestre de Río Negro · RD APN 277/2011 art. 50",
+      "alcanceM": 0,
+      "danio": 10,
+      "sigilo": 1,
+      "presaMaxKg": 6,
+      "pasiva": true,
+      "kg": 0.4
+    },
+    {
+      "id": "hacha_piedra",
+      "nombre": "Hacha de piedra",
+      "categoria": "herramienta",
+      "nivel": 2,
+      "ranura": "mano",
+      "tecnologia": "hacha_pulida",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 2
+        },
+        {
+          "recurso": "mango",
+          "cantidad": 1
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 4
+        }
+      ],
+      "durabilidad": 120,
+      "habilita": [
+        "trozar",
+        "talar",
+        "descortezar"
+      ],
+      "nota": "Piedra pulida por abrasión, no astillada: se tardaban días en hacer una y por eso se heredaban. No corta como la obsidiana, aplasta la fibra de la madera hasta partirla, y para eso hacen falta el peso y el mango.",
+      "kg": 1.6
+    },
+    {
+      "id": "azuela",
+      "nombre": "Azuela",
+      "categoria": "herramienta",
+      "nivel": 2,
+      "ranura": "mano",
+      "tecnologia": "hacha_pulida",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 2
+        },
+        {
+          "recurso": "mango",
+          "cantidad": 1
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 3
+        }
+      ],
+      "durabilidad": 100,
+      "habilita": [
+        "ahuecar",
+        "labrar"
+      ],
+      "nota": "El filo va atravesado, no en el plano del mango: no parte, vacía. Es la herramienta con la que se hace una canoa monóxila, junto con el fuego controlado que quema lo que después se raspa.",
+      "kg": 1.4
+    },
+    {
+      "id": "pala_omoplato",
+      "nombre": "Pala de omóplato",
+      "categoria": "herramienta",
+      "nivel": 2,
+      "ranura": "mano",
+      "tecnologia": "hacha_pulida",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "hueso",
+          "cantidad": 2
+        },
+        {
+          "recurso": "mango",
+          "cantidad": 1
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 3
+        }
+      ],
+      "durabilidad": 70,
+      "habilita": [
+        "cavar",
+        "extraer_arcilla"
+      ],
+      "nota": "El omóplato de un animal grande atado a un palo es una pala, y fue la pala de medio mundo antes del metal. Sirve para la arcilla y para la tierra suelta; contra la roca no hace nada.",
+      "kg": 1.2
+    },
+    {
+      "id": "maza_cuna",
+      "nombre": "Maza y cuñas",
+      "categoria": "herramienta",
+      "nivel": 3,
+      "ranura": "mano",
+      "tecnologia": "canteria_litica",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 4
+        },
+        {
+          "recurso": "mango",
+          "cantidad": 1
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 4
+        },
+        {
+          "recurso": "asta",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 90,
+      "habilita": [
+        "partir_piedra",
+        "cantera",
+        "extraer_arido"
+      ],
+      "nota": "La roca no se rompe a golpes: se le buscan las diaclasas, se meten cuñas y se las golpea por turno hasta que se abre por donde ya quería abrirse. La cuña de madera seca, embutida y mojada, se dilata y trabaja sola durante la noche; el asta va de palanca para desprender el bloque una vez fisurado, que es lo suyo.",
+      "reemplazaCompuerta": "Mineria.js pide hoy disponiblePara('herramienta') > 0, que se satisface con un asta suelta en el bolso.",
+      "fuente": "Canteras romanas, cunei de madera empapados. El asta como cuña expansiva es falso: la queratina no se dilata de forma útil.",
+      "kg": 2.4
+    },
+    {
+      "id": "pico_asta",
+      "nombre": "Pico de asta",
+      "categoria": "herramienta",
+      "nivel": 3,
+      "ranura": "mano",
+      "tecnologia": "canteria_litica",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "asta",
+          "cantidad": 2
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 3
+        }
+      ],
+      "durabilidad": 60,
+      "habilita": [
+        "cantera",
+        "extraer_arido",
+        "extraer_arcilla"
+      ],
+      "nota": "El asta de ciervo con las puntas recortadas es una palanca perfecta para desprender bloques ya fisurados, y las minas de sílex del neolítico europeo se excavaron enteras con esto. Se consigue del desmogue, sin matar nada.",
+      "kg": 1.1
+    },
+    {
+      "id": "hacha_hierro",
+      "nombre": "Hacha de hierro",
+      "categoria": "herramienta",
+      "nivel": 4,
+      "ranura": "mano",
+      "tecnologia": "herreria_colonial",
+      "donde": "fragua",
+      "materiales": [
+        {
+          "recurso": "hierro",
+          "cantidad": 2
+        },
+        {
+          "recurso": "mango",
+          "cantidad": 1
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 300,
+      "habilita": [
+        "trozar",
+        "talar",
+        "descortezar",
+        "ahuecar",
+        "cortar",
+        "labrar"
+      ],
+      "nota": "Rinde el doble que la de piedra por golpe y dura tres veces más. Fue el objeto de intercambio más buscado del contacto, y con razón.",
+      "kg": 1.8
+    },
+    {
+      "id": "sierra",
+      "nombre": "Sierra de mano",
+      "categoria": "herramienta",
+      "nivel": 4,
+      "ranura": "mano",
+      "tecnologia": "herreria_colonial",
+      "donde": "fragua",
+      "materiales": [
+        {
+          "recurso": "hierro",
+          "cantidad": 3
+        },
+        {
+          "recurso": "mango",
+          "cantidad": 2
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 260,
+      "habilita": [
+        "aserrar",
+        "escuadrar"
+      ],
+      "nota": "La respuesta literal a «necesito tablones»: el hacha parte siguiendo la veta, la sierra corta donde uno quiere. Es la diferencia entre un rollizo y una tabla.",
+      "kg": 1.5
+    },
+    {
+      "id": "martillo",
+      "nombre": "Martillo",
+      "categoria": "herramienta",
+      "nivel": 4,
+      "ranura": "mano",
+      "tecnologia": "herreria_colonial",
+      "donde": "fragua",
+      "materiales": [
+        {
+          "recurso": "hierro",
+          "cantidad": 2
+        },
+        {
+          "recurso": "mango",
+          "cantidad": 1
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 400,
+      "habilita": [
+        "clavar",
+        "reparar"
+      ],
+      "nota": "Sin martillo el clavo no sirve de nada, y sin clavo no hay galpón, capilla ni cabaña. Es la herramienta que menos se gasta del árbol.",
+      "kg": 1.2
+    },
+    {
+      "id": "pico_hierro",
+      "nombre": "Pico",
+      "categoria": "herramienta",
+      "nivel": 4,
+      "ranura": "mano",
+      "tecnologia": "herreria_colonial",
+      "donde": "fragua",
+      "materiales": [
+        {
+          "recurso": "hierro",
+          "cantidad": 3
+        },
+        {
+          "recurso": "mango",
+          "cantidad": 1
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 280,
+      "habilita": [
+        "partir_piedra",
+        "cantera",
+        "extraer_arido",
+        "cavar"
+      ],
+      "nota": "Punta de un lado, pala del otro. Triplica el rinde de la cantera respecto de la cuña, y es lo que convierte extraer áridos en un oficio en vez de una tarde.",
+      "kg": 2.6
+    },
+    {
+      "id": "pala_hierro",
+      "nombre": "Pala",
+      "categoria": "herramienta",
+      "nivel": 4,
+      "ranura": "mano",
+      "tecnologia": "herreria_colonial",
+      "donde": "fragua",
+      "materiales": [
+        {
+          "recurso": "hierro",
+          "cantidad": 2
+        },
+        {
+          "recurso": "mango",
+          "cantidad": 1
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 250,
+      "habilita": [
+        "cavar",
+        "extraer_arcilla",
+        "extraer_arido"
+      ],
+      "nota": "Con pala, la arcilla del horno de barro deja de ser treinta viajes y pasa a ser dos.",
+      "kg": 2.2
+    },
+    {
+      "id": "barreta",
+      "nombre": "Barreta",
+      "categoria": "herramienta",
+      "nivel": 4,
+      "ranura": "mano",
+      "tecnologia": "herreria_colonial",
+      "donde": "fragua",
+      "materiales": [
+        {
+          "recurso": "hierro",
+          "cantidad": 4
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 500,
+      "habilita": [
+        "partir_piedra",
+        "cavar",
+        "palanquear"
+      ],
+      "nota": "Una barra de hierro sin mango ni filo, y no hay herramienta más difícil de romper. Hace hoyos de poste, que es lo que pide el alambrado.",
+      "kg": 4
+    },
+    {
+      "id": "eslabon",
+      "nombre": "Eslabón y pedernal",
+      "categoria": "fuego",
+      "nivel": 4,
+      "tecnologia": "herreria_colonial",
+      "donde": "fragua",
+      "materiales": [
+        {
+          "recurso": "hierro",
+          "cantidad": 1
+        },
+        {
+          "recurso": "carbon",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 400,
+      "efecto": {
+        "encenderSinYesca": true,
+        "encenderBajoLluvia": 0.5
+      },
+      "nota": "Golpear acero contra sílex arranca virutas de hierro que arden. Prende con humedad donde la fricción ya no prende, y ésa es la diferencia entre pasar la noche y no pasarla.",
+      "kg": 0.15
+    },
+    {
+      "id": "taladro_arco",
+      "nombre": "Taladro de arco",
+      "categoria": "fuego",
+      "nivel": 1,
+      "tecnologia": "fuego_friccion",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "madera",
+          "cantidad": 2
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 2
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 80,
+      "efecto": {
+        "encenderMasRapido": true
+      },
+      "nota": "El arco hace girar el husillo mucho más rápido que las palmas y deja una mano libre para apretar. Con esto la fricción deja de ser una apuesta de veinte minutos.",
+      "kg": 0.5
+    },
+    {
+      "id": "antorcha",
+      "nombre": "Antorcha",
+      "categoria": "fuego",
+      "nivel": 0,
+      "ranura": "mano",
+      "tecnologia": null,
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "madera",
+          "cantidad": 1
+        },
+        {
+          "recurso": "resina",
+          "cantidad": 2
+        },
+        {
+          "recurso": "fibra",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 1,
+      "efecto": {
+        "luz": 12,
+        "duracionHoras": 1.5
+      },
+      "nota": "Resina de laura o de palo piche sobre un envoltorio de fibra. Dura una hora y media del mundo y se apaga con lluvia fuerte.",
+      "fuente": "flora.json: los únicos dos productores de resina del dataset son laura (Schinus patagonicus) y palo piche (Fabiana imbricata). El coihue es una fagácea austral y no da resina.",
+      "kg": 0.5
+    },
+    {
+      "id": "candil_grasa",
+      "nombre": "Candil de grasa",
+      "categoria": "fuego",
+      "nivel": 3,
+      "tecnologia": "alfareria_bicroma",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "ceramica",
+          "cantidad": 1
+        },
+        {
+          "recurso": "grasa",
+          "cantidad": 2
+        },
+        {
+          "recurso": "fibra",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 40,
+      "efecto": {
+        "luz": 6,
+        "duracionHoras": 6
+      },
+      "nota": "Un cuenco, grasa y una mecha de fibra. Alumbra menos que la antorcha y dura cuatro veces más: es luz de adentro, no de camino.",
+      "kg": 0.6,
+      "notaNivel": "Declaraba nivel 2 y sus materiales cuelgan de compuertas de nivel 3."
+    },
+    {
+      "id": "linea_mano",
+      "nombre": "Línea de mano",
+      "categoria": "pesca",
+      "nivel": 1,
+      "ranura": "arma",
+      "tecnologia": null,
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cordel",
+          "cantidad": 3
+        },
+        {
+          "recurso": "anzuelo",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 40,
+      "habilita": [
+        "pescar"
+      ],
+      "nota": "Cordel enrollado en la mano y nada más. Pesca de orilla, poco alcance y ninguna elegancia, pero pesca.",
+      "kg": 0.2
+    },
+    {
+      "id": "cana_colihue",
+      "nombre": "Caña de colihue",
+      "categoria": "pesca",
+      "nivel": 1,
+      "ranura": "arma",
+      "tecnologia": null,
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cana",
+          "cantidad": 2
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 3
+        },
+        {
+          "recurso": "anzuelo",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 100,
+      "habilita": [
+        "pescar"
+      ],
+      "nota": "El colihue es la caña que la cordillera regala hecha: derecha, maciza y elástica. A diferencia de casi todos los bambúes no es hueca, y por eso la misma vara sirve de astil de lanza y de caña de pescar. Alcanza más lejos que la línea de mano y llega a los pozones donde está lo grande.",
+      "fuente": "SIB — Chusquea culeou · src/data/flora.json id cana_colihue",
+      "kg": 0.6
+    },
+    {
+      "id": "arpon_hueso",
+      "nombre": "Arpón de hueso",
+      "categoria": "pesca",
+      "nivel": 1,
+      "ranura": "arma",
+      "tecnologia": "punta_proyectil",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "hueso",
+          "cantidad": 2
+        },
+        {
+          "recurso": "cana",
+          "cantidad": 1
+        },
+        {
+          "recurso": "brea",
+          "cantidad": 1
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 60,
+      "habilita": [
+        "pescar",
+        "fijar"
+      ],
+      "nota": "Púas hacia atrás para que el pez no salga. Sirve en agua baja y clara, y no distingue la medida ni la especie: por eso el juego lo penaliza si sale un nativo.",
+      "notaLegal": "La fija y el arpón están prohibidos en toda la pesca deportiva patagónica, dentro y fuera del parque, justamente porque no permiten devolver vivo lo que se saca ni elegir la medida.",
+      "kg": 0.8
+    },
+    {
+      "id": "nasa_junco",
+      "nombre": "Nasa de junco",
+      "categoria": "pesca",
+      "nivel": 1,
+      "tecnologia": "cesteria_junco",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "junco",
+          "cantidad": 8
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 3
+        }
+      ],
+      "durabilidad": 20,
+      "habilita": [
+        "trampear_pez"
+      ],
+      "nota": "Embudo tejido que se entra fácil y no se sale. Se deja calada y se vuelve al otro día: como la trampa de lazo, es comida que se junta mientras se hace otra cosa.",
+      "notaLegal": "La nasa entra en la misma prohibición que la red y el arpón: el reglamento patagónico no admite trampas para peces. Es tecnología histórica real y hoy es un delito de pesca.",
+      "kg": 1.8
+    },
+    {
+      "id": "red_fibra",
+      "nombre": "Red de fibra",
+      "categoria": "pesca",
+      "nivel": 2,
+      "tecnologia": "cesteria_junco",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "fibra",
+          "cantidad": 16
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 6
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 4
+        }
+      ],
+      "durabilidad": 50,
+      "habilita": [
+        "pescar",
+        "trampear_pez"
+      ],
+      "nota": "Malla anudada con lastre de piedra abajo. Rinde más que cualquier otra cosa del árbol y por eso está lisa y llanamente prohibida: el Reglamento General de Pesca Deportiva Continental Patagónico no admite red, nasa, fija ni arpón en ningún ambiente. Se puede fabricar y se puede saber cómo se hacía; usarla es infracción en las tres jurisdicciones, y ésa es la ficha.",
+      "kg": 3.2
+    },
+    {
+      "id": "equipo_mosca",
+      "nombre": "Equipo de mosca",
+      "categoria": "pesca",
+      "nivel": 4,
+      "ranura": "arma",
+      "tecnologia": "pesca_con_mosca",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cana",
+          "cantidad": 2
+        },
+        {
+          "recurso": "hierro",
+          "cantidad": 1
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 4
+        },
+        {
+          "recurso": "cuero_curtido",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 200,
+      "habilita": [
+        "pescar"
+      ],
+      "municion": "mosca",
+      "nota": "El final del árbol de pesca y la tecnología más de acá que hay: Bariloche es destino mundial de pesca con mosca desde que se sembraron los salmónidos a principios del siglo XX. Se devuelve vivo casi todo, y ése es el punto.",
+      "efecto": {
+        "devolucionSegura": true,
+        "selectivo": true
+      },
+      "kg": 1
+    },
+    {
+      "id": "moscas",
+      "nombre": "Moscas atadas",
+      "categoria": "municion",
+      "nivel": 4,
+      "tecnologia": "pesca_con_mosca",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "anzuelo",
+          "cantidad": 2
+        },
+        {
+          "recurso": "pluma",
+          "cantidad": 3
+        },
+        {
+          "recurso": "lana",
+          "cantidad": 1
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "mosca",
+          "cantidad": 4
+        }
+      ],
+      "nota": "Plumas y lana atadas a un anzuelo para imitar un insecto. Es el mismo gesto que emplumar una flecha, seis mil años después y con otra intención.",
+      "esReceta": true
+    },
+    {
+      "id": "quillango",
+      "nombre": "Quillango",
+      "categoria": "abrigo",
+      "nivel": 2,
+      "ranura": "abrigo",
+      "tecnologia": "curtido_cuero",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cuero_curtido",
+          "cantidad": 6
+        },
+        {
+          "recurso": "tendon",
+          "cantidad": 4
+        },
+        {
+          "recurso": "aguja",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 200,
+      "efecto": {
+        "abrigo": 0.45,
+        "resistenciaViento": 0.3
+      },
+      "nota": "Manto de cueros cosidos con tendón, usado con el pelo hacia adentro y pintado del lado de la piel. Es la prenda de la Patagonia y la respuesta correcta a un juego donde la cumbre del Catedral te baja la salud.",
+      "kg": 4.5
+    },
+    {
+      "id": "tamangos",
+      "nombre": "Tamangos",
+      "categoria": "abrigo",
+      "nivel": 2,
+      "ranura": "abrigo",
+      "tecnologia": "curtido_cuero",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cuero_curtido",
+          "cantidad": 2
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 4
+        },
+        {
+          "recurso": "aguja",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 120,
+      "efecto": {
+        "abrigo": 0.12,
+        "resistenciaMojadura": 0.35,
+        "velocidadPedregal": 1.15
+      },
+      "nota": "Calzado de cuero de una pieza atado al tobillo. Poco abrigo y mucha diferencia: los pies mojados son la primera causa de hipotermia y el pedregal descalzo es intransitable.",
+      "kg": 0.9
+    },
+    {
+      "id": "poncho_witral",
+      "nombre": "Poncho de telar",
+      "categoria": "abrigo",
+      "nivel": 3,
+      "ranura": "abrigo",
+      "tecnologia": "telar_witral",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "lana",
+          "cantidad": 8
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 3
+        }
+      ],
+      "durabilidad": 250,
+      "efecto": {
+        "abrigo": 0.5,
+        "resistenciaViento": 0.45,
+        "resistenciaMojadura": 0.2
+      },
+      "nota": "Tejido en witral, el telar vertical mapuche. La lana engrasada repele el agua un buen rato y sigue abrigando mojada, cosa que el cuero no hace. El telar ya estaba en el árbol y no producía nada.",
+      "kg": 1.4
+    },
+    {
+      "id": "canasto_junco_obj",
+      "nombre": "Canasto de junco",
+      "categoria": "contenedor",
+      "nivel": 1,
+      "ranura": "espalda",
+      "tecnologia": "cesteria_junco",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "junco",
+          "cantidad": 8
+        },
+        {
+          "recurso": "fibra",
+          "cantidad": 4
+        }
+      ],
+      "durabilidad": 150,
+      "efecto": {
+        "capacidadExtraKg": 6
+      },
+      "nota": "La tecnología ya daba +6 kg de capacidad sin pedir que se tejiera nada. Ahora hay que hacer el canasto.",
+      "kg": 1.5
+    },
+    {
+      "id": "mochila_cuero",
+      "nombre": "Mochila de cuero",
+      "categoria": "contenedor",
+      "nivel": 2,
+      "ranura": "espalda",
+      "tecnologia": "curtido_cuero",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cuero_curtido",
+          "cantidad": 4
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 6
+        },
+        {
+          "recurso": "aguja",
+          "cantidad": 1
+        }
+      ],
+      "durabilidad": 220,
+      "efecto": {
+        "capacidadExtraKg": 12
+      },
+      "nota": "Reparte el peso en los hombros en vez de colgarlo del brazo. Doce kilos más sobre treinta y ocho es casi un tercio: es la mejora de calidad de vida más grande del árbol.",
+      "kg": 2.2
+    },
+    {
+      "id": "odre_cuero",
+      "nombre": "Odre",
+      "categoria": "contenedor",
+      "nivel": 2,
+      "tecnologia": "curtido_cuero",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cuero_curtido",
+          "cantidad": 2
+        },
+        {
+          "recurso": "grasa",
+          "cantidad": 1
+        },
+        {
+          "recurso": "tendon",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 100,
+      "efecto": {
+        "guardaAgua": 6
+      },
+      "nota": "Cuero cosido y sellado con grasa. Seis unidades de agua encima cambian por completo el rango de exploración hacia la estepa seca del este.",
+      "kg": 0.8
+    },
+    {
+      "id": "rastra",
+      "nombre": "Rastra",
+      "categoria": "contenedor",
+      "nivel": 2,
+      "tecnologia": "hacha_pulida",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "madera",
+          "cantidad": 4
+        },
+        {
+          "recurso": "cuero",
+          "cantidad": 2
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 4
+        }
+      ],
+      "durabilidad": 80,
+      "efecto": {
+        "capacidadExtraKg": 30,
+        "penalizaPendiente": 0.5,
+        "requiereSuelo": true
+      },
+      "nota": "Dos varas cruzadas que se arrastran por el suelo. Carga treinta kilos y es inútil cuesta arriba y en el bosque cerrado: sirve para el rollizo que hay que bajar del valle, no para el cerro.",
+      "kg": 5
+    },
+    {
+      "id": "ahumador",
+      "nombre": "Ahumador",
+      "categoria": "apicultura",
+      "nivel": 3,
+      "ranura": "mano",
+      "tecnologia": "apicultura_rustica",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "ceramica",
+          "cantidad": 1
+        },
+        {
+          "recurso": "cuero",
+          "cantidad": 2
+        },
+        {
+          "recurso": "cana",
+          "cantidad": 1
+        },
+        {
+          "recurso": "tiento",
+          "cantidad": 2
+        }
+      ],
+      "durabilidad": 120,
+      "habilita": [
+        "catar"
+      ],
+      "nota": "Fuelle de cuero y hogar de brasa con hoja seca. El humo no aturde: hace que la colmena crea que hay incendio y se llene el buche de miel, y una abeja cargada no dobla el abdomen para picar.",
+      "kg": 1.3,
+      "notaNivel": "Idem: la cerámica pide el horno de barro, que pide arcilla en volumen, que pide nivel 3."
+    },
+    {
+      "id": "careta_velo",
+      "nombre": "Careta y velo",
+      "categoria": "apicultura",
+      "nivel": 2,
+      "ranura": "abrigo",
+      "tecnologia": "apicultura_rustica",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "fibra",
+          "cantidad": 8
+        },
+        {
+          "recurso": "cuero_curtido",
+          "cantidad": 1
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 3
+        }
+      ],
+      "durabilidad": 100,
+      "efecto": {
+        "resistenciaPicadura": 0.85
+      },
+      "nota": "Malla tejida fina sobre un aro de colihue. Sin esto, catar una colmena cuesta salud, y con un enjambre defensivo cuesta bastante.",
+      "kg": 0.4
+    },
+    {
+      "id": "velas_cera",
+      "nombre": "Velas de cera",
+      "categoria": "fuego",
+      "nivel": 2,
+      "tecnologia": "apicultura_rustica",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "cera",
+          "cantidad": 2
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 1
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "vela",
+          "cantidad": 4
+        }
+      ],
+      "efecto": {
+        "luz": 8,
+        "duracionHoras": 5
+      },
+      "nota": "La cera arde limpia y sin olor, al revés del candil de grasa. Fue luz de iglesia durante siglos justamente por eso.",
+      "esReceta": true
+    },
+    {
+      "id": "encerado",
+      "nombre": "Encerar cuero",
+      "categoria": "insumo",
+      "nivel": 2,
+      "tecnologia": "apicultura_rustica",
+      "donde": "fogata",
+      "materiales": [
+        {
+          "recurso": "cera",
+          "cantidad": 1
+        },
+        {
+          "recurso": "grasa",
+          "cantidad": 1
+        }
+      ],
+      "habilita": [
+        "encerar"
+      ],
+      "efecto": {
+        "mejora": [
+          "tamangos",
+          "quillango",
+          "mochila_cuero",
+          "odre_cuero"
+        ],
+        "resistenciaMojaduraExtra": 0.3
+      },
+      "nota": "Cera y grasa calentadas y frotadas sobre el cuero. Mejora lo que ya tenés puesto en vez de fabricar algo nuevo, y en una ladera que recibe 3500 mm al año eso vale más que una prenda más. No es un objeto que se lleve: es un tratamiento que se aplica y se consume, por eso no declara peso.",
+      "esTratamiento": true
+    }
+  ],
+  "acciones": [
+    {
+      "id": "juntar_suelto",
+      "nombre": "Juntar del suelo",
+      "nivelMinimo": 0,
+      "rinde": "fibra, yesca, pinocha, frutos, hongos, leña, piedra suelta, semillas, plumas",
+      "nota": "Lo que ya está caído. No pide nada y no se le pone techo: es el piso del juego."
+    },
+    {
+      "id": "descuerar",
+      "nombre": "Aprovechar restos",
+      "nivelMinimo": 1,
+      "sinHerramienta": {
+        "rinde": [
+          {
+            "recurso": "hueso",
+            "cantidad": 2
+          }
+        ],
+        "motivo": "A mano se junta el hueso limpio y nada más. El cuero no se arranca: se corta."
+      },
+      "conHerramienta": {
+        "rinde": "cuero, tendón, hueso y grasa según la fuente declarada en caza.json"
+      },
+      "nota": "Éste es el eslabón que hoy traba el juego entero. El arco pide tendón, el tendón sale de la carroña, y la carroña es un resto cada 5120 m². Con la lasca en la mano el mismo resto rinde el triple y el candado se afloja."
+    },
+    {
+      "id": "cortar_cana",
+      "nombre": "Cortar caña colihue",
+      "nivelMinimo": 1,
+      "rinde": "cana",
+      "nota": "El colihue es una gramínea leñosa: se corta al ras y rebrota. No se arranca de raíz."
+    },
+    {
+      "id": "trozar",
+      "nombre": "Trozar un caído",
+      "nivelMinimo": 2,
+      "jurisdiccion": "todas_con_matiz",
+      "sinHerramienta": {
+        "rinde": [
+          {
+            "recurso": "lena",
+            "cantidad": 4
+          },
+          {
+            "recurso": "corteza",
+            "cantidad": 1
+          }
+        ],
+        "motivo": "A mano se le sacan las ramas y la corteza suelta. El fuste queda ahí."
+      },
+      "conHerramienta": {
+        "rinde": [
+          {
+            "recurso": "tronco",
+            "cantidad": 2
+          },
+          {
+            "recurso": "lena",
+            "cantidad": 3
+          },
+          {
+            "recurso": "corteza",
+            "cantidad": 2
+          }
+        ]
+      },
+      "nota": "ACÁ ESTABA EL AGUJERO: el recurso `tronco` no lo entregaba nada en todo el juego, y la única forma de satisfacer un pedido de tronco era la equivalencia madera_dura → tronco, o sea que una rama de 0,8 kg contaba como un rollizo de 6 kg. Sin esto no hay cabaña, no hay canoa, no hay tabla y no hay poste. Pero el caído no es tierra de nadie: fuera del área protegida es legal, en Reserva se autoriza, y dentro del Parque el aprovechamiento forestal —leña de árbol muerto incluida— sólo se autoriza a pobladores con permiso y para consumo propio. Un tronco caído además es casa: ahí vive el huillín, el hongo y media docena de bichos que este juego ya tiene en fauna.json."
+    },
+    {
+      "id": "talar",
+      "nombre": "Talar en pie",
+      "nivelMinimo": 2,
+      "jurisdiccion": "fuera|reserva_con_permiso",
+      "rinde": "tronco en cantidad",
+      "nota": "El artículo 5 de la Ley 22.351 prohíbe dentro del Parque toda explotación forestal. En Reserva Nacional el artículo 10 permite que la APN autorice el aprovechamiento forestal, con permiso escrito. Fuera del área protegida rige el dominio provincial. Tener el hacha no habilita: habilita el hacha, más el lugar, más el papel."
+    },
+    {
+      "id": "cantera",
+      "nombre": "Abrir cantera",
+      "nivelMinimo": 3,
+      "jurisdiccion": "fuera|reserva_con_permiso",
+      "rinde": "arena, ripio, tosca, pómez",
+      "nota": "Ya implementado en Mineria.js con su jurisdicción y su castigo, y con los tres niveles que corresponden: prohibido en Parque, autorizable en Reserva por el art. 10 de la Ley 22.351, regulado afuera."
+    },
+    {
+      "id": "extraer_arcilla",
+      "nombre": "Sacar arcilla en volumen",
+      "nivelMinimo": 2,
+      "sinHerramienta": {
+        "rinde": [
+          {
+            "recurso": "arcilla",
+            "cantidad": 1
+          }
+        ],
+        "motivo": "De barranca, con la mano, un puñado."
+      },
+      "conHerramienta": {
+        "rinde": [
+          {
+            "recurso": "arcilla",
+            "cantidad": 6
+          }
+        ]
+      },
+      "nota": "El horno de barro pide 10 de arcilla y la carbonera 4. A un puñado por vez son treinta viajes: ése es el motivo real por el que hoy nadie llega al horno."
+    },
+    {
+      "id": "ahuecar",
+      "nombre": "Ahuecar un tronco",
+      "nivelMinimo": 2,
+      "rinde": "canoa monóxila",
+      "nota": "Con azuela y fuego controlado: se quema, se raspa lo carbonizado y se vuelve a quemar. La tecnología de la canoa ya existe en el árbol y no tenía con qué hacerse."
+    },
+    {
+      "id": "aserrar",
+      "nombre": "Aserrar",
+      "nivelMinimo": 4,
+      "obra": "aserradero",
+      "rinde": "tabla, poste",
+      "nota": "La respuesta a «necesito tablones y no sé cómo hacerlos»: tronco → aserradero → tabla. El aserradero pide 6 de hierro, que pide la fragua, que pide cuero, que pide la lasca. Siete escalones, pero ahora cada uno se ve."
+    },
+    {
+      "id": "clavar",
+      "nombre": "Clavar",
+      "nivelMinimo": 4,
+      "nota": "Galpón, capilla y cabaña piden clavos y hoy se levantan sin martillo."
+    },
+    {
+      "id": "trampear",
+      "nombre": "Dejar una trampa",
+      "nivelMinimo": 1,
+      "nota": "Se arma y se vuelve. Rinde con el tiempo del mundo, no con el del jugador."
+    },
+    {
+      "id": "pescar",
+      "nombre": "Pescar",
+      "nivelMinimo": 1,
+      "nota": "Pesca.js ya exige permiso, temporada, ambiente, medida y devolución. Lo único que falta es que haga falta un equipo, y hoy la línea 146 se conforma con tener fibra suelta en el bolso."
+    },
+    {
+      "id": "cortar",
+      "nombre": "Cortar",
+      "nivelMinimo": 1,
+      "nota": "Fibra, cuero, tendón, caña, carne. El verbo del nivel 1 y el que más cosas destraba."
+    },
+    {
+      "id": "labrar",
+      "nombre": "Labrar madera",
+      "nivelMinimo": 1,
+      "nota": "Darle forma a una rama: mangos, astiles, husillos, estacas."
+    },
+    {
+      "id": "descarnar",
+      "nombre": "Descarnar un cuero",
+      "nivelMinimo": 1,
+      "nota": "Sacarle la grasa y el tejido antes de curtir. Sin esto el cuero se pudre, y es el paso que todo el mundo se saltea."
+    },
+    {
+      "id": "descortezar",
+      "nombre": "Descortezar",
+      "nivelMinimo": 2,
+      "rinde": "corteza en cantidad",
+      "nota": "Sobre el caído, no sobre el árbol en pie: anillar un coihue vivo lo mata."
+    },
+    {
+      "id": "rematar",
+      "nombre": "Rematar",
+      "nivelMinimo": 0,
+      "nota": "Lo que ya cayó en una trampa o está herido. No es caza y no abre nada por sí solo."
+    },
+    {
+      "id": "caza_menor",
+      "nombre": "Caza menor",
+      "nivelMinimo": 1,
+      "rinde": "carne, cuero, hueso, plumas",
+      "nota": "Liebre y aves. La liebre europea fuera del área protegida tiene temporada (1 de mayo a 31 de julio) y cupo de 10 piezas por cazador, con licencia y documentación de armas: lo que está habilitado todo el año y sin cupo es el conejo silvestre, la codorniz de California y el visón."
+    },
+    {
+      "id": "caza_mayor",
+      "nombre": "Caza mayor",
+      "nivelMinimo": 1,
+      "rinde": "carne, cuero, tendón, hueso, grasa, asta",
+      "nota": "Ciervo colorado y jabalí, exóticos invasores, con temporada y permiso. Sobre fauna nativa no se habilita nunca y ésa es la lección entera."
+    },
+    {
+      "id": "cavar",
+      "nombre": "Cavar",
+      "nivelMinimo": 2,
+      "rinde": "arcilla, tosca, hoyos de poste",
+      "nota": "Tierra y sedimento suelto. Contra la roca no sirve: para eso está el nivel 3."
+    },
+    {
+      "id": "partir_piedra",
+      "nombre": "Partir piedra",
+      "nivelMinimo": 3,
+      "rinde": "piedra en cantidad",
+      "nota": "De un bloque salen varias piedras de obra. Es lo que hace viable pedir 20 de piedra para una casa."
+    },
+    {
+      "id": "extraer_arido",
+      "nombre": "Extraer áridos",
+      "nivelMinimo": 3,
+      "jurisdiccion": "fuera|reserva_con_permiso",
+      "rinde": "arena, ripio, tosca, pómez",
+      "nota": "El rinde escala con el nivel: cuña, pico de asta y pico de hierro no sacan lo mismo."
+    },
+    {
+      "id": "escuadrar",
+      "nombre": "Escuadrar",
+      "nivelMinimo": 4,
+      "nota": "Cortar a medida y a ángulo. Es la diferencia entre apilar troncos y construir."
+    },
+    {
+      "id": "palanquear",
+      "nombre": "Palanquear",
+      "nivelMinimo": 4,
+      "nota": "Mover lo que no se levanta: un bloque, un tronco caído atravesado, una raíz."
+    },
+    {
+      "id": "reparar",
+      "nombre": "Reparar",
+      "nivelMinimo": 4,
+      "nota": "Devolver durabilidad por la mitad de los materiales. Antes del martillo se repara a mano y sale más caro."
+    },
+    {
+      "id": "fijar",
+      "nombre": "Pescar con fija",
+      "nivelMinimo": 1,
+      "nota": "Arpón en agua baja. Prohibido en toda la pesca deportiva continental patagónica, sin excepción por ambiente: no permite devolver vivo ni elegir la medida."
+    },
+    {
+      "id": "trampear_pez",
+      "nombre": "Calar una nasa o una red",
+      "nivelMinimo": 1,
+      "nota": "Se deja y se vuelve. Rinde con el reloj del mundo y es la pesca menos selectiva de todas, y por eso está prohibida en toda la jurisdicción patagónica: red, nasa, fija y arpón, sin excepción por ambiente."
+    },
+    {
+      "id": "catar",
+      "nombre": "Catar una colmena",
+      "nivelMinimo": 2,
+      "rinde": "miel, cera, propóleo",
+      "sinHerramienta": {
+        "rinde": [
+          {
+            "recurso": "miel",
+            "cantidad": 1
+          }
+        ],
+        "motivo": "A mano y sin humo se saca poco, se rompe el panal y te comen a picaduras."
+      },
+      "conHerramienta": {
+        "rinde": "el ciclo completo de la colmena"
+      },
+      "nota": "Con ahumador y velo la colmena sigue viva y vuelve a dar la semana que viene. Sin nada, la arruinás y no rinde más."
+    },
+    {
+      "id": "encerar",
+      "nombre": "Encerar",
+      "nivelMinimo": 2,
+      "nota": "Mejora una prenda de cuero que ya tenés, en vez de fabricar otra."
+    }
+  ],
+  "tecnologiasNuevas": [
+    {
+      "id": "hacha_pulida",
+      "nombre": "Hacha de piedra pulida",
+      "era": "pueblos_originarios",
+      "requiere": [
+        "lasca_obsidiana"
+      ],
+      "costoSaber": 16,
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 3
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 2
+        }
+      ],
+      "efecto": {
+        "herramienta": [
+          "hacha_piedra",
+          "azuela",
+          "pala_omoplato",
+          "rastra"
+        ]
+      },
+      "descripcion": "El pulido por abrasión contra arenisca mojada tarda días y da un filo que resiste el golpe, cosa que el astillado no puede: la lasca corta mejor y se rompe al primer impacto. Es la tecnología que separa cortar de talar."
+    },
+    {
+      "id": "canteria_litica",
+      "nombre": "Cantería con cuña",
+      "era": "contacto_colonial",
+      "requiere": [
+        "hacha_pulida"
+      ],
+      "costoSaber": 22,
+      "materiales": [
+        {
+          "recurso": "asta",
+          "cantidad": 2
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 4
+        }
+      ],
+      "efecto": {
+        "herramienta": [
+          "maza_cuna",
+          "pico_asta"
+        ]
+      },
+      "descripcion": "Leer la roca antes de golpearla. La cuña de madera seca se mete en la diaclasa y se moja: al hincharse abre la piedra sin un solo golpe fuerte. La cantería romana la usó documentadamente; para otras canteras antiguas la técnica se discute, y la mayor parte del trabajo lo hicieron el pico y la cuña metálica."
+    },
+    {
+      "id": "pesca_con_mosca",
+      "nombre": "Pesca con mosca",
+      "era": "parque_nacional",
+      "requiere": [
+        "herreria_colonial"
+      ],
+      "costoSaber": 30,
+      "materiales": [
+        {
+          "recurso": "anzuelo",
+          "cantidad": 4
+        },
+        {
+          "recurso": "pluma",
+          "cantidad": 6
+        },
+        {
+          "recurso": "cana",
+          "cantidad": 2
+        }
+      ],
+      "efecto": {
+        "herramienta": [
+          "equipo_mosca"
+        ],
+        "recetas": [
+          "moscas"
+        ]
+      },
+      "descripcion": "Los salmónidos se sembraron en el Nahuel Huapi a principios del siglo XX y con ellos llegó una técnica que no busca sacar la mayor cantidad sino engañar a un pez concreto y devolverlo vivo. Es la única tecnología del árbol cuyo objetivo declarado es que el animal siga nadando."
+    },
+    {
+      "id": "apicultura_rustica",
+      "nombre": "Apicultura de tronco",
+      "era": "colonizacion",
+      "requiere": [
+        "hacha_pulida",
+        "fuego_friccion"
+      ],
+      "costoSaber": 24,
+      "materiales": [
+        {
+          "recurso": "tronco",
+          "cantidad": 1
+        },
+        {
+          "recurso": "brea",
+          "cantidad": 2
+        },
+        {
+          "recurso": "corteza",
+          "cantidad": 4
+        }
+      ],
+      "efecto": {
+        "herramienta": [
+          "ahumador",
+          "careta_velo"
+        ],
+        "recetas": [
+          "velas_cera",
+          "encerado"
+        ],
+        "obra": [
+          "colmena_tronco"
+        ]
+      },
+      "descripcion": "Tener abejas en vez de saquear un enjambre. El tronco ahuecado, tapado y parado en un claro soleado al reparo del viento oeste es la colmena más vieja que hay, y la comarca la usó hasta bien entrado el siglo XX."
+    }
+  ],
+  "efectosAAgregar": [
+    {
+      "tecnologia": "lasca_obsidiana",
+      "efecto": {
+        "herramienta": [
+          "lasca",
+          "raspador",
+          "cuchillo",
+          "mango_labrado",
+          "punzon_hueso"
+        ]
+      },
+      "nota": "Hoy tiene efecto null: es la primera tecnología del árbol y no habilita absolutamente nada."
+    },
+    {
+      "tecnologia": "punta_proyectil",
+      "efecto": {
+        "recetas": [
+          "punta_litica",
+          "flechas"
+        ],
+        "herramienta": [
+          "lanza_colihue",
+          "estolica",
+          "arpon_hueso"
+        ]
+      },
+      "nota": "Idem: efecto null."
+    },
+    {
+      "tecnologia": "boleadora",
+      "efecto": {
+        "caza": true,
+        "herramienta": [
+          "bola_perdida",
+          "boleadora_dos",
+          "boleadora_tres"
+        ],
+        "recetas": [
+          "bola_forrada"
+        ]
+      },
+      "nota": "Habilita cazar en el juego, igual que el arco. Es una licencia deliberada: ver licenciasDeJuego.armaTradicional. El juego dice la norma real —RD APN 277/2011 art. 44: sólo arma larga de caño rayado de 6,5 mm o más— y después te deja tirar, que es lo mismo que ya hace con el fuego.",
+      "cuidado": "requisitoPara() devuelve la primera coincidencia del índice esté aprendida o no, y boleadora está antes que arco_colihue. Marcar caza:true acá SIN arreglar Saberes.js bloquea a quien ya aprendió el arco."
+    },
+    {
+      "tecnologia": "arco_colihue",
+      "efecto": {
+        "caza": true,
+        "herramienta": [
+          "arco_colihue_obj"
+        ]
+      },
+      "nota": "Ya tiene caza:true; se le suma el objeto fabricable."
+    },
+    {
+      "tecnologia": "curtido_cuero",
+      "efecto": {
+        "recetas": [
+          "curtido"
+        ],
+        "herramienta": [
+          "quillango",
+          "tamangos",
+          "mochila_cuero",
+          "odre_cuero"
+        ]
+      },
+      "nota": "No producía nada. Es la tecnología que más cosas destraba de todo el árbol."
+    },
+    {
+      "tecnologia": "cesteria_junco",
+      "efecto": {
+        "herramienta": [
+          "canasto_junco_obj",
+          "nasa_junco",
+          "red_fibra"
+        ]
+      },
+      "nota": "Hoy da +6 kg sin fabricar nada. El bono pasa al objeto."
+    },
+    {
+      "tecnologia": "telar_witral",
+      "efecto": {
+        "herramienta": [
+          "poncho_witral"
+        ]
+      },
+      "nota": "No producía nada."
+    },
+    {
+      "tecnologia": "fuego_friccion",
+      "efecto": {
+        "herramienta": [
+          "taladro_arco"
+        ],
+        "recetas": [
+          "brea_resina"
+        ]
+      },
+      "nota": "No producía nada."
+    },
+    {
+      "tecnologia": "alfareria_bicroma",
+      "efecto": {
+        "horno": "horno_barro",
+        "herramienta": [
+          "candil_grasa"
+        ]
+      },
+      "nota": "Ya habilita el horno."
+    },
+    {
+      "tecnologia": "herreria_colonial",
+      "efecto": {
+        "recetas": [
+          "herramienta"
+        ],
+        "herramienta": [
+          "hacha_hierro",
+          "sierra",
+          "martillo",
+          "pico_hierro",
+          "pala_hierro",
+          "barreta",
+          "eslabon"
+        ]
+      },
+      "nota": "Ya tiene recetas; se le suma todo el nivel 4."
+    }
+  ],
+  "engancheAlCodigo": {
+    "Recursos.js": "Agregar los 16 recursos nuevos a RECURSOS (el archivo decía 11 y son 16). Y sacar la equivalencia madera_dura → tronco de la línea 29 — pero OJO: tieneFuente('tronco') sigue devolviendo true porque tronco es clave de RECURSOS, así que las obras saldrían como «faltan materiales» para siempre en vez de «inalcanzable». Hay que arreglar las dos cosas juntas. COSECHA_SOTOBOSQUE vive acá, en la línea 217, y no en Recoleccion.js como decía este archivo.",
+    "Equipo.js": "Sistema nuevo. Cuatro ranuras, nivel de herramienta activo, durabilidad, desgaste por uso y reparación. Es la pieza que no existe y de la que cuelga todo lo demás.",
+    "Fabricacion.js": "Sistema nuevo y barato: el molde ya está escrito tres veces en el proyecto, y las cuatro estaciones salen de fundicion.cercano() —RADIO_HORNO_M = 8, el mismo número que declara este archivo, y el aserradero ya se registra como horno.",
+    "Recoleccion.js": "quePuedoHacer() cambia la etiqueta según el nivel equipado: el tronco caído pasa de «Juntar ramas» a «Trozar el caído». Y la línea 420 tiene fuenteId «presa_puma» cableado, que es por lo que el desmogue de astas no sale nunca.",
+    "Mineria.js": "La compuerta de la línea 127 pasa de disponiblePara('herramienta') > 0 a exigir nivel 3 en la mano.",
+    "Caza.js": "La línea 128 ya pregunta faltaPara('caza'); con boleadora marcada, el jugador pasa a tener dos vías y no una.",
+    "Pesca.js": "La línea 146 se conforma con fibra suelta en el bolso. Pasa a exigir equipo de pesca equipado, y el equipo decide selectividad y supervivencia de la devolución.",
+    "Bolso.js": "Pestaña de fabricación y el estado de las cuatro ranuras. (El defecto de la categoría remedio ya estaba arreglado en la línea 77: este archivo lo daba por pendiente.)",
+    "Jugador.js / Clima.js": "El abrigo del quillango, el poncho y los tamangos tiene que entrar en el mismo cálculo térmico que ya usa el abrigo de las obras.",
+    "pendienteSinSistema": [
+      "De 18 efectos declarados sólo 2 tienen consumidor hoy (abrigo, capacidadExtraKg). De los 16 restantes: 9 triviales, 4 medios, 2 caros. Medido por el revisor técnico.",
+      "luz: no hay ninguna luz puntual en todo src/. La mitad jugable es trivial —Exploracion.alcanceVisual() y el 220 nocturno—; la visual es cara y hay que recortarla o pagarla a propósito.",
+      "recuperacion 0.6 no es salud: es recuperación de flechas, y hoy la caza se resuelve sin proyectil volando.",
+      "Las estadísticas de arma nuevas (alcanceM, danio, sigilo, presaMaxKg, enreda, pasiva) no las lee nadie: Caza.js sigue preguntando un solo bit.",
+      "La colmena pide una entidad de mundo con reloj de 168 h. Obras.js es lo más parecido que hay."
+    ],
+    "historia.json": "Faltaba nombrarlo y es donde va la mitad del trabajo: las tecnologías nuevas, las reescrituras del campo efecto, y el encadenado de requiere del balanceSaber.",
+    "Saberes.js": "requisitoPara() devuelve la primera coincidencia del índice, esté aprendida o no. Marcar caza:true en boleadora SIN arreglar esto bloquea a quien ya aprendió el arco, porque boleadora está en el índice 2 y arco_colihue en el 3. Son cinco líneas y se pagan ANTES de tocar el dataset.",
+    "Jugador.js": "El cálculo térmico está en entities/Jugador.js:661-685, no en Clima.js: ahí entra el abrigo del quillango, el poncho y los tamangos. main.js:808 ya consume abrigo y main.js:432 ya consume capacidadExtraKg — son los dos únicos de los 18 efectos declarados que hoy tienen consumidor.",
+    "Partida.js": "NO bumpear VERSION = 1 al agregar el equipo, o se borran las partidas guardadas de todos. Y hay que decidir a propósito si el equipo se pierde al morir: registrarMuerte() hoy sólo vacía el inventario."
+  },
+  "obrasNuevas": [
+    {
+      "id": "colmena_tronco",
+      "nombre": "Colmena de tronco",
+      "categoria": "campamento",
+      "nivel": 2,
+      "tecnologia": "apicultura_rustica",
+      "materiales": [
+        {
+          "recurso": "tronco",
+          "cantidad": 1
+        },
+        {
+          "recurso": "brea",
+          "cantidad": 2
+        },
+        {
+          "recurso": "corteza",
+          "cantidad": 4
+        }
+      ],
+      "requiereAccion": "ahuecar",
+      "procesa": true,
+      "produce": [
+        {
+          "recurso": "miel",
+          "cantidad": 3
+        },
+        {
+          "recurso": "cera",
+          "cantidad": 1
+        },
+        {
+          "recurso": "propoleo",
+          "cantidad": 1
+        }
+      ],
+      "cicloHoras": 168,
+      "nota": "Un tronco ahuecado, parado y tapado: así se tuvieron abejas antes del cajón. Se cata una vez por semana del mundo y no se puede mudar, la colonia se queda donde la pusiste.",
+      "notaAhuecar": "Pide azuela o hacha de hierro. Es el mismo verbo que la canoa monóxila y por eso comparte herramienta.",
+      "esObra": true
+    }
+  ],
+  "notaEcologicaApicultura": {
+    "titulo": "La abeja de la miel acá es exótica, y eso no es un detalle",
+    "texto": "Apis mellifera no es de América: la trajeron los europeos. El polinizador nativo grande de estos bosques es el moscardón o abejorro colorado (Bombus dahlbomii), el abejorro más grande del mundo, y está en retroceso severo por la introducción del abejorro europeo Bombus terrestris, que se soltó para polinizar invernaderos, se escapó, cruzó la cordillera y trajo parásitos contra los que el nativo no tiene defensa. Poner colmenas de Apis suma un competidor más por el mismo néctar.",
+    "comoLoJuegaElJuego": "La apicultura sigue el mismo patrón que el juego ya usa con el ciervo colorado y el jabalí: no se prohíbe en silencio ni se permite sin decir nada. Dentro del área núcleo del Parque la actividad productiva no va; en Reserva y fuera, sí. Y el códice explica por qué la miel que estás juntando tiene un costo que no se ve.",
+    "gancho": "Michay, maitén y radal son melíferas nativas y ya están en flora.json con su estación de floración: el rinde de la colmena puede salir de qué hay florecido cerca y en qué estación, en vez de ser un número fijo. Si se quiere resolución mensual hay que agregarle el campo a flora.json primero, porque hoy guarda estaciones y no meses. El notro queda afuera de la lista: lo poliniza el picaflor rubí, no la abeja."
+  },
+  "apiculturaRecortada": {
+    "decision": "El dueño eligió el 7/9/2026 dejar la apicultura recortada: sólo la colmena de tronco y la cera, que es la que arregla cosas de otras ramas —encerar el quillango y los tamangos, las velas.",
+    "seSacaron": [
+      "colmena_cuadros",
+      "palanca_apicultor",
+      "hidromiel_receta",
+      "recurso hidromiel",
+      "tecnología apicultura_cuadros"
+    ],
+    "porQue": "Son los que más sistema piden y los que más lejos quedan del pedido original —la cadena hasta el tablón—. La colmena de cuadros además pedía todo el nivel 4 para existir.",
+    "cuandoVuelven": "En su propia ronda, junto con la entidad de mundo con reloj de 168 h que la colmena necesita y que hoy no existe."
+  },
+  "correccionesAOtrosArchivos": [
+    {
+      "archivo": "src/data/caza.json",
+      "que": "liebre_europea declara que no tiene temporada ni cupo. La Res. 7/DFS-2026 —que el propio archivo cita por nombre— fija 1 de mayo a 31 de julio y 10 piezas.",
+      "gravedad": "grave"
+    },
+    {
+      "archivo": "README.md",
+      "linea": 114,
+      "que": "Repite lo mismo: «la liebre, fuera del parque, no tiene temporada ni cupo».",
+      "gravedad": "grave"
+    },
+    {
+      "archivo": "src/data/caza.json",
+      "que": "metodosPermitidos de ciervo_colorado y jabali_europeo lista «arco» como si fuera método legal, y no lo es (RD APN 277/2011 art. 44: sólo arma larga de caño rayado ≥6,5 mm). NO se saca —el arco caza por decisión del dueño— pero hay que renombrar el campo o agregarle un hermano: una cosa es «lo que el juego te deja usar» y otra «lo que la norma admite». Hoy el archivo miente sobre la segunda.",
+      "gravedad": "grave",
+      "ver": "licenciasDeJuego.armaTradicional"
+    },
+    {
+      "archivo": "src/data/historia.json",
+      "que": "cesteria_junco dice «fibras de ñocha». Greigia landbeckii es endémica de Chile.",
+      "gravedad": "media"
+    }
+  ],
+  "licenciasDeJuego": {
+    "regla": "Este juego enseña marco legal real, y hay lugares donde jugarlo al pie de la letra lo dejaría sin juego. En esos lugares se toma una licencia A PROPÓSITO, se declara acá, y el juego se lo dice al jugador en vez de fingir que la norma dice otra cosa. La licencia es del diseño; el dato sigue siendo verdadero. El precedente es el fuego, que en el parque está muchísimo más restringido de lo que el juego permite.",
+    "licencias": [
+      {
+        "id": "armaTradicional",
+        "que": "El arco de colihue, la boleadora, la lanza, la estólica y la honda cazan en el juego.",
+        "laNormaReal": "El Reglamento Único de Caza de Ciervo Colorado y Jabalí Europeo (RD APN 277/2011, art. 44) autoriza exclusivamente arma larga de caño rayado, de repetición manual o disparo simple, calibre mínimo 6,5 mm, vaina ≥51 mm y proyectil ≥9 g semiblindado. El art. 50 prohíbe expresamente armas cortas, trampas, lazos, venenos, perros, caza nocturna y disparo desde vehículo. Ni el arco ni la boleadora son método autorizado en ningún lado del mapa.",
+        "porQueSeToma": "Un survival de tecnología lítica cuya única arma legal es un rifle de 6,5 mm no es este juego. El árbol entero —punta de proyectil, arco, boleadora— quedaría de adorno, que es exactamente el defecto que esta ronda vino a arreglar.",
+        "comoLoDiceElJuego": "La primera vez que se caza con arma tradicional, el aviso explica el art. 44 completo y aclara que el juego se toma esta licencia para que la tecnología del árbol exista. No descuenta puntos de saber: no es un error del jugador, es una decisión del diseño.",
+        "queNOSeAfloja": "Todo lo demás de la caza sigue firme: la fauna nativa no se caza nunca, las vedas rigen, el permiso de la Reserva se pide, y el huemul sigue siendo Monumento Natural. La licencia es sobre el INSTRUMENTO, no sobre la presa ni sobre la temporada."
+      },
+      {
+        "id": "fuego",
+        "que": "Se prende fuego en muchos más lugares de los que la norma admite.",
+        "laNormaReal": "Dentro del Parque el fuego sólo se permite en sitios habilitados, y en temporada de riesgo alto ni ahí.",
+        "porQueSeToma": "Precedente ya existente en el juego, y el que el dueño citó al decidir esto. Sin fuego no hay calor, no hay comida cocida y no hay agua segura.",
+        "comoLoDiceElJuego": "El panel del Taller ya explica la jurisdicción antes de dejar encender."
+      }
+    ]
+  },
+  "estadisticasDeArma": {
+    "porQue": "Caza.js pregunta faltaPara('caza') y nada más, así que las nueve armas eran el mismo objeto con nueve nombres. El dueño eligió el 7/9/2026 darles estadísticas en vez de recortar el catálogo.",
+    "campos": {
+      "alcanceM": "Distancia útil. Se compara contra la distancia de fuga que la fauna ya calcula por especie y por sigilo.",
+      "danio": "Contra el peso del animal: presaMaxKg es el techo por encima del cual el arma sólo hiere.",
+      "sigilo": "Cuánto deja acercarse antes del tiro. El arco es silencioso; el garrote pide estar encima.",
+      "enreda": "La boleadora no hiere: inmoviliza. Es su rasgo real y pide una rama distinta en la resolución.",
+      "pasiva": "La trampa rinde con el reloj del mundo, sin el jugador presente."
+    },
+    "pendiente": "Caza.js tiene que leer estos campos. Hoy no lee ninguno, así que hasta que se implemente siguen siendo nueve nombres para un bit."
+  },
+  "fuentesFaltantes": {
+    "regla": "Estos materiales sostienen objetos del árbol y HOY no los produce nada. Es el mismo defecto que este archivo le denuncia a curtido_cuero, cometido por él. Ninguno se puede dar por resuelto hasta que un sistema lo entregue.",
+    "materiales": [
+      {
+        "id": "asta",
+        "sostiene": [
+          "maza_cuna",
+          "pico_asta",
+          "estolica"
+        ],
+        "estado": "La fuente existe en caza.json (desmogue_astas) y Recoleccion.js:420 nunca la elige: tiene fuenteId «presa_puma» cableado a mano. Es un arreglo de una línea y destraba el nivel 3 entero."
+      },
+      {
+        "id": "lana",
+        "sostiene": [
+          "poncho_witral",
+          "moscas"
+        ],
+        "estado": "No lo produce nada en ningún dataset del juego. Sin fuente, el telar sigue sin producir después de esta ronda."
+      },
+      {
+        "id": "pluma",
+        "sostiene": [
+          "flechas",
+          "moscas"
+        ],
+        "estado": "Sin fuente. Lo natural es el suelo y los restos de carroña de ave."
+      },
+      {
+        "id": "cera",
+        "sostiene": [
+          "velas_cera",
+          "encerado"
+        ],
+        "estado": "Sólo la colmena de tronco, que pide nivel 2 y el verbo ahuecar."
+      },
+      {
+        "id": "miel",
+        "sostiene": [
+          "la botica"
+        ],
+        "estado": "Sólo la colmena de tronco."
+      },
+      {
+        "id": "hongo",
+        "sostiene": [
+          "alimento de nivel 0"
+        ],
+        "estado": "Declarado de nivel 0 y el código no lo entrega."
+      }
+    ]
+  },
+  "balanceSaber": {
+    "medido": "El árbol entero pide 1480 puntos de saber y el juego reparte 469 identificando todo lo identificable. Faltan 1011.",
+    "yPeor": "herreria_colonial.requiere está vacío: el nivel 4 no exige el 3, ni el 2, ni el 1. Se llega al hacha de hierro sin fabricar una sola herramienta de piedra, por 20 puntos —el 4,3 % del pool—. La escalera que esta ronda vino a construir se esquiva con un requiere: [].",
+    "arreglo": "Encadenar las herramientas en historia.json: herreria_colonial.requiere = [canteria_litica], canteria_litica.requiere = [hacha_pulida], hacha_pulida.requiere = [lasca_obsidiana]. Y rebalancear los costos contra los 469 puntos reales, o hacer que los puntos escalen.",
+    "fuente": ".claude/flota/r4-economia.mjs — banco con 7 mutaciones plantadas, 7 detectadas, 0 ciegas."
+  },
+  "tecnologiasARetocar": [
+    {
+      "id": "herreria_colonial",
+      "campo": "requiere",
+      "de": [],
+      "a": [
+        "canteria_litica"
+      ],
+      "porQue": "Sin esto el árbol de herramientas se puede saltear entero."
+    },
+    {
+      "id": "cerveceria_artesanal",
+      "nota": "Sigue inalcanzable: pide cebada y lúpulo. El lúpulo sí existe en la comarca —El Bolsón produce la mayor parte del país— pero es cultivo de chacra, no algo que se junte del bosque. Se corrigió la afirmación contraria que traía este archivo."
+    }
+  ]
+}

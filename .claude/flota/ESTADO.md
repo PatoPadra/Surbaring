@@ -1,5 +1,37 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **7/9/2026 — RONDA 4 ABIERTA: la cadena de fabricación.** A pedido del dueño:
+> *«no hay una sucesión de eventos lógico para poder construir; necesito tablones
+> pero no sé cómo hacerlos, tengo que cazar pero ¿con qué?»*. El encargo está en
+> `RONDA4.md`. Rama `mejoras/ronda4-crafteo`, salida de `main`.
+>
+> **Se revisó ANTES de escribir código, no después.** Cuatro revisores
+> independientes sobre el dataset —economía, rigor, código y juego— y ninguno con
+> permiso para editarlo: es la lección de la ronda 2 aplicada de entrada. Sacaron
+> 34 hallazgos de economía, 12 falsedades de contenido y 3 roturas de código que
+> el jefe no había visto. Tres de los cuatro murieron por límite de sesión
+> **después** de escribir su informe; el de economía dejó banco y salida, y el
+> jefe le pasó los números a prosa.
+>
+> Lo que encontraron y más duele: **el árbol se podía saltear entero**
+> (`herreria_colonial.requiere` vacío daba el nivel 4 sin una sola herramienta de
+> piedra, por el 4,3 % del pool de saber), el árbol cobra 1480 puntos y el juego
+> reparte 469, y la obsidiana a 1500 m dejaba 52 de 57 objetos detrás de 6,4 km y
+> 700 m de desnivel. Se agregó la lasca de rodado para que el arranque no sea una
+> caminata.
+>
+> **Trampa nº 9, y esta vez en el validador del jefe:** la lista blanca del
+> comprobador tenía `mosca` puesta a mano, así que un recurso que se producía y no
+> tenía ficha pasó verde tres veces seguidas. *Un validador con excepciones
+> escritas a mano no valida: confirma lo que ya creías.*
+>
+> **Decisiones del dueño el 7/9/2026:** se fabrica desde el bolso sin banco de
+> trabajo; la apicultura queda recortada a la colmena de tronco y la cera; las
+> nueve armas se quedan y se les dan estadísticas en vez de fusionarlas; y **el
+> arco caza aunque la norma no lo admita**, como licencia declarada con su
+> advertencia, igual que ya se hace con el fuego. Ver `licenciasDeJuego` en
+> `src/data/herramientas.json`.
+
 > **7/9/2026 — LA RONDA 3 SE JUGÓ Y ENTRÓ A `main`.** El dueño la miró en
 > pantalla **antes** de fusionarla: *«está espectacular, al menos a primera
 > vista»*. Fusión por avance rápido, ocho commits. La rama
