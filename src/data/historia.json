@@ -139,7 +139,7 @@
       "titulo": "Incorporación del caballo",
       "descripcion": "El caballo, escapado y luego criado por los pueblos de la pampa y la Patagonia, transformó la vida en la región. Aumentó el radio de movilidad, cambió las técnicas de caza y potenció el comercio transcordillerano. Las boleadoras y la caza del guanaco a caballo se volvieron centrales. La fecha es aproximada: el proceso fue gradual a lo largo del siglo XVII.",
       "lugar": "Norpatagonia",
-      "latitud": -41.0,
+      "latitud": -41,
       "longitud": -70.5,
       "importancia": 4,
       "ancla": {
@@ -224,7 +224,7 @@
       "descripcion": "Entre 1878 y 1885 el Ejército Argentino, bajo dirección de Julio A. Roca, ejecutó una campaña militar de conquista sobre los territorios indígenas de la pampa y la Patagonia. No fue una ocupación de tierras vacías: hubo matanzas, prisioneros trasladados a campos de concentración, familias separadas y personas repartidas como servidumbre en ciudades del litoral. Las tierras conquistadas fueron entregadas a particulares y sociedades de fomento. Sus consecuencias sobre las comunidades mapuche y tehuelche de la región del Nahuel Huapi persisten hasta hoy.",
       "lugar": "Norpatagonia",
       "latitud": -40.8,
-      "longitud": -70.0,
+      "longitud": -70,
       "importancia": 5,
       "ancla": {
         "latitud": -41.15,
@@ -376,7 +376,7 @@
       "descripcion": "El 22 de mayo de 1960 se produjo frente a la costa de Chile el terremoto más intenso registrado por la sismología, de magnitud cercana a 9,5. El sismo se sintió con fuerza en toda la región cordillerana argentina, incluida Bariloche. Provocó tsunamis en el Pacífico y desencadenó procesos volcánicos en la cordillera. Los daños del lado argentino fueron mucho menores que en Chile.",
       "lugar": "Sur de Chile y cordillera",
       "latitud": -39.5,
-      "longitud": -73.0,
+      "longitud": -73,
       "importancia": 5,
       "ancla": {
         "latitud": -41.113,
@@ -722,7 +722,7 @@
       "relato": "Nahuelito es la criatura que, según cuentan, habita las aguas profundas del lago Nahuel Huapi. Los primeros relatos publicados datan de la década de 1920, cuando un ingeniero norteamericano dijo haber visto un animal enorme en el lago. La noticia dio la vuelta al mundo y llegó a organizarse una expedición para buscarlo. Desde entonces se repiten avistajes, fotografías borrosas y explicaciones que van del plesiosaurio sobreviviente a troncos sumergidos y olas de estela. Ninguna evidencia ha resistido el examen científico. El personaje quedó, de todos modos, incorporado a la identidad turística y afectiva de la ciudad.",
       "significado": "Leyenda moderna que expresa el misterio del lago y se volvió emblema local.",
       "ubicacion": "Lago Nahuel Huapi",
-      "latitud": -41.0,
+      "latitud": -41,
       "longitud": -71.4
     },
     {
@@ -966,7 +966,16 @@
         }
       ],
       "requiere": [],
-      "costoSaber": 8
+      "costoSaber": 8,
+      "efecto": {
+        "herramienta": [
+          "lasca",
+          "raspador",
+          "cuchillo",
+          "mango_labrado",
+          "punzon_hueso"
+        ]
+      }
     },
     {
       "id": "punta_proyectil",
@@ -991,7 +1000,18 @@
       "requiere": [
         "lasca_obsidiana"
       ],
-      "costoSaber": 12
+      "costoSaber": 12,
+      "efecto": {
+        "recetas": [
+          "punta_litica",
+          "flechas"
+        ],
+        "herramienta": [
+          "lanza_colihue",
+          "estolica",
+          "arpon_hueso"
+        ]
+      }
     },
     {
       "id": "boleadora",
@@ -1012,7 +1032,18 @@
       "requiere": [
         "curtido_cuero"
       ],
-      "costoSaber": 14
+      "costoSaber": 14,
+      "efecto": {
+        "caza": true,
+        "herramienta": [
+          "bola_perdida",
+          "boleadora_dos",
+          "boleadora_tres"
+        ],
+        "recetas": [
+          "bola_forrada"
+        ]
+      }
     },
     {
       "id": "arco_colihue",
@@ -1033,7 +1064,10 @@
       "requiere": [],
       "costoSaber": 12,
       "efecto": {
-        "caza": true
+        "caza": true,
+        "herramienta": [
+          "arco_colihue_obj"
+        ]
       }
     },
     {
@@ -1053,13 +1087,21 @@
         }
       ],
       "requiere": [],
-      "costoSaber": 6
+      "costoSaber": 6,
+      "efecto": {
+        "herramienta": [
+          "taladro_arco"
+        ],
+        "recetas": [
+          "brea_resina"
+        ]
+      }
     },
     {
       "id": "cesteria_junco",
       "nombre": "Cestería de junco y colihue",
       "era": "pueblos_originarios",
-      "descripcion": "Tejido en espiral o cruzado con juncos, colihue partido y fibras de ñocha.",
+      "descripcion": "Tejido en espiral o cruzado con juncos, colihue partido y fibras de junquillo y coiron.",
       "contextoHistorico": "Los cestos servían para recolectar piñones, frutos del bosque y para almacenar grano. Algunos tejidos apretados podían contener líquidos.",
       "materiales": [
         {
@@ -1074,8 +1116,14 @@
       "requiere": [],
       "costoSaber": 10,
       "efecto": {
-        "capacidadExtraKg": 6
-      }
+        "capacidadExtraKg": 6,
+        "herramienta": [
+          "canasto_junco_obj",
+          "nasa_junco",
+          "red_fibra"
+        ]
+      },
+      "notaCorreccion": "Decia «fibras de nocha». Greigia landbeckii es endemica de Chile y ninguna de las 63 especies de flora.json es nocha: como la obsidiana, cruzaba la cordillera por intercambio. Corregido en la ronda 4 por la revision de rigor."
     },
     {
       "id": "alfareria_bicroma",
@@ -1098,7 +1146,10 @@
       ],
       "costoSaber": 16,
       "efecto": {
-        "horno": "horno_barro"
+        "horno": "horno_barro",
+        "herramienta": [
+          "candil_grasa"
+        ]
       }
     },
     {
@@ -1148,7 +1199,18 @@
       "requiere": [
         "lasca_obsidiana"
       ],
-      "costoSaber": 14
+      "costoSaber": 14,
+      "efecto": {
+        "recetas": [
+          "curtido"
+        ],
+        "herramienta": [
+          "quillango",
+          "tamangos",
+          "mochila_cuero",
+          "odre_cuero"
+        ]
+      }
     },
     {
       "id": "toldo_cuero",
@@ -1197,6 +1259,34 @@
       "costoSaber": 22
     },
     {
+      "id": "hacha_pulida",
+      "nombre": "Hacha de piedra pulida",
+      "era": "pueblos_originarios",
+      "requiere": [
+        "lasca_obsidiana"
+      ],
+      "costoSaber": 16,
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 3
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 2
+        }
+      ],
+      "efecto": {
+        "herramienta": [
+          "hacha_piedra",
+          "azuela",
+          "pala_omoplato",
+          "rastra"
+        ]
+      },
+      "descripcion": "El pulido por abrasión contra arenisca mojada tarda días y da un filo que resiste el golpe, cosa que el astillado no puede: la lasca corta mejor y se rompe al primer impacto. Es la tecnología que separa cortar de talar."
+    },
+    {
       "id": "telar_witral",
       "nombre": "Telar mapuche (witral)",
       "era": "contacto_colonial",
@@ -1213,7 +1303,12 @@
         }
       ],
       "requiere": [],
-      "costoSaber": 24
+      "costoSaber": 24,
+      "efecto": {
+        "herramienta": [
+          "poncho_witral"
+        ]
+      }
     },
     {
       "id": "plateria_mapuche",
@@ -1256,13 +1351,25 @@
           "cantidad": 3
         }
       ],
-      "requiere": [],
+      "requiere": [
+        "canteria_litica"
+      ],
       "costoSaber": 20,
       "efecto": {
         "recetas": [
           "herramienta"
+        ],
+        "herramienta": [
+          "hacha_hierro",
+          "sierra",
+          "martillo",
+          "pico_hierro",
+          "pala_hierro",
+          "barreta",
+          "eslabon"
         ]
-      }
+      },
+      "notaCorreccion": "requiere estaba vacio, asi que el nivel 4 no exigia el 3, ni el 2, ni el 1: se llegaba al hacha de hierro sin fabricar una sola herramienta de piedra, por 20 puntos de saber (el 4,3 % del pool). La escalera de herramientas se podia saltear entera. Medido por el banco r4-economia.mjs."
     },
     {
       "id": "cria_caballar",
@@ -1324,6 +1431,32 @@
         "herreria_colonial"
       ],
       "costoSaber": 28
+    },
+    {
+      "id": "canteria_litica",
+      "nombre": "Cantería con cuña",
+      "era": "contacto_colonial",
+      "requiere": [
+        "hacha_pulida"
+      ],
+      "costoSaber": 22,
+      "materiales": [
+        {
+          "recurso": "asta",
+          "cantidad": 2
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 4
+        }
+      ],
+      "efecto": {
+        "herramienta": [
+          "maza_cuna",
+          "pico_asta"
+        ]
+      },
+      "descripcion": "Leer la roca antes de golpearla. La cuña de madera seca se mete en la diaclasa y se moja: al hincharse abre la piedra sin un solo golpe fuerte. La cantería romana la usó documentadamente; para otras canteras antiguas la técnica se discute, y la mayor parte del trabajo lo hicieron el pico y la cuña metálica."
     },
     {
       "id": "teodolito",
@@ -1573,6 +1706,44 @@
       "costoSaber": 22
     },
     {
+      "id": "apicultura_rustica",
+      "nombre": "Apicultura de tronco",
+      "era": "colonizacion",
+      "requiere": [
+        "hacha_pulida",
+        "fuego_friccion"
+      ],
+      "costoSaber": 24,
+      "materiales": [
+        {
+          "recurso": "tronco",
+          "cantidad": 1
+        },
+        {
+          "recurso": "brea",
+          "cantidad": 2
+        },
+        {
+          "recurso": "corteza",
+          "cantidad": 4
+        }
+      ],
+      "efecto": {
+        "herramienta": [
+          "ahumador",
+          "careta_velo"
+        ],
+        "recetas": [
+          "velas_cera",
+          "encerado"
+        ],
+        "obra": [
+          "colmena_tronco"
+        ]
+      },
+      "descripcion": "Tener abejas en vez de saquear un enjambre. El tronco ahuecado, tapado y parado en un claro soleado al reparo del viento oeste es la colmena más vieja que hay, y la comarca la usó hasta bien entrado el siglo XX."
+    },
+    {
       "id": "estilo_bustillo",
       "nombre": "Estilo Bustillo en piedra y madera",
       "era": "parque_nacional",
@@ -1797,6 +1968,38 @@
         "refugio_montana"
       ],
       "costoSaber": 24
+    },
+    {
+      "id": "pesca_con_mosca",
+      "nombre": "Pesca con mosca",
+      "era": "parque_nacional",
+      "requiere": [
+        "herreria_colonial"
+      ],
+      "costoSaber": 30,
+      "materiales": [
+        {
+          "recurso": "anzuelo",
+          "cantidad": 4
+        },
+        {
+          "recurso": "pluma",
+          "cantidad": 6
+        },
+        {
+          "recurso": "cana",
+          "cantidad": 2
+        }
+      ],
+      "efecto": {
+        "herramienta": [
+          "equipo_mosca"
+        ],
+        "recetas": [
+          "moscas"
+        ]
+      },
+      "descripcion": "Los salmónidos se sembraron en el Nahuel Huapi a principios del siglo XX y con ellos llegó una técnica que no busca sacar la mayor cantidad sino engañar a un pez concreto y devolverlo vivo. Es la única tecnología del árbol cuyo objetivo declarado es que el animal siga nadando."
     },
     {
       "id": "reactor_investigacion",

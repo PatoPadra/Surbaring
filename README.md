@@ -111,8 +111,8 @@ CONICET, SAREM, IUCN, SMN).
   11 especies con temporada, 4 vedas y 4 fuentes de carroña. Distingue lo que
   rige dentro del parque de lo que rige en Río Negro: el ciervo colorado y el
   jabalí se cazan de marzo a mayo por turnos de subasta (Res. Directorio APN
-  277/2011), mientras que la liebre, fuera del parque, no tiene temporada ni
-  cupo. El huemul es Monumento Natural por Ley 24.702. Incluye el régimen de
+  277/2011), mientras que la liebre, fuera del parque, tiene temporada del 1 de mayo al 31
+  de julio y cupo de diez piezas (Res. 7/DFS-2026 de Rio Negro). El huemul es Monumento Natural por Ley 24.702. Incluye el régimen de
   pesca: permiso obligatorio, tres ambientes con su temporada, cinco
   modalidades, medidas y devolución obligatoria.
 - **`src/data/mineria.json`** — 4 normas citadas, la geología que explica por
@@ -127,7 +127,7 @@ CONICET, SAREM, IUCN, SMN).
   con la excepción de las obras de uso público autorizadas: por eso existen los
   refugios de montaña y no las cabañas particulares al lado.
 - **`src/data/historia.json`** — 6 eras, 32 eventos, 12 personajes,
-  16 entradas de mitología, 30 topónimos en mapuzugun, 47 tecnologías
+  16 entradas de mitología, 30 topónimos en mapuzugun, 52 tecnologías
   encadenadas en un árbol de saberes y 20 sitios históricos.
 
 Durante la investigación se detectó que tres especies pedidas **no habitan la
@@ -251,19 +251,27 @@ resuelve enteramente por el camino procedural.
    16 vistas lo suavizaría a costa de memoria.
 2. **El árbol de saberes llega hasta la mitad y ahí se corta por honestidad.**
    Con la caza regulada, la carroña, la cantera, la fragua y ahora el árbol de
-   herramientas, **28 de las 48** tecnologías tienen todos sus materiales al
+   herramientas, **32 de las 52** tecnologías tienen todos sus materiales al
    alcance. Las 20 restantes piden batería, motor, radio, sensor, panel o
    combustible nuclear, y ninguna de esas cosas sale de un bosque: para llegar
    ahí haría falta industria, no otro sistema de recolección. El árbol tampoco
-   se lee bien: 48 nodos en un panel sin jerarquía visual.
+   se lee bien: 52 nodos en un panel sin jerarquía visual.
 
    El número se movió dos veces y las dos por el mismo motivo. Primero bajó de
    26 a 24: `tieneFuente()` sólo miraba si el material tenía ficha en
    `Recursos.js`, no si alguien lo entregaba, así que la canoa, el telar y la
    capilla figuraban al alcance cuando el `tronco` y la `lana` no los produce
-   nadie. Después subió a 27, cuando el hacha de piedra empezó a trozar los
-   caídos y el `tronco` pasó a existir de verdad. Tener nombre no es tener
-   fuente, y ahora el árbol distingue las dos cosas en vez de suponerlas.
+   nadie. Después subió a 32, cuando el hacha de piedra empezó a trozar los
+   caídos, el `tronco` y la `lana` pasaron a existir de verdad y las cuatro
+   tecnologías del árbol de herramientas entraron al códice encadenadas entre
+   sí. Tener nombre no es tener fuente, y ahora el árbol distingue las dos cosas
+   en vez de suponerlas.
+
+   La escalera quedó encadenada, que era el agujero más grande: `herreria_colonial`
+   tenía `requiere: []`, así que se llegaba al hacha de hierro sin fabricar una
+   sola herramienta de piedra, por veinte puntos de saber —el 4,3 % del total—.
+   Ahora el hierro pide cantería, la cantería pide el hacha pulida y el hacha
+   pulida pide la talla de obsidiana.
 
    La `lana` ya tiene fuente: es fibra de guanaco enganchada en el coirón, que
    se junta del suelo sin tocar al animal, y con eso el telar mapuche existe por

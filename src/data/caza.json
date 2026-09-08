@@ -76,7 +76,6 @@
       "requierePermiso": true,
       "cupo": "En el Nahuel Huapi el reglamento contempla un límite de dos piezas por turno de caza. Los valores, derechos y precintos se pagan aparte y cambian cada temporada.",
       "metodosPermitidos": [
-        "arco",
         "rifle"
       ],
       "metodosProhibidos": [
@@ -87,7 +86,13 @@
         "reflectores"
       ],
       "razonEcologica": "El ciervo colorado ramonea los renovales de coihue, lenga y ñire e impide que el bosque se regenere, dejando un sotobosque empobrecido y suelo expuesto a la erosión. Descorteza árboles jóvenes durante la brama y compite por alimento y espacio con el huemul y el pudú. Su abundancia también sostiene poblaciones altas de otros herbívoros exóticos y altera la dinámica del fuego y del matorral.",
-      "notaEducativa": "El ciervo colorado no es de acá: llegó a la región por introducciones para caza deportiva a principios del siglo XX. Cazarlo dentro del parque sólo tiene sentido como parte de un programa de control, con permiso y bajo la mirada del guardaparque. Si ves un ciervo fuera de temporada, la respuesta correcta es anotarlo y reportarlo, no dispararle."
+      "notaEducativa": "El ciervo colorado no es de acá: llegó a la región por introducciones para caza deportiva a principios del siglo XX. Cazarlo dentro del parque sólo tiene sentido como parte de un programa de control, con permiso y bajo la mirada del guardaparque. Si ves un ciervo fuera de temporada, la respuesta correcta es anotarlo y reportarlo, no dispararle.",
+      "metodosEnElJuego": [
+        "arco",
+        "rifle"
+      ],
+      "notaMetodo": "El Reglamento Único (RD APN 277/2011, art. 44) autoriza exclusivamente arma larga de caño rayado, de repetición manual o disparo simple, calibre mínimo 6,5 mm, vaina de 51 mm o más y proyectil de 9 g o más semiblindado. El art. 50 prohíbe armas cortas, trampas, lazos, venenos, perros, caza nocturna y disparo desde vehículo. El arco NO es método legal, y esta ficha lo declaraba como si lo fuera.",
+      "notaLicencia": "metodosEnElJuego es lo que SurviBar te deja usar; metodosPermitidos es lo que la norma admite. Son cosas distintas y el juego las separa a proposito: ver licenciasDeJuego.armaTradicional en herramientas.json. La licencia es sobre el instrumento, nunca sobre la presa ni sobre la temporada."
     },
     {
       "id": "jabali_europeo",
@@ -103,8 +108,7 @@
       "requierePermiso": true,
       "cupo": "Por su condición de plaga, los parques informan que no se fija límite de piezas de jabalí dentro del turno adjudicado. Aun sin cupo, hace falta permiso, turno y precinto.",
       "metodosPermitidos": [
-        "rifle",
-        "arco"
+        "rifle"
       ],
       "metodosProhibidos": [
         "veneno",
@@ -112,7 +116,13 @@
         "caza nocturna sin autorización expresa"
       ],
       "razonEcologica": "El jabalí hociquea el suelo del bosque y de las mallines, destruye la hojarasca, las raíces y los bancos de semillas, y abre huecos que ocupan plantas exóticas. Come frutos, hongos, huevos y crías, y compite directamente con el pudú y con aves que nidifican en el suelo. Además transmite enfermedades al ganado y a la fauna silvestre.",
-      "notaEducativa": "El jabalí europeo se hibridó con cerdos domésticos asilvestrados y hoy es una de las peores plagas del bosque andino patagónico. Su control es un trabajo de manejo, no un trofeo. La carne requiere análisis sanitario antes de consumirse por riesgo de triquinosis."
+      "notaEducativa": "El jabalí europeo se hibridó con cerdos domésticos asilvestrados y hoy es una de las peores plagas del bosque andino patagónico. Su control es un trabajo de manejo, no un trofeo. La carne requiere análisis sanitario antes de consumirse por riesgo de triquinosis.",
+      "metodosEnElJuego": [
+        "rifle",
+        "arco"
+      ],
+      "notaMetodo": "El Reglamento Único (RD APN 277/2011, art. 44) autoriza exclusivamente arma larga de caño rayado, de repetición manual o disparo simple, calibre mínimo 6,5 mm, vaina de 51 mm o más y proyectil de 9 g o más semiblindado. El art. 50 prohíbe armas cortas, trampas, lazos, venenos, perros, caza nocturna y disparo desde vehículo. El arco NO es método legal, y esta ficha lo declaraba como si lo fuera.",
+      "notaLicencia": "metodosEnElJuego es lo que SurviBar te deja usar; metodosPermitidos es lo que la norma admite. Son cosas distintas y el juego las separa a proposito: ver licenciasDeJuego.armaTradicional en herramientas.json. La licencia es sobre el instrumento, nunca sobre la presa ni sobre la temporada."
     },
     {
       "id": "liebre_europea",
@@ -120,13 +130,13 @@
       "categoria": "exotica_invasora",
       "permitido": true,
       "temporada": {
-        "mesDesde": null,
-        "mesHasta": null,
-        "nombre": "Caza menor según reglamentación provincial",
-        "notas": "Dentro del parque no hay caza deportiva de liebre habilitada de manera general: el Reglamento Único de caza del Nahuel Huapi cubre sólo ciervo colorado y jabalí. Fuera del parque, en Río Negro, la resolución provincial de temporada la trata como exótica invasora, habilitada durante todo el año y sin cupo."
+        "mesDesde": 5,
+        "mesHasta": 7,
+        "nombre": "Temporada provincial de caza menor (Río Negro)",
+        "notas": "Dentro del parque no hay caza deportiva de liebre habilitada: el Reglamento Único del Nahuel Huapi cubre sólo ciervo colorado y jabalí. Fuera del parque, en Río Negro, la Resolución 7/DFS-2026 de la Dirección de Fauna Silvestre fija temporada del 1 de mayo al 31 de julio y cupo de diez piezas por cazador, con licencia, autorización del propietario del campo y documentación de armas vigente. Lo que sí está habilitado todo el año y sin cupo es el conejo silvestre, la codorniz de California y el visón."
       },
       "requierePermiso": true,
-      "cupo": "En jurisdicción de Río Negro, fuera del parque, se caza sin cupo por su condición de exótica invasora; siempre con licencia de caza provincial vigente.",
+      "cupo": "Diez piezas por cazador y por jornada en jurisdicción de Río Negro, fuera del parque, con licencia provincial vigente (Res. 7/DFS-2026).",
       "metodosPermitidos": [
         "rifle de bajo calibre",
         "arco"
@@ -138,7 +148,9 @@
         "caza nocturna con reflector"
       ],
       "razonEcologica": "La liebre europea consume pastos y renovales, compite con herbívoros nativos y mantiene artificialmente altas las poblaciones de depredadores, lo que aumenta la presión sobre presas autóctonas. En zonas de estepa y borde de bosque contribuye a la degradación del pastizal.",
-      "notaEducativa": "La liebre es exótica y abundante, pero eso no la vuelve de caza libre dentro del parque. Confundirla con el pudú o con un chinchillón es un error caro: en la duda, no se dispara."
+      "notaEducativa": "La liebre es exótica y abundante, pero eso no la vuelve de caza libre dentro del parque. Confundirla con el pudú o con un chinchillón es un error caro: en la duda, no se dispara.",
+      "fuente": "Res. 7/DFS-2026, Dirección de Fauna Silvestre de Río Negro",
+      "corregido": "La ficha declaraba «habilitada durante todo el año y sin cupo», y era falso: lo confundía con el conejo y la codorniz. El error se repetía en el README y en herramientas.json. Corregido en la ronda 4 por la revisión de rigor."
     },
     {
       "id": "vison_americano",
