@@ -250,12 +250,18 @@ resuelve enteramente por el camino procedural.
    vistas vecinas se nota si la cámara barre rápido en horizontal. Subir a 12 o
    16 vistas lo suavizaría a costa de memoria.
 2. **El árbol de saberes llega hasta la mitad y ahí se corta por honestidad.**
-   Con la caza regulada, la carroña, la cantera y la fragua, 26 de las 47
-   tecnologías tienen todos sus materiales al alcance. Las 21 restantes piden
+   Con la caza regulada, la carroña, la cantera y la fragua, **24 de las 48**
+   tecnologías tienen todos sus materiales al alcance. Las 24 restantes piden
    batería, motor, radio, sensor, panel o combustible nuclear, y ninguna de
    esas cosas sale de un bosque: para llegar ahí haría falta industria, no otro
-   sistema de recolección. El árbol tampoco se lee bien: 47 nodos en un panel
+   sistema de recolección. El árbol tampoco se lee bien: 48 nodos en un panel
    sin jerarquía visual.
+
+   El número era 26 y bajó a 24 sin que se rompiera nada: `tieneFuente()` sólo
+   miraba si el material tenía ficha en `Recursos.js`, no si alguien lo
+   entregaba, así que la canoa, el telar y la capilla figuraban al alcance
+   cuando el `tronco` y la `lana` no los produce nadie. Tener nombre no es tener
+   fuente, y ahora el árbol lo distingue.
 3. **No hay música.** El audio es enteramente sintetizado —ambiente, acciones y
    voces de fauna—, y no hay ni va a haber una pista grabada.
 4. **El suelo no tiene material bajo los pies.** Roca, pasto y nieve se caminan

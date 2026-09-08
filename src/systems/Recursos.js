@@ -32,6 +32,11 @@ const EQUIVALE_A = {
   fruto: ['azucar'],
   asta: ['herramienta'],
   cuero: ['red'],
+  // El curtido sirve donde se pedía el crudo, no al revés: una receta que pide
+  // cuero se conforma con el curtido, pero un quillango no se cose con cuero sin
+  // curtir porque se pudre y se endurece como una tabla.
+  cuero_curtido: ['cuero'],
+  miel: ['azucar'],
   ladrillo: ['muro'],
   ceramica: ['vasija', 'olla'],
   acero: ['hierro'],
@@ -61,6 +66,9 @@ export const RECURSOS = {
   resina:        { nombre: 'Resina', kg: 0.1, cat: 'material' },
   cana:          { nombre: 'Caña colihue', kg: 0.3, cat: 'material' },
   semilla:       { nombre: 'Semillas', kg: 0.02, cat: 'material' },
+  // Se juntan del suelo y de los restos. Emplumar una flecha y atar una mosca
+  // son el mismo gesto separado por seis mil años.
+  pluma:         { nombre: 'Plumas', kg: 0.01, cat: 'material' },
   piedra:        { nombre: 'Piedra', kg: 1.4, cat: 'material' },
   obsidiana:     { nombre: 'Obsidiana', kg: 0.5, cat: 'material' },
   arcilla:       { nombre: 'Arcilla', kg: 1.0, cat: 'material' },
@@ -119,6 +127,48 @@ export const RECURSOS = {
   pomez:         { nombre: 'Piedra pómez', kg: 0.4, cat: 'material' },
   chatarra:      { nombre: 'Chatarra', kg: 1.1, cat: 'material' },
 
+  // ── Se fabrican a mano ───────────────────────────────────────────────────
+  //
+  // Todo esto sale del bolso, sin banco de trabajo: una lasca se saca sentado en
+  // una piedra, y meter una mesa de carpintero entre el jugador y su primer
+  // cordel sería inventar una fricción que la realidad no tiene. Sólo el hierro
+  // pide fragua y la brea pide fuego, que son restricciones físicas y no de
+  // diseño.
+  //
+  // Son la mitad invisible del árbol de herramientas: nadie los va a buscar y
+  // sin ellos no se fabrica nada. El cordel es el caso puro — sin algo que ate,
+  // la piedra y el palo son dos cosas separadas.
+  cordel:        { nombre: 'Cordel de fibra', kg: 0.03, cat: 'material' },
+  mango:         { nombre: 'Mango labrado', kg: 0.4, cat: 'material' },
+  // Tira de cuero crudo cortada en espiral de una sola pieza. Se ata en húmedo y
+  // al secar aprieta solo: es el remache de la Patagonia, y pide filo porque el
+  // cuero no se corta con la mano.
+  tiento:        { nombre: 'Tiento', kg: 0.02, cat: 'material' },
+  cuero_curtido: { nombre: 'Cuero curtido', kg: 0.7, cat: 'material' },
+  // Resina cocida con carbón molido y grasa. Sola es quebradiza y salta con el
+  // frío; el carbón le da cuerpo y la grasa la vuelve elástica. Es una fórmula.
+  brea:          { nombre: 'Brea de resina', kg: 0.05, cat: 'material' },
+  punta:         { nombre: 'Punta lítica', kg: 0.02, cat: 'material' },
+  flecha:        { nombre: 'Flecha', kg: 0.04, cat: 'material' },
+  bola:          { nombre: 'Bola forrada', kg: 0.5, cat: 'material' },
+  anzuelo:       { nombre: 'Anzuelo', kg: 0.01, cat: 'material' },
+  aguja:         { nombre: 'Aguja de hueso', kg: 0.01, cat: 'material' },
+  mosca:         { nombre: 'Mosca artificial', kg: 0.01, cat: 'material' },
+  vela:          { nombre: 'Vela de cera', kg: 0.06, cat: 'material' },
+
+  // ── De la colmena ────────────────────────────────────────────────────────
+  //
+  // La abeja de la miel es exótica: la trajeron los europeos, y compite por el
+  // néctar con el moscardón nativo (Bombus dahlbomii), que ya viene en retroceso
+  // por el abejorro europeo que se escapó de los invernaderos. Producir miel acá
+  // no es neutral, y el códice lo dice.
+  //
+  // La miel no se pudre nunca —se encontró miel comestible en tumbas de tres mil
+  // años— y es antiséptico de herida, así que entra también en la botica.
+  miel:          { nombre: 'Miel', kg: 0.35, cat: 'alimento', nutre: 30, hidrata: 2, cura: 4 },
+  cera:          { nombre: 'Cera de abejas', kg: 0.1, cat: 'material' },
+  propoleo:      { nombre: 'Propóleo', kg: 0.05, cat: 'remedio', cura: 14 },
+
   // ── Salidas de horno y fragua ────────────────────────────────────────────
   carbon:        { nombre: 'Carbón vegetal', kg: 0.35, cat: 'material' },
   ceniza:        { nombre: 'Ceniza', kg: 0.2, cat: 'material' },
@@ -158,9 +208,43 @@ export const OBTENIBLES = new Set(
   Object.keys(RECURSOS).flatMap(k => [k, ...(EQUIVALE_A[k] || [])])
 );
 
-/** ¿Este material pedido por una receta existe en el mundo? */
+/**
+ * Recursos que tienen ficha acá y que NO los produce nada todavía.
+ *
+ * Tener ficha y tener fuente son dos cosas distintas, y confundirlas es un
+ * defecto silencioso y caro: `tieneFuente()` sólo miraba si el recurso estaba en
+ * `RECURSOS`, así que cualquier cosa con nombre y peso pasaba por conseguible.
+ * `tronco` fue el caso testigo —lo pide la cabaña, la canoa y el aserradero, y
+ * no lo entregaba nadie— y el árbol lo mostraba como «te faltan materiales» para
+ * siempre, cuando la verdad era «esto todavía no se puede».
+ *
+ * La diferencia importa porque `Saberes.estado()` la usa para separar una meta
+ * de una pared: al jugador se le puede pedir que junte, no que espere.
+ *
+ * Los materiales de fabricación —cordel, mango, tiento, brea, punta— no están en
+ * esta lista a propósito: los produce el árbol de recetas, y aparecen en cuanto
+ * exista el sistema que las resuelva. Los de acá necesitan otra cosa: un verbo
+ * nuevo en el mundo, o una entidad que los genere con el tiempo.
+ */
+export const SIN_FUENTE_AUN = new Set([
+  // Lo entrega `trozar` un caído, que pide hacha y todavía no existe
+  'tronco',
+  // Ninguna especie de fauna.json la entrega, y de ella cuelga el telar
+  'lana',
+  // Se juntarían del suelo y de los restos de ave; ningún sistema las da
+  'pluma',
+  // Salen de la colmena, que pide una entidad de mundo con reloj de 168 h
+  'miel', 'cera', 'propoleo',
+]);
+
+/**
+ * ¿Este material pedido por una receta existe en el mundo?
+ *
+ * Existir es que alguien lo entregue, no que tenga nombre.
+ */
 export function tieneFuente(id) {
-  return OBTENIBLES.has(normalizar(id));
+  const k = normalizar(id);
+  return OBTENIBLES.has(k) && !SIN_FUENTE_AUN.has(k);
 }
 
 /** Nombre legible de cualquier recurso, exista o no en el registro. */

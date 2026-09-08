@@ -89,21 +89,43 @@ export class Saberes {
    * El enganche es un campo `efecto` en el dataset y esta consulta: los sistemas
    * preguntan "¿esto pide saber algo?" y el árbol contesta.
    */
-  requisitoPara(clave, valor) {
+  requisitosPara(clave, valor) {
+    const salida = [];
     for (const t of this.porId.values()) {
       const v = t.efecto?.[clave];
       if (v === undefined) continue;
       const coincide = valor === undefined ? !!v
         : Array.isArray(v) ? v.includes(valor) : v === valor;
-      if (coincide) return t;
+      if (coincide) salida.push(t);
     }
-    return null;
+    return salida;
   }
 
-  /** Igual que el anterior, pero devuelve null si ya está aprendida. */
+  /** El primero que habilite esto, aprendido o no. Para preguntar "¿pide saber algo?". */
+  requisitoPara(clave, valor) {
+    return this.requisitosPara(clave, valor)[0] || null;
+  }
+
+  /**
+   * Qué falta aprender para poder hacer esto, o null si ya se puede.
+   *
+   * Acá vivía un defecto que no se veía con una sola tecnología por efecto y
+   * aparecía con la segunda. `requisitoPara()` devuelve la PRIMERA coincidencia
+   * del índice, esté aprendida o no, y preguntar por ella sola es preguntar mal:
+   * en cuanto la boleadora y el arco habilitan los dos la caza, el jugador que
+   * se ganó el arco quedaba bloqueado por una boleadora que no necesita, porque
+   * la boleadora está antes en el orden del dataset.
+   *
+   * La pregunta correcta no es "¿está aprendida la primera?" sino "¿hay alguna
+   * aprendida?". Y si no hay ninguna, se devuelve la más barata: el aviso tiene
+   * que señalar el camino más corto, no el primero que apareció en el archivo.
+   */
   faltaPara(clave, valor) {
-    const t = this.requisitoPara(clave, valor);
-    return t && !this.desbloqueadas.has(t.id) ? t : null;
+    const candidatas = this.requisitosPara(clave, valor);
+    if (!candidatas.length) return null;
+    if (candidatas.some(t => this.desbloqueadas.has(t.id))) return null;
+    return candidatas.reduce((a, b) =>
+      (b.costoSaber || 0) < (a.costoSaber || 0) ? b : a);
   }
 
   /** Suma de un efecto numérico entre todo lo que ya se aprendió. */
