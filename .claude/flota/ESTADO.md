@@ -1,5 +1,33 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **8/9/2026 — RONDA 4: CUATRO FASES CERRADAS Y COMMITEADAS.** El arbol de
+> herramientas dejo de ser un archivo.  y  existen, se
+> fabrica desde el bolso,  rinde por nivel, el indicador de
+> accion cambia solo --"Juntar ramas del tronco caido" contra "Trozar un caido ·
+> hacha de piedra"--, las nueve armas leen alcance, porte y municion, y las
+> cuatro tecnologias nuevas entraron al codice encadenadas. El arbol de saberes
+> paso de 26 a 32 alcanzables sobre 52 nodos, y cada movimiento del numero esta
+> explicado en el README.
+>
+> **Cuatro bancos, los cuatro con mutacion plantada y detectada:**
+> , ,  y .
+>
+> **Trampa n.º 10, en el banco del arma.** La primera version no le daba piedra a
+> la honda, asi que el sistema cortaba en la comprobacion de municion y dos
+> aserciones daban OK por el motivo equivocado: decian "no abate un ciervo" y el
+> verdadero motivo era "no tenes con que tirar". *Un OK por la razon equivocada
+> es peor que una falla, porque nadie lo va a mirar.*
+>
+> **Lo que NO se hizo y hay que hacer junto:** sacar la equivalencia
+> . Hay que pagarla con el peso en el mismo movimiento,
+> porque la cabana pide 12 troncos --72 kg sobre un bolso de 38-- y
+>  no mira los depositos. Sacarla sola deja tres obras
+> imposibles. Esta anotado en el codigo, donde alguien lo va a leer.
+>
+> Queda sin sistema la luz puntual (antorcha, candil, velas declaran radio y
+> duracion y no hay iluminacion en ) y la colmena, que pide una entidad de
+> mundo con reloj de 168 h.
+
 > **7/9/2026 — RONDA 4 ABIERTA: la cadena de fabricación.** A pedido del dueño:
 > *«no hay una sucesión de eventos lógico para poder construir; necesito tablones
 > pero no sé cómo hacerlos, tengo que cazar pero ¿con qué?»*. El encargo está en
