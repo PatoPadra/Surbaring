@@ -393,37 +393,123 @@ para el resto de las herramientas el defecto sigue.
 
 ## FASE 2 · `suelo` — las tres deudas visuales que el README declara sin medir
 
-Se precisa con su medición previa **al abrir la fase**, no ahora. Lo que se sabe:
+### Medido al abrir la fase, el 11/9/2026 — dos de las cuatro premisas no eran
 
-**a) Ocho vistas de impostor son pocas para un giro rápido.** El cruce se nota
-barriendo en horizontal. Subir a 12 o 16 cuesta memoria y **se mide antes de
-decidir**: el banco de VRAM de `banco-r3-fase3.mjs` ya desglosa la partida de
-los objetivos de impostor. Ojo con la cuenta: la ronda 3 bajó 45 MiB de
-profundidad sin tocar una vista, y tres números de VRAM convivieron cayendo del
-lado cómodo. Número sin desglose, no.
+**a) «Ocho vistas de impostor son pocas para un giro rápido» — CERRADO POR
+MEDICIÓN, sin trabajo.** Dos cosas falsas en una frase:
+1. **Son dieciséis, desde la ronda 2.** `Vegetacion.js:778-788` hornea una grilla
+   de 4 × 4, con un relevo cada 22,5°. El comentario dice por qué: con ocho, el
+   pestañeo se notaba cada 45°.
+2. **Girar no puede producir el cruce.** La vista de cada árbol se elige con
+   `uCamara − centro` (`:880-881`), o sea con la *posición* de la cámara, no
+   con hacia dónde mira. Medido en la vista previa: una vuelta de 360° en 73
+   pasos dio **un solo estado** del bosque (107 árboles completos y 4182
+   carteleras, todo el tiempo). El control, caminar 300 m de costado, dio 21
+   estados. Si algo se ve al girar, es otra cosa, y hace falta que el dueño lo
+   señale en pantalla.
 
-**b) El suelo no tiene material bajo los pies.** Roca, pasto y nieve se caminan
-y suenan igual. Hace falta una consulta de CPU —`Mundo.sueloEn(x, z)`— que
-**reproduzca la misma clasificación que dibuja el sombreador del terreno**
-(cota de nieve, pendiente, cobertura), y que la usen los pasos de `Audio.js`. El
-banco tiene que comparar la consulta contra el sombreador, no contra sí misma.
+«Las ocho vistas» venía de `SEGUIR.md`, que ya quedaba vieja. **La tercera deuda
+visual del README es otra: el sotobosque cortado a 192 m** (`README.md`, punto
+5). No entra en esta fase sin decisión del dueño, porque alargarlo cuesta
+cuadro en la pieza con más instancias del juego.
 
-**c) La línea de espuma de la orilla** está medida en el código desde la ronda 1
-y nadie la miró. Captura dedicada, en Baja, de día y al atardecer. Si se ve
-bien, se cierra con la captura; si no, se arregla en `Agua.js`.
+**c) «La espuma está medida y nadie la miró» — NO EXISTE EN NINGUNA ORILLA.**
+Las capturas dedicadas (`r5f2-espuma-mediodia.png`, `-cerca.png`,
+`-atardecer.png`) muestran un borde seco entre la tierra y una lámina parda,
+sin franja blanca. No es el encuadre. **Medido sobre el lecho real:**
+- En la línea de la captura, la profundidad es 0 hasta el borde y **en la
+  primera muestra de agua ya vale 9,79 m**. Después sigue bajando 0,6 m por metro.
+- En 15 orillas al azar, el ancho de agua con menos de 0,5 m de profundidad es
+  **0 en la mediana y en el percentil 90**.
 
-**d) La vegetación brilla de noche** — agregado al cerrar la fase 1, con las
-capturas `r5f1-noche-sin-luz.png` y `r5f1-noche-antorcha.png` como evidencia.
-La traslucidez de la hoja (`Vegetacion.js:1948`, `Sotobosque.js:297`) y el
-relleno hemisférico de los sólidos (`Sotobosque.js:310`) son constantes que no
-miran la luz del cielo: a medianoche el pasto brilla más que el suelo que
-alumbra una antorcha. Tiene que escalar con la luz ambiente **sin sumar
-matemática por fragmento** —el cielo ya calcula su intensidad en la CPU— y sin
-tocar el mediodía, que el dueño ya vio y aprobó en la ronda 3.
+La causa está en `Mundo._excavarLagos()` (`Mundo.js:166-183`): `prof = 3,4 ·
+√distancia`, con la distancia contada en celdas de 32 m. **La primera celda de
+agua queda a 19,2 m**. La orilla visible, donde la máscara interpolada vale
+0,5, cae a mitad de camino, a 9,6 m. La franja somera existe, pero queda
+debajo de la tierra, donde el agua se descarta. El README decía «el mecanismo
+está medido», y se había medido con la profundidad como variable libre, no
+contra el lecho: es la trampa nº 3 otra vez.
 
-Del agente: `src/world/Vegetacion.js`, `src/world/Sotobosque.js`,
-`src/world/Mundo.js`, `src/engine/Audio.js`, `src/world/Agua.js`. Bitácora:
-`r5-suelo.md`.
+**Y no es sólo imagen.** Hoy la orilla es una pared de diez metros: no se puede
+vadear, y al primer paso ya se nada.
+
+### Qué tiene que quedar, en este orden
+
+**d) La vegetación deja de brillar de noche.** Es el más chico, y le devuelve
+el contraste a la luz de la fase 1.
+- Las tres constantes — traslucidez de la hoja (`Vegetacion.js:1948`,
+  `Sotobosque.js:297`) y relleno hemisférico de los sólidos
+  (`Sotobosque.js:310`)— se multiplican por un uniforme **`uLuzCielo`**.
+- `uLuzCielo = min(1, cielo.intensidadCielo / 0,85)`. **0,85 es la intensidad
+  medida el 15 de febrero a las 12:00**, la hora que el dueño vio y aprobó en
+  la ronda 3: ahí el factor vale 1 y la imagen no cambia. Medido también: 0,41
+  a las 8 y a las 20, y ~0,10 a medianoche, o sea factor 0,12.
+- Se escribe en la CPU una vez por cuadro. Por fragmento suma un producto por
+  un escalar, nada más: ni `pow`, ni ruido, ni lecturas.
+- Las carteleras lejanas ya se iluminan con `uAmbiente` del cielo: se miran en
+  la captura y no se tocan si no brillan.
+
+**c) La orilla tiene orilla.** El arreglo va en el lecho, `Mundo._excavarLagos()`,
+y no en la espuma. Un recorte de umbrales en `Agua.js` no puede dibujar espuma
+sobre diez metros de agua. Medido sobre el DEM real, en al menos 300 orillas:
+- En la orilla visible —el primer punto donde `esAgua` da verdadero, entrando
+  desde tierra—, la profundidad tiene **mediana ≤ 0,3 m y percentil 90 ≤ 1,0 m**.
+- El ancho de agua con menos de 0,5 m de profundidad tiene **mediana entre 1,5
+  y 12 m** y **percentil 10 ≥ 0,5 m**. Tiene que haber franja, pero no un
+  cinturón blanco de veinte metros.
+- **La cubeta no se toca:** a 300 m de la costa, la profundidad queda dentro del
+  ±15 % de la de hoy, y `PROF_MAX` sigue en 120.
+- La profundidad que usa el sombreador del agua sale del mismo arreglo que
+  consulta la CPU. El banco compara las dos cosas, no una contra sí misma.
+- **Vadear pasa a existir.** Lo que diga `Jugador` sobre cuándo se nada, se lee
+  y se anota con el número: cuántos metros se caminan en el agua antes de nadar.
+  **No se cambia la física**: si hace falta, va a pendiente.
+- La espuma se mira en captura, de día y al atardecer. Si con el lecho arreglado
+  hace falta tocar umbrales en `Agua.js`, se tocan con el número medido.
+- Tiempo de carga de `_excavarLagos`: medido, y a lo sumo +200 ms.
+
+**b) El suelo bajo los pies.**
+- **`Mundo.sueloEn(x, z, cotaNieve)`** devuelve `'agua' | 'nieve' | 'roca' |
+  'pasto' | 'hojarasca'`, con **la misma decisión del sombreador del terreno**
+  (`Terreno.js:613-640`) sin el ruido de detalle, o sea con `detalle = 0,5`.
+  Entradas:
+  - `pend = 1 − n.y` de **la normal del DEM que lee el sombreador** (`texNormal`);
+  - la altura del terreno;
+  - `humedad` del canal azul de `texCobertura`;
+  - la cota de nieve, con suavidad de 220 m (`Terreno.js:260`);
+  - la línea de bosque de 1620 m (`:261`).
+- Orden de decisión:
+  1. `agua` si `esAgua`;
+  2. `nieve` si la máscara de nieve ≥ 0,5;
+  3. `roca` si `smoothstep(0,26, 0,58, pend)` ≥ 0,5, o si `sobreBosque` ≥ 0,5
+     (el pedregal altoandino);
+  4. `pasto` si `humedad` < 0,45 (estepa y coironal);
+  5. si no, `hojarasca` (piso de bosque).
+- **Los pasos de `Audio.js` suenan distinto para cada uno**, sintetizados, sin
+  archivos, como el resto del audio. Nieve: crujido amortiguado. Roca: golpe
+  corto y seco. Pasto: roce. Hojarasca: lo de hoy, más blando.
+- **La velocidad no se toca.** La decisión sobre `velocidadBase` es del dueño y
+  está pendiente (`SEGUIR.md`, D·9). Que la nieve frene sería decidir encima de
+  esa decisión.
+
+### Presupuesto
+
+- **d):** alternado en tres rondas, Baja 1024×576 → ≤ +0,2 ms. Al mediodía del
+  15/2, **idéntico al píxel** (diferencia media < 0,5 sobre 255) contra el
+  mismo cuadro con el factor forzado a 1. A medianoche, sin luz, la luminancia
+  del sotobosque cae al menos un 70 %.
+- **c):** los números de arriba, en Node sobre el DEM real, y el tiempo de carga.
+- **b):** acuerdo ≥ 95 % entre `sueloEn` y la lectura independiente del
+  sombreador que hace el jefe, sobre ≥ 5000 puntos de tierra, fuera de las
+  bandas de ambigüedad. Cero costo por cuadro: se consulta por paso, no por
+  cuadro.
+
+### Del agente y de nadie más
+
+`src/world/Vegetacion.js`, `src/world/Sotobosque.js`, `src/world/Mundo.js`,
+`src/engine/Audio.js`, `src/world/Agua.js`. Lo que necesite de `main.js`
+—pasarle el cielo al sotobosque, y la consulta del suelo y la cota de nieve a los
+pasos— va a `pendiente-r5-suelo.md`. Bitácora: `r5-suelo.md`.
 
 ## FASE 3 · `mano` — la herramienta en la mano del personaje
 
