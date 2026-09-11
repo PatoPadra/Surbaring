@@ -31,6 +31,21 @@ export const DETALLE = {
   amplitudM: 1.9,    // desnivel máximo que agrega
 };
 
+// Los dos números del terreno que decide `sueloEn()`. Son uniformes fijos de
+// Terreno.js (`uNieveSuavidad`, `uLineaBosque`, :260-261): nadie los mueve en
+// juego, y si alguien los mueve allá tiene que moverlos acá.
+const NIEVE_SUAVIDAD = 220;
+const LINEA_BOSQUE = 1620;
+
+/**
+ * `smoothstep` de GLSL, fórmula incluida: el terreno lo usa con los bordes
+ * invertidos —`smoothstep(0.62, 0.24, pend)`— y ahí da una bajada, no un error.
+ */
+function suave(e0, e1, v) {
+  const t = Math.max(0, Math.min(1, (v - e0) / (e1 - e0)));
+  return t * t * (3 - 2 * t);
+}
+
 export class Mundo {
   constructor() {
     this.meta = null;
@@ -165,23 +180,96 @@ export class Mundo {
     // creíble, y una fosa de 400 m debajo del jugador no aporta nada.
     const PROF_MAX = 120;
     // Metros de fondo por raíz de metro de distancia a la costa. Con 3,4 el
-    // lago llega a 60 m a unos 300 m de la orilla, que es aproximadamente el
+    // lago llega a 55 m a unos 300 m de la orilla, que es aproximadamente el
     // perfil real de un lago de origen glaciario.
     const CAIDA = 3.4;
+
+    // ── La orilla ─────────────────────────────────────────────────────────
+    //
+    // La raíz sola hacía de la costa un pozo. La primera celda de agua está a
+    // una celda de la tierra, 32 m, y ahí la raíz ya daba 19,2 m de fondo. El
+    // lecho se lee con interpolación bilineal —en la física y en el vértice del
+    // agua—, así que en la orilla visible, a mitad de camino entre la tierra y
+    // esa celda, había 9,6 m de agua. Medido en 1132 orillas del DEM real: la
+    // mediana daba 9,7 m en el primer punto de agua y el ancho con menos de
+    // medio metro, cero en todas. No se podía vadear, y la espuma, que vive
+    // debajo de 1,35 m, no tenía dónde dibujarse.
+    //
+    // Con celdas de 32 m la forma de la orilla la deciden DOS texels: el de
+    // tierra y el primero de agua. Por eso el arreglo tiene dos mitades.
+    //
+    // 1. La primera corona de agua —la diagonal incluida— queda a ORILLA bajo
+    //    el espejo, y la caída de la raíz empieza recién después de ella.
+    // 2. La tierra que toca el agua queda al menos ORILLA POR ENCIMA del espejo.
+    //    Medido en el DEM: el 45 % de esa tierra estaba por DEBAJO del agua
+    //    (mediana +0,09 m, percentil 10 −0,46 m): el modelo aplanó la costa con
+    //    el lago. Con la tierra a la cota del espejo la cuenta no cierra: la
+    //    profundidad en la orilla visible es la mitad de la de la primera celda,
+    //    y el ancho con menos de medio metro vale 16·(0,5 − d)/d metros, así que
+    //    una orilla de 0,3 m obliga a una franja de 10,7 m y una de 0,2 m, a una
+    //    de 24. Sin la berma, en las 1132 orillas, el 15 al 22 % arrancaba ya
+    //    más hondo que medio metro, porque la tierra baja hundía la mezcla.
+    //
+    // Con la tierra a +ORILLA y el agua a −ORILLA, la línea donde el lecho
+    // corta el espejo cae justo a mitad de camino, que es donde la máscara
+    // cambia de tierra a agua: el agua empieza donde empieza la orilla, sin un
+    // escalón seco antes ni un borde flotando. Es una playa del 5 %.
+    //
+    // Por qué 0,8 y no otro, medido igual: con 0,6 la franja de menos de medio
+    // metro se ensancha a 13,5 m de mediana; con 1,0 baja a 8 m, pero en las
+    // esquinas de la máscara —donde tres de las cuatro celdas que se mezclan son
+    // agua— sube al 5-6 % la parte de orillas que ya arrancan más hondas que
+    // medio metro, y levanta más tierra (media 0,87 m contra 0,67). Con 0,8, en
+    // 1132 orillas y tres semillas de transectos: profundidad en la orilla
+    // mediana 0,11 m y percentil 90 0,37; franja de 10 m de mediana y 5 m de
+    // percentil 10; se vadean ~21 m antes de que el agua pase 1,1 m; y a 300 m
+    // de la costa la cubeta queda al 94 % de la de antes. La tierra levantada
+    // son 29 299 texels, el 0,7 % del mundo, con 1,55 m como máximo.
+    const ORILLA = 0.8;
+    const PRIMERA_CORONA = Math.SQRT2 + 1e-3;    // celdas: vecina o diagonal de tierra
 
     this.profundidadLago = new Float32Array(N * N);
     // La cota de la superficie, que es la que traía el DEM: hace falta guardarla
     // porque a partir de acá `altura` es el fondo, y media docena de sistemas
     // —la física de nado, los cardúmenes, el mapa— preguntan por la superficie.
     this.superficieLago = new Float32Array(N * N);
+    // Tierra que toca el agua → la cota mínima que tiene que tener. Son unos
+    // 29 000 texels, así que un mapa y no un arreglo de 4 millones.
+    const berma = new Map();
     for (let k = 0; k < N * N; k++) {
       if (this.agua[k] <= 127) continue;
-      const dm = dist[k] * m;
-      const prof = Math.min(PROF_MAX, CAIDA * Math.sqrt(dm));
+      const espejo = this.altura[k];
+      let prof;
+      if (dist[k] <= PRIMERA_CORONA) {
+        prof = ORILLA;
+        const i = k % N, j = (k - i) / N;
+        for (let dj = -1; dj <= 1; dj++) {
+          const jj = j + dj;
+          if (jj < 0 || jj >= N) continue;
+          for (let di = -1; di <= 1; di++) {
+            const ii = i + di;
+            if (ii < 0 || ii >= N) continue;
+            const v = jj * N + ii;
+            if (this.agua[v] > 127) continue;
+            // La más baja de las que la tocan: una lengua de tierra entre dos
+            // lagos no se levanta hasta la cota del de arriba.
+            const previa = berma.get(v);
+            if (previa === undefined || espejo + ORILLA < previa) berma.set(v, espejo + ORILLA);
+          }
+        }
+      } else {
+        prof = Math.min(PROF_MAX, ORILLA + CAIDA * Math.sqrt((dist[k] - PRIMERA_CORONA) * m));
+      }
       this.profundidadLago[k] = prof;
-      this.superficieLago[k] = this.altura[k];
-      this.altura[k] -= prof;
+      this.superficieLago[k] = espejo;
+      this.altura[k] = espejo - prof;
     }
+    // Sólo se levanta: la tierra que ya estaba más alta queda como estaba.
+    let levantados = 0;
+    for (const [v, cota] of berma) {
+      if (this.altura[v] < cota) { this.altura[v] = cota; levantados++; }
+    }
+    this.texelsBerma = levantados;
   }
 
   // ── Consultas ─────────────────────────────────────────────────────────────
@@ -311,6 +399,82 @@ export class Mundo {
       if (d < mejorD) { mejorD = d; mejor = l; }
     }
     return mejorD < 12 ? mejor.cota : h;
+  }
+
+  /**
+   * Qué hay bajo los pies: 'agua' | 'nieve' | 'roca' | 'pasto' | 'hojarasca'.
+   *
+   * Es la MISMA decisión con la que el sombreador del terreno pinta el suelo
+   * (Terreno.js:613-640), con las mismas entradas leídas de las mismas
+   * texturas y con la misma interpolación, para que el paso suene a lo que se
+   * ve. Lo único que no se replica es el ruido de detalle —`macro`, `meso` y
+   * `micro` mezclados en `detalle`—, que en la GPU corre unos metros las vetas
+   * de roca y los manchones de nieve: acá vale 0,5, su centro. En esas franjas
+   * el oído y el ojo pueden no coincidir, y es a propósito: una fbm triplanar
+   * en la CPU no se oye y cuesta precisión.
+   *
+   * El orden es el del sombreador leído de arriba hacia abajo, porque cada capa
+   * se pinta encima de la anterior:
+   *   1. agua, si la máscara lo dice;
+   *   2. nieve, si su máscara llega a la mitad;
+   *   3. roca, por pendiente o por encima de la línea de bosque (el pedregal);
+   *   4. pasto, en la estepa y el coironal (humedad < 0,45);
+   *   5. hojarasca, el piso del bosque.
+   *
+   * Se consulta por paso, no por cuadro.
+   * @param {number} cotaNieve la de `Tiempo.estado()`, la misma que recibe el terreno
+   */
+  sueloEn(x, z, cotaNieve = 1750) {
+    if (this.esAgua(x, z)) return 'agua';
+    const alt = this.alturaEn(x, z);
+    const m = this._muestra ??= new Float64Array(4);
+
+    // Terreno.js:453-455: normalize(texture2D(uTexNormal).xyz * 2 − 1), y la
+    // pendiente es 1 − y. OJO: es la normal de la TEXTURA y no la de
+    // `normalEn()`. `_construirTexturas` la arma con 2 en la vertical sobre
+    // diferencias ya divididas por la distancia, donde la geométrica lleva 1:
+    // queda más parada, y la roca del sombreador sale de ESA pendiente.
+    this._leerRGBA(this.texNormal.image.data, x, z, m);
+    const nx = m[0] * 2 - 1, ny = m[1] * 2 - 1, nz = m[2] * 2 - 1;
+    const pend = 1 - Math.max(0, Math.min(1, ny / (Math.hypot(nx, ny, nz) || 1)));
+    // :451, canal azul de la cobertura
+    this._leerRGBA(this.texCobertura.image.data, x, z, m);
+    const humedad = m[2];
+    const detalle = 0.5;
+
+    // :636-639
+    const nieveAlt = suave(cotaNieve - NIEVE_SUAVIDAD, cotaNieve + NIEVE_SUAVIDAD, alt);
+    const nievePend = suave(0.62, 0.24, pend);
+    const mascaraNieve = Math.min(1, nieveAlt * nievePend + nieveAlt * 0.12)
+      * (1 - suave(0.0, 0.35, detalle * 0.5 - 0.08));
+    if (mascaraNieve >= 0.5) return 'nieve';
+
+    // :619 la roca madre, :613 el pedregal por encima del bosque
+    if (suave(0.26, 0.58, pend + (detalle - 0.5) * 0.30) >= 0.5) return 'roca';
+    if (suave(LINEA_BOSQUE - 160, LINEA_BOSQUE + 190, alt) >= 0.5) return 'roca';
+
+    return humedad < 0.45 ? 'pasto' : 'hojarasca';
+  }
+
+  /**
+   * Lectura bilineal de una textura RGBA de 8 bits del tamaño del DEM, en 0..1
+   * y en la convención de la GPU (ver `_texelDe`). Es lo que devuelve
+   * `texture2D` sobre esas texturas con filtro lineal y de cerca, donde un
+   * texel de 32 m se magnifica y no entra ningún mipmap.
+   */
+  _leerRGBA(datos, x, z, salida) {
+    const N = this.N;
+    const fx = this._texelDe(x), fz = this._texelDe(z);
+    const i0 = Math.floor(fx), j0 = Math.floor(fz);
+    const i1 = Math.min(N - 1, i0 + 1), j1 = Math.min(N - 1, j0 + 1);
+    const sx = fx - i0, sz = fz - j0;
+    const a = (j0 * N + i0) * 4, b = (j0 * N + i1) * 4;
+    const c = (j1 * N + i0) * 4, d = (j1 * N + i1) * 4;
+    for (let ch = 0; ch < 4; ch++) {
+      salida[ch] = ((datos[a + ch] * (1 - sx) + datos[b + ch] * sx) * (1 - sz)
+                  + (datos[c + ch] * (1 - sx) + datos[d + ch] * sx) * sz) / 255;
+    }
+    return salida;
   }
 
   /** Conversión a coordenadas geográficas reales, para la interfaz educativa. */

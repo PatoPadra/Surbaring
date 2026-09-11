@@ -34,6 +34,37 @@ const SEG_RUIDO = 2;
 const MAX_VOCES = 4;
 
 /**
+ * Un paso por suelo. Ruido filtrado como todo lo demás; lo que cambia es dónde
+ * cae el filtro y cómo entra y se apaga el golpe.
+ *
+ *   f        [mín, máx] Hz del pasabanda: se sortea, porque dos pasos iguales
+ *            seguidos suenan a máquina
+ *   q        Q del pasabanda
+ *   g        ganancia de pico a 4 m/s
+ *   ataque   segundos de subida; 0 es golpe seco
+ *   caida    segundos hasta apagarse
+ *   granos   crujido: cuántos granos sueltos reparte en la caída
+ *   amortigua  pasabajos después del pasabanda, en Hz
+ *   golpe    Hz de una senoidal grave debajo, el cuerpo del golpe
+ */
+const PASOS = {
+  // Lo que sonaba antes para todo el suelo (260-480 Hz, 0,055, 0,13 s), más
+  // blando: un poco más grave, más ancho, con doce milisegundos de entrada y
+  // una cola más larga. La hoja seca amortigua la pisada.
+  hojarasca: { f: [230, 420], q: 0.75, g: 0.046, ataque: 0.012, caida: 0.16 },
+  // Roce: la caña del coirón contra la bota. Agudo, sin golpe, entra despacio.
+  pasto: { f: [2600, 3800], q: 0.6, g: 0.030, ataque: 0.035, caida: 0.20 },
+  // Golpe corto y seco: la suela contra el granito. Cuarenta y cinco
+  // milisegundos, sin cola, con un golpe grave debajo.
+  roca: { f: [1500, 2300], q: 1.6, g: 0.060, ataque: 0, caida: 0.045, golpe: 130 },
+  // Crujido amortiguado: los granos de la costra que se rompen bajo el peso,
+  // tapados por la nieve de encima. Cinco granos en 180 ms, pasabajos a 1600.
+  nieve: { f: [900, 1400], q: 0.7, g: 0.050, ataque: 0, caida: 0.18, granos: 5, amortigua: 1600 },
+  // Sin cambios.
+  agua: { f: [700, 1100], q: 1.1, g: 0.09, ataque: 0, caida: 0.22 },
+};
+
+/**
  * Arma una serie de notas iguales espaciadas, que es la forma de casi todos los
  * trinos y parloteos. `mult` y `vol` aceptan función de índice para acelerar,
  * subir o apagarse sobre la marcha.
@@ -552,8 +583,17 @@ export class Audio {
    * Pasos. No se reproducen por temporizador sino por distancia recorrida, así
    * que la cadencia sale sola: caminando es lenta, corriendo es rápida, y
    * agachado y en el agua cambian de timbre.
+   *
+   * El timbre sale del suelo que se pisa: `mundo.sueloEn()` repite la decisión
+   * con la que el terreno se pinta, así que la nieve que se ve cruje y la roca
+   * que se ve golpea. Se pregunta UNA vez por paso, cuando el pie apoya, y
+   * nunca por cuadro. Sin `mundo` suena la hojarasca, que es lo que sonaba
+   * antes para todo.
+   *
+   * @param {import('../world/Mundo.js').Mundo} [mundo]
+   * @param {number} [cotaNieve] la de `Tiempo.estado()`, la misma del terreno
    */
-  pasos(dt, jugador) {
+  pasos(dt, jugador, mundo = null, cotaNieve = 1750) {
     if (!this.listo) return;
     const vel = Math.hypot(jugador.velocidad.x, jugador.velocidad.z);
     if (!jugador.enSuelo || vel < 0.6) { this._pasoAcum = 0.55; this._pasoPrev = null; return; }
@@ -579,27 +619,80 @@ export class Audio {
       if (this._pasoAcum < zancada) return;
       this._pasoAcum = 0;
     }
-    this._paso(jugador.enAgua ? 'agua' : (jugador.agachado ? 'suave' : 'tierra'), vel);
+    const suelo = jugador.enAgua
+      ? 'agua'
+      : (mundo?.sueloEn ? mundo.sueloEn(jugador.posicion.x, jugador.posicion.z, cotaNieve) : 'hojarasca');
+    this.ultimoSuelo = suelo;
+    this._paso(suelo, vel, jugador.agachado);
   }
 
-  _paso(tipo, vel) {
+  /**
+   * Un paso sobre un suelo de `PASOS`. Agachado pisa con la mitad de fuerza y
+   * conserva el timbre: antes agacharse cambiaba todo a un sordo de 420 Hz, y
+   * ahora eso borraría justo lo que dice el suelo.
+   */
+  _paso(tipo, vel, agachado = false) {
+    const p = PASOS[tipo] ?? PASOS.hojarasca;
     const ctx = this.ctx;
+    const t0 = ctx.currentTime;
+    const fin = t0 + p.caida;
+
     const fuente = ctx.createBufferSource();
     fuente.buffer = this.ruido;
     fuente.loop = true;
     const filtro = ctx.createBiquadFilter();
-    if (tipo === 'agua') { filtro.type = 'bandpass'; filtro.frequency.value = 700 + Math.random() * 400; filtro.Q.value = 1.1; }
-    else if (tipo === 'suave') { filtro.type = 'lowpass'; filtro.frequency.value = 420; filtro.Q.value = 0.8; }
-    else { filtro.type = 'bandpass'; filtro.frequency.value = 260 + Math.random() * 220; filtro.Q.value = 0.9; }
+    filtro.type = 'bandpass';
+    filtro.frequency.value = p.f[0] + Math.random() * (p.f[1] - p.f[0]);
+    filtro.Q.value = p.q;
+    let salida = filtro;
+    if (p.amortigua) {
+      const tapa = ctx.createBiquadFilter();
+      tapa.type = 'lowpass';
+      tapa.frequency.value = p.amortigua;
+      tapa.Q.value = 0.5;
+      salida = filtro.connect(tapa);
+    }
 
     const gan = ctx.createGain();
-    const t0 = ctx.currentTime;
-    const fuerte = tipo === 'agua' ? 0.09 : 0.055;
-    gan.gain.setValueAtTime(fuerte * Math.min(1, vel / 4) * (0.7 + Math.random() * 0.5), t0);
-    gan.gain.exponentialRampToValueAtTime(0.0004, t0 + (tipo === 'agua' ? 0.22 : 0.13));
-    fuente.connect(filtro).connect(gan).connect(this.bus);
+    const pico = p.g * Math.min(1, vel / 4) * (0.7 + Math.random() * 0.5) * (agachado ? 0.5 : 1);
+    if (p.granos) {
+      // Crujido: granos cortos y sueltos, cada uno con su golpe y su caída. El
+      // corrimiento de cada grano es menor que el hueco al siguiente, así que
+      // los eventos quedan en orden, que es lo único que WebAudio exige.
+      const hueco = p.caida / p.granos;
+      gan.gain.setValueAtTime(0.0004, t0);
+      for (let i = 0; i < p.granos; i++) {
+        const ti = t0 + (i + Math.random() * 0.4) * hueco;
+        gan.gain.setValueAtTime(pico * (0.45 + Math.random() * 0.55), ti);
+        gan.gain.exponentialRampToValueAtTime(pico * 0.04, ti + hueco * 0.55);
+      }
+      gan.gain.exponentialRampToValueAtTime(0.0004, fin + 0.02);
+    } else if (p.ataque) {
+      gan.gain.setValueAtTime(0.0004, t0);
+      gan.gain.linearRampToValueAtTime(pico, t0 + p.ataque);
+      gan.gain.exponentialRampToValueAtTime(0.0004, fin);
+    } else {
+      gan.gain.setValueAtTime(pico, t0);
+      gan.gain.exponentialRampToValueAtTime(0.0004, fin);
+    }
+    fuente.connect(filtro);
+    salida.connect(gan).connect(this.bus);
     fuente.start(t0);
-    fuente.stop(t0 + 0.3);
+    fuente.stop(fin + 0.08);
+
+    if (p.golpe) {
+      // El cuerpo del golpe: una senoidal grave de cuarenta milisegundos. Sin
+      // esto la roca suena a chasquido de fogata.
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = p.golpe * (0.9 + Math.random() * 0.2);
+      const gg = ctx.createGain();
+      gg.gain.setValueAtTime(pico * 1.2, t0);
+      gg.gain.exponentialRampToValueAtTime(0.0004, t0 + 0.04);
+      osc.connect(gg).connect(this.bus);
+      osc.start(t0);
+      osc.stop(t0 + 0.08);
+    }
   }
 
   /** Aviso corto para la interfaz: dos tonos suaves, nada de campanitas. */

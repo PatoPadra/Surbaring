@@ -15,8 +15,9 @@
  */
 
 import * as THREE from 'three';
+import { luzCielo } from './Vegetacion.js';
 
-const TAM_CELDA = 16;          // metros por celda de siembra
+const TAM_CELDA = 16;         // metros por celda de siembra
 const RADIO_CERCA = 4;         // celdas para pasto y helechos (64 m)
 const RADIO_LEJOS = 7;         // celdas para piedras y troncos (112 m)
 const RADIO_HORIZONTE = 12;    // celdas para el pastizal grueso (192 m)
@@ -37,7 +38,13 @@ export class Sotobosque {
       uFuerzaViento: { value: 0.35 },
       uEstacion: { value: 0 },
       uCotaNieve: { value: 1750 },
+      // Traslucidez y relleno siguen a la luz de cielo; ver `LUZ_CIELO_MEDIODIA`
+      // en Vegetacion.js, que es de donde sale el número.
+      uLuzCielo: { value: 1 },
     };
+    // Lo asigna `main`, igual que a la vegetación. Sin cielo `uLuzCielo` queda
+    // en 1, que es exactamente lo que se dibujaba antes.
+    this.cielo = null;
 
     this.tipos = [
       {
@@ -268,6 +275,7 @@ export class Sotobosque {
       shader.fragmentShader = `
         uniform float uEstacion;
         uniform float uCotaNieve;
+        uniform float uLuzCielo;
         varying vec3 vTinte;
         varying float vAlturaMundo;
         ${lamina ? '' : 'varying float vArriba;'}
@@ -293,8 +301,10 @@ export class Sotobosque {
         '#include <lights_fragment_end>',
         lamina ? `
           #include <lights_fragment_end>
-          // Translucidez: la hoja fina deja pasar la luz
-          reflectedLight.indirectDiffuse += diffuseColor.rgb * vec3(0.22, 0.30, 0.17);
+          // Translucidez: la hoja fina deja pasar la luz... del cielo, y de
+          // noche no hay. Constante, era lo que hacía brillar el pasto a
+          // medianoche sobre un suelo negro.
+          reflectedLight.indirectDiffuse += diffuseColor.rgb * vec3(0.22, 0.30, 0.17) * uLuzCielo;
         ` : `
           #include <lights_fragment_end>
           // Relleno hemisférico para los sólidos, y la razón de que exista.
@@ -307,9 +317,11 @@ export class Sotobosque {
           // recibe el cielo entero y la de abajo el rebote de la tierra.
           //
           // Cuesta un mix de dos constantes: no hay ni una textura de por medio.
+          // Y un producto por uLuzCielo, porque el cielo que recibe la cara
+          // de arriba de noche no existe.
           reflectedLight.indirectDiffuse += diffuseColor.rgb
             * mix(vec3(0.085, 0.075, 0.058), vec3(0.30, 0.34, 0.42),
-                  clamp(vArriba * 0.5 + 0.5, 0.0, 1.0));
+                  clamp(vArriba * 0.5 + 0.5, 0.0, 1.0)) * uLuzCielo;
         `
       );
     };
@@ -332,6 +344,7 @@ export class Sotobosque {
     this.uniformes.uFuerzaViento.value = Math.min(2.2, 0.2 + (estado.vientoKmh ?? 20) / 34);
     this.uniformes.uEstacion.value = estado.estacionContinua ?? 0;
     this.uniformes.uCotaNieve.value = estado.cotaNieve ?? 1750;
+    this.uniformes.uLuzCielo.value = luzCielo(this.cielo);
 
     const cx = Math.floor(posicion.x / TAM_CELDA);
     const cz = Math.floor(posicion.z / TAM_CELDA);

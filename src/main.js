@@ -231,6 +231,8 @@ async function iniciar() {
 
   progreso(0.80, 'Sembrando el sotobosque…');
   const sotobosque = new Sotobosque(mundo);
+  // La traslucidez del pasto sigue a la luz del cielo: sin esto brillaba de noche
+  sotobosque.cielo = cielo;
   escena.add(sotobosque.grupo);
   for (const lote of sotobosque.lotes) conCSM(csm, lote.malla.material);
 
@@ -903,7 +905,8 @@ async function iniciar() {
       distanciaAgua: distanciaAlAgua,
       fuegoCerca: jugador.fuego,
     });
-    audio.pasos(dt, jugador);
+    // El paso suena según lo que se pisa: nieve, roca, pasto u hojarasca
+    audio.pasos(dt, jugador, mundo, est.cotaNieve);
     // El trueno se dispara con el relámpago y llega más tarde, por la velocidad
     // del sonido. La distancia sale del propio destello: los cercanos deslumbran.
     if (clima.destello > destelloPrevio + 0.3) {

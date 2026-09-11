@@ -367,10 +367,15 @@ function sueloDelJefe(M, x, z, cota) {
   const alt = M.alturaEn(x, z);
   const nieveAlt = smooth(cota - 220, cota + 220, alt);
   const nievePend = smooth(0.62, 0.24, pend);
-  const mascara = Math.min(1, Math.max(0, nieveAlt * nievePend + nieveAlt * 0.12)) * (1 - smooth(0, 0.35, 0.5 * 0.5 - 0.08));
+  const previo = Math.min(1, Math.max(0, nieveAlt * nievePend + nieveAlt * 0.12));
+  const factor = 1 - smooth(0, 0.35, 0.5 * 0.5 - 0.08);   // 0,5214 con detalle = 0,5
+  const mascara = previo * factor;
   const roca = smooth(0.26, 0.58, pend);
   const sobre = smooth(1620 - 160, 1620 + 190, alt);
-  const ambiguo = Math.abs(mascara - 0.5) < 0.04 || Math.abs(roca - 0.5) < 0.06 || Math.abs(sobre - 0.5) < 0.06 || Math.abs(hum - 0.45) < 0.015;
+  // La banda de la nieve va sobre el término ANTES del factor: con detalle = 0,5
+  // la máscara no pasa de 0,5214, y una banda de ±0,04 sobre la máscara dejaba
+  // afuera toda la nieve. Lo avisó el agente; comprobado con la cuenta: 0,5/0,5214 = 0,9589.
+  const ambiguo = Math.abs(previo - 0.5 / factor) < 0.03 || Math.abs(roca - 0.5) < 0.06 || Math.abs(sobre - 0.5) < 0.06 || Math.abs(hum - 0.45) < 0.015;
   let tipo;
   if (M.esAgua(x, z)) tipo = 'agua';
   else if (mascara >= 0.5) tipo = 'nieve';

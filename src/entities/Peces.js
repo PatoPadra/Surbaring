@@ -168,7 +168,11 @@ export class Peces {
       const amb = this.ambienteEn(x, z);
       if (!amb) continue;
 
-      const profundidad = 0.4 + Math.random() * (amb.id === 'rios' ? 0.8 : 4.5);
+      // Con la orilla somera de la ronda 5 el lecho sube hasta 0,8 m bajo el
+      // espejo: un cardumen necesita agua encima del fondo, y en la playa no hay.
+      const fondo = amb.id === 'rios' ? Infinity : amb.cota - this.mundo.alturaBaseEn(x, z);
+      if (fondo < 0.7) continue;
+      const profundidad = Math.min(0.4 + Math.random() * (amb.id === 'rios' ? 0.8 : 4.5), fondo - 0.3);
       const esp = this.elegirEspecie(amb.id, profundidad);
       // Los chicos andan en cardúmenes grandes; una trucha grande, casi sola
       const n = esp.pesoKg > 1
@@ -277,11 +281,12 @@ export class Peces {
       const nx = c.x + Math.cos(c.rumbo) * nado * dt;
       const nz = c.z + Math.sin(c.rumbo) * nado * dt;
       const amb = this.ambienteEn(nx, nz);
-      if (amb && amb.id === c.ambiente) {
+      const fondo = amb && amb.id !== 'rios' ? amb.cota - this.mundo.alturaBaseEn(nx, nz) : Infinity;
+      if (amb && amb.id === c.ambiente && fondo >= 0.7) {
         c.x = nx; c.z = nz;
-        // La superficie de destino manda: el cardumen guarda su profundidad,
-        // no su cota, y así no termina volando sobre el agua ni enterrado.
-        c.cota = amb.cota - c.profundidad;
+        // La superficie de destino manda, y el fondo también: el cardumen guarda
+        // su profundidad, pero no la baja del lecho, que en la orilla somera sube.
+        c.cota = amb.cota - Math.min(c.profundidad, fondo - 0.3);
       } else {
         // Contra la orilla se dobla en vez de encallar contra ella
         c.rumbo += Math.PI * (0.5 + Math.random() * 0.5);

@@ -118,6 +118,36 @@ const HISTERESIS_IMPOSTOR = 3;
 /** Rotación nula, para las carteleras que se orientan solas. */
 const IDENTIDAD = new THREE.Quaternion();
 
+/**
+ * Intensidad de la luz de cielo a la que la hoja se aprobó: `Cielo.intensidadCielo`
+ * medida el 15 de febrero a las 12:00, que es la hora que el dueño miró en la
+ * ronda 3. Ahí `luzCielo()` vale 1 y la imagen no cambia en un píxel.
+ *
+ * La traslucidez de la hoja y el relleno de los sólidos del sotobosque eran
+ * constantes que se sumaban igual al mediodía que a medianoche. Medido en las
+ * capturas nocturnas de la ronda 5: a las 23:40, sin ninguna luz, el terreno
+ * negro puro y el pasto brillando amarillo verdoso encima. La luz de cielo de
+ * esa hora es ~0,10, o sea que la hoja se inventaba ocho veces la luz que había.
+ */
+export const LUZ_CIELO_MEDIODIA = 0.85;
+
+/**
+ * Cuánto de la luz de cielo aprobada hay ahora, 0..1. Sin cielo, 1: lo de
+ * siempre. Con el cielo del 15/2 que se midió al abrir la fase: 0,48 a las 8 y
+ * a las 20, 0,07 a las 21 y ~0,12 a medianoche, que es la luna.
+ *
+ * No pasa de 1 porque el mediodía es el techo que se aprobó: con nubes el cielo
+ * gana brillo, y la hoja no tiene por qué encenderse más. Y al mediodía NO vale
+ * siempre 1: la nubosidad sale de una semilla al azar, y medido con `Cielo` en
+ * Node a las 12 del 15/2 da 1 desde nubes 0,55, 0,93 con 0,35 y 0,75 con el
+ * cielo limpio del todo. Es físico —un cielo limpio manda menos luz difusa—
+ * y es lo que hay que saber antes de comparar dos capturas de mediodía.
+ */
+export function luzCielo(cielo) {
+  const i = cielo?.intensidadCielo;
+  return i === undefined ? 1 : Math.min(1, i / LUZ_CIELO_MEDIODIA);
+}
+
 export class Vegetacion {
   /**
    * @param {import('./Mundo.js').Mundo} mundo
@@ -157,6 +187,8 @@ export class Vegetacion {
       uEstacion: { value: 0 },
       uNieve: { value: 0 },
       uCotaNieve: { value: 1750 },
+      // La traslucidez sigue a la luz de cielo: ver `LUZ_CIELO_MEDIODIA`.
+      uLuzCielo: { value: 1 },
     };
 
     this.lotes = [];
@@ -324,6 +356,8 @@ export class Vegetacion {
     this.uniformes.uEstacion.value = estado.estacionContinua ?? 0;
     this.uniformes.uCotaNieve.value = estado.cotaNieve ?? 1750;
     this.uniformes.uNieve.value = estado.nieve > 0.05 ? 1 : 0;
+    // Una escritura por cuadro en la CPU; en el fragmento es un producto más.
+    this.uniformes.uLuzCielo.value = luzCielo(this.cielo);
 
     // Las carteleras no pasan por el sistema de luces de three: hay que
     // pasarles el sol, el ambiente y la niebla a mano para que no se despeguen
@@ -1908,6 +1942,7 @@ function inyectarViento(mat, uniformes, esp) {
       uniform vec3 uColorOtono;
       uniform float uPerenne;
       uniform float uCotaNieve;
+      uniform float uLuzCielo;
       varying vec3 vTinte;
       varying float vAlturaLocal;
       varying float vAlturaMundo;
@@ -1941,11 +1976,15 @@ function inyectarViento(mat, uniformes, esp) {
     // Translucidez foliar. La lámina de la hoja deja pasar luz, así que el
     // envés iluminado por detrás no queda negro. Es lo que hace que un bosque
     // real se vea verde y no como una silueta recortada.
+    //
+    // Pero la luz que atraviesa la hoja es la del cielo, y de noche no hay: con
+    // la constante sola el follaje resplandecía verde sobre un suelo negro.
+    // `uLuzCielo` vale 1 al mediodía aprobado y ~0,12 a medianoche.
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <lights_fragment_end>',
       `
       #include <lights_fragment_end>
-      reflectedLight.indirectDiffuse += diffuseColor.rgb * vec3(0.19, 0.26, 0.16) * vFlexion;
+      reflectedLight.indirectDiffuse += diffuseColor.rgb * vec3(0.19, 0.26, 0.16) * (vFlexion * uLuzCielo);
       `
     );
 
