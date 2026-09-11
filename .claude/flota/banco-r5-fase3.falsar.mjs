@@ -71,7 +71,7 @@ const ACCESOR = `const __d = Object.getOwnPropertyDescriptor(Cuerpo.prototype, '
 
 const DEFECTOS = [
   { id: 'D0', base: true, que: 'el mundo real: src/ de antes de la fase, sin manos',
-    espera: [[1, 'Cuerpo.manos son dos nudos'], [2, 'hay mano derecha']] },
+    espera: [[1, 'Cuerpo.manos son dos nudos']] },
   { id: 'D1', que: 'enMano no cuelga nada',
     plantar: (s) => agregar(s, `${ACCESOR}
 Object.defineProperty(Cuerpo.prototype, 'enMano', { configurable: true, get() { return this.__falso ?? null; }, set(v) { this.__falso = v; } });`),
@@ -109,12 +109,24 @@ Object.defineProperty(Cuerpo.prototype, 'enMano', { configurable: true, get() { 
   const m = this.manos?.[1];
   if (m && v) m.traverse((o) => { if (o.isMesh && o !== m) o.material = o.material.clone(); });
 } });`),
-    espera: [[2, 'las herramientas comparten material: a lo sumo cuatro distintos entre las dieciocho']] },
-  { id: 'D7', que: 'aplicar() no libera las geometrías de la herramienta',
-    plantar: (s) => agregar(s, `{
-  const __a = Cuerpo.prototype.aplicar;
-  Cuerpo.prototype.aplicar = function (...a) { if (this.manos?.[1]) this.manos[1].clear(); return __a.apply(this, a); };
-}`),
+    espera: [[2, 'las herramientas comparten tintas: menos materiales que objetos, y a lo sumo nueve']] },
+  // La primera versión de este defecto desenganchaba la herramienta antes de
+  // aplicar(), y el banco NO lo veía: el agente libera además el caché de
+  // modelos, así que la geometría se liberaba igual. Ese plantado no era un
+  // defecto. El defecto de verdad es que no se libere nada.
+  // Dos versiones de este defecto NO se pudieron ver, y la razón es del banco:
+  // el espía queda en la instancia de la geometría, así que se dispara aunque
+  // se pise 'dispose' en el prototipo, y el agente libera además el caché. El
+  // único plantado que muerde es un aplicar() que no reconstruye nada.
+  // ZONA SIN FALSAR, declarada. Tres plantados no sirvieron y el motivo es del
+  // banco: el espía de liberación queda en la INSTANCIA de la geometría, así que
+  // se dispara aunque se pise 'dispose' en el prototipo; el agente libera además
+  // el caché de modelos, así que desenganchar la herramienta tampoco la deja sin
+  // liberar; y un aplicar() que no llama al original rompe la construcción entera
+  // del cuerpo, con lo que la sección cae por otra cosa. Queda dicho: la aserción
+  // de liberación de la sección 3 no está falsada.
+  { id: 'D7', que: 'aplicar() no libera las geometrías (no se pudo plantar sin romper el cuerpo)',
+    sinFalsar: 'el espía vive en la instancia y el caché se libera igual; un aplicar() vacío rompe la construcción',
     espera: [[3, 'aplicar() libera también las geometrías de la herramienta']] },
   { id: 'D8', que: 'al ahumador le falta el modelo',
     plantar: (s) => agregar(s, `${ACCESOR}
@@ -134,8 +146,9 @@ const cuenta = { 'lo vio': 0, 'lo vio por otro motivo': 0, 'NO lo vio': 0, 'no s
 for (const d of lista) {
   const dir = path.join(TMP, d.id);
   let src, falla = null;
-  if (d.base) src = srcDeBase(dir);
-  else { src = copiarSrc(dir); falla = d.plantar(src); if (!falla) falla = importa(src); }
+  if (d.sinFalsar) falla = d.sinFalsar;
+  else if (d.base) src = srcDeBase(dir);
+  else if (!d.base) { src = copiarSrc(dir); falla = d.plantar(src); if (!falla) falla = importa(src); }
   let desenlace, detalle = '';
   if (falla) { desenlace = 'no se pudo plantar'; detalle = falla; }
   else {

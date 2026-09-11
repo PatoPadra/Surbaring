@@ -34,9 +34,25 @@
  *   eso se nota aunque nadie sepa decir por qué.
  * - **El modelo está hecho para 1,78 m y se escala.** Así la estatura elegida
  *   cambia el tamaño de la silueta y no sólo la altura de la cámara.
+ *
+ * Y desde la ronda 5, **lo que se lleva en la mano**. Tres cosas que conviene
+ * tener a la vista antes de tocar esta parte:
+ *
+ * - La mano es un `Group` de verdad (`this.manos`), no la esfera de la palma.
+ *   La esfera tenía la geometría trasladada 28 cm y el objeto en el origen: su
+ *   matriz de mundo daba el **codo**, y colgar un hacha de ahí la ponía en el
+ *   antebrazo.
+ * - Los modelos se cachean **por instancia**, no por módulo: `aplicar()` libera
+ *   todas las geometrías del cuerpo y un caché global quedaría apuntando a
+ *   geometrías muertas apenas alguien cambiara de peinado.
+ * - Los materiales de las herramientas se piden por el mismo `_material()` que
+ *   el resto del cuerpo, sin ninguna bandera que cambie la clave del programa.
+ *   Por eso **cambiar de herramienta no compila nada**: el programa ya está
+ *   compilado desde la carga, es el del torso.
  */
 
 import * as THREE from 'three';
+import { construirHerramienta, PALETA } from './Herramientas3D.js';
 
 /** Estatura para la que están escritas todas las medidas de acá abajo. */
 const BASE = 1.78;
@@ -83,6 +99,21 @@ export class Cuerpo {
     this.fase = 0;
     this._materiales = [];
     this._agachadoSuave = 0;
+    /** Cuánto de la pose de «llevar algo» está aplicada, de 0 a 1. */
+    this._cargaSuave = 0;
+
+    // ── Lo que se lleva en la mano. Todo esto tiene que existir ANTES de
+    // `aplicar()`, porque `aplicar()` llama a `_limpiar()` y `_limpiar()` los
+    // vacía.
+    /** @type {string|null} el id del objeto en la mano derecha. */
+    this._enMano = null;
+    /** @type {Map<string, THREE.Group>} modelo ya construido, por id. */
+    this._modelos = new Map();
+    /** @type {Map<string, THREE.Material>} la paleta compartida, por nombre. */
+    this._paleta = new Map();
+    this._modeloEnMano = null;
+    this._punto = new THREE.Vector3();
+
     this.aplicar(aspecto);
   }
 
@@ -165,6 +196,19 @@ export class Cuerpo {
     // ── Brazos: hombro → codo → mano
     this.brazos = [];
     this.codos = [];
+    /**
+     * Los dos nudos de la mano, guardados como `this.codos`. **El índice 1 es
+     * el lado +x, la mano derecha**, que es de la que cuelgan las herramientas.
+     *
+     * Es un `Group` y no la esfera de la palma a propósito: la esfera se
+     * construía con `nudo(r, piel, -0.28)`, que traslada la GEOMETRÍA y deja el
+     * objeto en el origen del codo. Su `matrixWorld` daba el codo, 28 cm más
+     * arriba de donde está la mano. Acá el grupo lleva el desplazamiento en
+     * `position` y la esfera vuelve a nacer en su propio origen: el dibujo es
+     * idéntico al de antes, y ahora hay un punto de mundo del que colgar cosas.
+     * @type {THREE.Group[]}
+     */
+    this.manos = [];
     for (const lado of [-1, 1]) {
       const hombro = new THREE.Group();
       hombro.position.set(lado * (0.195 * a), 0.50, 0);
@@ -175,13 +219,17 @@ export class Cuerpo {
       codo.position.y = -0.29;
       codo.add(nudo(0.048 * a, ribete));                     // puño de la manga
       codo.add(hueso(0.047 * a, 0.040 * a, 0.26, piel));
-      const mano = nudo(0.052 * a, piel, -0.28);
-      mano.scale.set(0.85, 1.1, 0.7);
+      const mano = new THREE.Group();
+      mano.position.y = -0.28;
+      const palma = nudo(0.052 * a, piel);
+      palma.scale.set(0.85, 1.1, 0.7);
+      mano.add(palma);
       codo.add(mano);
 
       hombro.add(codo);
       this.brazos.push(hombro);
       this.codos.push(codo);
+      this.manos.push(mano);
       tronco.add(hombro);
     }
 
@@ -219,6 +267,10 @@ export class Cuerpo {
 
     // La escala convierte el modelo de 1,78 en el de la estatura elegida
     this.grupo.scale.setScalar(aspecto.estatura / BASE);
+
+    // Cambiar de aspecto no tiene por qué soltar el hacha: `_limpiar()` acaba de
+    // tirar el modelo viejo con sus geometrías, así que se reconstruye.
+    if (this._enMano) this._colgar(this._enMano);
   }
 
   /**
@@ -267,10 +319,128 @@ export class Cuerpo {
   }
 
   _limpiar() {
+    // Primero las herramientas: el modelo colgado está DENTRO de `this.grupo` y
+    // el recorrido de abajo lo liberaría, pero los que están sólo en el caché no
+    // los alcanza nadie. Soltarlos acá deja al recorrido sin nada que repetir.
+    this._soltarHerramientas();
     for (const m of this._materiales) m.dispose();
     this._materiales.length = 0;
     this.grupo.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
     this.grupo.clear();
+  }
+
+  // ── Lo que se lleva en la mano ────────────────────────────────────────────
+
+  /**
+   * El id del objeto que se lleva en la mano derecha, o `null`.
+   *
+   * La escribe `main` por cuadro desde `equipo.enRanura("mano")`. **Escribirla
+   * con el mismo valor no hace absolutamente nada** —ni una reserva, ni un
+   * recorrido—, que es lo que la vuelve barata en el bucle; y cambiarla no
+   * reconstruye el cuerpo: cuelga o descuelga el modelo que corresponde.
+   * @type {string|null}
+   */
+  get enMano() { return this._enMano; }
+
+  set enMano(id) {
+    const nuevo = id || null;
+    if (nuevo === this._enMano) return;
+    this._enMano = nuevo;
+    this._colgar(nuevo);
+  }
+
+  /**
+   * La posición **en espacio de mundo** de la mano derecha, o de la punta del
+   * objeto si lo declara —la llama de la antorcha y la del candil—.
+   *
+   * Reemplaza a la `posicionDeMano()` aproximada de la fase 1: la llama deja de
+   * salir de una cuenta sobre la cámara y sale del modelo, así que se mece con
+   * el brazo, se agacha cuando el cuerpo se agacha y queda donde se la ve.
+   *
+   * `getWorldPosition` actualiza las matrices de los padres por su cuenta, así
+   * que sirve también antes del primer dibujo del cuadro.
+   *
+   * @param {object} [salida] un `Vector3` o cualquier `{x,y,z}`. Sin argumento
+   *        devuelve un vector **propio del cuerpo, que se reescribe en la
+   *        llamada siguiente**: no se guarda, se lee.
+   */
+  puntoDeMano(salida = this._punto) {
+    const nodo = this._modeloEnMano?.punta ?? this.manos?.[1] ?? this.grupo;
+    nodo.getWorldPosition(this._punto);
+    if (salida === this._punto) return salida;
+    if (typeof salida.set === 'function') salida.set(this._punto.x, this._punto.y, this._punto.z);
+    else { salida.x = this._punto.x; salida.y = this._punto.y; salida.z = this._punto.z; }
+    return salida;
+  }
+
+  /**
+   * Un material de la paleta de herramientas, compartido por todos los modelos.
+   *
+   * Se crea con `this._material()`, que es el mismo camino del torso: pasa por
+   * `registrarMaterial` —o sea por las cascadas de sombra— y queda en
+   * `_materiales`, así que lo libera `_limpiar()` sin nada especial.
+   *
+   * **No lleva ninguna bandera que cambie la clave del programa** (`vertexColors`,
+   * `flatShading`, mapas, `side`): por eso comparte programa con los materiales
+   * del cuerpo, que están compilados desde la carga, y equipar una herramienta
+   * por primera vez no compila nada. `emissive` sí se puede: es un uniforme.
+   */
+  _tinta(nombre) {
+    let m = this._paleta.get(nombre);
+    if (m) return m;
+    const def = PALETA[nombre] ?? PALETA.madera;
+    m = this._material(def.color, def.rugosidad);
+    if (def.emisivo !== undefined) {
+      m.emissive.setHex(def.emisivo);
+      m.emissiveIntensity = def.emision ?? 1;
+    }
+    this._paleta.set(nombre, m);
+    return m;
+  }
+
+  /** Cuelga el modelo de un id en la mano derecha, o la deja vacía con `null`. */
+  _colgar(id) {
+    if (this._modeloEnMano) {
+      this._modeloEnMano.removeFromParent();
+      this._modeloEnMano = null;
+    }
+    const mano = this.manos?.[1];
+    if (!id || !mano) return;
+    let modelo = this._modelos.get(id);
+    if (modelo === undefined) {
+      // Se construye una sola vez por id y por cuerpo. Un id sin modelo guarda
+      // `null` en el caché: así no se vuelve a intentar cuadro por cuadro.
+      modelo = construirHerramienta(id, (n) => this._tinta(n));
+      this._modelos.set(id, modelo);
+    }
+    if (!modelo) return;
+    mano.add(modelo);
+    this._modeloEnMano = modelo;
+  }
+
+  /**
+   * Suelta y libera todos los modelos, colgados o no.
+   *
+   * Los materiales NO se tocan acá: son los de `_materiales` y los libera
+   * `_limpiar()`, que es quien los creó.
+   */
+  _soltarHerramientas() {
+    if (this._modeloEnMano) {
+      this._modeloEnMano.removeFromParent();
+      this._modeloEnMano = null;
+    }
+    for (const modelo of this._modelos.values()) {
+      if (!modelo) continue;
+      modelo.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
+    }
+    this._modelos.clear();
+    this._paleta.clear();
+  }
+
+  /** Triángulos y dibujos del modelo colgado ahora mismo. Lo usa el banco. */
+  get costoEnMano() {
+    const m = this._modeloEnMano;
+    return { triangulos: m?.triangulos ?? 0, dibujos: m?.dibujos ?? 0 };
   }
 
   // ── Animación ─────────────────────────────────────────────────────────────
@@ -320,6 +490,35 @@ export class Cuerpo {
       this.codos[i].rotation.x = 0.28 + Math.max(0, -si) * 0.45 * swing;
     }
 
+    // Con algo en la mano el brazo derecho deja de colgar: el antebrazo sube,
+    // el hombro casi deja de bracear y el brazo se abre un poco del cuerpo.
+    //
+    // No es un adorno. Medido con el brazo suelto, la mano queda a 0,85 m del
+    // suelo y pegada al muslo: una barreta de noventa centímetros barre el piso
+    // o atraviesa la pierna, y la llama de la antorcha camina a la altura de la
+    // cadera en vez de ir por delante. Con la carga la mano sube a 0,94 y se
+    // adelanta 0,21 m, que es donde uno lleva de verdad una herramienta.
+    //
+    // Se suaviza en un cuarto de segundo para que cambiar de herramienta no dé
+    // un tirón, y con la mano vacía el término entero vale cero.
+    const carga = this._modeloEnMano ? 1 : 0;
+    this._cargaSuave += (carga - this._cargaSuave) * Math.min(1, dt * 8);
+    if (this._cargaSuave > 0.001) {
+      const k = this._cargaSuave;
+      this.brazos[1].rotation.x *= 1 - 0.60 * k;
+      this.brazos[1].rotation.z -= 0.05 * k;
+      this.codos[1].rotation.x = this.codos[1].rotation.x * (1 - 0.5 * k) + 0.78 * k;
+    }
+
+    // Y la herramienta se endereza: su inclinación está escrita en el espacio
+    // del CUERPO, así que acá se le descuenta lo que doblaron el hombro y el
+    // codo. Es lo que hace que un hacha siga apuntando al mismo lado mientras el
+    // brazo bracea, en vez de pasearse de la rodilla al hombro con cada paso.
+    if (this._modeloEnMano) {
+      this._modeloEnMano.rotation.x =
+        this._modeloEnMano.userData.rx - this.codos[1].rotation.x - this.brazos[1].rotation.x;
+    }
+
     // Agacharse: el cuerpo se recoge y se inclina, en vez de encogerse entero
     const objetivo = j.agachado ? 1 : 0;
     this._agachadoSuave += (objetivo - this._agachadoSuave) * Math.min(1, dt * 10);
@@ -350,4 +549,7 @@ export class Cuerpo {
     this._limpiar();
     this.grupo.removeFromParent();
   }
+
+  /** El nombre que usa el resto de three para lo mismo. */
+  dispose() { this.destruir(); }
 }

@@ -631,6 +631,47 @@ modelos si hace falta (`src/entities/Herramientas3D.js`). El cableado de
 
 ---
 
+### FASE 3 CERRADA el 11/9/2026
+
+**La herramienta se ve en la mano.** `src/entities/Herramientas3D.js` (nuevo)
+arma los 18 objetos de ranura mano con nueve tintas compartidas y cinco poses;
+`Cuerpo` gana `manos[]`, `enMano`, `puntoDeMano()` y una pose de carga.
+
+**Presupuesto medido:** el peor modelo es la pala de omóplato con **144
+triángulos** —el 16 % del techo de 900— y **2 mallas**; cuatro salen en una sola.
+En la vista previa, alternado en tres rondas a Baja 1024×576 en tercera persona:
+**−0,01 ms**, o sea nada contra el ruido. Cambiar de herramienta **no compila
+ningún programa** y no traba el cuadro.
+
+**La llama de la antorcha ahora sale del modelo**, no de la cuenta aproximada de
+la fase 1: la punta subió de 1,12 a 1,39 m.
+
+**Bancos:** Node **4 de 4**; falsador **8 vistos, 0 puntos ciegos, 1 declarado
+sin falsar**.
+
+**Lo que el banco se equivocó, tercera fase seguida:**
+1. Puse un tope arbitrario de cuatro materiales distintos; el agente usó nueve
+   tintas compartidas entre dieciocho objetos, que no cuesta un dibujo de más.
+   La aserción pasó a medir lo que importa: que no haya un material por objeto.
+2. **La aserción de liberación no es falsable** y quedó declarada: el espía vive
+   en la instancia de la geometría, el caché se libera igual, y un `aplicar()`
+   vacío rompe la construcción del cuerpo.
+
+**Y un error de cableado del jefe:** puse `cuerpo.enMano` dentro del `if` de la
+luz, así que sólo se actualizaba con una llama encendida y las primeras capturas
+salieron con la mano vacía. Va en la primera línea de `juntarLuces()`.
+
+**Lo que el agente no pudo cumplir, declarado:** «≤ 2 dibujos» vale en el pase
+principal; **en sombras no**, porque las cuatro cascadas del CSM pueden llevarlo
+a 10. La alternativa era no proyectar sombra, y eso despega la herramienta de la
+mano al mediodía.
+
+**Para mirar en pantalla:** `capturas/r5f3-hacha-3p.png`, `-hacha-1p.png` y
+`-antorcha-3p.png`. A la distancia de la captura de tercera persona la
+herramienta se intuye pero no resuelve: **esto hay que verlo jugando.**
+
+---
+
 ## Reparto — propiedad exclusiva, sin excepciones
 
 Un agente que necesita tocar un archivo ajeno **no lo toca**: escribe el parche

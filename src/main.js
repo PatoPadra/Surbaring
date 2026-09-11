@@ -738,12 +738,21 @@ async function iniciar() {
    * banco de la vista previa asignen las luces exactamente igual que el bucle.
    */
   function juntarLuces(est = eventos.aplicar(tiempo.estado())) {
+    // Lo que hay en la mano, ANTES de todo: de acá sale el modelo que se dibuja
+    // y el punto del que sale la llama. Va en la primera línea y no dentro del
+    // if de la luz, porque si no una captura sin antorcha dibuja la mano vacía.
+    cuerpo.enMano = equipo.enRanura('mano')?.id ?? null;
     const fuentes = hornos.fuentesDeLuz();
     const incendio = clima.fuenteDeLuz?.();
     if (incendio) fuentes.push(incendio);
     const enMano = fuenteDeMano(equipo.luzActiva(tiempo.fecha.getTime(), est),
       jugador, camara, tiempo.segundosTotales);
-    if (enMano) fuentes.push(enMano);
+    if (enMano) {
+      // La llama sale de la punta del modelo, no de la cuenta aproximada de la
+      // fase 1: con la herramienta dibujada, el punto de la mano es el de verdad.
+      cuerpo.puntoDeMano(enMano);
+      fuentes.push(enMano);
+    }
     luces.asignar(fuentes, camara.position);
     // La mitad jugable: de noche, con luz, el mapa abre las cuatro celdas vecinas
     exploracion.luzM = radioDeLuzEn(fuentes, jugador.posicion);
