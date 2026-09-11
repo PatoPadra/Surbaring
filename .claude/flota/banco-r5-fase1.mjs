@@ -580,26 +580,48 @@ async function s5() {
   const pos = { x: 0, y: 100, z: 0 };
   const noche = { horaDecimal: 23, densidadNiebla: 0 };
   const dia = { horaDecimal: 12, densidadNiebla: 0 };
+  // Topes corregidos por el jefe el 11/9/2026, con la fase terminada. El
+  // contrato pedía 120 sin luz y 220 con luz, y el agente midió que `revisar()`
+  // cuenta por celdas de 256 m: por debajo de 256 no se revela nunca una vecina,
+  // así que 120 y 220 revelaban la misma celda y la licencia no producía nada.
+  // Medido con el revisar() real sobre 3000 posiciones: 220 → 1 celda, 300 → 5
+  // (las cuatro vecinas a valor 104), día 380 → 9. Sin luz queda lo de hoy.
   s.ok(e.alcanceVisual(pos, dia, 0) === 380, 'premisa: de día sin prominencia da los 380 m de base', e.alcanceVisual(pos, dia, 0));
-  s.ok(e.alcanceVisual(pos, noche, 0) === 120, 'de noche sin luz: 120 m', e.alcanceVisual(pos, noche, 0));
+  s.ok(e.alcanceVisual(pos, noche, 0) === 220, 'de noche sin luz: 220 m, lo mismo que antes de la ronda', e.alcanceVisual(pos, noche, 0));
   const conLuz = e.alcanceVisual(pos, noche, 12);
-  s.ok(conLuz === 220, 'de noche con luz: 220 m', conLuz);
+  s.ok(conLuz === 300, 'de noche con luz: 300 m', conLuz);
   s.ok(e.alcanceVisual(pos, dia, 12) === 380, 'de día la luz no cambia nada', e.alcanceVisual(pos, dia, 12));
-  s.ok(e.alcanceVisual(pos, { horaDecimal: 5, densidadNiebla: 0 }, 0) === 120, 'a las 5 de la madrugada también es noche');
-  s.ok(e.alcanceVisual(pos, { horaDecimal: 21, densidadNiebla: 0 }, 6) === 220, 'a las 21 con un candil: 220');
+  s.ok(e.alcanceVisual(pos, { horaDecimal: 5, densidadNiebla: 0 }, 12) === 300, 'a las 5 de la madrugada también es noche');
+  s.ok(e.alcanceVisual(pos, { horaDecimal: 21, densidadNiebla: 0 }, 6) === 300, 'a las 21 con un candil: 300');
   e.luzM = 6;
-  s.ok(e.alcanceVisual(pos, noche) === 220, 'sin tercer argumento lee this.luzM (con luz)', e.alcanceVisual(pos, noche));
+  s.ok(e.alcanceVisual(pos, noche) === 300, 'sin tercer argumento lee this.luzM (con luz)', e.alcanceVisual(pos, noche));
   e.luzM = 0;
-  s.ok(e.alcanceVisual(pos, noche) === 120, 'sin tercer argumento lee this.luzM (sin luz)', e.alcanceVisual(pos, noche));
+  s.ok(e.alcanceVisual(pos, noche) === 220, 'sin tercer argumento lee this.luzM (sin luz)', e.alcanceVisual(pos, noche));
   altura = 0; const alto = { x: 0, y: 400, z: 0 };
-  s.ok(e.alcanceVisual(alto, noche, 12) === 220 && e.alcanceVisual(alto, noche, 0) === 120, 'en un mirador de noche, los mismos topes');
+  s.ok(e.alcanceVisual(alto, noche, 12) === 300 && e.alcanceVisual(alto, noche, 0) === 220, 'en un mirador de noche, los mismos topes');
   s.ok(e.alcanceVisual(alto, dia, 0) > 1000, 'premisa: en un mirador de día se ve lejos', e.alcanceVisual(alto, dia, 0));
-  // El camino feliz es la DIFERENCIA, no el 220: la base ya daba 220 de noche
-  // sin saber nada de luces, y una guarda que pregunta sólo por el 220 pasa por
-  // el motivo equivocado. Lo encontró la corrida de este banco contra b04a424.
-  const sinLuz = e.alcanceVisual(pos, noche, 0);
-  s.feliz = conLuz === 220 && sinLuz === 120;
-  s.felizQue = `de noche la luz cambia el alcance (con ${conLuz}, sin ${sinLuz})`;
+
+  // La consecuencia, no el número: con luz se revelan celdas vecinas y sin luz
+  // no. Es lo que la primera versión del contrato no tenía y nadie habría visto
+  // mirando sólo alcanceVisual().
+  const celdas = (luzM) => {
+    const x = new Exploracion(mundo);
+    x.luzM = luzM;
+    x.revisar({ x: 1000, y: 100, z: -700 }, noche, 1);
+    let c = 0;
+    for (const v of x.conocido) if (v > 0) c++;
+    return c;
+  };
+  altura = 100;
+  const celdasSin = celdas(0), celdasCon = celdas(12);
+  s.ok(celdasSin === 1, 'de noche a oscuras revisar() revela sólo la celda que se pisa', celdasSin);
+  s.ok(celdasCon === 5, 'de noche con luz revisar() revela además las cuatro vecinas', celdasCon);
+
+  // El camino feliz es la DIFERENCIA en el mapa, no un número de alcanceVisual.
+  // La base ya daba 220 de noche sin saber nada de luces, y la primera guarda,
+  // que preguntaba por el 220, pasaba por el motivo equivocado.
+  s.feliz = conLuz === 300 && celdasCon > celdasSin;
+  s.felizQue = `de noche la luz abre el mapa (celdas con ${celdasCon}, sin ${celdasSin})`;
   return s;
 }
 
@@ -694,12 +716,26 @@ async function s7() {
   let d = null;
   try { d = JSON.parse(texto); } catch (e) { s.ok(false, 'herramientas.json es JSON válido', e.message); return s; }
   s.ok(true, 'herramientas.json es JSON válido');
-  s.ok(!/ninguna luz puntual/i.test(texto), 'la frase falsa «ninguna luz puntual» no está en ningún lado del archivo');
+  // Lo que se pide es que el archivo deje de AFIRMARLO, no que la frase no
+  // aparezca: citarla para refutarla es legítimo, y es lo que hizo el agente.
+  // La primera versión de esta aserción medía la presencia del texto y se puso
+  // roja contra una corrección correcta.
+  const cadenas = [];
+  const juntar = (v) => { if (typeof v === 'string') cadenas.push(v); else if (v && typeof v === 'object') Object.values(v).forEach(juntar); };
+  juntar(d);
+  const afirman = cadenas.filter((c) => /ninguna luz puntual/i.test(c) && !/(era falsa|era falso|es falsa|es falso|decía)/i.test(c));
+  s.ok(afirman.length === 0, 'ninguna cadena del archivo afirma «ninguna luz puntual» sin refutarla', afirman.map((c) => c.slice(0, 80)).join(' · ') || 'ninguna');
   const lic = d.licenciasDeJuego?.licencias || [];
   const deLuz = lic.find((l) => { const j = JSON.stringify(l); return /(luz|antorcha|candil)/i.test(j) && /(noche|nocturn)/i.test(j); });
   s.ok(!!deLuz, 'licenciasDeJuego declara la del alcance nocturno con luz', deLuz?.id || 'no está');
-  if (deLuz) s.ok(['que', 'laNormaReal', 'porQueSeToma', 'comoLoDiceElJuego'].every((k) => typeof deLuz[k] === 'string' && deLuz[k].length > 20),
-    'con los cuatro campos que tienen las otras licencias', Object.keys(deLuz).join(','));
+  // `laRealidad` en vez de `laNormaReal`: es la primera licencia sobre la
+  // física y no sobre la norma, y ningún código lee esos campos por nombre.
+  if (deLuz) {
+    const campos = ['que', 'porQueSeToma', 'comoLoDiceElJuego'].every((k) => typeof deLuz[k] === 'string' && deLuz[k].length > 20)
+      && [deLuz.laNormaReal, deLuz.laRealidad].some((v) => typeof v === 'string' && v.length > 20);
+    s.ok(campos, 'con qué, contra qué realidad o norma, por qué y cómo lo dice el juego', Object.keys(deLuz).join(','));
+    s.ok(/300/.test(deLuz.que || '') && /220/.test(deLuz.que || ''), 'la licencia dice los topes que usa el código (300 con luz, 220 sin luz)', deLuz.que);
+  }
   const obj = (id) => d.objetos.find((o) => o.id === id);
   s.ok(obj('antorcha')?.efecto?.luz === 12 && obj('antorcha')?.efecto?.duracionHoras === 1.5, 'antorcha: 12 m y 1,5 h, sin tocar');
   s.ok(obj('candil_grasa')?.efecto?.luz === 6 && obj('candil_grasa')?.efecto?.duracionHoras === 6, 'candil: 6 m y 6 h, sin tocar');

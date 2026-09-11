@@ -137,7 +137,7 @@ const DEFECTOS = [
     espera: [
       [1, 'cero PointLight/SpotLight/RectAreaLight en el código de src/'],
       [4, 'Equipo.encender() existe'],
-      [5, 'de noche sin luz: 120 m'],
+      [5, 'de noche con luz: 300 m'],
       [6, 'el equipo sobrevive a cerrar la pestaña'],
       [7, 'la frase falsa «ninguna luz puntual» no está en ningún lado del archivo'],
     ],
@@ -367,7 +367,7 @@ const DEFECTOS = [
   Exploracion.prototype.alcanceVisual = function (p, e) { return __a.call(this, p, e, 0); };
 }`),
     modulo: 'systems/Exploracion.js',
-    espera: [[5, 'de noche con luz: 220 m']],
+    espera: [[5, 'de noche con luz: 300 m'], [5, 'de noche con luz revisar() revela además las cuatro vecinas']],
   },
   {
     id: 'D23', que: 'Exploración: la luz cambia el alcance de día',

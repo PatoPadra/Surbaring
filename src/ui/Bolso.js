@@ -76,8 +76,15 @@ const TITULOS = { alimento: 'Alimento', remedio: 'Botica', material: 'Materiales
  */
 const ORDEN = ['alimento', 'remedio', 'material'];
 
+/** Horas del mundo para leer de un vistazo: «1,5 h», «45 min». */
+function horas(h) {
+  if (!Number.isFinite(h)) return '—';
+  if (h < 1) return `${Math.max(1, Math.round(h * 60))} min`;
+  return `${(Math.round(h * 10) / 10).toString().replace('.', ',')} h`;
+}
+
 export class Bolso {
-  /** @param {object} deps {inventario, jugador, hud, recoleccion} */
+  /** @param {object} deps {inventario, jugador, hud, recoleccion, equipo, fabricacion, tiempo} */
   constructor(deps) {
     Object.assign(this, deps);
     this.abierto = false;
@@ -151,6 +158,19 @@ export class Bolso {
             this.hud?.aviso(obj.nombre, r.motivo || 'Todavía no');
           }
         }
+      } else if (accion === 'encender') {
+        const def = this.equipo?.definicion(id);
+        const r = this.equipo?.encender(id, this._fechaMs());
+        if (r?.ok) {
+          const e = def?.efecto || {};
+          const nombre = id === 'velas_cera' ? nombreDe('vela') : (def?.nombre || id);
+          this.hud?.aviso(`${nombre} · alumbra ${e.luz} m`,
+            `Dura ${horas(e.duracionHoras)} del reloj del mundo. Se apaga desde el bolso.`);
+        } else if (r) {
+          this.hud?.aviso(def?.nombre || id, r.motivo || 'No prende');
+        }
+      } else if (accion === 'apagar') {
+        this.equipo?.apagar(this._fechaMs());
       } else if (accion === 'equipar') {
         this.equipo?.equipar(id);
       } else if (accion === 'desequipar') {
@@ -180,22 +200,65 @@ export class Bolso {
   _pintarEquipo() {
     if (!this.equipo) return '';
     const puestos = this.equipo.listar();
-    if (!puestos.length) return '';
+    const encendida = this.equipo.encendida;
+    // Con velas en el bolso también: la licencia de la luz se dice donde se
+    // prende, y una vela se prende aunque no haya nada fabricado.
+    if (!puestos.length && !encendida && !(this.inventario.cantidad('vela') > 0)) return '';
 
     let html = `<h3>Equipo · trabajás en nivel ${this.equipo.nivel}</h3>`;
+
+    // Lo que arde va arriba de todo, con cuánto le queda: es lo que se mira de
+    // noche. Una vela no está en el taller —es una receta— y sin este renglón
+    // no habría dónde verla ni cómo apagarla.
+    if (encendida) {
+      const l = this.equipo.luzActiva(this._fechaMs());
+      if (l) {
+        const def = this.equipo.definicion(l.id);
+        const nombre = l.id === 'velas_cera' ? nombreDe('vela') : (def?.nombre || l.id);
+        html += `<div class="bp-it">
+          <span>${nombre}<small style="color:var(--tinta-tenue)"> · <b style="color:#e0a050">encendida</b> · alumbra ${l.radio} m</small></span>
+          <span class="bp-kg">quedan ${horas(l.horasRestantes)}</span>
+          <button data-accion="apagar" data-id="${l.id}">Apagar</button>
+        </div>`;
+      }
+    }
+
     for (const it of puestos) {
       const usos = it.tope === Infinity ? '' : `${it.usos}/${it.tope} usos`;
+      const alumbra = !!this.equipo.definicion(it.id)?.efecto?.luz;
+      const ardiendo = alumbra && this.equipo.encendida === it.id;
+      if (ardiendo) continue;   // ya está arriba, con su botón de apagar
       const estado = it.gastado ? '<b style="color:#c8503f">gastada</b>'
         : it.puesto ? '<b style="color:#6fae7c">en la mano</b>' : '';
       html += `<div class="bp-it">
         <span>${it.nombre}<small style="color:var(--tinta-tenue)"> · nivel ${it.nivel}${estado ? ' · ' : ''}${estado}</small></span>
         <span class="bp-kg">${usos}</span>
         ${it.gastado ? `<button data-accion="reparar" data-id="${it.id}">Reparar</button>` : ''}
-        ${it.ranura && !it.puesto && !it.gastado ? `<button data-accion="equipar" data-id="${it.id}">Sacar</button>` : ''}
+        ${alumbra && !it.gastado ? `<button data-accion="encender" data-id="${it.id}">Encender</button>` : ''}
+        ${it.ranura && !it.puesto && !it.gastado && !alumbra ? `<button data-accion="equipar" data-id="${it.id}">Sacar</button>` : ''}
         ${it.puesto ? `<button data-accion="desequipar" data-id="${it.ranura}">Guardar</button>` : ''}
       </div>`;
     }
+
+    // La licencia se dice donde se prende la luz, no escondida en un archivo:
+    // es la misma regla que el arco y el fuego (`licenciasDeJuego.luzNocturna`).
+    const hayLuz = encendida || puestos.some(it => this.equipo.definicion(it.id)?.efecto?.luz)
+      || this.inventario.cantidad('vela') > 0;
+    if (hayLuz) {
+      html += `<div class="bp-kg" style="text-align:left;font-size:.66rem;padding:.3rem 0">
+        De noche, con luz en la mano o dentro del resplandor de un fuego, el mapa cuenta que ves hasta 220 m; a oscuras, 120.
+        Es una licencia de juego: una llama de verdad encandila y no deja ver más lejos.</div>`;
+    }
     return html;
+  }
+
+  /**
+   * La hora del mundo, en milisegundos. `main.js` le pasa `tiempo` al bolso;
+   * mientras no lo haga, se toma el de la fundición, que es el mismo reloj.
+   */
+  _fechaMs() {
+    const t = this.tiempo ?? this.fabricacion?.fundicion?.tiempo;
+    return t?.fecha?.getTime?.();
   }
 
   /**
@@ -292,6 +355,8 @@ export class Bolso {
           <span class="bp-kg">${(pesoDe(it.id) * it.cantidad).toFixed(1)} kg</span>
           ${def?.cura ? `<button data-accion="curar" data-id="${it.id}">Curarte</button>` : ''}
           ${def?.nutre && !def?.cura ? `<button data-accion="comer" data-id="${it.id}">Comer</button>` : ''}
+          ${it.id === 'vela' && this.equipo?.definicion('velas_cera') && this.equipo.encendida !== 'velas_cera'
+            ? '<button data-accion="encender" data-id="velas_cera">Encender</button>' : ''}
           <button data-accion="tirar" data-id="${it.id}" data-n="1">Tirar 1</button>
           <button data-accion="tirar" data-id="${it.id}" data-n="todo">Todo</button>
         </div>`;

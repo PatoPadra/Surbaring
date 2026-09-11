@@ -26,6 +26,27 @@ const GOTAS = 4200;
 const COPOS = 1800;
 const CENIZAS = 1400;
 
+// El resplandor del incendio.
+//
+// Acá colgaba una luz puntual de three con 700 m de alcance y decaimiento
+// físico, y tenía dos problemas. El primero, que agregarla o sacarla del grafo
+// cambia la cuenta de luces y recompila todos los materiales iluminados: un
+// congelamiento de ~19 s en la placa de destino (RONDA5.md). El segundo, que no
+// alumbraba: con decaimiento 2 e intensidad máxima 31, a 12 m —el suelo bajo el
+// humo— daba 0,21, y a 25 m, 0,05. La «línea naranja en la ladera» que prometía
+// el comentario no la veía nadie.
+//
+// Ahora el incendio declara su luz con `fuenteDeLuz()` y `engine/Luces.js` la
+// escribe en uno de sus dos lugares fijos. El radio acompaña la zona que quema:
+// `Eventos.golpear` hace daño a menos de 90 m del frente, y a intensidad plena
+// la luz llega a 80. Son números de juego elegidos sin haber visto la captura
+// nocturna: se ajustan mirándola.
+const RESPLANDOR_COLOR = new THREE.Color(0xff5a1e);
+const RESPLANDOR_ALTURA_M = 12;
+const RESPLANDOR_RADIO_M = [35, 80];      // de intensidad 0 a 1
+const RESPLANDOR_INTENSIDAD = [2, 6];
+const HUMO_GRIS = new THREE.Color(0x8f8b84);
+
 // AVISO: el render usa logarithmicDepthBuffer, y un ShaderMaterial propio que
 // no incluya los chunks de log-depth escribe una profundidad que no se
 // corresponde con la del resto de la escena. El resultado es que el terreno se
@@ -106,6 +127,8 @@ export class Clima {
     this.destello = 0;         // 0..1, lo lee el bucle para la exposición
     this._proximoRayo = 0;
     this._t = 0;
+    /** El incendio que se está dibujando, o null: de acá sale `fuenteDeLuz()`. */
+    this._fuego = null;
 
     this.lluvia = this._crearLluvia();
     this.nieve = this._crearParticulas(COPOS, 0xf2f6fb, 26, 'nieve');
@@ -259,10 +282,30 @@ export class Clima {
       capas.push(m);
       grupo.add(m);
     }
-    const brasa = new THREE.PointLight(0xff5a1e, 0, 700, 2);
-    grupo.add(brasa);
+    // Sin luz de three en el grafo: ver RESPLANDOR arriba y `fuenteDeLuz()`.
     this.grupo.add(grupo);
-    return { grupo, capas, mat, brasa };
+    return { grupo, capas, mat };
+  }
+
+  /**
+   * La luz del incendio que se está dibujando, para `engine/Luces.js`, o null.
+   *
+   * Sale del mismo punto que el humo, doce metros sobre el suelo del frente, y
+   * crece con la intensidad del evento. Vale sólo después de `actualizar()`,
+   * que es donde se sitúa el incendio.
+   *
+   * @returns {null|{x:number,y:number,z:number,radio:number,color:number[],intensidad:number}}
+   */
+  fuenteDeLuz() {
+    const f = this._fuego;
+    if (!f) return null;
+    const i = Math.min(1, Math.max(0, f.intensidad));
+    return {
+      x: f.x, y: f.y + RESPLANDOR_ALTURA_M, z: f.z,
+      radio: RESPLANDOR_RADIO_M[0] + (RESPLANDOR_RADIO_M[1] - RESPLANDOR_RADIO_M[0]) * i,
+      color: [RESPLANDOR_COLOR.r, RESPLANDOR_COLOR.g, RESPLANDOR_COLOR.b],
+      intensidad: RESPLANDOR_INTENSIDAD[0] + (RESPLANDOR_INTENSIDAD[1] - RESPLANDOR_INTENSIDAD[0]) * i,
+    };
   }
 
   // ── Actualización ─────────────────────────────────────────────────────────
@@ -371,11 +414,18 @@ export class Clima {
   /** Sitúa y anima la columna de humo del incendio activo, si hay uno. */
   _humo(dt, est, camara) {
     const fuego = (est.eventos || []).find(e => e.id === 'incendio_forestal' && e.intensidad > 0);
-    if (!fuego || fuego.x == null) { this.humo.grupo.visible = false; return; }
+    if (!fuego || fuego.x == null) {
+      this.humo.grupo.visible = false;
+      this._fuego = null;
+      return;
+    }
 
     this.humo.grupo.visible = true;
     const base = this.alturaEn ? this.alturaEn(fuego.x, fuego.z) : (camara.position.y - 40);
     this.humo.grupo.position.set(fuego.x, base, fuego.z);
+    this._fuego = { x: fuego.x, y: base, z: fuego.z, intensidad: fuego.intensidad };
+    // Qué tanto se tiñe de brasa la base de la columna
+    const tinte = Math.min(1, fuego.intensidad * 1.5) * 0.55;
 
     const alto = 260 + fuego.intensidad * 420;
     for (let i = 0; i < this.humo.capas.length; i++) {
@@ -388,13 +438,14 @@ export class Clima {
         Math.cos(t * 3 + i) * t * 90);
       m.scale.set(ancho, ancho * 1.15, 1);
       m.material.opacity = 0.52 * (1 - t) * Math.min(1, fuego.intensidad * 2.2);
+      // La base de la columna la ilumina el fuego desde abajo; arriba ya es
+      // humo gris. Es la señal que se ve desde lejos, de día y más de noche, y
+      // cambiar un color no compila nada: es un uniforme que ya estaba.
+      m.material.color.lerpColors(HUMO_GRIS, RESPLANDOR_COLOR, tinte * (1 - t) * (1 - t) * (1 - t));
       // Siempre de frente a la cámara: son planos, no volúmenes. Cada bocanada
       // gira sobre su propio eje para que no se repita el mismo dibujo.
       m.quaternion.copy(camara.quaternion);
       m.rotateZ(i * 1.7 + this._t * 0.05);
     }
-    // De noche el frente se ve como una línea naranja en la ladera
-    this.humo.brasa.intensity = 5 + fuego.intensidad * 26;
-    this.humo.brasa.position.set(0, 12, 0);
   }
 }

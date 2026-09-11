@@ -21,6 +21,23 @@
 const CELDAS = 256;                 // 65.536 m / 256 = 256 m por celda
 const CLAVE = 'survibar.exploracion.v1';
 
+/**
+ * El tope de noche, con luz y sin ella.
+ *
+ * Con luz queda en los 220 m que el mapa ya daba de noche; a oscuras cae a 120.
+ * Cuenta como luz lo que se lleva en la mano, o estar dentro del radio de un
+ * fuego encendido.
+ *
+ * **Es una licencia de juego, y está declarada** en `licenciasDeJuego.luzNocturna`
+ * de `herramientas.json`. En la realidad una antorcha no deja ver más lejos: lo
+ * que alumbra a doce metros encandila, y el ojo pierde la adaptación a la
+ * oscuridad que es justamente lo que deja distinguir el perfil de un cerro a
+ * trescientos. Se toma igual porque la luz tiene que servir para algo más que
+ * mirarla, y la cuenta del mapa es donde el jugador lo nota.
+ */
+const TOPE_NOCHE_CON_LUZ_M = 220;
+const TOPE_NOCHE_SIN_LUZ_M = 120;
+
 export class Exploracion {
   /** @param {import('../world/Mundo.js').Mundo} mundo */
   constructor(mundo) {
@@ -40,6 +57,11 @@ export class Exploracion {
     this._conocidas = 0;
     /** Hay cambios sin escribir en el almacenamiento. */
     this._sucio = false;
+    /**
+     * Radio de la luz que cuenta ahora, en metros: 0 a oscuras. Lo escribe el
+     * bucle de `main.js` con `radioDeLuzEn()` de `engine/Luces.js`.
+     */
+    this.luzM = 0;
     this.cargar();
 
     // El guardado por umbral —cada 400 celdas nuevas, en `main.js`— pierde lo
@@ -86,8 +108,12 @@ export class Exploracion {
    *
    * La prominencia se estima contra el terreno de un kilómetro a la redonda:
    * es la diferencia entre estar sobre una loma y estar al pie de ella.
+   *
+   * @param {number} [luzM] radio de la luz que cuenta, en metros. Por omisión,
+   *   `this.luzM`, que el bucle escribe una vez por cuadro; `revisar()` no lo
+   *   pasa y lo toma de ahí. De día no cambia nada.
    */
-  alcanceVisual(pos, est) {
+  alcanceVisual(pos, est, luzM = this.luzM ?? 0) {
     let suma = 0, n = 0;
     for (let a = 0; a < 8; a++) {
       const ang = a / 8 * Math.PI * 2;
@@ -106,7 +132,7 @@ export class Exploracion {
     alcance *= 1 - niebla * 0.9;
     const hora = est?.horaDecimal ?? 12;
     const deNoche = hora < 7 || hora > 20.5;
-    if (deNoche) alcance = Math.min(alcance, 220);
+    if (deNoche) alcance = Math.min(alcance, luzM > 0 ? TOPE_NOCHE_CON_LUZ_M : TOPE_NOCHE_SIN_LUZ_M);
 
     return Math.max(90, Math.min(6000, alcance));
   }
