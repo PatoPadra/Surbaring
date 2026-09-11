@@ -89,15 +89,28 @@
 
       await asentar('2024-02-15T12:00:00');
       cuadro();
+      // El mediodía NO siempre da factor 1: la nubosidad sale de una semilla al
+      // azar y un cielo limpio manda menos luz difusa. Lo avisó el agente. Así
+      // que se compara contra el factor que corresponde a ESE cielo, y la prueba
+      // de 'igual al píxel contra 1' sólo corre cuando el cielo da 1.
       const valorDia = uniformes[0]?.value;
-      ok(Math.abs(valorDia - 1) < 0.01, 'al mediodía del 15/2 el juego escribió uLuzCielo = 1', valorDia);
+      const iCielo = S.cielo?.intensidadCielo ?? NaN;
+      const esperado = Math.min(1, iCielo / 0.85);
+      out.numeros.mediodia = { intensidadCielo: +iCielo.toFixed(3), factor: +valorDia.toFixed(3), esperado: +esperado.toFixed(3) };
+      ok(Math.abs(valorDia - esperado) < 0.01, 'al mediodía el factor es el que corresponde a la luz de ese cielo', JSON.stringify(out.numeros.mediodia));
       const dia = imagen();
-      volver = forzar(1);
-      const diaUno = imagen();
+      volver = forzar(esperado);
+      const diaIgual = imagen();
       volver();
-      const dDia = diferencia(dia, diaUno);
-      out.numeros.mediodiaDiferencia = +dDia.toFixed(3);
-      ok(dDia < 0.5, 'al mediodía la imagen es igual al píxel a la del factor en 1', dDia.toFixed(3));
+      ok(diferencia(dia, diaIgual) < 0.5, 'al mediodía la imagen coincide con la del factor esperado', diferencia(dia, diaIgual).toFixed(3));
+      if (esperado >= 0.999) {
+        volver = forzar(1);
+        const diaUno = imagen();
+        volver();
+        const dDia = diferencia(dia, diaUno);
+        out.numeros.mediodiaDiferencia = +dDia.toFixed(3);
+        ok(dDia < 0.5, 'al mediodía la imagen es igual al píxel a la del factor en 1', dDia.toFixed(3));
+      } else out.notas = (out.notas || []).concat(`mediodía con nubes bajas: factor ${valorDia.toFixed(3)}, no se compara contra 1`);
 
       // ── 2 · COSTO ────────────────────────────────────────────────────────
       window.__sinLuzCielo = false;

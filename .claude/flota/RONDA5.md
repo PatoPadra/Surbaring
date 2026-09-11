@@ -511,6 +511,72 @@ sobre diez metros de agua. Medido sobre el DEM real, en al menos 300 orillas:
 —pasarle el cielo al sotobosque, y la consulta del suelo y la cota de nieve a los
 pasos— va a `pendiente-r5-suelo.md`. Bitácora: `r5-suelo.md`.
 
+### FASE 2 CERRADA el 11/9/2026
+
+**d) La vegetación ya no brilla de noche.** `Vegetacion.luzCielo(cielo)` =
+min(1, intensidadCielo / 0,85) multiplica la traslucidez de la hoja y el relleno
+del sotobosque. Medido en la imagen final, a las 23:40 sin ninguna luz: la
+luminancia del cuadro cae de **2,01 a 0,27**, un 87 %. Cuesta **+0,07 ms**
+(alternado en tres rondas contra una variante con el factor sacado del
+sombreador, con la guarda de que esa variante se ve igual que el factor en 1).
+
+**Y el mediodía no siempre vale 1**, que es un hallazgo del agente: la nubosidad
+sale de una semilla al azar y un cielo limpio manda menos luz difusa. Medido:
+intensidad 0,825 → factor 0,971. El banco pasó a comparar contra el factor que
+corresponde a ESE cielo, y sólo compara contra 1 cuando el cielo da 1.
+
+**c) La orilla tiene orilla, y la espuma existe por primera vez.** El arreglo va
+en `Mundo._excavarLagos`: la primera corona de agua queda 0,8 m bajo el espejo y
+**la tierra que toca el agua sube hasta 0,8 m**, para que la línea donde el lecho
+corta el agua caiga en el borde de la máscara. Medido por el banco del jefe sobre
+más de 300 orillas del DEM real:
+
+| | antes | ahora | contrato |
+|---|---|---|---|
+| Profundidad en la orilla visible, mediana | 9,59 m | **0,03 m** | ≤ 0,3 |
+| Profundidad en la orilla visible, p90 | 9,77 m | **0,22 m** | ≤ 1,0 |
+| Ancho con menos de 0,5 m, mediana | 0 m | **10 m** | 1,5–12 |
+| Ancho con menos de 0,5 m, p10 | 0 m | **7,5 m** | ≥ 0,5 |
+| Cubeta a 300 m | — | **0,93×** | ±15 % |
+| `_excavarLagos` | — | **+41 ms** | ≤ +200 |
+
+En la línea de la captura de apertura, el agua entra con 0,14 m y sube 4,5 cm por
+metro; antes eran 9,79 m de golpe. La captura `r5f2-orilla-mediodia.png` muestra
+la línea de espuma, la arena mojada y el agua abriéndose. El umbral de espuma bajó
+de 1,35 a 0,7 m (`Agua.js:794`) porque con la playa nueva el cinturón blanco
+cubría diez metros.
+
+**Se puede vadear:** unos 21 m de agua caminable antes de nadar, contra 0. La
+física no se tocó.
+
+**b) El suelo suena.** `Mundo.sueloEn(x, z, cotaNieve)` clasifica agua, nieve,
+roca, pasto y hojarasca con la misma decisión del sombreador del terreno, y
+`Audio.pasos()` la consulta **sólo cuando el pie apoya**. Contra la lectura
+independiente del sombreador que hizo el jefe: **100 % de acuerdo** sobre más de
+5000 puntos y dos cotas de nieve, con los cuatro materiales presentes y al menos
+el 90 % de acuerdo dentro de cada uno. Cuesta 2 µs por consulta.
+
+**Los bancos:** Node **4 de 4**; navegador **10 de 10**.
+
+**Lo que el banco se equivocó, y lo encontró el agente, no el jefe:** con
+`detalle = 0,5` la máscara de nieve no pasa de 0,5214, así que la banda de
+ambigüedad de ±0,04 sobre la máscara **descartaba toda la nieve** del acuerdo.
+Ahora la banda va sobre el término previo al factor.
+
+**Consecuencias declaradas, para mirar jugando:**
+- **La minería da arena en toda la costa llana.** La tierra que toca agua pasó de
+  16,7° a 1,3° de pendiente mediana, y `Mineria.js:104` pide pendiente < 0,22:
+  arena posible en el 25 % de la costa antes, en el 100 % ahora.
+- **La tierra de costa subió** hasta 1,55 m (media 0,67; el 0,7 % del mundo).
+- **Los cardúmenes** ya no se siembran ni derivan donde el lecho subió
+  (`Peces.js`, parche del jefe).
+- **La roca por pendiente casi no existe** (0,02 % de la tierra): `texNormal`
+  pide ~70° de pendiente real. La roca que se pisa es el pedregal sobre 1635 m
+  (17,4 %). No se tocó: cambiaría la luz de todo el terreno ya aprobado. **Queda
+  como decisión del dueño.**
+
+---
+
 ## FASE 3 · `mano` — la herramienta en la mano del personaje
 
 `Equipo.js` sabe qué hay en la ranura `mano` y **`Cuerpo.js` no lo dibuja**.
