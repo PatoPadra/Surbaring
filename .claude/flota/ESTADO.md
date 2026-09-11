@@ -1,5 +1,27 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **11/9/2026 — RONDA 5 ABIERTA: gráficos.** Luz puntual, las tres deudas
+> visuales del README y la herramienta en la mano. Rama
+> `mejoras/ronda5-graficos`; el encargo, con todo lo medido, está en
+> `RONDA5.md`. Se abrió corrigiendo dos cosas que se venían repitiendo:
+>
+> 1. **El juego sí inicializa en la vista previa.** Esperaba el clic de «Entrar
+>    al parque»: `main.js` hace `await personaje.abrir()` antes de arrancar el
+>    bucle y de definir `window.SurviBar`, y el navegador de la vista previa no
+>    tiene el aspecto guardado. Con el clic, `window.SurviBar` y
+>    `window.capturar` existen. La placa de la vista previa es la **Intel HD
+>    4000**.
+> 2. **Sí había luces puntuales en `src/`** —una por horno en `Hornos.js:68`, y
+>    la del incendio en `Clima.js:262`— y **cambiar la cantidad congela el juego
+>    ~19 s** en esta máquina, porque recompila seis programas. Construir la
+>    primera fogata lo dispara hoy, en `main`. La frase «no hay ninguna luz
+>    puntual» salió de un informe de la ronda 4 y pasó a tres archivos sin que
+>    nadie la comprobara.
+>
+> *Una afirmación de un informe no es un hecho hasta que alguien la mira en el
+> código, y copiarla a otro archivo no la vuelve más cierta: la vuelve más
+> difícil de encontrar.*
+
 > **8/9/2026 — RONDA 4: CUATRO FASES CERRADAS Y COMMITEADAS.** El arbol de
 > herramientas dejó de ser un archivo. `Equipo.js` y `Fabricacion.js` existen, se
 > fabrica desde el bolso, `COSECHA_SOTOBOSQUE` rinde por nivel, el indicador de

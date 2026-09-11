@@ -1,0 +1,400 @@
+# RONDA 5 — GRÁFICOS: LA LUZ, LAS TRES DEUDAS VISUALES Y LA HERRAMIENTA EN LA MANO
+
+> Abierta el 11/9/2026 a pedido del dueño. Rama `mejoras/ronda5-graficos`, sale
+> de `main` en `b04a424` (la ronda 4 entera, fusionada por avance rápido).
+> **Mismo método que la 3 y la 4:** un jefe con tres subagentes, propiedad
+> exclusiva de archivos, y **se cierra de a una fase** — no arranca la siguiente
+> hasta que la anterior esté medida, revisada y commiteada.
+> **El jefe es la sesión principal**, que además coordina: escribe el banco de
+> cada fase antes de ver el código del agente, con un falsador al lado, corre
+> los bancos y revisa leyendo el código, no los informes.
+> **No se fusiona a `main` hasta que el dueño la vea en pantalla.**
+
+Antes de tocar nada: `ESTADO.md`, sección **«Trampas de medición ya pagadas»**.
+
+---
+
+## Dos correcciones al pedido, medidas el 11/9/2026 antes de escribir código
+
+### 1 · El juego SÍ inicializa en la vista previa. Estaba esperando un clic.
+
+El encargo advertía que `window.SurviBar` nunca se define en la vista previa
+embebida y que el bucle de cuadro no arranca. **El síntoma es cierto; el
+diagnóstico no.** `main.js:636-639` hace `await personaje.abrir()` si nunca se
+eligió aspecto, y eso ocurre **antes** de `cuadro()` (`:914`) y de
+`window.SurviBar = {…}` (`:917`). El navegador de la vista previa tiene su propio
+perfil, sin `survibar.aspecto.v2` en `localStorage`, así que la carga termina,
+la pantalla de creación queda abierta y el arranque espera. Por eso pasaba
+también con el `main.js` anterior a la ronda 4.
+
+Medido: con la carga terminada, `#personaje` tenía la clase `abierto`,
+`localStorage` estaba vacío y el HUD sin mostrar. Un clic en «Entrar al parque»
+y **`window.SurviBar` existe con 51 sistemas y `window.capturar` es una
+función**. Está anotado en `ESTADO.md` desde la ronda 1 («La creación de
+personaje bloquea el arranque»), y se perdió entre medio.
+
+**Cómo se verifica gráficos en esta ronda, entonces:**
+
+1. `preview_start` con la configuración `survibar`.
+2. Destrabar el arranque: un clic en «Entrar al parque», o dejar en
+   `localStorage` la clave `survibar.aspecto.v2` con `"elegido": true` antes de
+   cargar.
+3. Todo lo demás, por **script inyectado** (`javascript_tool` corre en un mundo
+   aislado y no ve `window.SurviBar`: se inyecta un `<script>` y se devuelve por
+   `document.body.dataset`). La herramienta corta a los **45 s**: lo largo corre
+   dentro de la página y se consulta en llamadas separadas.
+4. Capturas con `window.capturar(nombre, {…})`, que escribe el PNG en
+   `capturas/`. Tiempos con `public/banco.js` (reloj de GPU), cargado a mano.
+5. **Congelar el gobernador antes de medir:** `calidad.automatico = false`. El
+   bucle del juego sigue corriendo y puede cambiar el preset en el medio.
+
+**La placa de la vista previa es la Intel HD 4000**
+(`ANGLE (Intel, Intel(R) HD Graphics 4000 (0x00000166) Direct3D11…)`). La
+preferencia de GPU que el 1/9 forzó la NVIDIA está puesta para `chrome.exe`, y
+la vista previa no es `chrome.exe`. Lo que se mide acá es el costo en la Intel,
+que es la placa de destino según `ESTADO.md`. En la GT 630M la matemática de
+shader cuesta 8× más: un número de ALU medido acá es una **cota inferior** para
+la NVIDIA.
+
+**Ningún subagente levanta Vite ni abre el navegador** (regla de siempre: hay un
+solo servidor). La verificación en navegador la corre el jefe.
+
+### 2 · Sí hay luces puntuales en `src/`, y cuestan un congelamiento de 19 segundos
+
+`r4-revision-codigo.md` afirmó «no existe ninguna luz puntual en todo `src/`», y
+la frase pasó a `ESTADO.md`, a `herramientas.json:2452` y al encargo. **Es
+falsa desde el 19/8/2026:**
+
+- `src/world/Hornos.js:68` — **una `THREE.PointLight` por cada horno construido**,
+  presente siempre, con intensidad 0 mientras no arde.
+- `src/world/Clima.js:262` — la brasa del incendio forestal, colgada de un grupo
+  que se hace visible cuando empieza el evento.
+
+Y lo que ninguna ronda midió es lo que cuestan. En three, la cantidad de luces
+puntuales es parte de la clave del programa: **cuando cambia, se recompilan
+todos los materiales iluminados.** Medido en la vista previa, preset Baja,
+1024×576, punto `bosque` de `banco.js`, 18 cuadros por paso:
+
+| Paso | ms de GPU (mediana) | Programas | CPU del primer cuadro |
+|---|---|---|---|
+| control, sin luces | 32,44 | 15 | 3,7 ms |
+| 1 luz encendida | 33,38 | 15 → 21 | **19 254 ms** |
+| 1 luz apagada pero presente | 33,35 | 21 | 4,2 ms |
+| 2 luces | 34,09 | 21 → 27 | **17 586 ms** |
+| 4 luces | 35,75 | 27 → 33 | **18 871 ms** |
+| control otra vez | 32,64 | 33 | 7,6 ms |
+| 1 luz otra vez (ya compilada) | 33,21 | 33 | 6,5 ms |
+
+**Lo que dice la tabla:**
+
+1. **Construir la primera fogata congela el juego unos 19 segundos** en esta
+   máquina: `Fundicion.construir` → `dibujarHorno` → `Hornos.agregar` → una
+   `PointLight` más → seis programas nuevos. El segundo horno, otros 17. Y un
+   incendio forestal que se vuelve visible cambia la cuenta otra vez. Está en
+   `main` hoy y nadie lo vio, porque nadie construye tres hornos en una captura.
+2. **Una luz cuesta ~0,8 ms de GPU encendida o apagada**: el sombreador la
+   recorre igual. Cuatro luces, 3,3 ms, el 10 % del cuadro.
+3. **Volver a una cantidad ya compilada no cuesta nada** (6,5 ms): el caché de
+   programas por material retiene lo que usó.
+
+**Conclusión de método: el conjunto de luces tiene que quedar fijo desde la
+carga.** Ningún enfoque que agregue o saque luces en tiempo de juego sirve en
+esta máquina, por barato que sea en GPU.
+
+---
+
+## Lo medido antes de elegir el enfoque de la fase 1
+
+El encargo pedía medir el costo por cuadro antes de elegir. Se midieron tres
+enfoques sobre el juego real, en la misma sesión.
+
+**Instrumento.** `bancoValidez()` a Baja: 19,91 ms a 640×360, 43,50 a 1280×720,
+80,76 a 1920×1080 — recta limpia, y 43,50 coincide con los 42,34 de la sexta
+ronda de `docs/medicion-cuadro.md`. Imprime «EL INSTRUMENTO MIENTE» sólo porque
+a 2560×1440 no volvió ninguna muestra válida y la comparación contra `undefined`
+da falso: **mide bien en todo el rango que importa (0,23–2,07 Mpx; se juega a
+0,59)**. Queda anotado para no volver a asustarse con eso.
+
+**Enfoque A — `THREE.PointLight`.** La tabla de arriba: ~0,8 ms por luz siempre,
+y un congelamiento de ~19 s cada vez que cambia la cuenta. Descartado como
+mecanismo en tiempo de juego. Un grupo fijo de `PointLight` compiladas en la
+carga evita el congelamiento, pero cobra ~1,65 ms todo el día por dos luces que
+de día no alumbran nada.
+
+**Enfoque B — bloque propio inyectado en `lights_fragment_begin`, primera
+versión.** Dos luces en un `uniform vec4[2]` compartido, posición en espacio de
+mundo y una multiplicación de matriz por fragmento, salida temprana por
+distancia. Con **guarda de cobertura** —6 programas vivos contenían el bloque, y
+la luz forzada llevó la luminancia media del suelo de 12,53 a 195,16— para no
+medir código que no llegó a compilarse:
+control 32,39 · apagada 33,58 · 1 luz 34,92 · 2 luces 34,90 · apagada otra vez
+34,70. **No gana.** Y la deriva de 1,1 ms entre las dos corridas «apagada»
+enseñó que a partir de acá hay que alternar.
+
+**Enfoque F — bloque propio, posición en espacio de vista calculada en la CPU,
+corte de bucle por cantidad.** Alternado A-B-C-D en tres rondas para que la
+deriva térmica no se confunda con costo. Guardas: 6 programas con el bloque; la
+luz forzada lleva el suelo de 12,53 a 195,16; con la cantidad en cero el suelo
+vuelve a **12,53 exacto**, o sea que el corte corta.
+
+| | ronda 0 | ronda 1 | ronda 2 | media | Δ contra A |
+|---|---|---|---|---|---|
+| A — sin bloque | 32,50 | 33,25 | 33,44 | 33,06 | — |
+| B — F, cantidad 0 | 32,78 | 33,88 | 33,72 | 33,46 | **+0,40** |
+| C — F, 1 luz de 12 m | 33,80 | 33,40 | 33,90 | 33,70 | **+0,64** |
+| D — F, 2 luces de 12 m | 34,68 | 35,08 | 34,01 | 34,59 | **+1,53** |
+
+Ruido entre rondas: ±0,5 ms. Con la luz encendida, F y la `PointLight` cuestan
+lo mismo dentro del ruido. **La diferencia está apagada** —+0,40 contra +1,65 por
+dos luces presentes— y en que F **se compila una sola vez y nunca más**.
+
+### La decisión
+
+**Enfoque F, con dos luces.** Una para lo que el jugador lleva en la mano y otra
+para el fuego encendido más cercano. Sin especular: Lambert, porque una llama no
+da brillo especular que se note y el GGX es la parte cara del sombreador
+estándar. Sin sombras, porque una sombra de luz puntual son seis pasadas de
+profundidad. Compilado en la carga, y cero programas nuevos en tiempo de juego.
+
+---
+
+## FASE 1 · `lumbre` — la luz que declaran tres objetos, y los fuegos que ya existían
+
+### Qué tiene que quedar funcionando
+
+1. **Cero `THREE.PointLight` en `src/`.** Las de `Hornos.js` y `Clima.js` pasan
+   al grupo de dos luces. Construir una fogata, prenderla, apagarla y que empiece
+   un incendio **no compilan ni un programa**.
+2. **La antorcha, el candil y las velas alumbran de verdad**, con su radio
+   (12, 6 y 8 m) y su duración (1,5, 6 y 5 horas del mundo), medida contra el
+   reloj del mundo y no contra el reloj real.
+3. **La mitad jugable**, en `Exploracion.alcanceVisual()`. Decisión del jefe:
+   **de noche y sin luz el alcance cae a 120 m; con luz vuelve a los 220 de
+   hoy.** Cuenta como luz lo que se lleva en la mano o estar dentro del radio de
+   un fuego encendido. De día no cambia nada. Es una **licencia de juego** —en la
+   realidad una antorcha no deja ver más lejos: arruina la adaptación del ojo— y
+   se declara como tal en `licenciasDeJuego` de `herramientas.json`, igual que el
+   arco y el fuego.
+4. **El equipo se guarda.** `Partida.js` hoy no serializa `Equipo`: el hacha no
+   sobrevive a cerrar la pestaña, y una antorcha encendida tampoco. El revisor de
+   código de la ronda 4 lo advirtió y quedó sin hacer. **Sin tocar
+   `VERSION = 1`** (subirla borra la partida de todos). La regla de la muerte no
+   se decide acá: el equipo sigue sobreviviendo a morir, como hoy en la sesión.
+5. **`herramientas.json:2452` deja de afirmar algo falso** sobre las luces.
+
+### El contrato — el banco del jefe se escribe contra esto, sin leer el código
+
+**`src/engine/Luces.js` (nuevo)**
+
+- `export const MAX_LUCES = 2`
+- `export function instalarLuces(THREE)` — idempotente. Agrega el bloque al
+  final de `THREE.ShaderChunk.lights_fragment_begin` y declara en
+  `THREE.ShaderChunk.lights_pars_begin`:
+  - `uniform vec4 uLucesPos[MAX_LUCES]` — xyz en **espacio de vista**, w = radio²
+  - `uniform vec4 uLucesColor[MAX_LUCES]` — rgb = color × intensidad;
+    **`uLucesColor[0].w` = cantidad de luces activas**
+  
+  Y los agrega a `THREE.ShaderLib.{standard, physical, lambert, phong, toon}.uniforms`
+  con valores `Float32Array` **compartidos**: `UniformsUtils.clone()` copia los
+  vectores pero no los arreglos tipados, y así una sola escritura llega a todos
+  los materiales. Devuelve una instancia de `Luces`.
+- `class Luces`:
+  - `asignar(fuentes, referencia)` — `fuentes`: `[{ x, y, z, radio,
+    color: [r,g,b], intensidad, mano?: true }]` en espacio de mundo;
+    `referencia`: `{ x, y, z }`, la posición de la cámara. Elige hasta
+    `MAX_LUCES`: **la de la mano primero, siempre**; después las demás por
+    distancia a la referencia, descartando las que estén a más de su radio más
+    60 m. Una fuente con intensidad 0 no ocupa lugar. Guarda la elección;
+    todavía no escribe espacio de vista.
+  - `enganchar(escena)` — pone `escena.onBeforeRender = (render, escena,
+    camara) => …`, que escribe las posiciones en el espacio de vista de **esa**
+    cámara (la del espejo del lago también) y la cantidad; y
+    `escena.onAfterRender`, que **vuelve la cantidad a 0**. Así el horneado de
+    impostores y la vista previa del personaje, que dibujan otras escenas con
+    materiales iluminados, nunca reciben una luz fuera de lugar.
+  - `get activas()` — cuántas quedaron elegidas en la última asignación.
+- `export function posicionDeMano(jugador, camara, salida)` — un punto
+  aproximado de la mano derecha en primera y tercera persona. La fase 3 lo
+  reemplaza por el hueso real de `Cuerpo.js`.
+
+**`src/systems/Equipo.js`**
+
+- `encender(id, fechaMs)` → `{ ok, motivo }`, para `antorcha`, `candil_grasa` y
+  `velas_cera`. La antorcha y el candil tienen que estar fabricados y quedan en
+  la mano. Las velas consumen una `vela` del inventario al encenderse.
+- `apagar()`
+- `luzActiva(fechaMs, est?)` → `null | { id, radio, horasRestantes }`. Pasada la
+  duración devuelve `null` y cobra: la antorcha queda gastada (durabilidad 1),
+  el candil pierde un uso. Si la nota de la antorcha sigue diciendo «se apaga con
+  lluvia fuerte», **con `est.lluvia ≥ 0,6` se apaga**; si no se implementa, se
+  reescribe la nota. Lo que dice una ficha, pasa.
+- Si lo que está en la mano cambia a otra cosa, la llama se apaga.
+- `serializar()` → datos planos; `reponer(datos)`. El viaje de ida y vuelta
+  conserva `taller`, `puesto` y la llama con su `hasta` en milisegundos del
+  reloj del mundo.
+
+**`src/systems/Exploracion.js`**
+
+- `alcanceVisual(pos, est, luzM = this.luzM ?? 0)` — con `luzM > 0` de noche el
+  tope es 220; con 0, 120. De día `luzM` no cambia el resultado.
+
+**`src/world/Hornos.js`** — `fuentesDeLuz()` → las fuentes de los hornos que
+arden, con el mismo color (`0xff7a2e`), el mismo radio (14 m) y el mismo latido
+de hoy. Ninguna luz de three en el grafo.
+
+**`src/world/Clima.js`** — la brasa del incendio sale del grafo. Si el incendio
+necesita luz, la pide con `fuenteDeLuz()`; si alcanza con tintar el humo y la
+niebla, se tinta. Ninguna luz de three en el grafo.
+
+**`src/systems/Partida.js`** — guarda `equipo.serializar()` y lo repone con
+`equipo.reponer()` **después** de reponer el reloj del mundo, igual que
+`_reponerHornos()`. Una partida vieja sin campo `equipo` carga igual.
+
+**`main.js` es del jefe.** El agente deja el cableado exacto en
+`.claude/flota/pendiente-r5-lumbre.md`: `instalarLuces(THREE)` antes de construir
+cualquier material, `luces.enganchar(escena)`, y por cuadro juntar las fuentes
+—`equipo.luzActiva()` en `posicionDeMano()`, `hornos.fuentesDeLuz()`,
+`clima.fuenteDeLuz?.()`—, llamar a `luces.asignar()` y pasarle a `exploracion`
+el radio de luz que cuenta.
+
+### Presupuesto — lo mide el jefe en la vista previa
+
+- **CPU:** cero programas nuevos, contados con `render.info.programs.length`,
+  al encender y apagar la antorcha, al construir y prender una fogata, y al
+  disparar un incendio.
+- **GPU**, Baja 1024×576, punto `bosque`, alternado en tres rondas contra `main`:
+  sin luces ≤ **+0,6 ms**; una luz encendida ≤ **+1,0 ms**; dos ≤ **+1,8 ms**.
+- **Imagen:** tres capturas nocturnas —sin luz, con la antorcha, junto a una
+  fogata encendida— que mira el jefe, y después el dueño.
+
+### Del agente y de nadie más
+
+`src/engine/Luces.js` (nuevo), `src/world/Hornos.js`, `src/world/Clima.js`,
+`src/systems/Equipo.js`, `src/systems/Exploracion.js`, `src/systems/Partida.js`,
+`src/ui/Bolso.js` (el botón de encender), y en `src/data/herramientas.json`
+sólo las fichas `antorcha`, `candil_grasa`, `velas_cera`, `vela`,
+`licenciasDeJuego` y `engancheAlCodigo.pendienteSinSistema`.
+
+Bitácora: `.claude/flota/r5-lumbre.md`.
+
+---
+
+## FASE 2 · `suelo` — las tres deudas visuales que el README declara sin medir
+
+Se precisa con su medición previa **al abrir la fase**, no ahora. Lo que se sabe:
+
+**a) Ocho vistas de impostor son pocas para un giro rápido.** El cruce se nota
+barriendo en horizontal. Subir a 12 o 16 cuesta memoria y **se mide antes de
+decidir**: el banco de VRAM de `banco-r3-fase3.mjs` ya desglosa la partida de
+los objetivos de impostor. Ojo con la cuenta: la ronda 3 bajó 45 MiB de
+profundidad sin tocar una vista, y tres números de VRAM convivieron cayendo del
+lado cómodo. Número sin desglose, no.
+
+**b) El suelo no tiene material bajo los pies.** Roca, pasto y nieve se caminan
+y suenan igual. Hace falta una consulta de CPU —`Mundo.sueloEn(x, z)`— que
+**reproduzca la misma clasificación que dibuja el sombreador del terreno**
+(cota de nieve, pendiente, cobertura), y que la usen los pasos de `Audio.js`. El
+banco tiene que comparar la consulta contra el sombreador, no contra sí misma.
+
+**c) La línea de espuma de la orilla** está medida en el código desde la ronda 1
+y nadie la miró. Captura dedicada, en Baja, de día y al atardecer. Si se ve
+bien, se cierra con la captura; si no, se arregla en `Agua.js`.
+
+Del agente: `src/world/Vegetacion.js`, `src/world/Mundo.js`, `src/engine/Audio.js`,
+`src/world/Agua.js`. Bitácora: `r5-suelo.md`.
+
+## FASE 3 · `mano` — la herramienta en la mano del personaje
+
+`Equipo.js` sabe qué hay en la ranura `mano` y **`Cuerpo.js` no lo dibuja**.
+(`Personaje.js` es la pantalla de creación, con su propia escena: no es donde se
+dibuja el jugador.) La mano existe como nudo en `Cuerpo.js:178`, colgada del
+codo. Hay que modelar las herramientas de ranura `mano` con el mismo criterio
+de la ronda 3 —silueta desde medidas reales, pocas mallas, un solo material—,
+engancharlas a ese nudo, y reemplazar la `posicionDeMano()` aproximada de la
+fase 1 por la real. Presupuesto de triángulos y dibujos, medido.
+
+Del agente: `src/entities/Cuerpo.js` y un módulo nuevo de modelos si hace falta.
+Bitácora: `r5-mano.md`.
+
+---
+
+## Reparto — propiedad exclusiva, sin excepciones
+
+Un agente que necesita tocar un archivo ajeno **no lo toca**: escribe el parche
+en `pendiente-r5-<agente>.md` y sigue.
+
+Del jefe y de nadie más: `src/main.js`, `src/engine/Calidad.js`, `index.html`,
+`README.md`, `.claude/flota/ESTADO.md`, `SEGUIR.md`, `RONDA5.md`, los bancos y
+los falsadores, y las fusiones.
+
+## Reglas
+
+1. **El banco lo escribe el jefe, antes de ver el código del agente**, contra el
+   contrato de arriba. **Con un falsador al lado** que le plante defectos y
+   compruebe que se pone rojo, con los tres desenlaces de la ronda 3: `lo vio`,
+   `NO lo vio`, `no se pudo plantar`.
+2. **Toda medición lleva guarda de cobertura** que pregunte «¿el camino feliz
+   funcionó?» y no «¿corrió?».
+3. **Alternar al medir tiempos.** La deriva entre dos corridas iguales llegó a
+   1,1 ms en esta sesión, más que el costo que se estaba midiendo.
+4. **Se mide en Baja a 1024×576**, con el gobernador congelado.
+5. **La bitácora se escribe mientras se trabaja**, no al final. La sesión pasada
+   el límite de uso cortó tres veces, y las tres los agentes alcanzaron a dejar
+   su informe. Que siga pasando.
+6. **Comprobar contra el código qué está hecho**, no contra la bitácora ni
+   contra un informe. Esta ronda empezó encontrando dos afirmaciones falsas que
+   pasaron de un informe a tres archivos.
+7. **Se commitea parcial en cuanto hay algo medido.**
+
+## Definición de «fase cerrada»
+
+1. El banco del jefe da verde **y** su guarda de cobertura demuestra que ejercitó
+   lo que dice.
+2. El falsador: todos los defectos plantados, vistos; los que no se pudieron
+   plantar, declarados.
+3. El presupuesto medido y escrito con el número.
+4. El jefe leyó el código del agente.
+5. Commiteado en `mejoras/ronda5-graficos`.
+
+---
+
+## Deuda que NO es de esta ronda — que no se pierda
+
+La trajo el dueño al abrir. **Nadie la toca en la ronda 5.**
+
+1. **Sacar la equivalencia `madera_dura → tronco` de `Recursos.js`.** Se paga
+   JUNTO con el peso, nunca sola: la cabaña pide 12 troncos, o sea 72 kg sobre
+   un bolso de 38, y `Construccion.faltaPara()` no mira lo que hay guardado en un
+   depósito. Sacarla sola deja tres obras imposibles. Está anotado en el código.
+2. **El árbol de saberes cobra 1480 puntos y el juego reparte 469.** Faltan
+   1011. Medido por `.claude/flota/r4-economia.mjs`, que se autocomprueba con
+   siete mutaciones plantadas.
+3. **La curva del catálogo está despareja:** nivel 1 con 23 objetos, niveles 0
+   y 3 con 3 cada uno.
+4. **La colmena y las trampas piden una entidad de mundo con reloj propio**
+   (168 h la colmena). `Obras.js` es lo más parecido que hay. Mientras no exista,
+   **la cera no tiene fuente y las velas no se pueden alcanzar jugando**: la fase 1
+   las hace alumbrar igual, para que el día que haya cera funcionen.
+5. **Recuperar flechas** pide saber dónde cayó el tiro, y hoy la caza se resuelve
+   sin proyectil volando.
+6. **Del informe de rigor sólo se aplicó la sección A** (las doce falsedades
+   graves). La **B** (quince imprecisiones) y la **C** (nueve afirmaciones no
+   verificables) quedaron sin tocar: hay que leerlas y decidir.
+7. **El hallazgo de diseño más incómodo, y sigue sin respuesta.** Medido sobre
+   3,8 millones de celdas: fuera del área protegida la humedad media es 0,20 y
+   sólo el 0,1 % del suelo tiene troncos caídos. El jugador no se va del parque a
+   talar: se va a una estepa pelada. La tensión que la tesis quería administrar
+   no existe. Está en `r4-revision-juego.md`, con cinco propuestas concretas
+   —la más fuerte, el permiso de aprovechamiento forestal en la Reserva—.
+
+### Encontrada al abrir la ronda 5, y tampoco es de ésta
+
+8. **La regla de la muerte para el equipo no está decidida.** `registrarMuerte()`
+   vacía el inventario y deja el equipo: el hacha sobrevive a morir. La fase 1
+   lo guarda en disco sin cambiar esa regla, así que la decisión sigue abierta y
+   es del dueño.
+9. **La traslucidez del follaje y el relleno de los sólidos son constantes**
+   (`Vegetacion.js:1948`, `Sotobosque.js:297` y `:310`): se suman igual de
+   mediodía que de noche. Puede que de noche el bosque no quede tan oscuro como
+   debería, y eso le quita contraste a cualquier luz. **Se mira en las capturas
+   nocturnas de la fase 1** antes de llamarlo defecto.
