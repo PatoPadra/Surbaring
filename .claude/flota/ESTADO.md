@@ -1,5 +1,24 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **11/9/2026 — RONDA 5, FASE 1 (`lumbre`) CERRADA: la luz.** La antorcha, el
+> candil y las velas alumbran y se consumen contra el reloj del mundo. Los
+> hornos y el incendio alumbran de verdad, y ya no queda ninguna luz de three en
+> `src/`: `src/engine/Luces.js` compila dos luces fijas en la carga. **Construir
+> una fogata ya no congela el juego**: 7,6 ms el primer cuadro, contra 19 254.
+> Cuesta +0,48 ms apagado, +1,08 con la antorcha y +1,46 con antorcha y
+> fogata, en la HD 4000 a Baja 1024×576. El equipo se guarda con la partida.
+> Banco de Node 9/9, falsador sin puntos ciegos, y cinco capturas. Todo el
+> detalle, incluidas las cuatro veces que se equivocó el banco, está en
+> `RONDA5.md`.
+>
+> **Lo que dejó a la vista y pasa a la fase 2: la vegetación brilla de noche.**
+> A medianoche el pasto se ve más que el suelo que alumbra una antorcha.
+>
+> *La mitad jugable del contrato estaba bien calculada y no hacía nada:
+> `revisar()` cuenta celdas de 256 m, y los dos topes pedidos revelaban la misma.
+> Lo midió el agente, no el banco. Un número correcto que no cambia ninguna
+> consecuencia es un efecto declarado que nadie consume, con otro nombre.*
+
 > **11/9/2026 — RONDA 5 ABIERTA: gráficos.** Luz puntual, las tres deudas
 > visuales del README y la herramienta en la mano. Rama
 > `mejoras/ronda5-graficos`; el encargo, con todo lo medido, está en

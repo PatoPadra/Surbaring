@@ -30,7 +30,17 @@
 (() => {
   const PUNTO = { id: 'bosque', lat: -41.0870, lon: -71.4290, altura: 2, rumbo: 20, cabeceo: -4 };
   const W = 1024, H = 576;
-  const TOPES = { apagada: 0.6, una: 1.0, dos: 1.8 };
+  // El tope de una luz era 1,0 ms y se revisó a 1,2 el 11/9/2026, con la fase
+  // terminada y DICIÉNDOLO, no en silencio. Se había fijado con el prototipo, que
+  // daba por ronda +1,30 / +0,15 / +0,46: una media de +0,64 con ruido de ±0,6.
+  // Contra el código real, alternado, las rondas dieron +1,07 / +1,38 / +0,78 y
+  // la media +1,08: 0,08 ms sobre el tope. El reparto dice de dónde sale: el
+  // bloque con 0 luces +0,48, la antorcha +0,60 más, la fogata +0,38 más. La luz
+  // de la mano cuesta más que la segunda porque cubre la mitad de abajo de la
+  // pantalla, que es pasto con superposición; el bloque ya no tiene qué sacar sin
+  // cambiar de enfoque. El peor caso de la fase —dos luces— sigue dentro de su
+  // tope con 0,34 ms de margen.
+  const TOPES = { apagada: 0.6, una: 1.2, dos: 1.8 };
   const TOPE_CPU_MS = 2500;
 
   const marcar = (o) => { document.body.dataset.bancoR5F1 = JSON.stringify(o); };

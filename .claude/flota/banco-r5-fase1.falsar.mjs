@@ -71,14 +71,16 @@ function correrBanco(src) {
 // Copias de src/ con un defecto
 // ═══════════════════════════════════════════════════════════════════════════
 
+const BORRAR = { recursive: true, force: true, maxRetries: 8, retryDelay: 250 };
+
 function copiarSrc(destino) {
-  fs.rmSync(destino, { recursive: true, force: true });
+  fs.rmSync(destino, BORRAR);
   fs.cpSync(path.join(RAIZ, 'src'), path.join(destino, 'src'), { recursive: true });
   return path.join(destino, 'src');
 }
 
 function srcDeBase(destino) {
-  fs.rmSync(destino, { recursive: true, force: true });
+  fs.rmSync(destino, BORRAR);
   fs.mkdirSync(destino, { recursive: true });
   const tar = path.join(destino, 'base.tar');
   execFileSync('git', ['archive', '-o', tar, BASE, 'src'], { cwd: RAIZ });
@@ -139,7 +141,7 @@ const DEFECTOS = [
       [4, 'Equipo.encender() existe'],
       [5, 'de noche con luz: 300 m'],
       [6, 'el equipo sobrevive a cerrar la pestaña'],
-      [7, 'la frase falsa «ninguna luz puntual» no está en ningún lado del archivo'],
+      [7, 'ninguna cadena del archivo afirma «ninguna luz puntual» sin refutarla'],
     ],
     // Luces.js no existe en la base: las secciones 2, 3 y 9 revientan al importar
     esperaSeccionRoja: [2, 3, 9],
@@ -413,7 +415,7 @@ const DEFECTOS = [
     plantar: (s) => editarJson(s, 'data/herramientas.json', (d) => {
       d.engancheAlCodigo.pendienteSinSistema = [...(d.engancheAlCodigo.pendienteSinSistema || []), 'luz: no hay ninguna luz puntual en todo src/.'];
     }),
-    espera: [[7, 'la frase falsa «ninguna luz puntual» no está en ningún lado del archivo']],
+    espera: [[7, 'ninguna cadena del archivo afirma «ninguna luz puntual» sin refutarla']],
   },
   {
     id: 'D28', que: 'Datos: se borra la licencia del alcance nocturno',
@@ -440,7 +442,9 @@ const DEFECTOS = [
       const linea = t.match(/^[ \t]*[^\n]*\binstalarLuces\s*\([^\n]*\n/m);
       if (!linea) return 'main.js no llama a instalarLuces: no hay qué mover';
       const sin = t.replace(linea[0], '');
-      const p = sin.replace(/(async function iniciar\(\)\s*\{\n)/, `$1${linea[0]}`);
+      // \r?\n: en Windows el archivo sale del repositorio con CRLF, y la primera
+      // versión de este ancla buscaba `{\n` y no enganchaba nunca.
+      const p = sin.replace(/(async function iniciar\(\)\s*\{\r?\n)/, `$1${linea[0]}`);
       if (p === sin) return 'no encontré el comienzo de iniciar()';
       fs.writeFileSync(f, p);
       return null;
@@ -512,5 +516,10 @@ for (const d of lista) {
 }
 
 console.log(`\n  ${cuenta['lo vio']} vistos · ${cuenta['lo vio por otro motivo']} por otro motivo · ${cuenta['NO lo vio']} puntos ciegos · ${cuenta['no se pudo plantar']} sin plantar, de ${lista.length}`);
-if (!process.env.FALSAR_CONSERVAR) fs.rmSync(TMP, { recursive: true, force: true });
+// En Windows un proceso hijo recién terminado puede tener todavía un archivo
+// tomado: la limpieza no puede tumbar un informe que ya se imprimió.
+if (!process.env.FALSAR_CONSERVAR) {
+  try { fs.rmSync(TMP, { recursive: true, force: true, maxRetries: 8, retryDelay: 250 }); }
+  catch (e) { console.log(`  (no se pudo borrar ${path.relative(RAIZ, TMP)}: ${e.code}; queda para la próxima)`); }
+}
 process.exitCode = cuenta['lo vio'] === lista.length ? 0 : 1;

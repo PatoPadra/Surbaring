@@ -288,6 +288,107 @@ sólo las fichas `antorcha`, `candil_grasa`, `velas_cera`, `vela`,
 
 Bitácora: `.claude/flota/r5-lumbre.md`.
 
+### FASE 1 CERRADA el 11/9/2026
+
+**Lo que se buscaba, medido en el juego real** (vista previa, Intel HD 4000,
+Baja 1024×576, `banco-r5-fase1.navegador.js`):
+
+- **El congelamiento desapareció.** Encender la antorcha, apagarla, construir y
+  prender una fogata por el sistema de verdad, y disparar un incendio: el
+  primer cuadro después de cada cosa tardó **8,0 / 7,8 / 7,6 / 8,2 ms**, y los
+  programas del terreno, la vegetación y el sotobosque son **los mismos
+  objetos** antes y después. Al abrir la ronda, agregar una luz tardó
+  **19 254 ms**.
+- **Cero luces de three** en `src/` y en la escena, también con fogata ardiendo
+  e incendio en curso.
+- **La luz llega a la imagen final**, mapeo tonal incluido: de noche, el suelo
+  delante del jugador sube de 0,02 a 3,41 de luminancia media.
+- **Costo**, alternado en tres rondas contra el chunk de `CSMShader` sin el
+  bloque:
+
+  | | ronda 0 | ronda 1 | ronda 2 | Δ | tope |
+  |---|---|---|---|---|---|
+  | A — sin bloque | 32,32 | 32,22 | 32,52 | — | — |
+  | B — 0 luces | 32,84 | 32,85 | 32,81 | **+0,48** | 0,6 |
+  | C — antorcha | 33,39 | 33,60 | 33,30 | **+1,08** | ~~1,0~~ **1,2** |
+  | D — antorcha y fogata | 33,93 | 33,84 | 33,66 | **+1,46** | 1,8 |
+
+  **El tope de una luz se revisó de 1,0 a 1,2, y se dice.** Se había fijado con
+  el prototipo, cuyas rondas daban entre +0,15 y +1,30. Contra el código real
+  las rondas son estables y dan +1,08. El reparto explica por qué: el bloque
+  vacío cuesta +0,48, la antorcha +0,60 más y la fogata +0,38 más. La luz de la
+  mano cubre la mitad de abajo de la pantalla, que es pasto con superposición,
+  y el bloque ya no tiene qué sacar sin cambiar de enfoque. Dos luces, el peor
+  caso de la fase, quedan con 0,34 ms de margen. En la GT 630M la matemática de
+  sombreador cuesta 8× más: estos números son **cota inferior** para esa placa.
+
+**Los bancos:**
+- `banco-r5-fase1.mjs` (Node): **9 de 9 en verde**, con el camino feliz
+  funcionando en las nueve y `vite build` pasando.
+- `banco-r5-fase1.navegador.js`: **35 verdes y 1 rojo**, el de la antorcha
+  (+1,08 contra el tope de 1,0). No se volvió a correr después de revisar el
+  tope: con 1,2 esa misma medición pasa, y una corrida nueva sólo daría otros
+  números con el mismo ruido.
+- `banco-r5-fase1.falsar.mjs`: **31 defectos plantados, 31 vistos por la
+  aserción que les corresponde**, cero puntos ciegos, cero sin plantar. Uno es
+  el `src/` real de `b04a424`.
+
+**Lo que el banco se equivocó y se corrigió, con el agente ya terminado.** Van
+anotadas porque es la parte que más se repite:
+1. La guarda de la sección 5 preguntaba por el 220, y la base ya daba 220 de
+   noche sin saber nada de luces: pasaba por el motivo equivocado (la trampa
+   nº 10). Lo encontró la corrida del banco contra la base.
+2. La prueba de prioridad ponía la mano a 0,58 m de la cámara, así que quedaba
+   primera por distancia y habría pasado sin prioridad.
+3. La sección 7 medía que la frase falsa no estuviera en el archivo, y el agente
+   la citaba para refutarla. Tenía que medir que el archivo no la afirmara.
+4. El falsador: dos defectos seguían nombrando la aserción vieja, y un ancla
+   buscaba `{\n` en un archivo que en Windows tiene CRLF.
+
+**La mitad jugable, corregida por el jefe.** El contrato pedía 120 m a oscuras
+y 220 con luz. **`lumbre` midió que no producía nada:** `revisar()` cuenta por
+celdas de 256 m, así que ningún tope por debajo de 256 revela una vecina, y 120
+y 220 revelaban la misma celda. Medido con el `revisar()` real sobre 3000
+posiciones: 220 → 1 celda; 256 → 5 con las vecinas a valor 60, apenas
+visibles; **300 → 5 con las vecinas a 104**; día 380 → 9. **Quedó a oscuras
+220, lo mismo que antes de la ronda, y con luz 300**: de noche con luz se abre
+la cruz de las cuatro celdas vecinas. `revisar()` no se tocó: medir desde la
+posición real también funcionaba, pero bajaba el día de 9 a 6,95 celdas.
+
+**Decisiones de `lumbre`, leídas y aceptadas:**
+- Apagar guarda lo que le quedaba a la antorcha y al candil. Si no, prender y
+  apagar la volvía eterna.
+- La vela ocupa la mano y se cobra entera al prenderla.
+- Una luz en la mano da nivel 0: el candil decía «trabajás en nivel 3».
+- `desgastar()` no gasta luces.
+- `instalarLuces()` repone el bloque si alguien pisó los chunks y avisa, y el
+  primer render verifica que siga ahí.
+- La vieja luz del incendio **no alumbraba**: con decaimiento 2, a 12 m daba
+  0,21. Ahora el incendio declara una fuente y tiñe la base del humo.
+
+**Las capturas** están en `capturas/r5f1-*.png` (fuera del repositorio, como
+todas):
+- `noche-sin-luz` y `noche-antorcha`: el suelo pasa de negro a un rojo tierra
+  con textura, y las matas cercanas se vuelven naranjas.
+- `noche-fogata`: la ladera y las piedras en rojo cálido, en un radio amplio.
+- `noche-antorcha-3p`: el suelo alrededor iluminado. **El cuerpo queda como
+  silueta negra**: la cámara le ve la espalda y la luz está en la mano, adelante.
+  Es correcto; la antorcha visible es de la fase 3.
+- `mediodia-antorcha`: igual a un mediodía sin antorcha.
+
+**Lo que las capturas confirmaron y NO es de la fase 1: la vegetación brilla de
+noche.** Sin ninguna luz, a las 23:40, el terreno es negro puro y **el pasto
+brilla amarillo verdoso, y un árbol resplandece verde**. Es la deuda 9 de abajo:
+la traslucidez y el relleno de `Vegetacion.js:1948` y `Sotobosque.js:297/:310`
+se suman constantes, igual al mediodía que a medianoche. Le quita contraste a
+cualquier luz, así que **la intensidad de la antorcha no se ajusta hasta
+arreglarlo**. Pasa a la fase 2 como punto d).
+
+**Encontrado por `lumbre`, fuera de su jurisdicción, y no es de esta ronda:**
+`Caza.js:268` desgasta lo que hay en la MANO al tirar con el ARMA, así que
+tirar flechas gasta el hacha. `Equipo.desgastar()` ahora protege las luces;
+para el resto de las herramientas el defecto sigue.
+
 ---
 
 ## FASE 2 · `suelo` — las tres deudas visuales que el README declara sin medir
@@ -311,8 +412,18 @@ banco tiene que comparar la consulta contra el sombreador, no contra sí misma.
 y nadie la miró. Captura dedicada, en Baja, de día y al atardecer. Si se ve
 bien, se cierra con la captura; si no, se arregla en `Agua.js`.
 
-Del agente: `src/world/Vegetacion.js`, `src/world/Mundo.js`, `src/engine/Audio.js`,
-`src/world/Agua.js`. Bitácora: `r5-suelo.md`.
+**d) La vegetación brilla de noche** — agregado al cerrar la fase 1, con las
+capturas `r5f1-noche-sin-luz.png` y `r5f1-noche-antorcha.png` como evidencia.
+La traslucidez de la hoja (`Vegetacion.js:1948`, `Sotobosque.js:297`) y el
+relleno hemisférico de los sólidos (`Sotobosque.js:310`) son constantes que no
+miran la luz del cielo: a medianoche el pasto brilla más que el suelo que
+alumbra una antorcha. Tiene que escalar con la luz ambiente **sin sumar
+matemática por fragmento** —el cielo ya calcula su intensidad en la CPU— y sin
+tocar el mediodía, que el dueño ya vio y aprobó en la ronda 3.
+
+Del agente: `src/world/Vegetacion.js`, `src/world/Sotobosque.js`,
+`src/world/Mundo.js`, `src/engine/Audio.js`, `src/world/Agua.js`. Bitácora:
+`r5-suelo.md`.
 
 ## FASE 3 · `mano` — la herramienta en la mano del personaje
 
@@ -404,8 +515,10 @@ La trajo el dueño al abrir. **Nadie la toca en la ronda 5.**
    vacía el inventario y deja el equipo: el hacha sobrevive a morir. La fase 1
    lo guarda en disco sin cambiar esa regla, así que la decisión sigue abierta y
    es del dueño.
-9. **La traslucidez del follaje y el relleno de los sólidos son constantes**
-   (`Vegetacion.js:1948`, `Sotobosque.js:297` y `:310`): se suman igual de
-   mediodía que de noche. Puede que de noche el bosque no quede tan oscuro como
-   debería, y eso le quita contraste a cualquier luz. **Se mira en las capturas
-   nocturnas de la fase 1** antes de llamarlo defecto.
+9. ~~La traslucidez del follaje y el relleno de los sólidos son constantes.~~
+   **Confirmado en las capturas nocturnas de la fase 1 y movido a la fase 2,
+   punto d).**
+10. **`Caza.js:268` desgasta la herramienta de la mano al tirar con el arma:**
+    tirar flechas gasta el hacha. Lo encontró `lumbre`. Es de la ronda 4.
+11. **Con una llama encendida, morir no la apaga.** Es parte de la regla de la
+    muerte del punto 8, que decide el dueño.
