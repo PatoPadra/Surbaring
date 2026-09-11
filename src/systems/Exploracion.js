@@ -24,9 +24,29 @@ const CLAVE = 'survibar.exploracion.v1';
 /**
  * El tope de noche, con luz y sin ella.
  *
- * Con luz queda en los 220 m que el mapa ya daba de noche; a oscuras cae a 120.
- * Cuenta como luz lo que se lleva en la mano, o estar dentro del radio de un
- * fuego encendido.
+ * A oscuras queda en los 220 m que el mapa ya daba de noche: la noche no se
+ * vuelve más dura para nadie. Con luz sube a 300. Cuenta como luz lo que se
+ * lleva en la mano, o estar dentro del radio de un fuego encendido.
+ *
+ * Los números salen de la celda, no del ojo. `revisar()` mide la distancia por
+ * índice de celda y cada celda mide 256 m, así que **ningún tope por debajo de
+ * 256 revela una vecina**: con 120 o con 220 se descubre sólo la celda que se
+ * pisa. La primera versión de la fase pedía 120/220 y medido daba 1 celda en
+ * los dos casos: la luz no cambiaba nada del mapa. Medido con el `revisar()`
+ * real sobre 3000 posiciones (el jefe y `lumbre`, 11/9/2026):
+ *
+ * | tope  | celdas | vecina ortogonal | diagonal |
+ * |-------|--------|------------------|----------|
+ * | 220 m | 1      | —                | —        |
+ * | 256 m | 5      | 60, apenas se ve | —        |
+ * | 300 m | 5      | 104              | —        |
+ * | 320 m | 5      | 119              | —        |
+ * | 380 m (día) | 9 | ~151           | 75       |
+ *
+ * Con 300 la luz abre la cruz de las cuatro vecinas con un brillo entre la
+ * oscuridad y el día. `revisar()` no se tocó: medir desde la posición real del
+ * jugador también hacía que la luz se notara, pero cambiaba el día de 9 a 6,95
+ * celdas, y el día no era lo que había que arreglar.
  *
  * **Es una licencia de juego, y está declarada** en `licenciasDeJuego.luzNocturna`
  * de `herramientas.json`. En la realidad una antorcha no deja ver más lejos: lo
@@ -35,8 +55,8 @@ const CLAVE = 'survibar.exploracion.v1';
  * trescientos. Se toma igual porque la luz tiene que servir para algo más que
  * mirarla, y la cuenta del mapa es donde el jugador lo nota.
  */
-const TOPE_NOCHE_CON_LUZ_M = 220;
-const TOPE_NOCHE_SIN_LUZ_M = 120;
+const TOPE_NOCHE_CON_LUZ_M = 300;
+const TOPE_NOCHE_SIN_LUZ_M = 220;
 
 export class Exploracion {
   /** @param {import('../world/Mundo.js').Mundo} mundo */

@@ -101,7 +101,7 @@ porque ese render ya usa las luces.
 +      jugador, camara, tiempo.segundosTotales);
 +    if (enMano) fuentesLuz.push(enMano);
 +    luces.asignar(fuentesLuz, camara.position);
-+    // La mitad jugable: de noche, con luz, el mapa cuenta 220 m; a oscuras, 120
++    // La mitad jugable: de noche, con luz, el mapa cuenta 300 m; a oscuras, 220
 +    exploracion.luzM = radioDeLuzEn(fuentesLuz, jugador.posicion);
 +
      // El espejo del lago se dibuja antes del pase principal: necesita la escena
@@ -112,10 +112,9 @@ porque ese render ya usa las luces.
 `exploracion.revisar()` (línea 761) lee `luzM` del cuadro anterior: corre cada
 0,4 s, así que un cuadro de atraso no cambia nada.
 
-**Ojo, medido:** tal como está `Exploracion.revisar()`, de noche 120 y 220 m
-revelan la misma celda (la que se pisa). Ver «PROBLEMA DEL CONTRATO» en
-`r5-lumbre.md`. El cableado es correcto igual; lo que falta es decidir cómo se
-vuelve visible.
+**Resuelto por el jefe el 11/9:** los topes nocturnos son 220 a oscuras y 300 con
+luz. Con celdas de 256 m, 300 abre las cuatro vecinas (nitidez 104) y 220 deja
+sólo la que se pisa. Ver «PROBLEMA DEL CONTRATO — RESUELTO» en `r5-lumbre.md`.
 
 ## 6 · Exponer para medir — línea 923
 

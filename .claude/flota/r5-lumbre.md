@@ -209,16 +209,46 @@ cambió `instalarLuces`.)
   entera, la mano en las tres vías, vela que no se cobra dos veces, ida y vuelta
   por `JSON.stringify` con la llama a media hora, basura del dataset.
 
-### 5 · `src/systems/Exploracion.js` — terminado (y con un problema del contrato)
-- `alcanceVisual(pos, est, luzM = this.luzM ?? 0)` (`:116`): de noche el tope es
-  `TOPE_NOCHE_CON_LUZ_M = 220` con `luzM > 0` y `TOPE_NOCHE_SIN_LUZ_M = 120` con 0
-  (constantes con la licencia explicada, arriba del archivo). De día `luzM` no
-  entra en la cuenta. `this.luzM = 0` en el constructor (`:64`).
+### 5 · `src/systems/Exploracion.js` — terminado
+- `alcanceVisual(pos, est, luzM = this.luzM ?? 0)`: de noche el tope es
+  `TOPE_NOCHE_CON_LUZ_M = 300` con `luzM > 0` y `TOPE_NOCHE_SIN_LUZ_M = 220` con 0
+  (`:58-59`, con la tabla y la licencia arriba). De día `luzM` no entra en la
+  cuenta. `this.luzM = 0` en el constructor.
 - **Cómo se comprobó:** `.tmp-lumbre/prueba-exploracion.mjs` — 380 de día con y
-  sin luz, 120/220 de noche, omisión que lee `this.luzM`, 0 explícito que le gana,
-  piso de 90 con niebla, instancia sin constructor. En verde.
+  sin luz, 220/300 de noche, omisión que lee `this.luzM`, 0 explícito que le gana,
+  piso de 90 con niebla, instancia sin constructor, y `revisar()` real de noche:
+  5 celdas con luz, 1 sin luz. En verde.
 
-#### PROBLEMA DEL CONTRATO: la mitad jugable, tal como está pedida, no cambia nada del mapa
+#### PROBLEMA DEL CONTRATO — RESUELTO el 11/9 por decisión del jefe: 220 a oscuras, 300 con luz
+- El jefe midió el `revisar()` real sobre 3000 posiciones y yo lo confirmé con
+  una corrida (`.tmp-lumbre/medir-topes.mjs`, alcance forzado, 3000 posiciones).
+  Los dos dan lo mismo:
+
+  | tope | celdas | vecina ortogonal | diagonal |
+  |---|---|---|---|
+  | 120 m | 1 | 0 | 0 |
+  | 220 m | 1 | 0 | 0 |
+  | 256 m | 5 | 60 (apenas se ve) | 0 |
+  | **300 m** | **5** | **104** | 0 |
+  | 320 m | 5 | 119 | 0 |
+  | 380 m (día) | 9 | ~151 | 75 |
+
+- **Aplicado:** `Exploracion.js:58-59` → sin luz 220 (lo de siempre: la noche no
+  se vuelve más dura para nadie), con luz 300 (se abre la cruz de las cuatro
+  vecinas a 104, entre la oscuridad y el día). Comentario con la tabla y el
+  motivo en `:24-57`. `revisar()` no se tocó: el día queda idéntico (medir desde
+  la posición real lo habría bajado de 9 a 6,95).
+- **Arrastrado a:** `herramientas.json` `luzNocturna.que` (`:2569`) y
+  `estadoReal` (`:2574`) con la medición; `pendienteSinSistema[1]` (`:2454`);
+  la línea de la licencia en `Bolso.js:249`; el comentario del parche 5 y la
+  nota «Ojo» de `pendiente-r5-lumbre.md` (`:104`, `:115`), que iban a quedar
+  pegados en `main.js` con los números viejos.
+- `prueba-integracion.mjs` actualizada (220/300) y en verde; `r2-carta-exploracion`
+  exit 0.
+
+Lo que sigue es el registro de cómo se encontró, tal como estaba:
+
+#### (histórico) PROBLEMA DEL CONTRATO: la mitad jugable, tal como está pedida, no cambia nada del mapa
 - `alcanceVisual` sólo lo consume `revisar()` (`:150`), que mide la distancia
   **por índice de celda** —`Math.hypot(di, dj) * 256`—, no desde el jugador. De
   noche la única celda a menos de 120 y a menos de 220 es la que se pisa (d = 0);
@@ -352,8 +382,8 @@ archivos: `r4-banco-cadena`, `r4-banco-fabricacion`, `r4-banco-arma`,
    `RESPLANDOR_*` (`Clima.js`). La brasa de los hornos es la vieja (`BRASA_*`),
    pero con otra caída: `(1-d²/r²)²` es más pareja que el cuadrado inverso, así
    que la fogata va a verse como un charco de luz más ancho que antes.
-4. **Decidir la mitad jugable** (ver «PROBLEMA DEL CONTRATO»): hoy 120 y 220
-   revelan lo mismo.
+4. ~~Decidir la mitad jugable~~ — **resuelto:** 220 a oscuras, 300 con luz (ver
+   «PROBLEMA DEL CONTRATO — RESUELTO»).
 5. **Fuera de mi jurisdicción, para quien corresponda:** `Caza.js:268` desgasta
    la herramienta de la MANO al tirar con el ARMA (`this.equipo?.desgastar?.()`
    gasta `puesto.mano`). Tirar flechas gasta el hacha. `Equipo.desgastar` ahora

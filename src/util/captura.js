@@ -149,6 +149,9 @@ export function instalarCapturas(S) {
     cielo.luzSol.intensity = 0;
     csm.update();
     cielo.malla.position.copy(camara.position);
+    // Las luces puntuales se eligen por cuadro en el bucle, y la captura no corre
+    // el bucle: sin esto saldrían con la antorcha y la cámara del cuadro anterior.
+    S.juntarLuces?.(est);
 
     // Cómo se leen los píxeles, y por qué así:
     //

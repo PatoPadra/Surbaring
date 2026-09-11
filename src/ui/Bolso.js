@@ -246,7 +246,7 @@ export class Bolso {
       || this.inventario.cantidad('vela') > 0;
     if (hayLuz) {
       html += `<div class="bp-kg" style="text-align:left;font-size:.66rem;padding:.3rem 0">
-        De noche, con luz en la mano o dentro del resplandor de un fuego, el mapa cuenta que ves hasta 220 m; a oscuras, 120.
+        De noche, con luz en la mano o dentro del resplandor de un fuego, el mapa cuenta que ves hasta 300 m y se abren las cuatro celdas vecinas; a oscuras, 220 m y sólo la que pisás, como siempre.
         Es una licencia de juego: una llama de verdad encandila y no deja ver más lejos.</div>`;
     }
     return html;
