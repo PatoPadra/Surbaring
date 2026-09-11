@@ -584,16 +584,50 @@ Ahora la banda va sobre el término previo al factor.
 
 ## FASE 3 · `mano` — la herramienta en la mano del personaje
 
-`Equipo.js` sabe qué hay en la ranura `mano` y **`Cuerpo.js` no lo dibuja**.
-(`Personaje.js` es la pantalla de creación, con su propia escena: no es donde se
-dibuja el jugador.) La mano existe como nudo en `Cuerpo.js:178`, colgada del
-codo. Hay que modelar las herramientas de ranura `mano` con el mismo criterio
-de la ronda 3 —silueta desde medidas reales, pocas mallas, un solo material—,
-engancharlas a ese nudo, y reemplazar la `posicionDeMano()` aproximada de la
-fase 1 por la real. Presupuesto de triángulos y dibujos, medido.
+Abierta el 11/9/2026, con la fase 2 cerrada. **Premisas comprobadas en el código
+antes de escribir esto:**
+- La mano existe como nudo de esfera colgado del codo (`Cuerpo.js:178`), pero
+  **no se guarda en ninguna propiedad**: no hay dónde colgar nada. `this.brazos`
+  y `this.codos` sí se guardan; el índice 1 es el lado +x, la mano derecha.
+- **Son 18 objetos con ranura `mano`**: quince herramientas, la antorcha, el
+  candil y el ahumador.
+- `main.js:934` ya llama a `cuerpo.actualizar(dt, jugador)` por cuadro, y
+  `Cuerpo` se reconstruye entero con `aplicar(aspecto)` al cambiar el aspecto.
+- `Personaje.js` arma su propio maniquí con `Cuerpo`: ahí no hay equipo, y
+  tiene que seguir funcionando sin nada en la mano.
 
-Del agente: `src/entities/Cuerpo.js` y un módulo nuevo de modelos si hace falta.
-Bitácora: `r5-mano.md`.
+### El contrato
+
+**`Cuerpo` gana la mano y lo que lleva:**
+- `this.manos[]` — los dos nudos, guardados como `this.codos`. La derecha es el
+  índice 1.
+- `cuerpo.enMano` — propiedad de lectura y escritura con el **id** del objeto, o
+  `null`. La escribe `main` por cuadro desde `equipo.enRanura("mano")`. Cambiarla
+  no reconstruye el cuerpo: cuelga o descuelga el modelo que corresponde.
+- `cuerpo.puntoDeMano(salida)` — la posición **en espacio de mundo** de la mano
+  derecha, o de la punta del objeto si lo declara. Es lo que reemplaza a la
+  `posicionDeMano()` aproximada de la fase 1: la llama de la antorcha pasa a
+  salir del modelo y no de una cuenta.
+- Modelos **construidos una vez y cacheados por id**, con el mismo criterio de la
+  ronda 3: silueta desde medidas reales, pocas piezas, material compartido. Un
+  hacha de piedra y un pico de asta tienen que distinguirse de lejos por la
+  silueta, no por el color.
+- `aplicar()` y `dispose()` liberan también las geometrías y los materiales de
+  las herramientas: hoy `_materiales` se libera entero y no puede quedar afuera.
+
+**Presupuesto, medido:**
+- **≤ 900 triángulos** el objeto visible, y **≤ 2 dibujos** más por cuadro.
+- **≤ +0,3 ms** a Baja 1024×576 en tercera persona, alternado en tres rondas.
+- Cambiar de herramienta **no compila ningún programa**: material compartido.
+- Cero reserva de memoria por cuadro: colgar y descolgar no crea objetos.
+
+**Lo que no cambia:** nada de juego. No se toca `Equipo`, ni la durabilidad, ni
+las acciones. El maniquí de `Personaje.js` sigue andando con `enMano` en null.
+
+**Del agente y de nadie más:** `src/entities/Cuerpo.js` y un módulo nuevo de
+modelos si hace falta (`src/entities/Herramientas3D.js`). El cableado de
+`main.js` —`cuerpo.enMano` por cuadro y la llama de la antorcha saliendo de
+`puntoDeMano`— va a `pendiente-r5-mano.md`. Bitácora: `r5-mano.md`.
 
 ---
 
