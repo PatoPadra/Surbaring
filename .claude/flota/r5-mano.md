@@ -270,3 +270,128 @@ guardar una posición de referencia que el cuadro siguiente invalida.
   cargar, no hay malla que compilar, y una malla invisible three no la compila.
 - **`flatShading` en las herramientas.** Se ve mejor en objetos facetados, pero
   `FLAT_SHADED` es otra clave de programa. Mismo motivo.
+
+---
+
+# AGREGADO A LA FASE 3 — el personaje, 11/9/2026
+
+Encargo corto del jefe con la fase 3 ya cerrada: «mejorá el personaje, que quedó
+atrás del resto del juego». **No hay banco escrito de antemano ni falsador**; la
+red es el banco de la fase 3 y mi propio `medir.mjs`, que sigue en **86
+aserciones, 0 rojas**.
+
+## Lo primero fue sacar dibujos, y eso pagó todo lo demás
+
+La animación de este archivo es **por transformación de nudo**: el codo gira y lo
+que cuelga de él lo acompaña. Entonces fusionar las piezas *dentro* de cada nudo
+no cambia un solo pixel y saca dibujos. `armar(nudo, piezas)` (`Cuerpo.js:144`)
+cuelga **una sola malla por material** y es lo único que hacía falta para que la
+cabeza dejara de ser siete mallas y el pie cuatro.
+
+**Con 12 dibujos de crédito en el bolsillo, el detalle se pagó solo.**
+
+| zona (un lado) | tri antes | tri ahora | mallas antes | mallas ahora |
+|---|---|---|---|---|
+| torso | 120 | 448 | 3 | 3 |
+| cabeza | 550 | 1558 | **7** | **3** |
+| hombro | 140 | 220 | **2** | **1** |
+| codo | 140 | 180 | 2 | 2 |
+| mano | 100 | 556 | 1 | 1 |
+| muslo | 140 | 220 | **2** | **1** |
+| rodilla (pierna + pie) | 388 | 424 | **4** | **2** |
+| **CUERPO ENTERO** | **2486** | **5206** | **32** | **20** |
+
+- **Triángulos: 5206**, tope 7500 → **69 % del presupuesto**.
+- **Dibujos: 20**, tope 32 → **doce menos, un 37 % abajo**. La mejora más barata
+  del cuadro, y no depende de la GPU.
+- **Materiales: 6 → 6.** Ninguno nuevo; **cero color por vértice**, que estaba
+  permitido pero habría roto la clave de programa compartida con las
+  herramientas (`USE_COLOR`), y con ella la garantía de «cambiar de herramienta
+  no compila nada». El banco lo verifica: sigue dando **una sola clave**.
+- Medido con los cinco peinados: de 5192 (`rapado`) a 5346 (`recogido`).
+
+## Qué cambió, con archivo:línea
+
+**Herramientas nuevas** — `poner` (`:73`), **`torneado`** (`:92`), `bola`
+(`:100`), `capsula` (`:110`), **`moldear`** (`:121`), **`armar`** (`:144`).
+Desaparecen `hueso()` y `nudo()`, que devolvían mallas sueltas.
+
+1. **Torso** (`:247`). Eran tres conos rectos apilados. Ahora son tres volúmenes
+   de revolución que **comparten radio en las junturas**, así que el torso es una
+   superficie continua: se ensancha en el pecho (0,212·a), entra en la cintura
+   (0,180) y vuelve a abrirse en la cadera. Arriba cierra en un canesú que
+   envuelve el nacimiento del cuello y **termina por dentro del cuello** (0,060
+   contra 0,069 del cuello), así que no queda hueco. La cadera se achata menos
+   que el pecho —0,74 contra 0,66— porque una cadera es más redonda.
+2. **Cabeza y cuello** (`_rostro`, `:396`). Cráneo de 16×12 **moldeado**
+   (`:408`): occipucio hacia atrás, frente aplanada un 12 %, sienes angostadas
+   arriba y base estrechada hacia la mandíbula. Y lo que no había: **arco
+   superciliar, pómulos, mentón, dorso y punta de nariz, orejas inclinadas, y
+   ojos, cejas y boca**. Los ojos son el rasgo que a cuatro metros convierte una
+   figura en alguien, y no había ninguno.
+3. **Hombros y brazos** (`:283`). El brazo pasa de cono recto a perfil de cinco
+   puntos: hombro 0,064 → bíceps 0,068 → codo 0,050. El antebrazo, igual.
+   Un cono recto se lee como un caño, y era lo que más delataba al maniquí.
+4. **Manos** (`:315`). Eran una esfera achatada. Ahora palma, mitón de dedos y
+   **pulgar, que va para el lado que corresponde en cada mano**: medido, 17,7 cm
+   de largo, contra los 19 de una mano real.
+5. **Pies** (`:355`). Era una cápsula acostada de **21,9 cm**: un salamín. Ahora
+   talón, planta, empeine, puntera y caña, **28,1 cm** —un pie de alguien de
+   1,78 m mide 26, y con bota 28—, apoyando en la misma cota de siempre
+   (y = −0,467 del nudo de la rodilla, que es lo que deja al cuerpo parado en 0).
+6. **Pelo** (`:473`). El casquete pasa a ser media esfera cortada por
+   `thetaLength` y **moldeada con entradas**: el casquete entero y centrado de
+   antes se leía como un casco. Y las cejas van siempre, también en el rapado.
+
+## Lo que se comprobó que NO se rompió
+
+`node --expose-gc .claude/flota/.tmp-mano/medir.mjs` → **86 verdes, 0 rojas**;
+`npx vite build` pasa.
+
+- `manos[]`, `enMano`, `puntoDeMano()`, la limpieza de `aplicar()` y `destruir()`,
+  el maniquí de `Personaje.js` sin equipo y la animación por `fasePaso`.
+- **Las herramientas caen exactamente donde caían.** El nudo de la mano no se
+  movió (sigue a `y = −0,28` del codo), así que las poses no se tocaron: los
+  dieciocho objetos dan la misma caja de mundo que antes del agregado, a lo largo
+  del ciclo de paso completo.
+- **Una sola clave de programa** para los 6 materiales del cuerpo y los 4 de las
+  herramientas, pasando por `conCSM`.
+- **Cero reservas por cuadro** (200 000 cuadros, dentro del ruido del montón).
+- **Estatura total: 1,778 m** para `estatura = 1,78`, apoyando en y = 0,013. Las
+  proporciones siguen saliendo de `aspecto.estatura` por la escala del grupo, y
+  de `anchoCuerpo` por el radio.
+
+## Una aserción propia que hubo que reescribir, y por qué
+
+`medir.mjs` comprobaba «la palma conserva la escala de siempre» (0,85 × 1,1 ×
+0,7). **Esa aserción medía la implementación, no el efecto**, y con la mano nueva
+—una malla fusionada— pasó a ser falsa sin que nada estuviera mal. Se reemplazó
+por tres que sí miden el efecto: que cada mano sea **una** malla, que mida entre
+13 y 22 cm, y que **el pulgar la haga asimétrica y al revés en cada lado**.
+
+## Decisiones
+
+1. **Nada de color por vértice**, aunque estaba permitido: `USE_COLOR` cambia la
+   clave del programa y rompe el reparto con las herramientas. Con 6 materiales y
+   fusión por nudo no hizo falta.
+2. **Los ojos y la boca usan el pardo de las botas** (`0x2e2620`). Es el único
+   oscuro de la paleta y no había presupuesto para un material nuevo. Cuesta un
+   dibujo en el nudo de la cabeza, y en primera persona ni se dibuja: la cabeza
+   se apaga entera.
+3. **Las cejas van con el pelo**, así que **no cuestan ningún dibujo**: se
+   fusionan con el casquete, y además es el color correcto.
+4. **El radio de un torneado nunca llega a cero exacto** (`Cuerpo.js:92`): un
+   vértice de radio 0 deja la normal indefinida y se ve una mancha negra.
+5. **Guarda en `armar()`** (`:149`): `mergeGeometries` devuelve `null` y sólo
+   escribe en consola si las piezas no coinciden en atributos o en indexado. Sin
+   la guarda el defecto aparece mucho después, como una malla sin geometría.
+
+## Lo que queda para mirar en pantalla, que yo no puedo ver
+
+- **La cara**. Los ojos se corrieron de z = −0,086 a −0,080 porque medido sobre
+  el elipsoide ya moldeado sobresalían 6 mm y quedaban saltones; el resto de la
+  cara está puesto con la misma cuenta, pero **una cara se juzga mirándola**.
+- **El coste por cuadro.** El cuerpo pasó de 2486 a 5206 triángulos —el doble—
+  pero de 32 a 20 dibujos. En la HD 4000, a estos tamaños, **los dibujos suelen
+  pesar más que los triángulos**, así que lo más probable es que el cuadro mejore;
+  hay que medirlo. Y son 20 dibujos × 4 cascadas en el pase de sombras, contra 32.

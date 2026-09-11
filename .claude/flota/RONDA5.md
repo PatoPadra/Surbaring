@@ -672,6 +672,35 @@ herramienta se intuye pero no resuelve: **esto hay que verlo jugando.**
 
 ---
 
+### AGREGADO · el cuerpo del personaje, 11/9/2026
+
+Pedido del dueño al cerrar la ronda: «está demasiado atrás en comparación a lo
+otro… no hace falta que quede impecable». **Es un agregado a la fase 3, no una
+fase: no hubo banco escrito de antemano ni falsador.** La red fue el banco de la
+fase 3, que sigue en 4/4, y la medición del jefe.
+
+**Lo que más rindió no fue el detalle sino fusionar por material dentro de cada
+nudo**, que no cambia un píxel porque la animación es por transformación de nudo:
+
+| | antes | ahora |
+|---|---|---|
+| Triángulos del cuerpo | 2486 | **5206** (69 % del tope de 7500) |
+| Mallas, o sea dibujos | 32 | **20** (−37 %) |
+| Materiales | 6 | 6 |
+
+Torso de revolución continua, cráneo moldeado con **ojos, cejas y boca —no había
+ninguno—**, bíceps, manos con pulgar del lado correcto, pies de 28 cm en vez de
+una cápsula de 22, y el pelo dejó de ser un casco.
+
+**Costo, y no se esconde:** a Baja 1024×576 en tercera persona, 31,35 ms contra
+los ~30,7 medidos antes del cambio. **No está alternado** —son dos sesiones
+distintas de la página— así que vale como orden de magnitud: **no bajó, y si algo
+subió medio milisegundo**, a pesar de los doce dibujos menos. El agente esperaba
+que bajara.
+
+**Sin color por vértice**, aunque estaba permitido: `USE_COLOR` cambia la clave
+del programa y rompía el reparto con las herramientas.
+
 ## Reparto — propiedad exclusiva, sin excepciones
 
 Un agente que necesita tocar un archivo ajeno **no lo toca**: escribe el parche
