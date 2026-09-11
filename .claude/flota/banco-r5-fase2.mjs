@@ -416,6 +416,14 @@ async function s3() {
   for (const t of ['nieve', 'roca', 'pasto', 'hojarasca']) s.ok(cuenta[t] >= 100, `cobertura: al menos 100 puntos de ${t} en la lectura del jefe`, cuenta[t]);
   const acuerdo = comparados ? acuerdos / comparados : 0;
   s.ok(acuerdo >= 0.95, 'acuerdo ≥ 95 % con la lectura independiente del sombreador', `${(acuerdo * 100).toFixed(1)} % · desacuerdos ${JSON.stringify(desacuerdos)}`);
+  // Por tipo, y no sólo global: la nieve es una fracción chica de los puntos, y
+  // una consulta que la confundiera entera con roca podía seguir arriba del 95 %
+  // global. Lo encontró el jefe escribiendo el falsador, antes de correrlo.
+  for (const t of ['nieve', 'roca', 'pasto', 'hojarasca']) {
+    const erradosT = Object.entries(desacuerdos).filter(([k]) => k.startsWith(`${t}→`)).reduce((a, [, v]) => a + v, 0);
+    const recall = cuenta[t] ? (cuenta[t] - erradosT) / cuenta[t] : 0;
+    s.ok(recall >= 0.9, `${t}: al menos el 90 % de sus puntos se reconocen como ${t}`, `${(recall * 100).toFixed(1)} % de ${cuenta[t]}`);
+  }
   s.ok(M.sueloEn(0, 0, 1750) !== undefined && tipos.includes(M.sueloEn(0, 0, 1750)), 'responde en el centro del mundo');
   // Un punto de agua
   let agua = null;
