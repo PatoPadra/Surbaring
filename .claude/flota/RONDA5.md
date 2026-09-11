@@ -556,7 +556,12 @@ independiente del sombreador que hizo el jefe: **100 % de acuerdo** sobre más d
 5000 puntos y dos cotas de nieve, con los cuatro materiales presentes y al menos
 el 90 % de acuerdo dentro de cada uno. Cuesta 2 µs por consulta.
 
-**Los bancos:** Node **4 de 4**; navegador **10 de 10**.
+**Los bancos:** Node **4 de 4**; navegador **10 de 10**; falsador **16 defectos
+plantados, 16 vistos por la aserción que les corresponde**, cero puntos ciegos.
+
+*El falsador falló primero por una herramienta y no por el código: bajo Git Bash
+`tar` resuelve a GNU tar y toma `C:` por un host remoto. Los tres archivos que
+extraían la base pasaron a usar `git checkout` con índice temporal.*
 
 **Lo que el banco se equivocó, y lo encontró el agente, no el jefe:** con
 `detalle = 0,5` la máscara de nieve no pasa de 0,5214, así que la banda de

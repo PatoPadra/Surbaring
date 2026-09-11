@@ -125,10 +125,11 @@ function srcDeBase() {
   if (fs.existsSync(path.join(destino, 'world', 'Mundo.js'))) return destino;
   fs.rmSync(TMP_BASE, { recursive: true, force: true, maxRetries: 8, retryDelay: 250 });
   fs.mkdirSync(TMP_BASE, { recursive: true });
-  const tar = path.join(TMP_BASE, 'base.tar');
-  execFileSync('git', ['archive', '-o', tar, BASE, 'src'], { cwd: RAIZ });
-  execFileSync('tar', ['-xf', tar, '-C', TMP_BASE]);
-  fs.rmSync(tar);
+  // Sin tar: bajo Git Bash resuelve a GNU tar y toma "C:" por un host remoto.
+  // Un checkout con indice temporal no toca el indice del repositorio.
+  execFileSync("git", ["--work-tree=" + TMP_BASE, "checkout", BASE, "--", "src"],
+    { cwd: RAIZ, env: { ...process.env, GIT_INDEX_FILE: path.join(TMP_BASE, ".idx") } });
+  fs.rmSync(path.join(TMP_BASE, ".idx"), { force: true });
   return destino;
 }
 

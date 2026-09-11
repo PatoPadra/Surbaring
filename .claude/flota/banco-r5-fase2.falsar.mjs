@@ -50,10 +50,11 @@ function copiarSrc(destino) {
 function srcDeBase(destino) {
   fs.rmSync(destino, BORRAR);
   fs.mkdirSync(destino, { recursive: true });
-  const tar = path.join(destino, 'base.tar');
-  execFileSync('git', ['archive', '-o', tar, BASE, 'src'], { cwd: RAIZ });
-  execFileSync('tar', ['-xf', tar, '-C', destino]);
-  fs.rmSync(tar);
+  // Sin tar: bajo Git Bash resuelve a GNU tar y toma "C:" por un host remoto.
+  // Un checkout con indice temporal no toca el indice del repositorio.
+  execFileSync("git", ["--work-tree=" + destino, "checkout", BASE, "--", "src"],
+    { cwd: RAIZ, env: { ...process.env, GIT_INDEX_FILE: path.join(destino, ".idx") } });
+  fs.rmSync(path.join(destino, ".idx"), { force: true });
   return path.join(destino, 'src');
 }
 function agregar(src, rel, codigo) {
