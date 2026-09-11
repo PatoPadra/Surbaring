@@ -250,9 +250,20 @@ niebla, se tinta. Ninguna luz de three en el grafo.
 `equipo.reponer()` **después** de reponer el reloj del mundo, igual que
 `_reponerHornos()`. Una partida vieja sin campo `equipo` carga igual.
 
+> **Corrección del jefe, con el agente ya trabajando:** `instalarLuces` va
+> **DESPUÉS de `new CSM()`** y antes de lo primero que compila. Decía «antes de
+> construir cualquier material», y eso rompe la fase en silencio:
+> `three/examples/jsm/csm/CSM.js:50` llama a `injectInclude()` en el
+> constructor, que en `:248-249` **reemplaza `lights_fragment_begin` y
+> `lights_pars_begin` globales** por los de `CSMShader`. Instalado antes, el
+> bloque desaparece y la luz no llega a un solo píxel. Se encontró mirando el
+> chunk vivo del juego: terminaba en código de cascadas. El bloque es compatible
+> —`CSMShader.js:5-6` declara `geometryPosition` y `geometryNormal` igual que
+> three—; lo que importa es el orden. Lo prueba la sección 9 del banco.
+
 **`main.js` es del jefe.** El agente deja el cableado exacto en
-`.claude/flota/pendiente-r5-lumbre.md`: `instalarLuces(THREE)` antes de construir
-cualquier material, `luces.enganchar(escena)`, y por cuadro juntar las fuentes
+`.claude/flota/pendiente-r5-lumbre.md`: `instalarLuces(THREE)` después de
+`new CSM()` y antes del primer horneado o render, `luces.enganchar(escena)`, y por cuadro juntar las fuentes
 —`equipo.luzActiva()` en `posicionDeMano()`, `hornos.fuentesDeLuz()`,
 `clima.fuenteDeLuz?.()`—, llamar a `luces.asignar()` y pasarle a `exploracion`
 el radio de luz que cuenta.

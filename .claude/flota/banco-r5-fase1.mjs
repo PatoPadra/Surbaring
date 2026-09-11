@@ -29,6 +29,11 @@
  *   7. DATOS — la frase falsa de las luces no está más, la licencia del alcance
  *      nocturno está declarada, y los números de las tres fichas no cambiaron.
  *   8. ARRANQUE — `vite build` pasa.
+ *   9. LAS CASCADAS — `new CSM()` reemplaza los chunks globales de luces
+ *      (CSM.js:248-249): instalado después, el bloque tiene que quedar sobre el
+ *      chunk de CSM sin estropearlo, y `main.js` tiene que instalar después de
+ *      las cascadas y antes de lo primero que compila. Agregada con el agente
+ *      ya trabajando, al ver el chunk vivo del juego.
  *
  * ── Guarda de cobertura ──────────────────────────────────────────────────────
  * Cada sección declara su CAMINO FELIZ: la pregunta no es «¿corrió?» sino «¿lo
@@ -722,10 +727,71 @@ async function s8() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// 9 · EL BLOQUE SOBREVIVE A LAS CASCADAS
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Agregada el 11/9/2026, con el agente ya trabajando, al descubrir mirando el
+// chunk vivo del juego que `new CSM()` (main.js:143) REEMPLAZA los chunks
+// globales de luces por los de CSMShader (three/examples/jsm/csm/CSM.js:248-249).
+// Un `instalarLuces()` anterior a las cascadas queda pisado y la luz no llega a
+// ningún píxel sin un solo error. Las secciones 2 y 3 prueban el contrato sobre
+// el chunk de three a secas; ésta prueba el orden que usa el juego.
+
+async function s9() {
+  const s = seccion(9, 'EL BLOQUE SOBREVIVE A LAS CASCADAS');
+  const THREE = await import('three');
+  const { CSM } = await import('three/addons/csm/CSM.js');
+  const vainilla = THREE.ShaderChunk.lights_fragment_begin;
+  const escena = new THREE.Scene();
+  const camara = new THREE.PerspectiveCamera(62, 16 / 9, 0.25, 90000);
+  new CSM({ maxFar: 900, cascades: 4, mode: 'practical', parent: escena, shadowMapSize: 512,
+    lightDirection: new THREE.Vector3(0.4, -1, 0.3).normalize(), camera: camara, lightIntensity: 0 });
+  const deCSM = THREE.ShaderChunk.lights_fragment_begin;
+  const parsCSM = THREE.ShaderChunk.lights_pars_begin;
+  s.ok(deCSM !== vainilla && /CSM_cascades|cascade/i.test(deCSM),
+    'premisa: new CSM() reemplaza lights_fragment_begin por el de las cascadas');
+
+  const mod = await import(urlSrc('engine/Luces.js'));
+  mod.instalarLuces(THREE);
+  const frag = THREE.ShaderChunk.lights_fragment_begin;
+  const pars = THREE.ShaderChunk.lights_pars_begin;
+  const conservaCSM = s.ok(frag.startsWith(deCSM) && frag.length > deCSM.length,
+    'instalado después de las cascadas: el chunk de CSM queda entero y el bloque va al final',
+    `${deCSM.length} → ${frag.length}`);
+  const bloque = frag.startsWith(deCSM) ? frag.slice(deCSM.length) : '';
+  s.ok(/uLucesColor\s*\[\s*0\s*\]\s*\.\s*w/.test(bloque) && /\bbreak\s*;/.test(bloque), 'el bloque con su corte por cantidad está sobre el chunk de CSM');
+  s.ok(pars.includes(parsCSM) && /uniform\s+vec4\s+uLucesPos\s*\[/.test(pars) && /uniform\s+vec4\s+uLucesColor\s*\[/.test(pars),
+    'lights_pars_begin conserva lo de CSM y declara los dos uniformes');
+  s.ok(/vec3\s+geometryPosition/.test(deCSM) && /vec3\s+geometryNormal/.test(deCSM),
+    'premisa: el chunk de CSM declara geometryPosition y geometryNormal, que usa el bloque');
+
+  // Lo que pasa al revés, como nota: documenta por qué el orden importa
+  new CSM({ maxFar: 900, cascades: 4, mode: 'practical', parent: escena, shadowMapSize: 512,
+    lightDirection: new THREE.Vector3(0.4, -1, 0.3).normalize(), camera: camara, lightIntensity: 0 });
+  if (!/uLucesColor/.test(THREE.ShaderChunk.lights_fragment_begin)) s.nota('confirmado: unas cascadas construidas DESPUÉS de instalar borran el bloque');
+
+  // El cableado de main.js —del jefe— respeta el orden
+  const main = sinComentarios(fs.readFileSync(rutaSrc('main.js'), 'utf8'));
+  const iCSM = main.indexOf('new CSM(');
+  const iInst = main.search(/instalarLuces\s*\(/);
+  // `new Vegetacion(…, render)` hornea impostores al construirse: es el primer
+  // lugar donde algo compila con los chunks de luces.
+  const iRender = [main.search(/compositor\.render\s*\(|render\.render\s*\(|render\.compile\s*\(/), main.indexOf('new Vegetacion(')]
+    .filter((x) => x >= 0).reduce((a, b) => Math.min(a, b), Infinity);
+  s.ok(iCSM > 0 && iInst > iCSM, 'main.js llama a instalarLuces después de new CSM', `CSM en ${iCSM}, instalar en ${iInst}`);
+  s.ok(iInst > 0 && iInst < iRender, 'y antes de lo primero que compila (el horneado de la vegetación o el primer render)', `instalar en ${iInst}, primero que compila en ${iRender}`);
+  s.ok(/luces\.enganchar\s*\(\s*escena\s*\)/.test(main), 'main.js engancha las luces a la escena del juego');
+
+  s.feliz = conservaCSM;
+  s.felizQue = 'el bloque quedó sobre el chunk de las cascadas';
+  return s;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Orquestación
 // ═══════════════════════════════════════════════════════════════════════════
 
-const SECCIONES = { s1, s2y3, s4, s5, s6, s7, s8 };
+const SECCIONES = { s1, s2y3, s4, s5, s6, s7, s8, s9 };
 
 async function hijo(nombre) {
   let res;
@@ -733,7 +799,7 @@ async function hijo(nombre) {
     const r = await SECCIONES[nombre]();
     res = Array.isArray(r) ? r : [r];
   } catch (e) {
-    const num = { s1: 1, s2y3: 2, s4: 4, s5: 5, s6: 6, s7: 7, s8: 8 }[nombre];
+    const num = { s1: 1, s2y3: 2, s4: 4, s5: 5, s6: 6, s7: 7, s8: 8, s9: 9 }[nombre];
     const s = seccion(num, `sección ${nombre}`);
     s.ok(false, 'la sección corrió sin excepción', `${e.message}\n${(e.stack || '').split('\n').slice(1, 4).join('\n')}`);
     res = [s];
@@ -752,7 +818,7 @@ function padre() {
     const salida = (r.stdout || '') + (r.stderr || '');
     const m = salida.match(/@@RESULTADO (.+)\n?$/m);
     if (!m) {
-      const num = { s1: 1, s2y3: 2, s4: 4, s5: 5, s6: 6, s7: 7, s8: 8 }[nombre];
+      const num = { s1: 1, s2y3: 2, s4: 4, s5: 5, s6: 6, s7: 7, s8: 8, s9: 9 }[nombre];
       todas.push({ num, nombre: `sección ${nombre}`, checks: [{ ok: false, desc: 'el proceso devolvió resultado', detalle: salida.slice(-1200) }], feliz: false, felizQue: 'el proceso murió', notas: [] });
       continue;
     }

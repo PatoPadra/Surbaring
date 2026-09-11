@@ -188,11 +188,18 @@
       fijar(); compositor.renderToScreen = false;
       const medir = relojGPU(gl);
       ok(!!medir, 'premisa: hay reloj de GPU');
-      const chunks = {};
-      for (const k of ['lights_fragment_begin', 'lights_pars_begin']) {
-        chunks[k] = (await import(`/node_modules/three/src/renderers/shaders/ShaderChunk/${k}.glsl.js`)).default;
-      }
-      ok(THREE.ShaderChunk.lights_fragment_begin.startsWith(chunks.lights_fragment_begin), 'premisa: el chunk prístino importado es el prefijo del instalado');
+      // «Sin bloque» NO es el chunk de three a secas: `new CSM()` (main.js:143)
+      // reemplaza lights_fragment_begin y lights_pars_begin por los de
+      // CSMShader (CSM.js:248-249). El prístino del juego es el de CSMShader.
+      // Sólo se saca el bloque del fragmento: las declaraciones de uniformes que
+      // quedan en pars y nadie usa las descarta el compilador y no cuestan nada.
+      // (CSMShader.lights_pars_begin no sirve importado a mano: se arma
+      // concatenando el ShaderChunk vivo, que a esa altura ya es el de CSM.)
+      const { CSMShader } = await import('/node_modules/three/examples/jsm/csm/CSMShader.js');
+      const chunks = { lights_fragment_begin: CSMShader.lights_fragment_begin, lights_pars_begin: THREE.ShaderChunk.lights_pars_begin };
+      ok(THREE.ShaderChunk.lights_fragment_begin.startsWith(chunks.lights_fragment_begin)
+        && THREE.ShaderChunk.lights_fragment_begin.length > chunks.lights_fragment_begin.length,
+      'premisa: el chunk vivo es el de CSMShader más el bloque, al final', `${chunks.lights_fragment_begin.length} → ${THREE.ShaderChunk.lights_fragment_begin.length}`);
       const materiales = new Set();
       escena.traverse((x) => { const ms2 = x.material ? (Array.isArray(x.material) ? x.material : [x.material]) : []; for (const m of ms2) if (m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial || m.isMeshPhysicalMaterial) materiales.add(m); });
       window.__bancoModo = '';

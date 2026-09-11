@@ -141,8 +141,8 @@ const DEFECTOS = [
       [6, 'el equipo sobrevive a cerrar la pestaña'],
       [7, 'la frase falsa «ninguna luz puntual» no está en ningún lado del archivo'],
     ],
-    // Luces.js no existe en la base: la sección 2 revienta al importar
-    esperaSeccionRoja: [2, 3],
+    // Luces.js no existe en la base: las secciones 2, 3 y 9 revientan al importar
+    esperaSeccionRoja: [2, 3, 9],
   },
   {
     id: 'D1', que: 'Hornos: una PointLight nombrada en el código (sin usar)',
@@ -422,6 +422,30 @@ const DEFECTOS = [
       d.licenciasDeJuego.licencias = l.filter((x) => { const j = JSON.stringify(x); return !(/(luz|antorcha|candil)/i.test(j) && /(noche|nocturn)/i.test(j)); });
     }),
     espera: [[7, 'licenciasDeJuego declara la del alcance nocturno con luz']],
+  },
+  {
+    id: 'D29', que: 'Luces: la instalación estropea el chunk de las cascadas',
+    plantar: (s) => agregar(s, 'engine/Luces.js', `{
+  const __i = instalarLuces;
+  instalarLuces = function (T) { const r = __i(T); T.ShaderChunk.lights_fragment_begin = T.ShaderChunk.lights_fragment_begin.replace(/CSM_cascades/g, 'CSM_cascadas'); return r; };
+}`),
+    modulo: 'engine/Luces.js',
+    espera: [[9, 'instalado después de las cascadas: el chunk de CSM queda entero y el bloque va al final']],
+  },
+  {
+    id: 'D30', que: 'main.js: instala las luces antes de construir las cascadas',
+    plantar: (s) => {
+      const f = path.join(s, 'main.js');
+      const t = fs.readFileSync(f, 'utf8');
+      const linea = t.match(/^[ \t]*[^\n]*\binstalarLuces\s*\([^\n]*\n/m);
+      if (!linea) return 'main.js no llama a instalarLuces: no hay qué mover';
+      const sin = t.replace(linea[0], '');
+      const p = sin.replace(/(async function iniciar\(\)\s*\{\n)/, `$1${linea[0]}`);
+      if (p === sin) return 'no encontré el comienzo de iniciar()';
+      fs.writeFileSync(f, p);
+      return null;
+    },
+    espera: [[9, 'main.js llama a instalarLuces después de new CSM']],
   },
 ];
 
