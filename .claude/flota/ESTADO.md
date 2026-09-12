@@ -1,5 +1,26 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **12/9/2026 — RONDA 7 ABIERTA: lo que vio el dueño.** Las rondas 5 y 6 están
+> en `main` (`96dc0bf`, sin empujar). El dueño jugó un rato y trajo siete
+> anotaciones; la carta las mide una por una antes de encargar nada y está en
+> `RONDA7.md`. Rama `mejoras/ronda7-lo-que-vio`.
+>
+> Tres cosas que salieron de medir y no estaban en las anotaciones:
+>
+> 1. **La C agacha y además cambia la calidad gráfica**, y apaga el ajuste
+>    automático (`Entrada.js:77` y `main.js:267`). Pasa a F2.
+> 2. **La arena legal más cercana está a 8,6 km del arranque** y pide
+>    herramienta; hay arena a 515 m, pero en la Reserva, donde la cantera se niega
+>    siempre. La arcilla sale desde el **1,06 %** de la tierra como mucho, porque
+>    junto al agua la tecla bebe. `extraer_arcilla` está declarada en el dataset y
+>    no la usa nadie.
+> 3. **La fogata alumbra el suelo menos de la mitad que la antorcha**: su luz está
+>    a 0,6 m y le pega al suelo de costado. **Y la luna es inventada**: la fase no
+>    es la de la fecha.
+>
+> Seis fases, en este orden: `tecla`, `brasa`, `barro`, `vasija`, `witral`,
+> `cielo`. La 6 pide permiso para descargar un catálogo de estrellas.
+
 > **12/9/2026 — RONDA 6 TERMINADA. FASE 3 (`estampa`) CERRADA: los 115 iconos.**
 > El bolso dejó de ser una planilla con bordes. **Banco 6/6, falsador 14 de 14
 > sin puntos ciegos, compañero de navegador 7/7**, y `vite build` limpio.
