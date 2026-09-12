@@ -28,17 +28,38 @@ const BANCO = path.join(AQUI, 'banco-r6-fase3.mjs');
  * banco ya acepta varias puertas (`arteDe`, `svgDe`, `ARTE`…) y el falsador
  * tiene que romper la que exista, no la que a mí me guste.
  */
-const ENVOLVER = `
-function __puertaArte() {
-  for (const f of ['arteDe','svgDe','dibujoDe','iconoDe']) if (typeof __mod[f] === 'function') return f;
-  return null;
+/**
+ * El preámbulo del parche.
+ *
+ * La primera versión hacía `const __mod = await import('./Iconos.js')` desde
+ * adentro del propio `Iconos.js`: un ciclo con `await` arriba de todo, que se
+ * cuelga sin decir nada. El banco no imprimía una sola línea y el falsador leía
+ * eso como «no se pudo plantar» — o peor, reventaba, porque `salida.slice()`
+ * devolvía la cadena vacía, que es falsa.
+ *
+ * Ahora se rebindea el nombre exportado y listo: las ligaduras de un módulo son
+ * vivas, así que quien importe ve el valor nuevo. Los nombres salen de leer el
+ * archivo del agente —**sus nombres, no su implementación**— para no atar el
+ * falsador a una firma que yo hubiera inventado.
+ */
+function preambuloPara(fuente) {
+  // Con cadenas comunes y no con plantillas: adentro de una plantilla `\s` es
+  // una `s` suelta y `\b` es un retroceso, así que la expresión buscaba
+  // «exports+…arteDe<retroceso>» y no encontraba nada nunca. El falsador decía
+  // «no se pudo plantar» doce veces contra un módulo que exportaba todo bien.
+  const nom = (cands) => cands.find(c =>
+    new RegExp('export\\s+(?:async\\s+)?(?:function|const|let)\\s+' + c + '\\b').test(fuente)
+    || new RegExp('export\\s*\\{[^}]*\\b' + c + '\\b').test(fuente));
+  const arte = nom(['arteDe', 'svgDe', 'dibujoDe', 'iconoDe']);
+  const clase = nom(['claseDe', 'clasePara', 'claseIcono']);
+  const hoja = nom(['hoja', 'css', 'construirHoja', 'hojaDeEstilos']);
+  return { arte, clase, hoja, cabecera: `
+let __arte = ${arte || 'null'}, __clase = ${clase || 'null'}, __hoja = ${hoja || 'null'};
+function __pisarArte(fn) { if (!__arte) return false; const _o = __arte; ${arte} = (id) => fn(_o(id), id); return true; }
+function __pisarClase(fn) { if (!__clase) return false; const _o = __clase; ${clase} = (id) => fn(_o(id), id); return true; }
+function __pisarHoja(fn) { if (!__hoja) return false; const _o = __hoja; ${hoja} = (...a) => fn(_o(...a)); return true; }
+` };
 }
-function __pisarArte(fn) {
-  const f = __puertaArte();
-  if (f) { const _o = __mod[f]; __mod[f] = (id) => fn(_o(id), id); return true; }
-  return false;
-}
-`;
 
 const DEFECTOS = [
   {
@@ -54,9 +75,13 @@ const DEFECTOS = [
     id: 'dos-identicos',
     que: 'la lasca y el cuchillo terminan con el dibujo exactamente igual',
     caeEn: 'no hay dos iconos idénticos',
-    parche: `__pisarArte((a, id) => (id === 'cuchillo' ? __mod.__arteLasca ?? a : (id === 'lasca' ? (__mod.__arteLasca = a) : a)));`,
-    // se corre dos veces para que la primera cachee la lasca
-    precalentar: ['lasca', 'cuchillo'],
+    parche: `{ let __lasca = null;
+  __pisarArte((a, id) => { if (id === 'lasca') { __lasca = a; return a; }
+    return id === 'cuchillo' && __lasca ? __lasca : a; }); }`,
+    // Se pide la lasca antes que el cuchillo para que quede cacheada; el banco
+    // recorre los ids en el orden de RECURSOS y despues el de los objetos, y la
+    // lasca viene primero entre los objetos.
+    precalentar: ['lasca'],
   },
   {
     id: 'icono-pobre',
@@ -99,30 +124,26 @@ const DEFECTOS = [
     id: 'reserva-es-un-icono',
     que: 'lo desconocido cae en el dibujo de la piedra y se confunde con una piedra',
     caeEn: 'el de reserva no es el de ninguno de los 115',
-    parche: `{ const _ids = new Set(__todosLosIds); __pisarArte((a, id) => (_ids.has(id) ? a : __mod.__arteDeLaPiedra)); }`,
-    precalentar: ['piedra'],
-    guardar: `__mod.__arteDeLaPiedra = __puertaArte() ? __mod[__puertaArte()]('piedra') : null;`,
+    parche: `{ const _ids = new Set(__todosLosIds); const _piedra = __arte('piedra');
+  __pisarArte((a, id) => (_ids.has(id) ? a : _piedra)); }`,
   },
   {
     id: 'hoja-gorda',
     que: 'la hoja se va a 300 kB porque cada icono duplica su arte',
     caeEn: 'la hoja pesa 140 kB o menos',
-    parche: `{ for (const f of ['hoja','css','construirHoja','hojaDeEstilos']) if (typeof __mod[f] === 'function') {
-      const _h = __mod[f]; __mod[f] = (...a) => { const s = _h(...a); return s + s + s + s; }; break; } }`,
+    parche: `__pisarHoja((s) => s + s + s + s);`,
   },
   {
     id: 'clase-fuera-de-la-hoja',
     que: 'la clase que pide el bolso no está en la hoja: la casilla queda en blanco',
     caeEn: 'esa clase está en la hoja',
-    parche: `{ for (const f of ['claseDe','clasePara','claseIcono']) if (typeof __mod[f] === 'function') {
-      const _c = __mod[f]; __mod[f] = (id) => String(_c(id)) + '-x9'; break; } }`,
+    parche: `__pisarClase((c) => String(c) + '-x9');`,
   },
   {
     id: 'sin-imagen-de-fondo',
     que: 'la hoja deja de usar imagen de fondo y vuelve a costar repintar',
     caeEn: 'el dibujo viaja como imagen de fondo',
-    parche: `{ for (const f of ['hoja','css','construirHoja','hojaDeEstilos']) if (typeof __mod[f] === 'function') {
-      const _h = __mod[f]; __mod[f] = (...a) => String(_h(...a)).replace(/background(-image)?\\s*:/gi, 'x-bg:'); break; } }`,
+    parche: `__pisarHoja((s) => String(s).replace(/background(-image)?\\s*:/gi, 'x-bg:'));`,
   },
 ];
 
@@ -155,7 +176,7 @@ function correrBanco(src) {
   });
   const salida = (r.stdout || '') + (r.stderr || '');
   const m = salida.match(/@@RESULTADO (.+)/);
-  return m ? { secciones: JSON.parse(m[1]) } : { error: salida.slice(-800) };
+  return m ? { secciones: JSON.parse(m[1]) } : { error: salida.slice(-800) || '(el banco no imprimio nada)' };
 }
 
 function aplanar(secciones) {
@@ -165,14 +186,6 @@ function aplanar(secciones) {
     m.set(`${s.num}·CAMINO FELIZ`, s.feliz);
   }
   return m;
-}
-
-/** El preámbulo que le da al parche `__mod` y la lista de ids. */
-function preambulo() {
-  return `
-import * as __modNS from './Iconos.js';
-const __mod = __modNS;
-`;
 }
 
 const soloIdx = process.argv.indexOf('--solo');
@@ -200,7 +213,8 @@ console.log(`  base limpia: ${baseMapa.size} aserciones, todas verdes\n`);
 const cuenta = { vio: 0, otro: 0, no: 0, sin: 0 };
 
 function informar(d, r) {
-  if (r.error) {
+  if (r.error || !Array.isArray(r.secciones)) {
+    r = r.error ? r : { error: '(resultado sin secciones)' };
     console.log(`  NO SE PUDO PLANTAR  ${d.id.padEnd(24)} el banco no arrancó con el parche`);
     console.log(`                      ${r.error.split('\n').slice(0, 3).join(' / ')}`);
     cuenta.sin++; return;
@@ -233,16 +247,21 @@ for (const d of DEFECTOS) {
     console.log(`  NO SE PUDO PLANTAR  ${d.id.padEnd(24)} no existe ui/Iconos.js`);
     cuenta.sin++; continue;
   }
-  // Se pega un módulo envoltorio al final del propio archivo: puede pisar sus
-  // exportaciones porque las ligaduras de un módulo son vivas.
+  // El parche se pega al final del propio archivo y rebindea el nombre
+  // exportado: las ligaduras de un módulo son vivas, así que quien importe ve
+  // el valor nuevo sin que haya que importar nada desde adentro.
   const ids = JSON.parse(fs.readFileSync(path.join(AQUI, 'r6-ids.json'), 'utf8'));
+  const fuente = fs.readFileSync(archivo, 'utf8');
+  const pre = preambuloPara(fuente);
+  if (!pre.arte) {
+    console.log(`  NO SE PUDO PLANTAR  ${d.id.padEnd(24)} el módulo no exporta ninguna puerta de arte conocida`);
+    cuenta.sin++; continue;
+  }
   const extra = [
     `\n\n/* DEFECTO PLANTADO: ${d.que} */`,
-    `const __mod = await import('./Iconos.js');`,
     `const __todosLosIds = ${JSON.stringify(ids)};`,
-    ENVOLVER,
-    d.guardar || '',
-    ...(d.precalentar || []).map(id => `try { __puertaArte() && __mod[__puertaArte()](${JSON.stringify(id)}); } catch {}`),
+    pre.cabecera,
+    ...(d.precalentar || []).map(id => `try { __arte(${JSON.stringify(id)}); } catch {}`),
     d.parche,
   ].join('\n');
   fs.appendFileSync(archivo, extra + '\n');
@@ -265,6 +284,8 @@ for (const d of DEFECTOS_BOLSO) {
 const total = cuenta.vio + cuenta.otro + cuenta.no + cuenta.sin;
 console.log(`\n  ${cuenta.no === 0 ? 'VERDE' : 'ROJO '}  lo vio ${cuenta.vio}/${total}` +
   `  ·  por otro motivo ${cuenta.otro}  ·  NO lo vio ${cuenta.no}  ·  no se pudo plantar ${cuenta.sin}\n`);
-if (cuenta.no === 0 && cuenta.otro === 0) fs.rmSync(tmp, { recursive: true, force: true });
+if (cuenta.no === 0 && cuenta.otro === 0)
+  try { fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); }
+  catch { console.log(`  (no se pudieron borrar las copias de ${tmp}; no importa)`); }
 else console.log(`  las copias quedan en ${tmp} para mirarlas\n`);
 process.exitCode = cuenta.no === 0 ? 0 : 1;

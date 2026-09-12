@@ -73,13 +73,27 @@ window.bancoR6Fase3 = async function bancoR6Fase3({ tandas = 60, porTanda = 20 }
   ok(distintos.size >= 8, 'A4 · y no son todos el mismo dibujo', `${distintos.size} distintos en pantalla`);
 
   // A6 · el bolso abre en el bolso.
+  //
+  // Se mide el ORDEN en el documento y no los píxeles. El panel es
+  // `max-height: 86vh`, así que en una ventana de 32 px de alto —la que da la
+  // vista previa si nadie le fija un tamaño— el marco mide 27 px y **nada** se
+  // ve sin bajar: la aserción daba rojo contra un layout perfecto. Lo cazó el
+  // agente de la fase 3 y era defecto de este compañero, no del bolso.
   const marco = panel?.querySelector('.bp-marco') || panel?.firstElementChild;
+  const texto = marco?.innerHTML || '';
+  const iGrilla = texto.indexOf('data-cs');
+  const iTaller = Math.max(texto.indexOf('SE FABRICA'), texto.indexOf('se fabrica'));
+  ok(iGrilla >= 0, 'A6 · la grilla está en el panel', iGrilla);
+  ok(iGrilla >= 0 && (iTaller < 0 || iGrilla < iTaller),
+    'A6 · la grilla va ANTES que el taller en el panel', `grilla@${iGrilla} taller@${iTaller}`);
+  // Y el chequeo en píxeles queda como nota, con el tamaño que necesita para
+  // valer algo.
   const primeraCasilla = panel?.querySelector('[data-cs]');
   const yCasilla = primeraCasilla?.getBoundingClientRect().top ?? Infinity;
   const abajo = marco?.getBoundingClientRect().bottom ?? 0;
-  ok(yCasilla < abajo, 'A6 · la primera casilla se ve sin bajar el panel',
-    `casilla en y=${Math.round(yCasilla)}, el panel termina en ${Math.round(abajo)}`);
-  R.nota.push(`panel: ${marco?.scrollHeight} px de alto, ${marco?.clientHeight} visibles`);
+  R.nota.push(`panel: ${marco?.scrollHeight} px de alto, ${marco?.clientHeight} visibles`
+    + ` · primera casilla en y=${Math.round(yCasilla)}, el marco termina en ${Math.round(abajo)}`
+    + (window.innerHeight < 600 ? '  (ventana de menos de 600 px: este renglón no dice nada)' : ''));
 
   // A5 · el número de la esquina distingue cantidad de usos.
   cargar(true);

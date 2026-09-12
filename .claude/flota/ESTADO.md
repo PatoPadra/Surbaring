@@ -1,5 +1,35 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **12/9/2026 — RONDA 6 TERMINADA. FASE 3 (`estampa`) CERRADA: los 115 iconos.**
+> El bolso dejó de ser una planilla con bordes. **Banco 6/6, falsador 14 de 14
+> sin puntos ciegos, compañero de navegador 7/7**, y `vite build` limpio.
+>
+> **Los tres bancos de la ronda 6 y el de la ronda 5 están verdes a la vez**, y
+> los tres falsadores dieron perfecto: 24/24, 21/21 y 14/14.
+>
+> **Y por primera vez en la ronda el número de costo de un agente reproduce.**
+> Medido alternado: 0,72 ms sin herramientas contra 0,71 de la fase 2, y 0,835
+> con ocho contra 0,82. **Los iconos no cuestan nada**, y el presupuesto de
+> +0,07 que yo había puesto era pesimista.
+>
+> Cómo se dibujaron, en una línea: **un solo sol** —toda la familia sombreada
+> con la luz en el mismo lado, la silueta tres veces— más 45 tintes por materia y
+> ~40 piezas compartidas. **Un solo `<svg>` escrito a mano en todo el archivo**
+> para 115 dibujos, y 115 siluetas distintas al sacarles el color. La hoja pesa
+> 130,3 kB de los 140 permitidos.
+>
+> **Lo caro no era el CSS sino correr las recetas la primera vez**: abrir el
+> bolso costaba 22,1 ms con la hoja perezosa, y con un precalentado en el primer
+> rato libre bajó a 3,9. El agente usó `requestIdleCallback` con `setTimeout` de
+> respaldo, porque con la pestaña de atrás el rato libre no llega nunca — que es
+> el mismo defecto que tuvo mi compañero de la fase 1 con `requestAnimationFrame`.
+>
+> *Los tres defectos del falsador fueron míos y los tres del mismo tipo: código
+> del falsador que decía plantar algo y no plantaba nada. El peor, una expresión
+> regular escrita dentro de una plantilla de texto —donde `\s` es una `s` y `\b`
+> un retroceso—: doce «no se pudo plantar» seguidos contra un módulo que
+> exportaba todo bien.*
+
 > **12/9/2026 — RONDA 6, FASE 2 (`instancia`) CERRADA: dos hachas son dos
 > hachas.** Las herramientas viven en la grilla, cada una con su durabilidad;
 > `Equipo` **dejó de tener lista propia** —no hay más `taller`, la fuente es la

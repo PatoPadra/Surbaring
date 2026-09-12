@@ -20,9 +20,15 @@
  *   dejarla, el peso, el HUD y las recetas siguen viendo lo mismo de siempre.
  *   Una pila que vive en una variable de la interfaz es una pila que se pierde
  *   el día que alguien cierra el panel con el bolso en la mano.
- * - **Sin iconos.** Son 127 dibujos y son otra fase entera. Mientras tanto, una
- *   sigla de dos o tres letras y un color por categoría, que se lee de un
- *   vistazo y no miente sobre lo que hay.
+ * - **Con iconos, desde la fase 3.** Son 115 dibujos y viven en `Iconos.js`. La
+ *   sigla de tres letras que había antes se fue: en una captura de veinticuatro
+ *   casillas se leían cuatro «Arc» y dos «Tos», o sea que ubicaba y no
+ *   identificaba. Queda para un solo caso —un id sin dibujo—, y ahí conviene
+ *   que se vea el nombre además del recuadro de reserva.
+ *   El dibujo entra **como clase de CSS y nunca en línea**: está medido en la
+ *   página y en línea cuesta doce veces más, porque `pintar()` reconstruye todo
+ *   con `innerHTML` y el navegador tendría que reinterpretar veintiocho
+ *   subárboles de dibujo en cada pintada.
  * - **El detalle sigue al puntero, y se queda.** Pasar por encima de un
  *   casillero llena el panel de abajo con el nombre, la cantidad, los kilos y
  *   los botones. No se limpia al salir: si se limpiara, no habría forma de
@@ -31,6 +37,7 @@
 
 import { RECURSOS, pesoDe, nombreDe } from '../systems/Recursos.js';
 import { esInstancia } from '../systems/Inventario.js';
+import { claseDe, inyectar, CLASE_RESERVA } from './Iconos.js';
 
 const CSS = `
   #bolsoPanel { position: fixed; inset: 0; z-index: 72; display: none;
@@ -66,19 +73,44 @@ const CSS = `
      desde casillasPara(): si acá fueran cinco, la última fila quedaría coja. */
   #bolsoPanel .bp-grilla { display: grid; grid-template-columns: repeat(6, 1fr);
     gap: 4px; margin: .45rem 0 .2rem; }
+  /* Va background-color y NO el atajo background: el dibujo del icono llega por
+     una clase de Iconos.js, y el atajo —que también fija background-image— se lo
+     borraría desde una regla de más peso. Es el defecto que dejaría los 115
+     casilleros pintados de un color plano y sin ningún dibujo.
+     Y sin comillas invertidas en los comentarios de acá adentro: todo este
+     bloque es una plantilla de texto y una comilla invertida la parte al medio,
+     que es lo que rompió el primer build de esta fase. */
   #bolsoPanel .bp-cs { position: relative; aspect-ratio: 1 / 1; padding: 0;
     display: grid; place-items: center; border-radius: 3px; cursor: default;
-    background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07);
+    background-color: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07);
     color: var(--tinta-tenue); font-size: .72rem; letter-spacing: .03em; }
+  /* El dibujo va en un elemento propio adentro del botón y no en su fondo, para
+     que el número de la esquina y la franja de durabilidad queden POR ENCIMA. */
+  #bolsoPanel .bp-cs > .ic { position: absolute; left: 10%; top: 6%;
+    width: 80%; height: 80%; }
+  /* Un id sin dibujo: el recuadro de reserva se ve como tal y encima se escribe
+     la sigla, porque en ese caso el nombre es la única pista que queda. */
+  #bolsoPanel .bp-cs > .sig { position: absolute; left: 0; right: 0; bottom: 18%;
+    font-size: .6rem; font-weight: 600; text-align: center; color: var(--tinta);
+    text-shadow: 0 1px 2px rgba(0,0,0,.9); }
+  #bolsoPanel .bp-det-ic { display: inline-block; width: 2.3rem; height: 2.3rem;
+    flex: 0 0 auto; vertical-align: middle; }
   #bolsoPanel .bp-cs.hay { cursor: pointer; font-weight: 600; }
   #bolsoPanel .bp-cs.hay:hover { border-color: rgba(255,255,255,.34); }
   /* Lo tomado se levanta y queda marcado en ámbar, el mismo color con el que el
      equipo dice «encendida»: es el único estado de la interfaz que espera algo. */
   #bolsoPanel .bp-cs.tomada { border-color: #e0a050; box-shadow: 0 0 0 1px #e0a050 inset;
     transform: translateY(-2px); }
+  /* A5 · el número de la esquina deja de ser ambiguo. Hasta la fase 2 un
+     raspador con 60 usos y una pila de 60 juncos se escribían los dos «60». Ahora
+     una pila lleva el «×» adelante —×60, sesenta cosas— y una herramienta es
+     siempre una fracción —60/90, lo que le queda de lo que traía—. Con el dibujo
+     adentro hay lugar para las dos cosas, y son dos gramáticas distintas: no hay
+     forma de leer una como la otra. */
   #bolsoPanel .bp-cs i { position: absolute; right: 3px; bottom: 1px; font-style: normal;
     font-size: .62rem; font-variant-numeric: tabular-nums; color: var(--tinta);
-    text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+    text-shadow: 0 1px 2px rgba(0,0,0,.9), 0 0 3px rgba(0,0,0,.85); }
+  #bolsoPanel .bp-cs i.usos { font-size: .54rem; letter-spacing: -.03em; opacity: .95; }
   /* La franja de abajo dice qué tan llena está la pila. Es el único lugar donde
      el tope de pila se ve sin pasar el puntero. */
   #bolsoPanel .bp-cs u { position: absolute; left: 0; bottom: 0; height: 2px;
@@ -175,14 +207,13 @@ function colorUso(frac) {
 }
 
 /**
- * La sigla que se dibuja en el casillero: iniciales si el nombre tiene dos
- * palabras con cuerpo, y si no las tres primeras letras.
+ * La sigla de un nombre: iniciales si tiene dos palabras con cuerpo, y si no las
+ * tres primeras letras.
  *
- * Las palabras de dos letras o menos se descartan —«de», «la»— porque «Yesca de
- * barba de viejo» tiene que dar YB y no YD. Hay colisiones (carne y carbón dan
- * las dos «Car» a secas nunca, pero cerámica y ceniza dan Cer y Cen) y por eso
- * el nombre entero va en el `title` y en el detalle de abajo: la sigla ubica, no
- * identifica.
+ * **Desde la fase 3 esto ya no se dibuja en los casilleros normales**: ahí va el
+ * icono. Queda para el único caso en que no hay dibujo —un id que `Iconos.js` no
+ * conoce, o sea un recurso nuevo que nadie estampó todavía—, y justo ahí la
+ * sigla es lo único que queda para saber qué hay adentro del agujero.
  */
 function sigla(nombre) {
   const palabras = String(nombre || '').split(/\s+/).filter(p => p.length > 2);
@@ -208,7 +239,12 @@ export class Bolso {
     this._tomada = null;
     /** El último casillero por el que pasó el puntero: es el que se detalla. */
     this._mirando = null;
+    /** Si la hoja de los 115 iconos ya está en el documento. */
+    this._hojaPuesta = false;
     this._crear();
+    // Armar los dibujos en el primer rato libre, para que abrir el bolso por
+    // primera vez no cueste los 21 ms de armarlos.
+    this._precalentar();
   }
 
   _crear() {
@@ -541,10 +577,15 @@ export class Bolso {
       // abajo en la columna de kilos, y verlo escrito de dos formas distintas en
       // la misma pantalla se lee como si fueran dos números.
       const kg = (pesoDe(c.id) * c.n).toFixed(1);
+      const clase = claseDe(c.id);
+      const falta = clase.endsWith(CLASE_RESERVA);
       html += `<button class="bp-cs hay${this._tomada === i ? ' tomada' : ''}" data-cs="${i}"`
-        + ` style="color:${color};background:${color}1f;border-color:${color}55"`
-        + ` title="${nombre} · ${c.n} de ${tope} · ${kg} kg">${sigla(nombre)}`
-        + `${c.n > 1 ? `<i>${c.n}</i>` : ''}`
+        + ` style="color:${color};background-color:${color}1f;border-color:${color}55"`
+        + ` title="${nombre} · ${c.n} de ${tope} · ${kg} kg"><b class="${clase}"></b>`
+        + (falta ? `<span class="sig">${sigla(nombre)}</span>` : '')
+        // «×3» y no «3»: el ×  dice cuántas cosas hay, y es lo que lo separa de
+        // los usos de una herramienta, que se escriben como fracción.
+        + `${c.n > 1 ? `<i class="cant">×${c.n}</i>` : ''}`
         + `<u style="width:${Math.round(c.n / tope * 100)}%"></u></button>`;
     }
     return html + '</div>';
@@ -568,10 +609,16 @@ export class Bolso {
     const frac = finito ? Math.max(0, Math.min(1, c.usos / def.durabilidad)) : 1;
     const ardiendo = this.equipo?.encendida === c.id;
     const detalle = finito ? `${c.usos} de ${def.durabilidad} usos` : 'no se gasta';
+    const clase = claseDe(c.id);
+    const falta = clase.endsWith(CLASE_RESERVA);
     return `<button class="bp-cs hay obj${rota ? ' rota' : ''}${this._tomada === i ? ' tomada' : ''}" data-cs="${i}"`
-      + ` style="color:${color};background:${color}1f;border-color:${color}55"`
-      + ` title="${nombre} · ${detalle}${ardiendo ? ' · encendida' : ''}">${sigla(nombre)}`
-      + `${finito ? `<i>${c.usos}</i>` : ''}`
+      + ` style="color:${color};background-color:${color}1f;border-color:${color}55"`
+      + ` title="${nombre} · ${detalle}${ardiendo ? ' · encendida' : ''}"><b class="${clase}"></b>`
+      + (falta ? `<span class="sig">${sigla(nombre)}</span>` : '')
+      // La fracción entera y no sólo los usos: «60/90» no se puede confundir con
+      // una cantidad, y de paso dice de cuánto partió, que es el número con el
+      // que se decide cuál de las dos hachas sacar.
+      + `<i class="usos">${finito ? `${c.usos}/${def.durabilidad}` : '∞'}</i>`
       + `<u style="width:${Math.round(frac * 100)}%;background:${colorUso(frac)}"></u></button>`;
   }
 
@@ -594,6 +641,7 @@ export class Bolso {
     const hermanas = this.inventario.instancias(c.id).length;
     const it = { usos: c.usos, tope: def?.durabilidad ?? Infinity };
     return `<div class="bp-it" style="border-top:none;padding-top:0">
+        <b class="bp-det-ic ${claseDe(c.id)}"></b>
         <span>${nombre}<small style="color:var(--tinta-tenue)"> · nivel ${def?.nivel ?? 0}${
           rota ? ' · <b style="color:#c8503f">gastada</b>' : ''}${
           hermanas > 1 ? ` · tenés ${hermanas} en el bolso, cada una con lo suyo` : ''}</small></span>
@@ -644,6 +692,7 @@ export class Bolso {
     // sea que apretar el de al lado tiraba 8 de salud a la basura. «Curarte» ya
     // suma lo que nutre y lo que hidrata además de curar: no se pierde nada.
     return `<div class="bp-it" style="border-top:none;padding-top:0">
+        <b class="bp-det-ic ${claseDe(c.id)}"></b>
         <span>${nombreDe(c.id)}<small style="color:var(--tinta-tenue)">${nutre}${hidrata}${cura}${repartido}</small></span>
         <span class="bp-n">${c.n}/${inv.topeDe(c.id)}</span>
         <span class="bp-kg">${(pesoDe(c.id) * c.n).toFixed(1)} kg</span>
@@ -661,7 +710,40 @@ export class Bolso {
     if (nodo) nodo.innerHTML = this._detalleHTML();
   }
 
+  /**
+   * La hoja de los 115 dibujos, puesta una sola vez.
+   *
+   * Medido en la página: **inyectarla cuesta 0,2 ms y armarla cuesta 21**. Lo
+   * caro no es meter 130 kB de CSS en el documento —eso no se siente—, sino
+   * correr las 115 recetas la primera vez, con el compilador todavía frío.
+   *
+   * Por eso hay dos caminos y no uno. `_asegurarIconos()` es la garantía: si el
+   * jugador abre el bolso a los tres segundos de entrar, paga los 21 ms una vez
+   * y listo. Y `_precalentar()` es el que hace que eso casi nunca pase: pide un
+   * rato libre del navegador y arma la hoja ahí, mientras el jugador camina. No
+   * se puede confiar sólo en el rato libre —con la pestaña de atrás no llega
+   * nunca, que es lo mismo que le pasó al compañero de navegador de la fase 1
+   * con `requestAnimationFrame`—, así que el camino perezoso queda igual.
+   *
+   * Después de la primera vez esto es un `if` y nada más: con `pintar()`
+   * corriendo en cada clic, consultar el documento cada vez sería un
+   * `getElementById` por clic para no hacer nada.
+   */
+  _asegurarIconos() {
+    if (this._hojaPuesta) return;
+    this._hojaPuesta = true;
+    inyectar();
+  }
+
+  _precalentar() {
+    const luego = (fn) => (typeof requestIdleCallback === 'function'
+      ? requestIdleCallback(fn, { timeout: 4000 })
+      : setTimeout(fn, 1200));
+    luego(() => this._asegurarIconos());
+  }
+
   pintar() {
+    this._asegurarIconos();
     const inv = this.inventario;
     const kg = inv.pesoKg;
     this.el.querySelector('#bp-peso').textContent = `${kg.toFixed(1)} / ${inv.capacidadKg} kg`;
@@ -675,14 +757,25 @@ export class Bolso {
     // movería aire.
     if (this._tomada !== null && !inv.casillas[this._tomada]) this._tomada = null;
 
-    // El equipo y el taller van SIEMPRE, aunque el bolso esté vacío: con las
-    // manos vacías es justamente cuando hace falta saber qué se puede hacer.
+    // A6 · EL BOLSO ABRE EN EL BOLSO.
+    //
+    // Hasta la fase 2 el orden era equipo, taller y recién después la grilla: el
+    // panel medía 1321 px con 617 visibles, así que lo primero que se veía al
+    // abrir el bolso era el taller y la primera casilla caía a 718 px de arriba.
+    // Lo pidieron dos fases seguidas. Ahora la grilla va primera y pegado abajo
+    // el detalle de lo que está bajo el puntero, que es lo que se lee mirando la
+    // grilla; después las cuatro ranuras, y el taller al final.
+    //
+    // **No se sacó nada**: el equipo y el taller van SIEMPRE, aunque el bolso
+    // esté vacío, porque con las manos vacías es justamente cuando hace falta
+    // saber qué se puede hacer. Sólo cambiaron de lugar.
     this.el.querySelector('#bp-cuerpo').innerHTML =
-      this._pintarEquipo() + this._pintarFabricacion() + this._pintarGrilla()
+      this._pintarGrilla()
       + `<div class="bp-detalle" id="bp-detalle">${this._detalleHTML()}</div>`
       + (inv.desbordado
         ? `<div class="bp-vacio">La partida guardada traía más cosas de las que entran en la grilla: lo que no tuvo casillero quedó afuera.</div>`
-        : '');
+        : '')
+      + this._pintarEquipo() + this._pintarFabricacion();
   }
 
   alternar() {

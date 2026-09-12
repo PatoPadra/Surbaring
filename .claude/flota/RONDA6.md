@@ -658,3 +658,114 @@ El códice, el taller y el HUD siguen sin iconos. No se rehornean los 18 modelos
 3D de la mano a sprites: darían 18 de 115 en otro registro visual, y mezclar 3D
 horneado con vector plano se ve peor que una sola familia. Queda anotado como
 opción, no como encargo.
+
+---
+
+## FASE 3 CERRADA — 12/9/2026
+
+**Banco 6/6. Falsador 14 de 14, todos cazados por la aserción declarada: cero
+puntos ciegos.** `vite build` limpio. Compañero de navegador 7/7 con el juego
+andando. El agente tocó sus dos archivos y agregó un tercero declarado, el
+generador de la hoja de contacto.
+
+**Y es la primera vez en la ronda que el número de costo de un agente
+reproduce.** Medido por el coordinador, alternado: 0,72 ms sin herramientas
+contra los 0,71 de la fase 2, y 0,835 con ocho contra 0,82. **Los iconos no
+cuestan nada**, y el presupuesto de +0,07 que yo había puesto en la carta era
+pesimista: la técnica de la clase de CSS sale aún más barata de lo que la
+midieron los prototipos.
+
+### Cómo se dibujaron
+
+Tres decisiones, y las tres son la misma que tomó `Herramientas3D.js`:
+
+1. **Un solo sol.** Casi todo pasa por un `bulto()` que dibuja la misma silueta
+   tres veces —el tono oscuro corrido abajo y a la derecha, el de base encima, el
+   claro encogido hacia arriba y a la izquierda—. **La luz nunca cambia de lado**,
+   y eso es lo único que hace que 115 dibujos compuestos por separado se lean
+   como un juego. De paso garantiza el mínimo de tres formas.
+2. **45 tintes por materia**, arrancando de la paleta de `Herramientas3D.js` y de
+   los colores que el bolso ya usaba. La materia da la paleta y la forma el
+   oficio: dos maderas se separan por el tono, una madera y una tabla por la
+   silueta.
+3. **~40 piezas compartidas.** Las diez herramientas con cabo comparten cabo y
+   atadura; lo que cambia es la cabeza, que es lo que se reconoce. Las piedras
+   usan ruido con semilla sacada del id, así piedra, tosca y pómez salen de la
+   misma pieza y dan tres bultos distintos sin escribir tres siluetas.
+
+**Un solo `<svg>` escrito a mano en todo el archivo** (el tope eran 20). 115
+dibujos distintos, **115 siluetas distintas al sacarles el color** (hacían falta
+25), mínimo 4 formas, mediana 11. La hoja pesa **130,3 kB de 140**; el margen
+salió de sacar `stroke-linecap`/`stroke-linejoin` de cada forma y ponerlos una
+vez en el envoltorio, porque se heredan: 648 repeticiones, 14 kB.
+
+### El costo de la primera vez, que lo encontró midiendo
+
+Armar los 115 con el compilador frío cuesta **21 ms**; inyectar los 130 kB,
+0,2 ms. **Lo caro no es el CSS, es correr las recetas.** Con la hoja perezosa,
+abrir el bolso por primera vez costaba **22,1 ms** — un salto visible. Le agregó
+un precalentado en el primer rato libre (`requestIdleCallback`, con `setTimeout`
+de respaldo porque con la pestaña de atrás el rato libre no llega nunca, que es
+**el mismo defecto que tuvo mi compañero de la fase 1 con
+`requestAnimationFrame`**). Medido: la primera apertura pasó de 22,1 a **3,9 ms**.
+
+### Los tres defectos del falsador, que fueron míos
+
+1. **El parche se auto-importaba.** `const __mod = await import('./Iconos.js')`
+   desde adentro del propio `Iconos.js` es un ciclo con `await` arriba de todo:
+   se cuelga sin decir nada, el banco no imprime una línea y el falsador lo lee
+   como «no se pudo plantar». Ahora rebindea el nombre exportado, que alcanza
+   porque las ligaduras de un módulo son vivas.
+2. **`error: ''` es falso.** Cuando el banco no imprimía nada, `correrBanco`
+   devolvía la cadena vacía como error, el `if (r.error)` pasaba de largo y
+   reventaba en `aplanar(undefined)`.
+3. **Una expresión regular dentro de una plantilla de texto.** Ahí `\s` es una
+   `s` suelta y `\b` es un retroceso, así que buscaba «exports+…arteDe⌫» y no
+   encontraba nada: **doce «no se pudo plantar» seguidos contra un módulo que
+   exportaba todo bien.**
+
+Y uno del compañero de navegador, que encontró el agente: A6 se medía en píxeles
+contra un panel `max-height: 86vh`, así que en una ventana de 32 px de alto el
+marco medía 27 y **nada** entraba sin bajar — rojo contra un layout perfecto.
+Ahora mide el orden en el documento y el chequeo de píxeles queda como nota.
+
+### Lo que hay que mirar, que es lo único que el banco no puede
+
+**La hoja de contacto está en `capturas/iconos-r6.html`** y se regenera con
+`node .claude/flota/hoja-contacto-r6.mjs`. Muestra los 115 a la casilla real de
+79 × 79 px, agrupados por categoría, con el nombre y el peso debajo.
+
+Mirados los 115: **el conjunto se sostiene.** Los pares están bien resueltos
+—agua y agua hervida por el vapor, carne y carne asada por el espeto, madera dura
+y blanda por el tono—, los alimentos y el fuego son los mejores, y las armas se
+reconocen una por una. El agente rehízo dieciséis después de verlos juntos, entre
+ellos un defecto de verdad: `mango` tenía las ataduras caídas al lado del cabo y
+era idéntico a un leño.
+
+**Los diez que él mismo marcó como flojos, en su orden:** `pluma` (dos hojas
+finas), `pala_omoplato` (una raqueta), `tosca` (un cesto), `hormigon`/`hierro`/
+`acero` (tres bloques grises), `rastra` (una escalera), `quillango` (una reja),
+`estolica` (el dardo flotando), `tendon` (dos hebras cualquiera), `cuero_curtido`
+contra `tronco` (los dos un cilindro con anillos), y `lena` contra `pinocha`
+(dos haces primos).
+
+Dos cosas que el banco no mide y conviene saber: las tres arcillas de una grilla
+llena se dibujan idénticas entre sí —correcto, es el mismo recurso en tres
+pilas— y **los tres remedios llevan un acento violeta** además de su materia, la
+única marca de categoría que el agente dibujó, porque son lo que se busca
+apurado.
+
+### El resto del contrato
+
+**A5** · una pila escribe `×6` y una herramienta `90/90`: dos gramáticas
+distintas, imposible leer una como la otra; el infinito escribe `∞`. **A6** ·
+verificado en pantalla con ventana de 1280 × 860: el orden es Bolso, Equipo,
+Taller, y la primera casilla queda a 150 px del borde. **A3** · probado en vivo
+con un id inventado: sale el recuadro punteado violeta con el signo de pregunta.
+**A1** · cero dibujos en línea en el panel.
+
+Dos defectos propios que el agente declaró: escribió comillas invertidas dentro
+del bloque CSS de `Bolso.js` —que es una plantilla de texto— y partió la
+constante al medio, lo que rompió el primer `vite build`; y diecisiete recetas
+hacían `...gira(...)` sobre una cadena, desparramando el dibujo carácter por
+carácter en un arreglo que después se volvía a juntar. Daba bien de casualidad.
