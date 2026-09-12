@@ -570,3 +570,91 @@ cumplen con margen.
 7. **El agente pisó el `localStorage` de la máquina** con el estado sintético del
    último ensayo. Arranca sana, pero la partida de desarrollo que había no es la
    que hay.
+
+---
+
+## FASE 3 — Los iconos · agente `estampa`
+
+### Lo que se midió antes de encargar nada
+
+**Son 115 y no 127.** 71 recursos con ficha más 44 objetos que se tienen; los 12
+que faltaban para el número que venía diciendo la carta son las recetas, que
+nunca se sostienen en la mano. El reparto:
+
+| | |
+|---|---|
+| recursos | 56 material · 12 alimento · 3 remedio |
+| objetos | 15 herramienta · 9 arma · 6 pesca · 4 fuego · 4 contenedor · 3 abrigo · 2 apicultura · 1 insumo |
+
+**La casilla mide 79 × 79 px de verdad**, no los veinte que yo venía suponiendo
+de mirar capturas escaladas. Entra un dibujo con detalle, no un glifo.
+
+**Cómo se dibujan lo decide el costo, y la diferencia es de un orden de
+magnitud.** Medido en la página, 28 celdas repintadas, tandas de 20:
+
+| enfoque | 28 celdas | lo que suma el icono |
+|---|---|---|
+| sin iconos | 0,15 ms | — |
+| SVG en línea en cada celda | 1,07 – 1,21 ms | **+0,92 ms** |
+| `<use>` con el sprite reparseado | 0,93 ms | +0,78 ms |
+| `<use>` con el sprite fijo en el documento | 0,53 ms | +0,38 ms |
+| **clase de CSS con `data:` URI** | **0,22 ms** | **+0,07 ms** |
+
+El panel entero tarda hoy 0,82 ms. **Meter los iconos en línea lo más que
+duplica**; meterlos como clase no se nota. La razón es que `pintar()` reconstruye
+todo con `innerHTML`: en línea el navegador reparsea 28 subárboles de SVG cada
+vez, y con la clase sólo escribe un nombre y reusa la imagen ya decodificada.
+
+Con arte de complejidad realista —ocho formas y dos degradés, 691 bytes— la hoja
+de 115 clases **pesa 84 kB y se inyecta una sola vez en 4,3 ms**.
+
+### Propiedad exclusiva de archivos
+
+- `src/ui/Iconos.js` — **nuevo**: el vocabulario, las 115 recetas y la hoja
+- `src/ui/Bolso.js` — usarlos, y el reordenamiento de A6
+
+Nada más. `Inventario`, `Equipo`, `Recursos`, `Partida` y `Fabricacion` quedaron
+cerrados en las fases 1 y 2 y **no se tocan**. `main.js` es del coordinador.
+
+### El contrato
+
+**A1 · Una hoja de estilos, inyectada una vez, con una clase por icono.** Nada de
+SVG en línea por celda: está medido y cuesta doce veces más. La hoja se puede
+armar perezosa la primera vez que se abre el bolso.
+
+**A2 · Presupuesto medido, no estimado.** La hoja ≤ 140 kB e inyectarla ≤ 8 ms.
+`pintar()` con 24 casillas llenas ≤ **0,95 ms** (hoy 0,82; el margen es +0,13 y lo
+medido para esta técnica es +0,07).
+
+**A3 · Los 115, sin agujeros.** Cada recurso de `RECURSOS` y cada objeto que se
+tiene tiene el suyo. Un id sin icono tiene que caer en un dibujo de reserva
+**visible como tal**, no en un cuadrado vacío: el agujero se ve o no existe.
+
+**A4 · Una familia, no 115 dibujos sueltos.** El vocabulario de formas y la
+paleta por materia **tienen que estar en el código** y compartirse: es lo mismo
+que hizo `Herramientas3D.js` con 18 modelos y 9 tintes. Dos objetos pueden
+parecerse; **dos no pueden ser idénticos**, y el banco lo mide comparando el arte
+carácter por carácter.
+
+**A5 · El número de la esquina deja de ser ambiguo.** Hoy un raspador con 60 usos
+y una pila de 60 juncos se escriben igual. Con el icono adentro hay lugar para
+distinguirlos, y hay que hacerlo.
+
+**A6 · El bolso abre en el bolso.** Es la tercera fase que lo pide y la
+responsabilidad es de las fases anteriores: el panel mide 1321 px con 617
+visibles y lo primero que se ve es el taller. La grilla y las cuatro ranuras van
+**arriba**, el taller y la fabricación abajo. No se saca nada.
+
+**A7 · Sin regresión.** Los bancos de la fase 1 (7/7), la fase 2 (8/8) y la ronda
+5 fase 1 (9/9) siguen verdes, y `vite build` limpio.
+
+**A8 · Una hoja de contacto.** Un archivo que dibuje los 115 juntos, con el
+nombre debajo, para poder juzgarlos como conjunto y no de a uno. Es el
+entregable que decide si esto se parece a Diablo 2 o a una planilla con bordes.
+
+### Lo que NO es de esta fase
+
+El códice, el taller y el HUD siguen sin iconos. No se rehornean los 18 modelos
+3D de la mano a sprites: darían 18 de 115 en otro registro visual, y mezclar 3D
+horneado con vector plano se ve peor que una sola familia. Queda anotado como
+opción, no como encargo.
