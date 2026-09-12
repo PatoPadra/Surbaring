@@ -28,6 +28,12 @@
 7. ¿cielo estrellado real? Da referencias, y el juego es de supervivencia y
    educativo
 
+Y una frase suelta que acompañaba la lista: *«puse lo del garrote porque fue lo
+que llegué a probar, la antorcha sí se ve en mano»*. Leída contra el código: el
+garrote es de ranura `arma` y `Herramientas3D.js` modela sólo los 18 objetos de
+ranura `mano`, así que **lo que va en la ranura del arma no se dibuja en ninguna
+parte**. Se le pregunta al dueño si es eso lo que vio antes de abrir nada.
+
 ---
 
 ## Lo que se midió antes de encargar nada
@@ -162,6 +168,14 @@ antorcha, a 1,39 m, da 0,42. Dos causas más chicas: el color `0xff7a2e` es muy
 saturado (luminancia 0,354 por unidad de intensidad), y de noche la exposición
 queda en 0,78 a propósito (`Tiempo._exposicion`). Esto se mide en la imagen final,
 en el navegador: la aritmética dice dónde mirar, no cuánto subir.
+
+**Y hay una segunda mitad que la aritmética no ve: la fogata encendida no se ve
+encendida.** `Hornos.agregar()` dibuja un anillo de piedras con un solo material
+mate (`Hornos.js:49-54`): no hay llama, ni brasa, ni nada que brille. Lo único
+que distingue una fogata prendida de una apagada es esa luz débil a 0,6 m. La
+fase 2 pide las dos cosas, y la segunda con la regla que costó la ronda 5: **el
+material de la llama se compila en la carga**, porque un programa nuevo al
+construir la primera fogata es el congelamiento de 19 segundos otra vez.
 
 ### 7 · El cielo es inventado — también la luna
 
