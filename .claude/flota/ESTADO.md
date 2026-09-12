@@ -1,5 +1,169 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **12/9/2026 — RONDA 6 TERMINADA. FASE 3 (`estampa`) CERRADA: los 115 iconos.**
+> El bolso dejó de ser una planilla con bordes. **Banco 6/6, falsador 14 de 14
+> sin puntos ciegos, compañero de navegador 7/7**, y `vite build` limpio.
+>
+> **Los tres bancos de la ronda 6 y el de la ronda 5 están verdes a la vez**, y
+> los tres falsadores dieron perfecto: 24/24, 21/21 y 14/14.
+>
+> **Y por primera vez en la ronda el número de costo de un agente reproduce.**
+> Medido alternado: 0,72 ms sin herramientas contra 0,71 de la fase 2, y 0,835
+> con ocho contra 0,82. **Los iconos no cuestan nada**, y el presupuesto de
+> +0,07 que yo había puesto era pesimista.
+>
+> Cómo se dibujaron, en una línea: **un solo sol** —toda la familia sombreada
+> con la luz en el mismo lado, la silueta tres veces— más 45 tintes por materia y
+> ~40 piezas compartidas. **Un solo `<svg>` escrito a mano en todo el archivo**
+> para 115 dibujos, y 115 siluetas distintas al sacarles el color. La hoja pesa
+> 130,3 kB de los 140 permitidos.
+>
+> **Lo caro no era el CSS sino correr las recetas la primera vez**: abrir el
+> bolso costaba 22,1 ms con la hoja perezosa, y con un precalentado en el primer
+> rato libre bajó a 3,9. El agente usó `requestIdleCallback` con `setTimeout` de
+> respaldo, porque con la pestaña de atrás el rato libre no llega nunca — que es
+> el mismo defecto que tuvo mi compañero de la fase 1 con `requestAnimationFrame`.
+>
+> *Los tres defectos del falsador fueron míos y los tres del mismo tipo: código
+> del falsador que decía plantar algo y no plantaba nada. El peor, una expresión
+> regular escrita dentro de una plantilla de texto —donde `\s` es una `s` y `\b`
+> un retroceso—: doce «no se pudo plantar» seguidos contra un módulo que
+> exportaba todo bien.*
+
+> **12/9/2026 — RONDA 6, FASE 2 (`instancia`) CERRADA: dos hachas son dos
+> hachas.** Las herramientas viven en la grilla, cada una con su durabilidad;
+> `Equipo` **dejó de tener lista propia** —no hay más `taller`, la fuente es la
+> grilla más las cuatro ranuras—; lo puesto pesa pero no ocupa casillero, y
+> desequipar con el bolso lleno falla limpio. El guardado viejo entra y `VERSION`
+> sigue en 1.
+>
+> **Banco 8/8 y falsador 21 de 21 sin puntos ciegos**, después de arreglar tres
+> defectos míos: la sección que probaba la pila abierta la llenaba de una sola
+> vez, el peso del objeto sólo se medía puesto, y un parche del falsador escribía
+> por `enRanura()` —que devuelve una **vista**— y no plantaba nada.
+>
+> **El banco de la ronda 5 se cayó a 7/9 y NO era una regresión.** No se le creyó
+> al agente: se verificó por el camino real, con una sola `Partida` y un solo
+> `Inventario`, y dio 10/10 —el hacha gastada a 32/40, las dos del bolso con sus
+> usos, el peso y los casilleros—. La causa estaba en el banco viejo, que le
+> pasaba a `Partida` un inventario **distinto** del que tenía el equipo. Se
+> arregló y volvió a **9/9 con 160 aserciones**: un banco rojo que nadie cree es
+> peor que no tener banco.
+>
+> **El costo informado no reproduce, otra vez.** El informe decía que las
+> herramientas «no cuestan nada medible»; medido alternado dan **+0,11 ms, un
+> 15 %** (0,71 → 0,82), con las tres lecturas de cada condición a 0,015 ms entre
+> sí. No es un problema —`pintar()` no corre por cuadro— pero el número no era el
+> que hay. **Va dos de dos: en las dos fases el costo informado por el agente
+> cayó del lado que le favorecía.**
+>
+> Tres cosas que arregló el coordinador y el agente declaró sin poder tocar:
+> `equipo.alCambiar` no lo escuchaba nadie —guardar el canasto no bajaba los kilos
+> hasta el próximo desbloqueo—; la pantalla de muerte **no nombraba las
+> herramientas perdidas**; y `Fabricacion.estado()` ofrecía «Hacer» con el bolso
+> lleno para negarse recién al apretar.
+
+> **12/9/2026 — RONDA 6, FASE 1 (`casillero`) CERRADA: la grilla.** El bolso es
+> una grilla de **24 casilleros** que crece con la capacidad, las pilas salen del
+> peso sin una sola tabla escrita a mano, las posiciones no se compactan al
+> sacar, y mover, partir y juntar no pierden un gramo. **El guardado viejo entra
+> y `VERSION` sigue en 1.** Los 75 sitios de llamada en 16 archivos no se
+> tocaron: la API de afuera es la misma.
+>
+> **Banco 7/7 con 118 aserciones y falsador 24 de 24, todos cazados por la
+> aserción declarada: cero puntos ciegos.** Es el mejor resultado de falsador de
+> todas las rondas, y costó: **cuatro de los defectos que encontró eran del
+> banco**, no del código. El más caro fue una aserción imposible —le puse al
+> bolso 999 kg para «sacar del medio» el tope de peso, sin ver que las casillas
+> se derivan de la capacidad, así que pedía llenar 630 casilleros con las 42
+> fichas livianas que existen. **El agente lo demostró en vez de acomodar su
+> código**, que es exactamente lo que tiene que hacer un agente con un banco
+> ajeno.
+>
+> **C10 no reproduce.** El agente informó que la grilla sale a 0,58× el costo de
+> la lista. Medido por el coordinador alternando A/B/A/B con la misma carga y en
+> tandas de 20 pintadas —el reloj cuantiza a 0,1 ms y una sola pintada no se
+> puede medir—, la lista da 0,76 ms de mediana y la grilla 0,775: **+2 %, no
+> −42 %**. No hay regresión, pero la ganancia informada no existe.
+>
+> *Un informe que dice un número redondo a favor propio es el que hay que volver
+> a medir. Éste dio al revés, y el resto del informe era honesto.*
+
+> **12/9/2026 — RONDA 6 ABIERTA: el inventario de casilleros.** Estilo Diablo 2
+> o Rust, pedido por el dueño. Rama `mejoras/ronda6-inventario`, sacada de
+> `mejoras/ronda5-graficos`. **La ronda 5 sigue sin fusionarse a `main` y sigue
+> esperando el ojo del dueño en pantalla.** El encargo está en `RONDA6.md`.
+>
+> Se abrió midiendo el código antes de contestar cuánto costaba, y la respuesta
+> fue mejor de lo que parecía: **la mitad cara ya estaba pagada.** De los 75
+> sitios que tocan el inventario en 16 archivos, sólo 20 mutan, y **11 de los 12
+> que agregan ya leen cuánto entró de verdad**, porque el tope de 38 kg los
+> obligó hace rondas. El rechazo parcial —«cazaste el ciervo pero no te entra»—
+> está resuelto en todo el juego. Se reescribe `Inventario.js`, cien líneas, y
+> el resto no se entera.
+>
+> Dos números se midieron antes de escribir el contrato, para no inventarlos:
+>
+> 1. **La pila sale del peso**, por la escalera `[1,2,5,10,20,50]` con tope de
+>    3 kg. Se probaron 2, 3, 4 y 5: con 2 quedan nueve recursos que no apilan,
+>    con 4 y 5 la mitad de la tabla se va a 50. **Cero datos escritos a mano**
+>    para las 71 fichas.
+> 2. **24 casillas** a capacidad base. En 4000 cargas simuladas, una mixta de
+>    38 kg usa 22 casillas en el peor caso —así que la grilla nunca bloquea un
+>    bolso lleno normal—, pero una recorrida de sólo cosas livianas llega a 28 y
+>    ahí muerde la grilla. **Los dos topes muerden y ninguno es adorno.**
+>
+> Lo caro no es el código: son **127 iconos** (71 recursos + 56 objetos) en una
+> interfaz donde hoy **no hay una sola imagen**. Eso es la fase 3. Y
+> `Equipo.taller` es un `Map<id, usos>` —hoy no se pueden tener dos hachas—, que
+> es la fase 2.
+>
+> *El falsador cazó un defecto propio antes de plantar ninguno: la copia de
+> `src/` queda fuera del proyecto, y sin un `package.json` al lado Node lee los
+> `.js` como CommonJS. Todas las secciones morían por la misma razón, y el
+> falsador lo habría contado como que el defecto plantado se vio.*
+
+> **11/9/2026 — RONDA 5, FASE 1 (`lumbre`) CERRADA: la luz.** La antorcha, el
+> candil y las velas alumbran y se consumen contra el reloj del mundo. Los
+> hornos y el incendio alumbran de verdad, y ya no queda ninguna luz de three en
+> `src/`: `src/engine/Luces.js` compila dos luces fijas en la carga. **Construir
+> una fogata ya no congela el juego**: 7,6 ms el primer cuadro, contra 19 254.
+> Cuesta +0,48 ms apagado, +1,08 con la antorcha y +1,46 con antorcha y
+> fogata, en la HD 4000 a Baja 1024×576. El equipo se guarda con la partida.
+> Banco de Node 9/9, falsador sin puntos ciegos, y cinco capturas. Todo el
+> detalle, incluidas las cuatro veces que se equivocó el banco, está en
+> `RONDA5.md`.
+>
+> **Lo que dejó a la vista y pasa a la fase 2: la vegetación brilla de noche.**
+> A medianoche el pasto se ve más que el suelo que alumbra una antorcha.
+>
+> *La mitad jugable del contrato estaba bien calculada y no hacía nada:
+> `revisar()` cuenta celdas de 256 m, y los dos topes pedidos revelaban la misma.
+> Lo midió el agente, no el banco. Un número correcto que no cambia ninguna
+> consecuencia es un efecto declarado que nadie consume, con otro nombre.*
+
+> **11/9/2026 — RONDA 5 ABIERTA: gráficos.** Luz puntual, las tres deudas
+> visuales del README y la herramienta en la mano. Rama
+> `mejoras/ronda5-graficos`; el encargo, con todo lo medido, está en
+> `RONDA5.md`. Se abrió corrigiendo dos cosas que se venían repitiendo:
+>
+> 1. **El juego sí inicializa en la vista previa.** Esperaba el clic de «Entrar
+>    al parque»: `main.js` hace `await personaje.abrir()` antes de arrancar el
+>    bucle y de definir `window.SurviBar`, y el navegador de la vista previa no
+>    tiene el aspecto guardado. Con el clic, `window.SurviBar` y
+>    `window.capturar` existen. La placa de la vista previa es la **Intel HD
+>    4000**.
+> 2. **Sí había luces puntuales en `src/`** —una por horno en `Hornos.js:68`, y
+>    la del incendio en `Clima.js:262`— y **cambiar la cantidad congela el juego
+>    ~19 s** en esta máquina, porque recompila seis programas. Construir la
+>    primera fogata lo dispara hoy, en `main`. La frase «no hay ninguna luz
+>    puntual» salió de un informe de la ronda 4 y pasó a tres archivos sin que
+>    nadie la comprobara.
+>
+> *Una afirmación de un informe no es un hecho hasta que alguien la mira en el
+> código, y copiarla a otro archivo no la vuelve más cierta: la vuelve más
+> difícil de encontrar.*
+
 > **8/9/2026 — RONDA 4: CUATRO FASES CERRADAS Y COMMITEADAS.** El arbol de
 > herramientas dejó de ser un archivo. `Equipo.js` y `Fabricacion.js` existen, se
 > fabrica desde el bolso, `COSECHA_SOTOBOSQUE` rinde por nivel, el indicador de

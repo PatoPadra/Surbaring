@@ -781,7 +781,17 @@ void main() {
   vec3 color = mix(refraccion, reflejo, fresnel);
 
   // ── Espuma de orilla: donde el agua se hace muy somera y donde rompe la ola
-  float orilla = 1.0 - smoothstep(0.0, 1.35, vProfundidad);
+  //
+  // El umbral era 1,35 m y se había elegido sin orilla de verdad: con el lecho
+  // de antes la primera muestra de agua ya tenía 9,7 m, así que ningún píxel
+  // bajaba de ahí. Con la playa de Mundo._excavarLagos —0,8 m en la primera
+  // corona— el agua pasa 1,35 m recién a unos 20 m del borde, y medido en 1132
+  // orillas del DEM la espuma media por encima de 0,6 cubría 10 m de mediana y
+  // 32 m en el percentil 90: el cinturón blanco que no tiene que haber. Con 0,7
+  // la espuma media se apaga desde 0,24 m de fondo y la franja queda en 5 m de
+  // mediana y 16 en el percentil 90; en el 14 % de las orillas, las empinadas,
+  // no hay franja, que es lo que pasa en una costa de roca.
+  float orilla = 1.0 - smoothstep(0.0, 0.7, vProfundidad);
   float turbulencia = ruido(vMundo.xz * 1.4 + uTiempo * 0.55) * 0.5
                     + ruido(vMundo.xz * 3.7 - uTiempo * 0.9) * 0.5;
   float espuma = smoothstep(0.44, 0.86, orilla * (0.55 + turbulencia * 0.75));

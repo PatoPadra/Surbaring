@@ -241,7 +241,7 @@
       "nombre": "Vela de cera",
       "kg": 0.06,
       "cat": "material",
-      "nota": "Arde limpia y sin olor, al revés del candil de grasa."
+      "nota": "Arde limpia y sin olor, al revés del candil de grasa. Se prende desde el bolso."
     },
     {
       "id": "mosca",
@@ -1344,7 +1344,7 @@
         "luz": 12,
         "duracionHoras": 1.5
       },
-      "nota": "Resina de laura o de palo piche sobre un envoltorio de fibra. Dura una hora y media del mundo y se apaga con lluvia fuerte.",
+      "nota": "Resina de laura o de palo piche sobre un envoltorio de fibra. Dura una hora y media del mundo y se apaga con lluvia fuerte; apagada antes de tiempo, guarda lo que le quedaba.",
       "fuente": "flora.json: los únicos dos productores de resina del dataset son laura (Schinus patagonicus) y palo piche (Fabiana imbricata). El coihue es una fagácea austral y no da resina.",
       "kg": 0.5
     },
@@ -1353,6 +1353,7 @@
       "nombre": "Candil de grasa",
       "categoria": "fuego",
       "nivel": 3,
+      "ranura": "mano",
       "tecnologia": "alfareria_bicroma",
       "donde": "bolso",
       "materiales": [
@@ -1374,9 +1375,10 @@
         "luz": 6,
         "duracionHoras": 6
       },
-      "nota": "Un cuenco, grasa y una mecha de fibra. Alumbra menos que la antorcha y dura cuatro veces más: es luz de adentro, no de camino.",
+      "nota": "Un cuenco, grasa y una mecha de fibra. Alumbra menos que la antorcha y dura cuatro veces más: es luz de adentro, no de camino. Cada carga arde seis horas del mundo y gasta uno de sus cuarenta usos.",
       "kg": 0.6,
-      "notaNivel": "Declaraba nivel 2 y sus materiales cuelgan de compuertas de nivel 3."
+      "notaNivel": "Declaraba nivel 2 y sus materiales cuelgan de compuertas de nivel 3.",
+      "notaRanura": "No declaraba ranura, así que no había forma de llevarlo encendido. Un candil es una lámpara de mano: prenderlo lo pone ahí, igual que la antorcha. Con él en la mano se trabaja en nivel 0: el 3 es el escalón del árbol donde se aprende, no un filo."
     },
     {
       "id": "linea_mano",
@@ -1880,7 +1882,7 @@
         "luz": 8,
         "duracionHoras": 5
       },
-      "nota": "La cera arde limpia y sin olor, al revés del candil de grasa. Fue luz de iglesia durante siglos justamente por eso.",
+      "nota": "La cera arde limpia y sin olor, al revés del candil de grasa. Fue luz de iglesia durante siglos justamente por eso. Cada vela arde cinco horas del mundo en la mano y se gasta entera al prenderla, aunque se apague antes.",
       "esReceta": true
     },
     {
@@ -2448,8 +2450,8 @@
     "Bolso.js": "Pestaña de fabricación y el estado de las cuatro ranuras. (El defecto de la categoría remedio ya estaba arreglado en la línea 77: este archivo lo daba por pendiente.)",
     "Jugador.js / Clima.js": "El abrigo del quillango, el poncho y los tamangos tiene que entrar en el mismo cálculo térmico que ya usa el abrigo de las obras.",
     "pendienteSinSistema": [
-      "De 18 efectos declarados sólo 2 tienen consumidor hoy (abrigo, capacidadExtraKg). De los 16 restantes: 9 triviales, 4 medios, 2 caros. Medido por el revisor técnico.",
-      "luz: no hay ninguna luz puntual en todo src/. La mitad jugable es trivial —Exploracion.alcanceVisual() y el 220 nocturno—; la visual es cara y hay que recortarla o pagarla a propósito.",
+      "De 18 claves de efecto declaradas, 4 tienen consumidor al 11/9/2026: abrigo y capacidadExtraKg (main.js, ronda 4), luz y duracionHoras (Equipo.js, ronda 5). Recontado buscando en src/ quién lee cada clave. La clasificación de las que faltaban —9 triviales, 4 medios, 2 caros, que suman 15 de 16— es del revisor técnico de la ronda 4 y no se volvió a medir.",
+      "luz: RESUELTO en la ronda 5, fase 1, y la frase que estaba acá era falsa. Decía «no hay ninguna luz puntual en todo src/», y desde el 19/8/2026 había una por horno (Hornos.js) y otra en el incendio (Clima.js); cambiar esa cuenta recompilaba seis programas y congelaba el juego ~19 s en la HD 4000. Ahora no queda ninguna: src/engine/Luces.js escribe dos luces fijas compiladas en la carga —la de la mano y el fuego más cercano—. La antorcha (12 m, 1,5 h), el candil (6 m, 6 h) y las velas (8 m, 5 h) alumbran y se consumen contra el reloj del mundo desde Equipo.encender()/luzActiva(), y el equipo se guarda con la partida. La mitad jugable es Exploracion.alcanceVisual(): de noche 220 m a oscuras y 300 con luz, que con celdas de 256 m abre las cuatro vecinas; declarada en licenciasDeJuego.luzNocturna, con la medición.",
       "recuperacion 0.6 no es salud: es recuperación de flechas, y hoy la caza se resuelve sin proyectil volando.",
       "Las estadísticas de arma nuevas (alcanceM, danio, sigilo, presaMaxKg, enreda, pasiva) no las lee nadie: Caza.js sigue preguntando un solo bit.",
       "La colmena pide una entidad de mundo con reloj de 168 h. Obras.js es lo más parecido que hay."
@@ -2561,6 +2563,16 @@
         "laNormaReal": "Dentro del Parque el fuego sólo se permite en sitios habilitados, y en temporada de riesgo alto ni ahí.",
         "porQueSeToma": "Precedente ya existente en el juego, y el que el dueño citó al decidir esto. Sin fuego no hay calor, no hay comida cocida y no hay agua segura.",
         "comoLoDiceElJuego": "El panel del Taller ya explica la jurisdicción antes de dejar encender."
+      },
+      {
+        "id": "luzNocturna",
+        "que": "De noche, con una luz en la mano o dentro del radio de un fuego encendido, el mapa cuenta que se ve hasta 300 m: se abren las cuatro celdas vecinas. A oscuras, hasta 220 m: sólo la que se pisa, como siempre. De día la luz no cambia nada.",
+        "laRealidad": "Una llama no deja ver más lejos: deja ver lo que alumbra. Encandila, y el ojo pierde en segundos la adaptación a la oscuridad, que tarda del orden de veinte a treinta minutos en completarse y es la que deja distinguir el perfil de un cerro contra el cielo. Para mirar lejos de noche, la luz conviene apagada.",
+        "porQueSeToma": "La luz tiene que servir para algo más que mirarla. Sin una consecuencia jugable, la antorcha, el candil y las velas serían tres adornos con durabilidad, que es el defecto que la ronda 4 vino a sacarle al árbol de herramientas.",
+        "comoLoDiceElJuego": "El bolso lo dice en una línea debajo del equipo, al lado del botón de encender, cada vez que hay algo para prender.",
+        "queNOSeAfloja": "Lo que la luz alumbra en pantalla es honesto —doce metros la antorcha, seis el candil, ocho la vela, catorce una fogata— y todo se consume contra el reloj del mundo. La licencia es sólo sobre cuánto revela el mapa.",
+        "estadoReal": "Se nota en el mapa, y medido. Exploracion.revisar() mide por celdas de 256 m y desde el índice de la celda, así que ningún tope por debajo de 256 m revela una vecina: la primera versión, 120 a oscuras y 220 con luz, daba 1 celda en los dos casos y la luz no cambiaba nada. Con 220 y 300, medido el 11/9/2026 con el revisar() real sobre 3000 posiciones: a oscuras 1 celda; con luz 5, las cuatro vecinas ortogonales con nitidez 104 de 255 —entre la oscuridad y el día—; de día 9, ortogonales a ~151 y diagonales a 75. revisar() no se tocó: el día queda idéntico.",
+        "nota": "Es la primera licencia sobre la física y no sobre la norma. La regla de arriba habla de marco legal, y vale igual para lo físico: la licencia se toma a propósito, se declara y se dice."
       }
     ]
   },

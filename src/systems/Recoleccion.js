@@ -457,8 +457,15 @@ export class Recoleccion {
       case 'beber': {
         const antes = this.jugador.sed;
         this.jugador.sed = Math.min(100, this.jugador.sed + 32);
-        this.inventario.agregar('agua', 1);
-        this.hud.aviso('Bebiste agua', `Hidratación ${antes.toFixed(0)} → ${this.jugador.sed.toFixed(0)}`);
+        // Beber siempre funciona: la hidratación es del cuerpo y no del bolso.
+        // Lo que puede no entrar es la medida que uno se lleva, y ése era el
+        // único de los doce lugares que agregan algo que tiraba el sobrante sin
+        // mirar. Con el bolso al tope decía «bebiste» y además mentía por
+        // omisión: uno creía que se llevaba agua y no se llevaba nada.
+        const llevo = this.inventario.agregar('agua', 1);
+        this.hud.aviso('Bebiste agua',
+          `Hidratación ${antes.toFixed(0)} → ${this.jugador.sed.toFixed(0)}`
+          + (llevo > 0 ? ' · te llevaste una medida' : ' · no entra más en el bolso'));
         return;
       }
 

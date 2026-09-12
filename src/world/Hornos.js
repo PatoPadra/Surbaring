@@ -16,11 +16,26 @@ const COLORES = {
   fragua: 0x4d4a46,
 };
 
+// La brasa. Los mismos números que tenía la luz de three que colgaba de cada
+// horno, para que el fuego se vea igual con la luz nueva: naranja de llama, 14 m
+// de alcance, y un latido de 2,6 ± 0,5 a 7,3 rad/s.
+//
+// Esa luz no se sacó por fea sino por cara: cada horno agregaba una luz puntual
+// al grafo, y en three la cantidad de luces es parte de la clave del programa.
+// Construir la primera fogata recompilaba seis programas y congelaba el juego
+// 19 segundos en la placa de destino. Ahora el horno declara su luz y
+// `engine/Luces.js` la escribe en dos lugares que existen desde la carga.
+const BRASA_COLOR = new THREE.Color(0xff7a2e);
+const BRASA_RADIO_M = 14;
+const BRASA_ALTURA_M = 0.6;
+const BRASA_BASE = 2.6;
+const BRASA_LATIDO = 0.5;
+
 export class Hornos {
   constructor() {
     this.grupo = new THREE.Group();
     this.grupo.name = 'hornos';
-    /** @type {Array<{horno:object, malla:THREE.Object3D, brasa:THREE.PointLight}>} */
+    /** @type {Array<{horno:object, malla:THREE.Object3D, intensidad:number}>} */
     this.piezas = [];
   }
 
@@ -64,13 +79,10 @@ export class Hornos {
     nodo.traverse(o => { o.castShadow = true; o.receiveShadow = true; });
     nodo.position.set(horno.x, horno.y, horno.z);
 
-    // La brasa: apagada mientras el horno no arda
-    const brasa = new THREE.PointLight(0xff7a2e, 0, 14, 2);
-    brasa.position.set(0, 0.6, 0);
-    nodo.add(brasa);
-
     this.grupo.add(nodo);
-    this.piezas.push({ horno, malla: nodo, brasa });
+    // La brasa arranca encendida si el horno ya arde: una fogata repuesta de la
+    // partida no puede aparecer negra ni un cuadro (ver `Partida._reponerHornos`).
+    this.piezas.push({ horno, malla: nodo, intensidad: horno.ardiendo ? BRASA_BASE : 0 });
     return nodo;
   }
 
@@ -80,8 +92,36 @@ export class Hornos {
   actualizar(t) {
     for (const p of this.piezas) {
       const activo = !!p.horno.ardiendo;
-      const objetivo = activo ? 2.6 + Math.sin(t * 7.3 + p.malla.position.x) * 0.5 : 0;
-      p.brasa.intensity += (objetivo - p.brasa.intensity) * 0.15;
+      const objetivo = activo ? BRASA_BASE + Math.sin(t * 7.3 + p.malla.position.x) * BRASA_LATIDO : 0;
+      p.intensidad += (objetivo - p.intensidad) * 0.15;
     }
+  }
+
+  /**
+   * La luz de los hornos que arden, para `engine/Luces.js`.
+   *
+   * Sólo los que arden: uno apagado no alumbra, y dejarlo en la lista le haría
+   * competir por uno de los dos lugares con intensidad cero. Mientras arde, la
+   * intensidad nunca baja del valle del latido: el suavizado de `actualizar()`
+   * arranca de cero al prenderse, y una fogata recién encendida que tarda medio
+   * segundo en dar luz se lee como un fuego que no prendió.
+   *
+   * @returns {Array<{x:number,y:number,z:number,radio:number,color:number[],intensidad:number}>}
+   */
+  fuentesDeLuz() {
+    // Un arreglo nuevo por llamada y no uno reusado: son un puñado de objetos
+    // por cuadro, y uno reusado le cambia el contenido a quien lo guardó.
+    const salida = [];
+    for (const p of this.piezas) {
+      if (!p.horno.ardiendo) continue;
+      const m = p.malla.position;
+      salida.push({
+        x: m.x, y: m.y + BRASA_ALTURA_M, z: m.z,
+        radio: BRASA_RADIO_M,
+        color: [BRASA_COLOR.r, BRASA_COLOR.g, BRASA_COLOR.b],
+        intensidad: Math.max(p.intensidad, BRASA_BASE - BRASA_LATIDO),
+      });
+    }
+    return salida;
   }
 }

@@ -145,9 +145,13 @@ lo pedido.
    ganar. El sotobosque ya bajó a 4,5 %, los árboles son 22 %, el reflejo cuesta
    0 %. Cualquier ronda de rendimiento que no empiece por el terreno está
    mirando el número equivocado.
-5. **Los dos defectos de vegetación que piden medir memoria**: las ocho vistas de
-   impostor y el corte del sotobosque a 192 m. No se abrieron porque hace falta
-   un banco de memoria que todavía no existe.
+5. ~~**Los dos defectos de vegetación que piden medir memoria**: las ocho vistas de
+   impostor y el corte del sotobosque a 192 m.~~ **Corregido el 11/9/2026:** las
+   vistas de impostor son **dieciséis desde la ronda 2** (`Vegetacion.js:778`), y
+   se eligen por la posición de la cámara, así que girar no produce cruce.
+   Medido en la ronda 5: una vuelta de 360° da un solo estado del bosque. Queda
+   abierto sólo **el corte del sotobosque a 192 m**, que es decisión del dueño
+   porque cuesta cuadro.
 
 ### C · Deuda barata, que evita el defecto de mañana
 

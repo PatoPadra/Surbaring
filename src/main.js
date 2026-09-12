@@ -49,6 +49,7 @@ import { Clima } from './world/Clima.js';
 import { Audio } from './engine/Audio.js';
 import { PasoOclusion, PasoColor } from './engine/Posproceso.js';
 import { Calidad, detectarPlaca } from './engine/Calidad.js';
+import { instalarLuces, fuenteDeMano, radioDeLuzEn } from './engine/Luces.js';
 import { Exploracion } from './systems/Exploracion.js';
 import { Hallazgos } from './systems/Hallazgos.js';
 import { Mapa } from './ui/Mapa.js';
@@ -151,6 +152,20 @@ async function iniciar() {
     lightIntensity: 0,   // la intensidad la maneja el sol del cielo
   });
   csm.fade = true;
+  // Las dos luces puntuales propias: lo que se lleva en la mano y el fuego más
+  // cercano. El orden no se negocia, y las dos mitades se pagaron:
+  //
+  // DESPUÉS de `new CSM()`, porque su constructor reemplaza los chunks globales
+  // de luces por los de CSMShader (CSM.js:248-249): instaladas antes, el bloque
+  // desaparece y la luz no llega a un solo píxel, sin un error.
+  //
+  // ANTES de lo primero que compila —`new Vegetacion` hornea impostores—,
+  // porque three reusa los programas de sus materiales por `shaderID`.
+  //
+  // Y fijas desde acá: la cantidad de luces de three es parte de la clave del
+  // programa, y cambiarla congelaba el juego ~19 s en la HD 4000 (RONDA5.md).
+  const luces = instalarLuces(THREE);
+  luces.enganchar(escena);
   conCSM(csm, terreno.material);
 
   // Sesgo de sombra por cascada. Sin esto, el follaje se auto-sombrea y el
@@ -216,6 +231,8 @@ async function iniciar() {
 
   progreso(0.80, 'Sembrando el sotobosque…');
   const sotobosque = new Sotobosque(mundo);
+  // La traslucidez del pasto sigue a la luz del cielo: sin esto brillaba de noche
+  sotobosque.cielo = cielo;
   escena.add(sotobosque.grupo);
   for (const lote of sotobosque.lotes) conCSM(csm, lote.malla.material);
 
@@ -272,6 +289,9 @@ async function iniciar() {
   // El bolso dice qué materiales tenés; el equipo dice qué podés hacer con las
   // manos que tenés. Eran la misma pregunta y son dos.
   const equipo = new Equipo(herramientas, { inventario });
+  // Una luz que se consume, que apaga la lluvia o que se suelta para agarrar
+  // otra cosa lo dice. Apagarla a mano desde el bolso no avisa: ya lo sabe.
+  equipo.alApagarse = (a) => hud.aviso(a.titulo, a.detalle);
   // La ley del parque, con panel propio y registro que sobrevive a la muerte.
   // La negativa es el contenido del juego y hasta acá duraba 4,2 segundos.
   const norma = new Norma();
@@ -375,7 +395,7 @@ async function iniciar() {
   const mapa = new Mapa({
     mundo, jugador, tiempo, exploracion, codice, construccion, hallazgos,
   });
-  const bolso = new Bolso({ inventario, jugador, hud, recoleccion, equipo, fabricacion });
+  const bolso = new Bolso({ inventario, jugador, hud, recoleccion, equipo, fabricacion, tiempo });
   const fin = new Fin({ jugador, mundo, tiempo, hud, codice, saberes, construccion });
 
   // El arco del juego: un año con un cuaderno. No es una trama pegada encima —el
@@ -404,7 +424,7 @@ async function iniciar() {
   // tecnologías, mapa— no se pierde nunca: ésa es la tesis del juego.
   const partida = new Partida({
     jugador, inventario, saberes, codice, construccion, fundicion, tiempo,
-    mundo, hud, exploracion, recoleccion,
+    mundo, hud, exploracion, recoleccion, equipo,
     obras: { agregar: dibujarObra },
     hornos: { agregar: dibujarHorno },
   });
@@ -446,6 +466,13 @@ async function iniciar() {
     inventario.capacidadKg = CAPACIDAD_BASE + saberes.suma('capacidadExtraKg')
       + equipo.suma('capacidadExtraKg');
   };
+  // El equipo también cambia la capacidad, y hasta la ronda 6 nadie escuchaba:
+  // `aplicarEfectos()` corría al arrancar, al cargar y al desbloquear una
+  // tecnología, así que **guardar el canasto en el bolso no bajaba los kilos
+  // hasta el próximo desbloqueo**. Con la grilla se nota el doble, porque el
+  // canasto guardado además ocupa un casillero: la cuenta de arriba y la de
+  // abajo del panel se contradecían.
+  equipo.alCambiar = aplicarEfectos;
   const desbloquearOriginal = saberes.desbloquear.bind(saberes);
   saberes.desbloquear = (tec) => {
     const r = desbloquearOriginal(tec);
@@ -706,6 +733,39 @@ async function iniciar() {
     return f;
   }
 
+  /**
+   * Las luces del cuadro: lo que se lleva en la mano, los hornos que arden y el
+   * incendio. `asignar` elige dos —la mano primero— y cada render las escribe en
+   * el espacio de vista de su propia cámara, el espejo del lago incluido.
+   *
+   * `luzActiva` es también el reloj de la llama: acá se consume y acá la apaga
+   * la lluvia. Por eso corre una vez por cuadro y no sólo cuando se dibuja.
+   *
+   * Es una función y no un bloque dentro de `cuadro()` para que la captura y el
+   * banco de la vista previa asignen las luces exactamente igual que el bucle.
+   */
+  function juntarLuces(est = eventos.aplicar(tiempo.estado())) {
+    // Lo que hay en la mano, ANTES de todo: de acá sale el modelo que se dibuja
+    // y el punto del que sale la llama. Va en la primera línea y no dentro del
+    // if de la luz, porque si no una captura sin antorcha dibuja la mano vacía.
+    cuerpo.enMano = equipo.enRanura('mano')?.id ?? null;
+    const fuentes = hornos.fuentesDeLuz();
+    const incendio = clima.fuenteDeLuz?.();
+    if (incendio) fuentes.push(incendio);
+    const enMano = fuenteDeMano(equipo.luzActiva(tiempo.fecha.getTime(), est),
+      jugador, camara, tiempo.segundosTotales);
+    if (enMano) {
+      // La llama sale de la punta del modelo, no de la cuenta aproximada de la
+      // fase 1: con la herramienta dibujada, el punto de la mano es el de verdad.
+      cuerpo.puntoDeMano(enMano);
+      fuentes.push(enMano);
+    }
+    luces.asignar(fuentes, camara.position);
+    // La mitad jugable: de noche, con luz, el mapa abre las cuatro celdas vecinas
+    exploracion.luzM = radioDeLuzEn(fuentes, jugador.posicion);
+    return fuentes;
+  }
+
   function cuadro() {
     requestAnimationFrame(cuadro);
     const dt = Math.min(reloj.getDelta(), 0.1);
@@ -861,7 +921,8 @@ async function iniciar() {
       distanciaAgua: distanciaAlAgua,
       fuegoCerca: jugador.fuego,
     });
-    audio.pasos(dt, jugador);
+    // El paso suena según lo que se pisa: nieve, roca, pasto u hojarasca
+    audio.pasos(dt, jugador, mundo, est.cotaNieve);
     // El trueno se dispara con el relámpago y llega más tarde, por la velocidad
     // del sonido. La distancia sale del propio destello: los cercanos deslumbran.
     if (clima.destello > destelloPrevio + 0.3) {
@@ -890,6 +951,10 @@ async function iniciar() {
 
     // El domo del cielo acompaña a la cámara
     cielo.malla.position.copy(camara.position);
+
+    // Con la cámara, los hornos y el incendio ya puestos, y antes del espejo del
+    // lago, que es el primer render que las usa.
+    juntarLuces(est);
 
     // El espejo del lago se dibuja antes del pase principal: necesita la escena
     // ya actualizada y la superficie del agua todavía sin dibujar.
@@ -921,6 +986,7 @@ async function iniciar() {
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima, oclusion, color, calidad,
     exploracion, hallazgos, mapa, bolso, opciones, fin, partida, norma, relevamiento, cierre,
+    luces, juntarLuces,
   };
 
   if (import.meta.env.DEV) {

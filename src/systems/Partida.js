@@ -27,6 +27,11 @@
  * El formato es JSON plano en localStorage, con un número de versión: si un día
  * cambia la forma, una partida vieja se descarta sola en vez de romper el
  * arranque.
+ *
+ * **Agregar un campo no es cambiar la forma.** El equipo entró en la ronda 5
+ * como un campo más, opcional al cargar, y `VERSION` sigue en 1: subirla habría
+ * descartado la partida guardada de todos los jugadores para agregar algo que
+ * una partida vieja simplemente no trae.
  */
 
 const CLAVE = 'survibar.partida.v1';
@@ -37,7 +42,8 @@ const RADIO_BASE_M = 6;      // dónde exactamente aparece uno respecto de la ob
 export class Partida {
   /**
    * @param {object} deps {jugador, inventario, saberes, codice, construccion,
-   *                       fundicion, mineria, tiempo, mundo, hud, obras, hornos}
+   *                       fundicion, mineria, tiempo, mundo, hud, obras, hornos,
+   *                       equipo}
    */
   constructor(deps) {
     Object.assign(this, deps);
@@ -46,11 +52,26 @@ export class Partida {
     /** Lo que quedó tirado donde murió el jugador, por si un día se recupera. */
     this.ultimaMuerte = null;
 
-    addEventListener('beforeunload', () => this.guardar());
+    // Por `globalThis` y no a pelo, igual que `Exploracion`: así el módulo se
+    // puede construir en un banco de Node, donde no hay ventana ni documento.
+    const doc = globalThis.document;
+    if (typeof globalThis.addEventListener === 'function') {
+      globalThis.addEventListener('beforeunload', () => this.guardar());
+    }
     // En móviles `beforeunload` no dispara: el evento fiable es éste
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') this.guardar();
+    doc?.addEventListener?.('visibilitychange', () => {
+      if (doc.visibilityState === 'hidden') this.guardar();
     });
+  }
+
+  /**
+   * El equipo, venga como venga. `main.js` se lo pasa a la recolección desde la
+   * ronda 4 pero no a la partida, así que se lo busca también ahí: si no, lo
+   * que dice este archivo que se guarda no se guardaría hasta que alguien
+   * tocara el cableado.
+   */
+  get _equipo() {
+    return this.equipo ?? this.recoleccion?.equipo ?? null;
   }
 
   // ── Bases ─────────────────────────────────────────────────────────────────
@@ -80,14 +101,29 @@ export class Partida {
   registrarMuerte(motivo) {
     const p = this.jugador.posicion;
     const perdido = this.inventario.listar();
+    // Las herramientas del bolso NO salen en `listar()`, y es a propósito: si
+    // salieran, el depósito de `Construccion.guardarTodo()` las tragaría como
+    // «unidades de hacha» y una receta podría fundirlas para pagar madera. Pero
+    // `vaciar()` sí se las lleva, así que sin esto la pantalla de fin contaba
+    // los kilos y **no decía que perdiste el hacha**: la regla estaba bien y el
+    // mensaje mentía por omisión.
+    const herramientas = (this.inventario.instancias?.() || []).map(({ cosa }) => ({
+      id: cosa.id,
+      nombre: this._equipo?.definicion?.(cosa.id)?.nombre || cosa.id,
+      cantidad: 1,
+      usos: cosa.usos,
+    }));
     const kg = this.inventario.pesoKg;
-    this.inventario.items.clear();
+    this.inventario.vaciar();
     this.inventario.alCambiar?.();
 
     const destino = this.baseCercana(p.x, p.z);
     this.ultimaMuerte = {
       x: p.x, z: p.z, causa: motivo?.causa || 'agotamiento',
-      perdido: perdido.map(i => ({ id: i.id, nombre: i.nombre, cantidad: i.cantidad })),
+      perdido: [
+        ...herramientas,
+        ...perdido.map(i => ({ id: i.id, nombre: i.nombre, cantidad: i.cantidad })),
+      ],
       kg: +kg.toFixed(1),
       base: destino?.base?.obra?.nombre || null,
       distancia: destino ? Math.round(destino.distancia) : null,
@@ -154,7 +190,7 @@ export class Partida {
         temperatura: j.temperatura, horasVividas: j.horasVividas,
       },
       tiempo: { ms: this.tiempo?.fecha?.getTime?.() ?? null },
-      inventario: [...this.inventario.items],
+      inventario: this.inventario.serializar(),
       saberes: {
         puntos: this.saberes.puntos,
         ganadosTotales: this.saberes.ganadosTotales,
@@ -193,6 +229,10 @@ export class Partida {
         taller: !!this.recoleccion?._talleraAvisado,
         saber: !!this.recoleccion?._saberAvisado,
       },
+      // Lo fabricado, lo puesto y la llama encendida. Hasta la ronda 5 no se
+      // guardaba: el hacha no sobrevivía a cerrar la pestaña. La llama va con su
+      // `hasta` en fecha del mundo, igual que el fuego de los hornos.
+      equipo: this._equipo?.serializar?.() ?? null,
       muerte: this.ultimaMuerte,
     };
   }
@@ -238,7 +278,7 @@ export class Partida {
       this.ultimoGuardado = Date.now();
       this.exploracion?.guardar();
       if (avisar) this.hud?.aviso('Partida guardada',
-        'Bolso, obras, depósitos y tecnologías quedan en este navegador.');
+        'Bolso, equipo, obras, depósitos y tecnologías quedan en este navegador.');
       return true;
     } catch {
       if (avisar) this.hud?.aviso('No se pudo guardar',
@@ -283,7 +323,7 @@ export class Partida {
       }
       if (d.tiempo?.ms && this.tiempo?.fecha) this.tiempo.fecha.setTime(d.tiempo.ms);
 
-      this.inventario.items = new Map(d.inventario || []);
+      this.inventario.reponer(d.inventario);
       this.inventario.alCambiar?.();
 
       const s = d.saberes || {};
@@ -308,12 +348,31 @@ export class Partida {
 
       this._reponerObras(d.obras || []);
       this._reponerHornos(d.hornos || []);
+      this._reponerEquipo(d.equipo);
       this.ultimaMuerte = d.muerte || null;
       this.ultimoGuardado = d.fecha || Date.now();
       return true;
     } catch (e) {
       console.warn('Partida ilegible, se empieza de nuevo:', e);
       return false;
+    }
+  }
+
+  /**
+   * El equipo va DESPUÉS del reloj del mundo, igual que los hornos: la llama
+   * encendida trae su `hasta` en fecha del mundo, y compararla contra un reloj
+   * todavía sin reponer la daría por consumida o por eterna.
+   *
+   * Una partida anterior a la ronda 5 no trae el campo y carga igual, con el
+   * taller vacío como estaba. Y un equipo ilegible no se lleva puesta la partida
+   * entera: se avisa y se sigue con lo demás.
+   */
+  _reponerEquipo(g) {
+    if (!g) return;
+    try {
+      this._equipo?.reponer?.(g);
+    } catch (e) {
+      console.warn('Equipo guardado ilegible, se sigue sin él:', e);
     }
   }
 

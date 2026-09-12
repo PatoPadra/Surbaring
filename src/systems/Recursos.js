@@ -198,6 +198,67 @@ export const RECURSOS = {
   pellet:        { nombre: 'Pellet de resina', kg: 0.06, cat: 'material' },
 };
 
+// ── Las dos medidas de la grilla ────────────────────────────────────────────
+//
+// Las dos salen de un número que ya existe —el peso de la ficha, la capacidad
+// del bolso— y ninguna se escribe a mano. Es la misma razón por la que
+// `OBTENIBLES` se deriva más abajo en vez de listarse: una tabla de 71 renglones
+// de tamaños de pila se desincroniza el día que alguien agrega un recurso, y el
+// defecto no avisa —el recurso nuevo apila 1 y nadie se entera hasta que un
+// jugador se queda sin casilleros juntando plumas.
+
+/** Los números redondos que un jugador acepta sin que se los expliquen. */
+const ESCALERA_PILA = [1, 2, 5, 10, 20, 50];
+
+/**
+ * Cuánto pesa una pila llena, aproximadamente.
+ *
+ * Se probaron 2, 3, 4 y 5 kg contra las 71 fichas. Con 2 kg quedan nueve
+ * recursos que no apilan —demasiada cosa ocupando un casillero por unidad—; con
+ * 4 y 5 kg la mitad de la tabla se va a pilas de 50 y la escalera deja de decir
+ * nada. Con 3 kg el reparto es parejo y se lee a ojo: yesca 50, junco 20,
+ * miel 10, madera blanda 5, chatarra 2, tronco 1.
+ */
+const TOPE_PILA_KG = 3;
+
+/**
+ * De cuánto apila un recurso, sacado de su peso.
+ *
+ * El valor de la escalera más cercano **en escala logarítmica** a lo que entra
+ * en 3 kg. Logarítmica y no lineal porque la escalera es geométrica: entre 20 y
+ * 50 hay 30 de distancia lineal y sólo un escalón de distancia real, y midiendo
+ * a lo lineal casi todo lo liviano terminaba en 50.
+ */
+export function pilaDe(kg) {
+  const p = Number(kg);
+  // Una ficha sin peso apila lo máximo en vez de lo mínimo: la cuenta de abajo
+  // divide por el peso, y con 0 el redondeo cae en el peor extremo justo para
+  // lo que menos tendría que ocupar.
+  if (!Number.isFinite(p) || p <= 0) return ESCALERA_PILA[ESCALERA_PILA.length - 1];
+  const crudo = TOPE_PILA_KG / p;
+  return ESCALERA_PILA.reduce((m, e) =>
+    Math.abs(Math.log(e / crudo)) < Math.abs(Math.log(m / crudo)) ? e : m, ESCALERA_PILA[0]);
+}
+
+/**
+ * Cuántos casilleros tiene un bolso de esta capacidad, en filas completas de 6.
+ *
+ * El 0,63 salió de simular 4000 cargas al azar hasta llenar los 38 kg: una
+ * carga mixta usa como mucho 22 casilleros, así que con 24 la grilla **no**
+ * bloquea un bolso lleno normal —muerde el peso primero, como siempre—, pero
+ * una recorrida de sólo cosas livianas llega a 28 y ahí muerde la grilla. Los
+ * dos topes existen y ninguno es adorno: si la grilla fuera más grande sería
+ * decoración, y si fuera más chica reemplazaría al peso, que es un sistema con
+ * dientes que además frena al jugador en la subida.
+ *
+ * El piso de 3 filas es para que un bolso castigado siga siendo usable, y las
+ * filas completas son para que la grilla no quede con un renglón cojo.
+ */
+export function casillasPara(capacidadKg) {
+  const cap = Number(capacidadKg);
+  return 6 * Math.max(3, Math.round((Number.isFinite(cap) ? cap : 0) * 0.63 / 6));
+}
+
 /**
  * Qué se puede conseguir hoy: lo que existe en el registro más todo lo que ese
  * registro satisface por equivalencia. Se deriva en vez de escribirse a mano

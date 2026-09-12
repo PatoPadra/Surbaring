@@ -21,6 +21,43 @@
 const CELDAS = 256;                 // 65.536 m / 256 = 256 m por celda
 const CLAVE = 'survibar.exploracion.v1';
 
+/**
+ * El tope de noche, con luz y sin ella.
+ *
+ * A oscuras queda en los 220 m que el mapa ya daba de noche: la noche no se
+ * vuelve más dura para nadie. Con luz sube a 300. Cuenta como luz lo que se
+ * lleva en la mano, o estar dentro del radio de un fuego encendido.
+ *
+ * Los números salen de la celda, no del ojo. `revisar()` mide la distancia por
+ * índice de celda y cada celda mide 256 m, así que **ningún tope por debajo de
+ * 256 revela una vecina**: con 120 o con 220 se descubre sólo la celda que se
+ * pisa. La primera versión de la fase pedía 120/220 y medido daba 1 celda en
+ * los dos casos: la luz no cambiaba nada del mapa. Medido con el `revisar()`
+ * real sobre 3000 posiciones (el jefe y `lumbre`, 11/9/2026):
+ *
+ * | tope  | celdas | vecina ortogonal | diagonal |
+ * |-------|--------|------------------|----------|
+ * | 220 m | 1      | —                | —        |
+ * | 256 m | 5      | 60, apenas se ve | —        |
+ * | 300 m | 5      | 104              | —        |
+ * | 320 m | 5      | 119              | —        |
+ * | 380 m (día) | 9 | ~151           | 75       |
+ *
+ * Con 300 la luz abre la cruz de las cuatro vecinas con un brillo entre la
+ * oscuridad y el día. `revisar()` no se tocó: medir desde la posición real del
+ * jugador también hacía que la luz se notara, pero cambiaba el día de 9 a 6,95
+ * celdas, y el día no era lo que había que arreglar.
+ *
+ * **Es una licencia de juego, y está declarada** en `licenciasDeJuego.luzNocturna`
+ * de `herramientas.json`. En la realidad una antorcha no deja ver más lejos: lo
+ * que alumbra a doce metros encandila, y el ojo pierde la adaptación a la
+ * oscuridad que es justamente lo que deja distinguir el perfil de un cerro a
+ * trescientos. Se toma igual porque la luz tiene que servir para algo más que
+ * mirarla, y la cuenta del mapa es donde el jugador lo nota.
+ */
+const TOPE_NOCHE_CON_LUZ_M = 300;
+const TOPE_NOCHE_SIN_LUZ_M = 220;
+
 export class Exploracion {
   /** @param {import('../world/Mundo.js').Mundo} mundo */
   constructor(mundo) {
@@ -40,6 +77,11 @@ export class Exploracion {
     this._conocidas = 0;
     /** Hay cambios sin escribir en el almacenamiento. */
     this._sucio = false;
+    /**
+     * Radio de la luz que cuenta ahora, en metros: 0 a oscuras. Lo escribe el
+     * bucle de `main.js` con `radioDeLuzEn()` de `engine/Luces.js`.
+     */
+    this.luzM = 0;
     this.cargar();
 
     // El guardado por umbral —cada 400 celdas nuevas, en `main.js`— pierde lo
@@ -86,8 +128,12 @@ export class Exploracion {
    *
    * La prominencia se estima contra el terreno de un kilómetro a la redonda:
    * es la diferencia entre estar sobre una loma y estar al pie de ella.
+   *
+   * @param {number} [luzM] radio de la luz que cuenta, en metros. Por omisión,
+   *   `this.luzM`, que el bucle escribe una vez por cuadro; `revisar()` no lo
+   *   pasa y lo toma de ahí. De día no cambia nada.
    */
-  alcanceVisual(pos, est) {
+  alcanceVisual(pos, est, luzM = this.luzM ?? 0) {
     let suma = 0, n = 0;
     for (let a = 0; a < 8; a++) {
       const ang = a / 8 * Math.PI * 2;
@@ -106,7 +152,7 @@ export class Exploracion {
     alcance *= 1 - niebla * 0.9;
     const hora = est?.horaDecimal ?? 12;
     const deNoche = hora < 7 || hora > 20.5;
-    if (deNoche) alcance = Math.min(alcance, 220);
+    if (deNoche) alcance = Math.min(alcance, luzM > 0 ? TOPE_NOCHE_CON_LUZ_M : TOPE_NOCHE_SIN_LUZ_M);
 
     return Math.max(90, Math.min(6000, alcance));
   }
