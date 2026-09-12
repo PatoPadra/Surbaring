@@ -261,13 +261,14 @@ async function iniciar() {
   entrada.registrar('KeyF', () => { jugador.tercerPersona = !jugador.tercerPersona; });
   entrada.registrar('F3', () => document.getElementById('diag').classList.toggle('visible'));
   entrada.registrar('KeyT', () => tiempo.alternarVelocidad());
-  // Interruptor del posproceso: la oclusión ambiental cuesta, y cuánto depende
-  // mucho de la placa. Que se pueda apagar y comparar es más honesto que elegir
-  // por el jugador.
-  entrada.registrar('KeyC', () => {
+  // La calidad, en F2 y no en C. Estuvo en C, que es también la tecla de
+  // agacharse (`Entrada.agachar`): cada vez que uno se agachaba cambiaba el
+  // preset y se apagaba el ajuste automático. Ctrl no reemplaza a la C, porque
+  // en un navegador Ctrl+W cierra la pestaña.
+  entrada.registrar('F2', () => {
     const p = calidad.siguiente();
     hud.aviso(`Calidad: ${p.nombre}`,
-      `${calidad.resumen} · C para cambiar · el ajuste automático queda apagado`);
+      `${calidad.resumen} · F2 para cambiar · el ajuste automático queda apagado`);
   });
   const ESTADOS_POSPROCESO = ['completo', 'sin oclusión', 'crudo'];
   /** Modo de posproceso, desde la tecla O o desde la pestaña de video. */
