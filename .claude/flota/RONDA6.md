@@ -341,20 +341,33 @@ durabilidad. Es un agujero de dato, no de código.
 Ocho herramientas plausibles suman **3,1 kg** de los 38. Simulando 2000 cargas
 mixtas con el equipo ya adentro de la grilla:
 
-| herramientas encima | casillas | se ahoga | casillas p90 |
+> **Esta tabla se midió dos veces, y la primera estaba mal.** La versión que
+> quedó en el commit `965fc4f` decía «hasta nueve, 0 % de ahogo», y salía de una
+> simulación cuyo llenado no era el de `Inventario.agregar`: llevaba el hueco de
+> la pila abierta como un número por recurso en vez de recorrer la grilla, y eso
+> le regalaba casilleros. Corriendo el banco contra la base antes de encargar
+> nada apareció la contradicción —sin herramientas la peor carga usa 21 de 24, y
+> 21 + 9 no entra en 24— y se volvió a medir con el algoritmo de verdad: pilas
+> abiertas primero, después el primer hueco libre. **Prometerle a un agente un
+> 0 % que el código no puede dar es el mismo defecto que costó la fase 1**, y
+> esta vez se agarró antes de que existiera el código.
+
+| herramientas encima | kg del equipo | se ahoga | peor caso |
 |---|---|---|---|
-| 0 | 24 | 0 % | 16 |
-| 4 | 24 | 0 % | 19 |
-| 6 | 24 | 0 % | 21 |
-| 8 | 24 | **0 %** | 22 |
-| 10 | 24 | 6 % | 24 |
-| 12 | 24 | **22 %** | 24 |
+| 0 | 0 | 0,0 % | 21 de 24 |
+| 4 | 0,7 | 0,0 % | 24 |
+| 6 | 2,4 | 0,3 % | 24 |
+| 8 | 3,1 | 0,4 % | 24 |
+| **9** | 3,5 | **1,0 %** | 24 |
+| 10 | 4,0 | 4,5 % | 24 |
+| 12 | 6,0 | **19,8 %** | 24 |
 
 **Se deja el coeficiente en 0,63 y no se agranda la grilla.** Hasta nueve
-herramientas encima no pasa nada; de ahí para arriba empezás a perder lugar de
-carga, y **eso es la regla del juego, no un defecto**: es exactamente lo que uno
-siente en Rust cuando sale con el banco de trabajo a cuestas. Con la mochila
-puesta —30 casillas— diez herramientas vuelven a entrar sin apretar (1 %).
+herramientas encima se ahoga una carga de cada cien —o sea nunca, en la práctica,
+y cuando pasa es porque venías cargando mucho—; de diez para arriba se nota, y de
+doce es una de cada cinco. **Eso es la regla del juego, no un defecto**: es
+exactamente lo que uno siente en Rust cuando sale con el banco de trabajo a
+cuestas. Con la mochila puesta —30 casillas— nueve bajan a 0,3 % y doce a 3,8 %.
 
 Se probó subir el coeficiente a 0,75 y 0,85 y las dos dan 30 casillas y 0 % de
 ahogo con ocho herramientas; se descarta porque compraría comodidad rompiendo lo
@@ -412,8 +425,10 @@ sigue devolviendo algo con `.id` y `.nombre` —lo leen `main.js`, `Cuerpo.js`,
 `luzActiva()`, `encender()`/`apagar()` y `listar()` siguen andando. La llama, la
 lluvia que la apaga y el reloj del mundo de la ronda 5 **no se rompen**.
 
-**D8 · Nueve herramientas encima no ahogan la grilla**, y doce sí. Lo primero es
-una aserción; lo segundo se mide y se anota, porque es la regla del juego.
+**D8 · Nueve herramientas encima ahogan menos del 3 % de las cargas, y doce más
+del 10 %.** Las dos son aserciones y las dos importan: la primera dice que la
+grilla aguanta un equipo completo, la segunda que **sigue teniendo dientes**. Un
+umbral y no un cero, porque medido con el llenado de verdad nueve dan 1,0 %.
 
 **D9 · Sin regresión de costo** en `pintar()` contra la fase 1: 0,775 ms de
 mediana con la carga de 37,9 kg, medido en tandas de 20 pintadas.
