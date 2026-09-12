@@ -319,3 +319,107 @@ entero** y el segundo nodo quedaba desprendido.
 5. **`lleno` sigue siendo sólo el peso.** Con los 24 casilleros ocupados y 10 kg
    libres, `lleno === false`. Es lo que pedía C1 al pie de la letra. El agente
    agregó `sinCasillas` y **no lo usa nadie**: queda para decidir.
+
+---
+
+## FASE 2 — Las herramientas entran a la grilla · agente `instancia`
+
+### Lo que se midió antes de encargar nada
+
+**Los 56 «objetos» son 44 cosas y 12 recetas.** Los doce que no tienen ni peso ni
+durabilidad —`cordel_fibra`, `punta_litica`, `flechas`…— llevan `produce` y
+`esReceta`, y `Fabricacion.js:118` los manda al inventario como recurso: son la
+receta que fabrica `cordel`, no un cordel que se tenga. **Nunca pasan por
+`Equipo`**, así que no son de esta fase. Siete de ellos tienen además el recurso
+gemelo ya fichado (`cordel` 0,03 kg, `punta` 0,02, `mango` 0,4…), que es de donde
+salía la confusión.
+
+Queda **una** cosa sin ficha: `encerado` no es receta y no tiene ni kg ni
+durabilidad. Es un agujero de dato, no de código.
+
+**Las herramientas pesan poco: el que se acaba son los casilleros, no los kilos.**
+Ocho herramientas plausibles suman **3,1 kg** de los 38. Simulando 2000 cargas
+mixtas con el equipo ya adentro de la grilla:
+
+| herramientas encima | casillas | se ahoga | casillas p90 |
+|---|---|---|---|
+| 0 | 24 | 0 % | 16 |
+| 4 | 24 | 0 % | 19 |
+| 6 | 24 | 0 % | 21 |
+| 8 | 24 | **0 %** | 22 |
+| 10 | 24 | 6 % | 24 |
+| 12 | 24 | **22 %** | 24 |
+
+**Se deja el coeficiente en 0,63 y no se agranda la grilla.** Hasta nueve
+herramientas encima no pasa nada; de ahí para arriba empezás a perder lugar de
+carga, y **eso es la regla del juego, no un defecto**: es exactamente lo que uno
+siente en Rust cuando sale con el banco de trabajo a cuestas. Con la mochila
+puesta —30 casillas— diez herramientas vuelven a entrar sin apretar (1 %).
+
+Se probó subir el coeficiente a 0,75 y 0,85 y las dos dan 30 casillas y 0 % de
+ahogo con ocho herramientas; se descarta porque compraría comodidad rompiendo lo
+que la fase 1 midió: con 30 casillas la grilla deja de morder también el día de
+juntar liviano, y vuelve a ser decoración.
+
+### Propiedad exclusiva de archivos
+
+- `src/systems/Equipo.js` — el grueso: instancias en vez de `Map<id, usos>`
+- `src/systems/Inventario.js` — la grilla acepta instancias
+- `src/ui/Bolso.js` — las herramientas dibujadas en la grilla, y las cuatro ranuras
+- `src/systems/Fabricacion.js` — **sólo** las dos líneas que tocan al equipo
+- `src/systems/Partida.js` — **sólo** la migración del guardado
+
+`Recursos.js` **no se toca en esta fase**: `pilaDe` y `casillasPara` quedaron bien
+y las herramientas no son recursos. `main.js` es del coordinador.
+
+### El contrato
+
+**D1 · Una casilla puede tener una instancia.** Los recursos siguen siendo
+`{id, n}`. Un objeto es `{id, n: 1, usos: 87}`. **Tener `usos` es lo que lo hace
+una instancia**, y una instancia **nunca apila**: dos hachas son dos casillas,
+aunque una esté al 40 % y la otra al 90 %. Ése es el punto entero de la fase.
+
+**D2 · `Inventario` no aprende de herramientas.** No importa `herramientas.json`
+ni sabe qué es una durabilidad. Recibe un catálogo opcional —`id → {kg}`— por el
+constructor y con eso pesa lo que no está en `RECURSOS`. Todo lo demás de la
+fase 1 sigue igual: los dos topes, las posiciones estables, `mover`, `partir`.
+
+**D3 · Lo puesto vive en la ranura, no en la grilla.** Equipar **saca** la
+instancia de la grilla y la pone en `puesto[ranura]`; desequipar la devuelve al
+primer casillero libre, y **falla limpio si no hay ninguno**. Lo puesto **sí pesa**
+—lo estás cargando— pero no ocupa casillero, que es lo que hace que valga la pena
+tener el hacha en la mano y no en el bolso.
+
+**D4 · Fabricar un hacha teniendo un hacha da dos hachas.** Hoy `guardar()` le
+renueva los usos a la que ya está, y eso deja de ser cierto. Si no hay casillero
+ni ranura libre, **la fabricación no se hace y se avisa**, igual que ya hace la
+rama de `produce` con el peso: `Fabricacion.js:122` hoy llama a `equipo.guardar()`
+sin comprobar nada, y ahí es donde el objeto se perdería en silencio.
+
+**D5 · La durabilidad es de la instancia.** `desgastar()` gasta la que está en la
+mano, no «el hacha». `reparar()` repara una instancia. Dos hachas se gastan por
+separado y el bolso muestra el estado de cada una.
+
+**D6 · El guardado viejo entra y `VERSION` sigue en 1.** Un guardado con
+`equipo: {taller: [['hacha_piedra', 42]], puesto: {mano: 'hacha_piedra'}}` tiene
+que llegar como una instancia de 42 usos puesta en la mano. Si el guardado trae
+más objetos que casilleros libres, se prende `desbordado` y **no se pierde nada
+en silencio**.
+
+**D7 · La API que usa el resto del juego no cambia de forma.** `enRanura(ranura)`
+sigue devolviendo algo con `.id` y `.nombre` —lo leen `main.js`, `Cuerpo.js`,
+`Caza.js` y `Recoleccion.js`—, `suma(clave)`, `puede()`, `mejorPara()`,
+`luzActiva()`, `encender()`/`apagar()` y `listar()` siguen andando. La llama, la
+lluvia que la apaga y el reloj del mundo de la ronda 5 **no se rompen**.
+
+**D8 · Nueve herramientas encima no ahogan la grilla**, y doce sí. Lo primero es
+una aserción; lo segundo se mide y se anota, porque es la regla del juego.
+
+**D9 · Sin regresión de costo** en `pintar()` contra la fase 1: 0,775 ms de
+mediana con la carga de 37,9 kg, medido en tandas de 20 pintadas.
+
+### Lo que NO es de esta fase
+
+Los iconos (fase 3). Las 12 recetas, que no pasan por `Equipo`. Ficharle un peso
+a `encerado`: es dato, y lo decide el dueño. Contenedores en el mundo ni
+cadáveres que lotear.
