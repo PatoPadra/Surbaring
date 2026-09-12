@@ -1,5 +1,39 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **12/9/2026 — RONDA 6 ABIERTA: el inventario de casilleros.** Estilo Diablo 2
+> o Rust, pedido por el dueño. Rama `mejoras/ronda6-inventario`, sacada de
+> `mejoras/ronda5-graficos`. **La ronda 5 sigue sin fusionarse a `main` y sigue
+> esperando el ojo del dueño en pantalla.** El encargo está en `RONDA6.md`.
+>
+> Se abrió midiendo el código antes de contestar cuánto costaba, y la respuesta
+> fue mejor de lo que parecía: **la mitad cara ya estaba pagada.** De los 75
+> sitios que tocan el inventario en 16 archivos, sólo 20 mutan, y **11 de los 12
+> que agregan ya leen cuánto entró de verdad**, porque el tope de 38 kg los
+> obligó hace rondas. El rechazo parcial —«cazaste el ciervo pero no te entra»—
+> está resuelto en todo el juego. Se reescribe `Inventario.js`, cien líneas, y
+> el resto no se entera.
+>
+> Dos números se midieron antes de escribir el contrato, para no inventarlos:
+>
+> 1. **La pila sale del peso**, por la escalera `[1,2,5,10,20,50]` con tope de
+>    3 kg. Se probaron 2, 3, 4 y 5: con 2 quedan nueve recursos que no apilan,
+>    con 4 y 5 la mitad de la tabla se va a 50. **Cero datos escritos a mano**
+>    para las 71 fichas.
+> 2. **24 casillas** a capacidad base. En 4000 cargas simuladas, una mixta de
+>    38 kg usa 22 casillas en el peor caso —así que la grilla nunca bloquea un
+>    bolso lleno normal—, pero una recorrida de sólo cosas livianas llega a 28 y
+>    ahí muerde la grilla. **Los dos topes muerden y ninguno es adorno.**
+>
+> Lo caro no es el código: son **127 iconos** (71 recursos + 56 objetos) en una
+> interfaz donde hoy **no hay una sola imagen**. Eso es la fase 3. Y
+> `Equipo.taller` es un `Map<id, usos>` —hoy no se pueden tener dos hachas—, que
+> es la fase 2.
+>
+> *El falsador cazó un defecto propio antes de plantar ninguno: la copia de
+> `src/` queda fuera del proyecto, y sin un `package.json` al lado Node lee los
+> `.js` como CommonJS. Todas las secciones morían por la misma razón, y el
+> falsador lo habría contado como que el defecto plantado se vio.*
+
 > **11/9/2026 — RONDA 5, FASE 1 (`lumbre`) CERRADA: la luz.** La antorcha, el
 > candil y las velas alumbran y se consumen contra el reloj del mundo. Los
 > hornos y el incendio alumbran de verdad, y ya no queda ninguna luz de three en
