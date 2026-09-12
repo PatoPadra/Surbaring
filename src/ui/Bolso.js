@@ -30,6 +30,7 @@
  */
 
 import { RECURSOS, pesoDe, nombreDe } from '../systems/Recursos.js';
+import { esInstancia } from '../systems/Inventario.js';
 
 const CSS = `
   #bolsoPanel { position: fixed; inset: 0; z-index: 72; display: none;
@@ -85,6 +86,31 @@ const CSS = `
   #bolsoPanel .bp-detalle { min-height: 2.6rem; margin: .5rem 0 .2rem;
     border-top: 1px solid rgba(255,255,255,.06); padding-top: .45rem; }
   #bolsoPanel .bp-ayuda { font-size: .68rem; color: var(--tinta-tenue); }
+
+  /* Una instancia no es una pila, y tiene que verse antes de leer la sigla: la
+     esquina cortada dice «esto es una cosa» y la franja de abajo deja de contar
+     cuánto entra para contar cuánto le queda de vida. Sin esto, un hacha al 10 %
+     y una pila de diez frutos se dibujaban igual. */
+  #bolsoPanel .bp-cs.obj { border-style: solid; }
+  #bolsoPanel .bp-cs.obj::before { content: ''; position: absolute; left: 0; top: 0;
+    border: 5px solid transparent; border-left-color: currentColor;
+    border-top-color: currentColor; opacity: .8; }
+  #bolsoPanel .bp-cs.obj u { height: 3px; opacity: 1; }
+  #bolsoPanel .bp-cs.rota { opacity: .55; text-decoration: line-through; }
+
+  /* Las cuatro ranuras, siempre las cuatro y siempre en el mismo orden: la
+     vacía informa tanto como la llena —«no tenés abrigo» es la respuesta a por
+     qué te estás congelando— y una lista que aparece y desaparece según lo que
+     haya no se aprende de memoria. */
+  #bolsoPanel .bp-rn { display: flex; align-items: center; gap: .55rem;
+    padding: .3rem 0; border-top: 1px solid rgba(255,255,255,.06); font-size: .78rem; }
+  #bolsoPanel .bp-rn > .rot { min-width: 4.2rem; font-size: .62rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--tinta-tenue); }
+  #bolsoPanel .bp-rn > .que { flex: 1; }
+  #bolsoPanel .bp-rn.vacia > .que { color: #6d766f; font-style: italic; }
+  #bolsoPanel .bp-dur { display: inline-block; width: 3.2rem; height: 3px; vertical-align: middle;
+    background: rgba(255,255,255,.12); border-radius: 2px; overflow: hidden; }
+  #bolsoPanel .bp-dur i { display: block; height: 100%; }
 `;
 
 /**
@@ -109,6 +135,44 @@ const COLOR_CAT = {
   material: '#9d9483',
   otros: '#6d766f',
 };
+
+/**
+ * Y un color por categoría de objeto, que son otras seis y viven en
+ * `herramientas.json`. Se separan de las de recursos a propósito: los dos
+ * juegos de casilleros comparten la grilla y tienen que distinguirse, así que
+ * las herramientas tiran a frío —piedra, filo, metal— y los materiales a tierra.
+ * Igual que arriba, la categoría que falte cae en gris y no desaparece.
+ */
+const COLOR_OBJ = {
+  herramienta: '#7ea8bd',
+  arma: '#bd8c7e',
+  abrigo: '#b0a2c4',
+  contenedor: '#9ebd9e',
+  fuego: '#e0a050',
+  insumo: '#8f9aa0',
+  otros: '#8f9aa0',
+};
+
+/** Las cuatro ranuras, con el nombre con el que las piensa el jugador. */
+const RANURAS = [
+  ['mano', 'Mano'],
+  ['arma', 'Arma'],
+  ['abrigo', 'Abrigo'],
+  ['espalda', 'Espalda'],
+];
+
+/**
+ * El color de una barra de durabilidad. Verde mientras no importe, ámbar cuando
+ * conviene volver al campamento, rojo cuando ya es tarde: son los mismos tres
+ * colores de la barra de peso y de la salud, así que no hay vocabulario nuevo
+ * que aprender.
+ */
+function colorUso(frac) {
+  if (!(frac > 0)) return '#c8503f';
+  if (frac > 0.5) return '#7f9f74';
+  if (frac > 0.2) return '#e0a050';
+  return '#c8503f';
+}
 
 /**
  * La sigla que se dibuja en el casillero: iniciales si el nombre tiene dos
@@ -252,16 +316,42 @@ export class Bolso {
       } else if (accion === 'apagar') {
         this.equipo?.apagar(this._fechaMs());
       } else if (accion === 'equipar') {
-        this.equipo?.equipar(id);
+        // Por casillero y no por id: con dos hachas en el bolso, «sacá el
+        // hacha» no señala a ninguna en particular y el jugador está apuntando
+        // a una concreta.
+        const cosa = this.inventario.casillas[+b.dataset.i];
+        if (cosa && !this.equipo?.equipar(cosa)) {
+          this.hud?.aviso(this.equipo?.definicion(cosa.id)?.nombre || cosa.id,
+            'No se pudo sacar.');
+        }
       } else if (accion === 'desequipar') {
-        this.equipo?.desequipar(id);
+        const ranura = b.dataset.ranura;
+        const puesto = this.equipo?.enRanura(ranura);
+        if (puesto && !this.equipo.desequipar(ranura)) {
+          // Falla limpio y hay que decirlo: si no, apretar «Guardar» y que no
+          // pase nada se lee como que el botón está roto.
+          this.hud?.aviso(`${puesto.nombre} se queda en la mano`,
+            'No te queda un casillero libre donde guardarla. Soltá algo primero.');
+        }
+      } else if (accion === 'tirar_obj') {
+        const cosa = this.inventario.sacar(+b.dataset.i);
+        if (cosa) {
+          this.hud?.aviso(`Tiraste ${(this.equipo?.definicion(cosa.id)?.nombre || cosa.id).toLowerCase()}`,
+            `Cargás ${this.inventario.pesoKg.toFixed(1)} kg`);
+        }
       } else if (accion === 'reparar') {
-        const def = this.equipo?.definicion(id);
-        if (this.equipo?.reparar(id)) {
+        // Del casillero o de la ranura, pero siempre una instancia concreta:
+        // reparar «el hacha» teniendo dos tendría que adivinar cuál.
+        const cosa = b.dataset.ranura
+          ? this.equipo?.enRanura(b.dataset.ranura)?.instancia
+          : this.inventario.casillas[+b.dataset.i];
+        const def = cosa && this.equipo?.definicion(cosa.id);
+        if (!cosa || !def) return;
+        if (this.equipo.reparar(cosa)) {
           this.hud?.aviso(`Reparaste ${def.nombre.toLowerCase()}`, 'Vuelve a servir');
         } else {
-          this.hud?.aviso(def?.nombre || id,
-            `Te faltan materiales: ${this.equipo.costoReparar(id)
+          this.hud?.aviso(def.nombre,
+            `Te faltan materiales: ${this.equipo.costoReparar(cosa.id)
               .map(m => `${m.cantidad} × ${nombreDe(m.recurso)}`).join(' · ')}`);
         }
       }
@@ -279,11 +369,11 @@ export class Bolso {
    */
   _pintarEquipo() {
     if (!this.equipo) return '';
-    const puestos = this.equipo.listar();
+    const todo = this.equipo.listar();
     const encendida = this.equipo.encendida;
     // Con velas en el bolso también: la licencia de la luz se dice donde se
     // prende, y una vela se prende aunque no haya nada fabricado.
-    if (!puestos.length && !encendida && !(this.inventario.cantidad('vela') > 0)) return '';
+    if (!todo.length && !encendida && !(this.inventario.cantidad('vela') > 0)) return '';
 
     let html = `<h3>Equipo · trabajás en nivel ${this.equipo.nivel}</h3>`;
 
@@ -303,26 +393,34 @@ export class Bolso {
       }
     }
 
-    for (const it of puestos) {
-      const usos = it.tope === Infinity ? '' : `${it.usos}/${it.tope} usos`;
+    // Las cuatro ranuras, siempre las cuatro. Lo que está en el bolso ya no se
+    // lista acá: está dibujado en la grilla, casillero por casillero y con su
+    // durabilidad, que es de lo que se trató esta fase. Repetirlo en dos lugares
+    // sería mostrar dos veces la misma hacha y hacer creer que son dos.
+    for (const [ranura, rotulo] of RANURAS) {
+      const it = todo.find(x => x.puesto && x.ranura === ranura);
+      if (!it) {
+        html += `<div class="bp-rn vacia"><span class="rot">${rotulo}</span><span class="que">nada</span></div>`;
+        continue;
+      }
       const alumbra = !!this.equipo.definicion(it.id)?.efecto?.luz;
-      const ardiendo = alumbra && this.equipo.encendida === it.id;
-      if (ardiendo) continue;   // ya está arriba, con su botón de apagar
-      const estado = it.gastado ? '<b style="color:#c8503f">gastada</b>'
-        : it.puesto ? '<b style="color:#6fae7c">en la mano</b>' : '';
-      html += `<div class="bp-it">
-        <span>${it.nombre}<small style="color:var(--tinta-tenue)"> · nivel ${it.nivel}${estado ? ' · ' : ''}${estado}</small></span>
-        <span class="bp-kg">${usos}</span>
-        ${it.gastado ? `<button data-accion="reparar" data-id="${it.id}">Reparar</button>` : ''}
-        ${alumbra && !it.gastado ? `<button data-accion="encender" data-id="${it.id}">Encender</button>` : ''}
-        ${it.ranura && !it.puesto && !it.gastado && !alumbra ? `<button data-accion="equipar" data-id="${it.id}">Sacar</button>` : ''}
-        ${it.puesto ? `<button data-accion="desequipar" data-id="${it.ranura}">Guardar</button>` : ''}
+      // La que arde ya está arriba con su botón de apagar, pero la ranura no se
+      // salta: quedaría un hueco donde el jugador espera ver su antorcha.
+      const ardiendo = alumbra && encendida === it.id;
+      html += `<div class="bp-rn"><span class="rot">${rotulo}</span>
+        <span class="que">${it.nombre}<small style="color:var(--tinta-tenue)"> · nivel ${it.nivel}${
+          ardiendo ? ' · <b style="color:#e0a050">encendida</b>'
+            : it.gastado ? ' · <b style="color:#c8503f">gastada</b>' : ''}</small></span>
+        ${this._durabilidadHTML(it)}
+        ${it.gastado ? `<button data-accion="reparar" data-ranura="${ranura}">Reparar</button>` : ''}
+        ${alumbra && !ardiendo && !it.gastado ? `<button data-accion="encender" data-id="${it.id}">Encender</button>` : ''}
+        <button data-accion="desequipar" data-ranura="${ranura}">Guardar</button>
       </div>`;
     }
 
     // La licencia se dice donde se prende la luz, no escondida en un archivo:
     // es la misma regla que el arco y el fuego (`licenciasDeJuego.luzNocturna`).
-    const hayLuz = encendida || puestos.some(it => this.equipo.definicion(it.id)?.efecto?.luz)
+    const hayLuz = encendida || todo.some(it => this.equipo.definicion(it.id)?.efecto?.luz)
       || this.inventario.cantidad('vela') > 0;
     if (hayLuz) {
       html += `<div class="bp-kg" style="text-align:left;font-size:.66rem;padding:.3rem 0">
@@ -330,6 +428,21 @@ export class Bolso {
         Es una licencia de juego: una llama de verdad encandila y no deja ver más lejos.</div>`;
     }
     return html;
+  }
+
+  /**
+   * La durabilidad de una instancia: barrita y número.
+   *
+   * Las dos cosas y no una: la barra se lee sin pensar y el número es el que uno
+   * compara entre dos hachas para decidir cuál saca. Lo infinito no dibuja
+   * barra, porque una barra siempre llena no dice nada.
+   */
+  _durabilidadHTML(it) {
+    if (!Number.isFinite(it.tope)) return '<span class="bp-kg">—</span>';
+    const frac = it.tope > 0 ? Math.max(0, it.usos / it.tope) : 0;
+    return `<span class="bp-dur" title="${it.usos} de ${it.tope} usos"><i style="width:${
+      Math.round(Math.min(1, frac) * 100)}%;background:${colorUso(frac)}"></i></span>`
+      + `<span class="bp-kg">${it.usos}/${it.tope}</span>`;
   }
 
   /**
@@ -420,6 +533,7 @@ export class Bolso {
     for (let i = 0; i < inv.casillas.length; i++) {
       const c = inv.casillas[i];
       if (!c) { html += `<button class="bp-cs" data-cs="${i}"></button>`; continue; }
+      if (esInstancia(c)) { html += this._casilleroObjeto(i, c); continue; }
       const nombre = nombreDe(c.id);
       const color = COLOR_CAT[RECURSOS[c.id]?.cat] || COLOR_CAT.otros;
       const tope = inv.topeDe(c.id);
@@ -434,6 +548,62 @@ export class Bolso {
         + `<u style="width:${Math.round(c.n / tope * 100)}%"></u></button>`;
     }
     return html + '</div>';
+  }
+
+  /**
+   * Un casillero con una herramienta adentro.
+   *
+   * Se distingue de una pila por tres cosas a la vez, porque una sola no
+   * alcanza cuando el casillero mide veinte píxeles: la esquina cortada, la
+   * paleta fría de los objetos, y la franja de abajo, que acá cuenta cuánto le
+   * queda de vida en vez de cuánto le entra. El número de la esquina son los
+   * usos y no la cantidad: una instancia siempre es una.
+   */
+  _casilleroObjeto(i, c) {
+    const def = this.equipo?.definicion(c.id);
+    const nombre = def?.nombre || nombreDe(c.id);
+    const rota = !(c.usos > 0);
+    const color = rota ? '#c8503f' : (COLOR_OBJ[def?.categoria] || COLOR_OBJ.otros);
+    const finito = Number.isFinite(c.usos) && Number.isFinite(def?.durabilidad);
+    const frac = finito ? Math.max(0, Math.min(1, c.usos / def.durabilidad)) : 1;
+    const ardiendo = this.equipo?.encendida === c.id;
+    const detalle = finito ? `${c.usos} de ${def.durabilidad} usos` : 'no se gasta';
+    return `<button class="bp-cs hay obj${rota ? ' rota' : ''}${this._tomada === i ? ' tomada' : ''}" data-cs="${i}"`
+      + ` style="color:${color};background:${color}1f;border-color:${color}55"`
+      + ` title="${nombre} · ${detalle}${ardiendo ? ' · encendida' : ''}">${sigla(nombre)}`
+      + `${finito ? `<i>${c.usos}</i>` : ''}`
+      + `<u style="width:${Math.round(frac * 100)}%;background:${colorUso(frac)}"></u></button>`;
+  }
+
+  /**
+   * El renglón de detalle de una herramienta: qué es, cómo está, y los tres
+   * verbos que tiene una herramienta guardada —sacarla, prenderla, repararla—
+   * más el de tirarla.
+   *
+   * Van acá y no en la lista de arriba porque desde esta fase la herramienta
+   * guardada **es** un casillero, y el jugador la señala apuntándole. Todos los
+   * botones mandan el casillero y no el id: con dos hachas, un id ya no señala a
+   * una sola cosa, y «reparar el hacha» tendría que adivinar cuál.
+   */
+  _detalleObjeto(i, c) {
+    const def = this.equipo?.definicion(c.id);
+    const nombre = def?.nombre || nombreDe(c.id);
+    const rota = !(c.usos > 0);
+    const finito = Number.isFinite(c.usos) && Number.isFinite(def?.durabilidad);
+    const alumbra = !!def?.efecto?.luz;
+    const hermanas = this.inventario.instancias(c.id).length;
+    const it = { usos: c.usos, tope: def?.durabilidad ?? Infinity };
+    return `<div class="bp-it" style="border-top:none;padding-top:0">
+        <span>${nombre}<small style="color:var(--tinta-tenue)"> · nivel ${def?.nivel ?? 0}${
+          rota ? ' · <b style="color:#c8503f">gastada</b>' : ''}${
+          hermanas > 1 ? ` · tenés ${hermanas} en el bolso, cada una con lo suyo` : ''}</small></span>
+        ${finito ? this._durabilidadHTML(it) : '<span class="bp-kg">no se gasta</span>'}
+        <span class="bp-kg">${this.inventario.kgDe(c.id).toFixed(1)} kg</span>
+        ${def?.ranura && !rota ? `<button data-accion="equipar" data-i="${i}">Sacar</button>` : ''}
+        ${alumbra && !rota ? `<button data-accion="encender" data-id="${c.id}">Encender</button>` : ''}
+        ${rota ? `<button data-accion="reparar" data-i="${i}">Reparar</button>` : ''}
+        <button data-accion="tirar_obj" data-i="${i}">Tirar</button>
+      </div><div class="bp-ayuda">Clic para tomar y clic para poner · dos herramientas iguales nunca se juntan en un casillero</div>`;
   }
 
   /**
@@ -454,6 +624,8 @@ export class Bolso {
         : 'El bolso está vacío. Acercate a una planta, a una mata o al agua y pulsá E.'}</div>`
         + (inv.casillas.some(Boolean) ? ayuda : '');
     }
+
+    if (esInstancia(c)) return this._detalleObjeto(i, c);
 
     const def = RECURSOS[c.id];
     const nutre = def?.nutre ? ` · nutre ${def.nutre}` : '';

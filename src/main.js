@@ -466,6 +466,13 @@ async function iniciar() {
     inventario.capacidadKg = CAPACIDAD_BASE + saberes.suma('capacidadExtraKg')
       + equipo.suma('capacidadExtraKg');
   };
+  // El equipo también cambia la capacidad, y hasta la ronda 6 nadie escuchaba:
+  // `aplicarEfectos()` corría al arrancar, al cargar y al desbloquear una
+  // tecnología, así que **guardar el canasto en el bolso no bajaba los kilos
+  // hasta el próximo desbloqueo**. Con la grilla se nota el doble, porque el
+  // canasto guardado además ocupa un casillero: la cuenta de arriba y la de
+  // abajo del panel se contradecían.
+  equipo.alCambiar = aplicarEfectos;
   const desbloquearOriginal = saberes.desbloquear.bind(saberes);
   saberes.desbloquear = (tec) => {
     const r = desbloquearOriginal(tec);

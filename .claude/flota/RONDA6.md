@@ -438,3 +438,135 @@ mediana con la carga de 37,9 kg, medido en tandas de 20 pintadas.
 Los iconos (fase 3). Las 12 recetas, que no pasan por `Equipo`. Ficharle un peso
 a `encerado`: es dato, y lo decide el dueño. Contenedores en el mundo ni
 cadáveres que lotear.
+
+---
+
+## FASE 2 CERRADA — 12/9/2026
+
+**Banco 8/8 con 79 aserciones. Falsador 21 de 21, todos cazados por la aserción
+declarada: cero puntos ciegos.** `vite build` limpio. El agente tocó cuatro de
+sus cinco archivos: `Partida.js` no hizo falta, porque el orden de reposición ya
+era el correcto y `Equipo.reponer` reconoce los dos formatos solo.
+
+### Lo que quedó
+
+**`Equipo` dejó de tener lista propia.** No hay más `taller`: la fuente es la
+grilla del inventario más las cuatro ranuras, recorridas por un generador
+`todas()`. La decisión es del agente y es la correcta — un espejo se
+desincroniza, y el síntoma sería tener un hacha que el bolso no muestra.
+`puesto[ranura]` guarda la instancia, y `enRanura()` devuelve una **vista** y
+nunca la instancia cruda: colgarle los usos a la ficha del catálogo haría que las
+dos hachas volvieran a compartir durabilidad. Eso último lo comprobó el falsador
+por accidente — un parche que escribía por `enRanura()` no llegaba a la
+instancia, o sea que la vista protege de verdad.
+
+**Las instancias no entran en `_total` ni en `listar()`, y eso evita una pérdida
+de datos silenciosa.** `Construccion.guardarTodo()` recorre `listar()` y llama a
+`quitar(id, n)`: con las hachas ahí adentro, el depósito las tragaría como
+«unidades de hacha» y una receta podría fundirlas para pagar madera. Buen
+hallazgo del agente.
+
+**El intercambio es en el sitio**: lo que sale de la ranura cae en el casillero
+que deja libre lo que entra, así cambiar de hacha no reordena la grilla.
+
+### El banco de la ronda 5 se cayó a 7/9, y no era una regresión
+
+Seis aserciones de `banco-r5-fase1.mjs` se pusieron rojas. **No se le creyó al
+agente: se verificó por el camino real.** Un guion aparte con una sola `Partida`,
+un solo `Inventario` y el `Equipo` del juego, guardando y volviendo a abrir:
+**10 de 10**, incluida el hacha gastada a 32/40 en la mano, las dos herramientas
+del bolso con sus usos exactos, el peso, los recursos y la cantidad de casilleros.
+
+La causa estaba en la línea 646 del banco viejo: le pasaba a `Partida` un
+`new Inventario(38)` **distinto** del que tenía el equipo. Guardaba una grilla
+vacía mientras las herramientas vivían en otra. Con el `taller` propio eso no se
+notaba; desde que lo fabricado vive en la grilla, sí.
+
+Se arreglaron las seis y el banco de la ronda 5 volvió a **9/9 con 160
+aserciones**. Un banco rojo que nadie cree es peor que no tener banco: la próxima
+ronda no podría distinguir una rotura de verdad de ésta.
+
+### Los tres defectos del banco de la fase 2, que fueron míos
+
+1. **`pila-abierta-rota` no se veía.** La sección 1 agregaba 6 de madera blanda
+   en **una** llamada, con lo que la pila se llena dentro del mismo `agregar` y
+   la prueba pasa aunque el código no sepa completar una pila abierta de antes.
+   Van dos llamadas de 3, como en la fase 1.
+2. **El peso del objeto sólo se medía puesto.** Como `guardar()` equipa sola, la
+   aserción probaba la ranura y nunca el casillero. Ahora prueba los dos caminos
+   y que dos hachas pesen el doble que una.
+3. Y uno del falsador: el parche de durabilidad escribía por `enRanura()`, que
+   devuelve una vista, así que **decía plantar un defecto y no plantaba ninguno**
+   en lo equipado.
+
+### D9 · el costo, medido por el coordinador
+
+Alternado sin bloques, tres vueltas de cada condición, en tandas de 20 pintadas:
+
+| | medianas | |
+|---|---|---|
+| sin herramientas, 37,9 kg en 23 casillas | 0,770 · 0,705 · 0,710 ms | **0,71** |
+| con 8 herramientas, 37,6 kg en 24 casillas + 4 ranuras | 0,825 · 0,820 · 0,815 ms | **0,82** |
+
+**D9 se cumple**: con la carga exacta de la fase 1 da 0,71 contra la referencia
+de 0,775. No hay regresión.
+
+**Pero las herramientas cuestan +0,11 ms, un 15 %, y el informe decía que «no
+cuestan nada medible».** Las tres lecturas de cada condición caen en 0,015 ms
+entre sí, así que la diferencia es diez veces mayor que la dispersión: es real y
+se reproduce. No es un problema —`pintar()` corre al abrir el panel y al hacer
+clic, no por cuadro— pero el número informado no era el que hay.
+
+### Los números de la sección 7 no son los de la carta, y el agente tiene razón
+
+El banco da 1,8 % con nueve (la carta predijo 1,0 %) y **36,7 % con doce** (predijo
+19,8 %). El banco toma **las doce más livianas de todo el dataset** y la carta
+tomaba lo más liviano de cada categoría. No es la misma prueba y la del banco es
+la más dura: herramientas más livianas dejan **más presupuesto de peso** para los
+recursos, y más peso de recursos son más casilleros. Los dos umbrales de D8 se
+cumplen con margen.
+
+### Lo que arregló el coordinador, que el agente declaró y no podía tocar
+
+- **`main.js`: `equipo.alCambiar = aplicarEfectos`.** Hasta ahora nadie escuchaba
+  al equipo, así que **guardar el canasto no bajaba los kilos hasta el próximo
+  desbloqueo de tecnología**. Con la grilla se nota el doble, porque el canasto
+  guardado además ocupa un casillero: la cuenta de arriba y la de abajo del panel
+  se contradecían.
+- **`Partida.registrarMuerte()` no nombraba las herramientas perdidas.** El
+  resumen sale de `listar()`, que a propósito no ve instancias, así que la
+  pantalla de fin contaba los kilos y no decía que perdiste el hacha. La regla
+  estaba bien y el mensaje mentía por omisión. Verificado: ahora dice «Cuchillo
+  enmangado (90 usos)» y «Hacha de piedra (120 usos)» junto a la carne y la madera.
+- **`Fabricacion.estado()` no consultaba `hayLugarPara`**, así que el botón decía
+  «Hacer» con el bolso lleno y recién al apretarlo se negaba. Es la clase de
+  acción que el juego ofrece sin poder cumplir. Verificado en el navegador con la
+  grilla en 24/24 y la ranura del arma ocupada: el estado es `no_entra`, el panel
+  lo dice, y **los materiales quedan intactos**.
+
+### Lo que hay que mirar jugando
+
+1. **La grilla quedó aún más abajo del pliegue**: el panel mide 1321 px y se ven
+   617. Las cuatro ranuras son cuatro renglones fijos donde antes había tantos
+   como herramientas. Es la deuda 1 de la fase 1, empeorada, y ya son dos fases
+   pidiendo lo mismo: **el bolso tiene que abrir en el bolso.**
+2. **El número de la esquina de un casillero es la cantidad en un recurso y los
+   usos en una herramienta.** Un raspador con 60 usos y una pila de 60 juncos se
+   escriben igual; los distingue el color, la esquina cortada y la barra de
+   abajo. En la captura se lee bien, pero es la clase de cosa que se juzga
+   jugando y no mirando.
+3. **Dos antorchas comparten el sobrante de llama** (`_resto` sigue por id):
+   prender una media hora, apagarla y prender la otra le da media hora a la
+   segunda. El agente lo eligió a conciencia — llevarlo a la instancia obliga a
+   un campo más en el guardado, que es lo que forzaría a subir `VERSION`.
+4. **`equipar(id)` saca la más sana y `reparar(id)` arregla la más gastada.** Son
+   criterio, no medición. Desde el bolso el jugador siempre manda el casillero
+   exacto, así que sólo pesan cuando llama el código.
+5. **`Equipo.listar()` cambió de forma** —un renglón por instancia, con `casilla`
+   e `instancia`—. Sólo lo consumen `Bolso` y el banco, pero es un cambio de
+   contrato que D7 no había escrito.
+6. **`encerado` pesa cero.** El agente no le inventó kg, y hace bien: es el
+   agujero de dato que ya estaba.
+7. **El agente pisó el `localStorage` de la máquina** con el estado sintético del
+   último ensayo. Arranca sana, pero la partida de desarrollo que había no es la
+   que hay.

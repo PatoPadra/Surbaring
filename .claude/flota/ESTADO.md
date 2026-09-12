@@ -1,5 +1,38 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **12/9/2026 — RONDA 6, FASE 2 (`instancia`) CERRADA: dos hachas son dos
+> hachas.** Las herramientas viven en la grilla, cada una con su durabilidad;
+> `Equipo` **dejó de tener lista propia** —no hay más `taller`, la fuente es la
+> grilla más las cuatro ranuras—; lo puesto pesa pero no ocupa casillero, y
+> desequipar con el bolso lleno falla limpio. El guardado viejo entra y `VERSION`
+> sigue en 1.
+>
+> **Banco 8/8 y falsador 21 de 21 sin puntos ciegos**, después de arreglar tres
+> defectos míos: la sección que probaba la pila abierta la llenaba de una sola
+> vez, el peso del objeto sólo se medía puesto, y un parche del falsador escribía
+> por `enRanura()` —que devuelve una **vista**— y no plantaba nada.
+>
+> **El banco de la ronda 5 se cayó a 7/9 y NO era una regresión.** No se le creyó
+> al agente: se verificó por el camino real, con una sola `Partida` y un solo
+> `Inventario`, y dio 10/10 —el hacha gastada a 32/40, las dos del bolso con sus
+> usos, el peso y los casilleros—. La causa estaba en el banco viejo, que le
+> pasaba a `Partida` un inventario **distinto** del que tenía el equipo. Se
+> arregló y volvió a **9/9 con 160 aserciones**: un banco rojo que nadie cree es
+> peor que no tener banco.
+>
+> **El costo informado no reproduce, otra vez.** El informe decía que las
+> herramientas «no cuestan nada medible»; medido alternado dan **+0,11 ms, un
+> 15 %** (0,71 → 0,82), con las tres lecturas de cada condición a 0,015 ms entre
+> sí. No es un problema —`pintar()` no corre por cuadro— pero el número no era el
+> que hay. **Va dos de dos: en las dos fases el costo informado por el agente
+> cayó del lado que le favorecía.**
+>
+> Tres cosas que arregló el coordinador y el agente declaró sin poder tocar:
+> `equipo.alCambiar` no lo escuchaba nadie —guardar el canasto no bajaba los kilos
+> hasta el próximo desbloqueo—; la pantalla de muerte **no nombraba las
+> herramientas perdidas**; y `Fabricacion.estado()` ofrecía «Hacer» con el bolso
+> lleno para negarse recién al apretar.
+
 > **12/9/2026 — RONDA 6, FASE 1 (`casillero`) CERRADA: la grilla.** El bolso es
 > una grilla de **24 casilleros** que crece con la capacidad, las pilas salen del
 > peso sin una sola tabla escrita a mano, las posiciones no se compactan al

@@ -483,7 +483,9 @@ async function s4() {
   { const { eq } = nuevo(); eq.guardar('antorcha');
     const r = eq.encender('antorcha', t0);
     s.ok(r?.ok === true, 'la antorcha fabricada enciende', JSON.stringify(r));
-    s.ok(eq.puesto.mano === 'antorcha', 'y queda en la mano', eq.puesto.mano);
+    // Desde la ronda 6 fase 2 la ranura guarda la INSTANCIA y no el id: hay dos
+    // hachas posibles y un id ya no señala una sola cosa. Se compara `.id`.
+    s.ok(eq.enRanura('mano')?.id === 'antorcha', 'y queda en la mano', eq.enRanura('mano')?.id);
     const L = eq.luzActiva(t0 + 1 * H);
     if (s.ok(L && L.id === 'antorcha' && L.radio === 12 && cerca(L.horasRestantes, 0.5, 0.02),
       'a la hora: antorcha de 12 m con media hora por delante', JSON.stringify(L))) feliz++;
@@ -496,7 +498,7 @@ async function s4() {
     const usos0 = eq.usosDe('candil_grasa');
     const r = eq.encender('candil_grasa', t0);
     s.ok(r?.ok === true, 'el candil fabricado enciende', JSON.stringify(r));
-    s.ok(eq.puesto.mano === 'candil_grasa', 'y queda en la mano', eq.puesto.mano);
+    s.ok(eq.enRanura('mano')?.id === 'candil_grasa', 'y queda en la mano', eq.enRanura('mano')?.id);
     const L = eq.luzActiva(t0 + 5 * H);
     if (s.ok(L && L.id === 'candil_grasa' && L.radio === 6 && cerca(L.horasRestantes, 1, 0.02), 'a las 5 h: candil de 6 m con una hora por delante', JSON.stringify(L))) feliz++;
     s.ok(eq.luzActiva(t0 + 6 * H + 1000) === null, 'pasadas las 6 h se apagó');
@@ -544,11 +546,19 @@ async function s4() {
     eq.guardar('candil_grasa'); eq.encender('candil_grasa', t0); eq.luzActiva(t0 + 6 * H + 1000);
     const t1 = t0 + 7 * H;
     eq.guardar('antorcha'); eq.encender('antorcha', t1);
+    // Desde la ronda 6 fase 2 lo fabricado y NO puesto vive en la grilla del
+    // inventario, no en un `taller` propio del equipo. El viaje de ida y vuelta
+    // tiene que llevar las dos mitades, que es exactamente lo que hace
+    // `Partida`: sin la grilla se pierde lo guardado y el banco leería como
+    // defecto lo que es su propio recorte.
     const d = JSON.parse(JSON.stringify(eq.serializar()));
-    const otro = new Equipo(datos, { inventario: new Inventario(38) });
+    const dInv = JSON.parse(JSON.stringify(eq.inventario.serializar()));
+    const invOtro = new Inventario(38);
+    const otro = new Equipo(datos, { inventario: invOtro });
+    invOtro.reponer(dInv);
     otro.reponer(d);
     s.ok(otro.tiene('antorcha') && otro.tiene('candil_grasa'), 'reponer conserva lo fabricado');
-    s.ok(otro.puesto.mano === 'antorcha', 'reponer conserva lo que está en la mano', otro.puesto.mano);
+    s.ok(otro.enRanura('mano')?.id === 'antorcha', 'reponer conserva lo que está en la mano', otro.enRanura('mano')?.id);
     s.ok(otro.usosDe('candil_grasa') === eq.usosDe('candil_grasa'), 'reponer conserva los usos', `${eq.usosDe('candil_grasa')} → ${otro.usosDe('candil_grasa')}`);
     const L = otro.luzActiva(t1 + 1 * H);
     if (s.ok(L && L.radio === 12 && cerca(L.horasRestantes, 0.5, 0.02), 'reponer conserva la llama con su reloj del mundo', JSON.stringify(L))) feliz++;
@@ -641,9 +651,12 @@ async function s6() {
   const { Partida } = await import(urlSrc('systems/Partida.js'));
   const t1 = Date.UTC(2024, 5, 20, 21, 30, 0);
 
+  // `Partida` tiene que recibir EL MISMO inventario que tiene el equipo, como en
+  // `main.js`. Con uno propio guardaba una grilla vacía mientras las
+  // herramientas vivían en otra, y desde la ronda 6 eso pierde lo fabricado.
   const deps = (tiempoMs, equipo) => ({
     jugador: { posicion: new THREE.Vector3(1, 2, 3), giro: 0, salud: 100, energia: 100, hambre: 85, sed: 85, temperatura: 36.6, horasVividas: 0 },
-    inventario: new Inventario(38),
+    inventario: equipo?.inventario ?? new Inventario(38),
     saberes: { puntos: 0, ganadosTotales: 0, desbloqueadas: new Set() },
     codice: { descubiertas: new Set(), identificadas: new Set(), lugares: new Set() },
     construccion: { obras: [], catalogo: [] },
@@ -676,7 +689,7 @@ async function s6() {
   s.ok(cargo === true && tiro === null, 'la partida carga', tiro || cargo);
   s.ok(relojEnReponer.length >= 1, 'cargar() llama a equipo.reponer()', relojEnReponer.length);
   s.ok(relojEnReponer.length >= 1 && relojEnReponer.every((ms) => ms === t1), 'y lo llama con el reloj del mundo ya repuesto', relojEnReponer.map((ms) => new Date(ms).toISOString()).join(' · '));
-  s.ok(eqB.tiene('antorcha') && eqB.puesto.mano === 'antorcha', 'el equipo sobrevive a cerrar la pestaña', eqB.puesto.mano);
+  s.ok(eqB.tiene('antorcha') && eqB.enRanura('mano')?.id === 'antorcha', 'el equipo sobrevive a cerrar la pestaña', eqB.enRanura('mano')?.id);
   const L = eqB.luzActiva?.(t1 + 0.5 * H);
   const felizLlama = s.ok(L && L.radio === 12 && cerca(L.horasRestantes, 1, 0.02), 'y la antorcha sigue ardiendo con su reloj', JSON.stringify(L));
 

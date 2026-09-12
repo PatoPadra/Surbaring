@@ -101,6 +101,18 @@ export class Partida {
   registrarMuerte(motivo) {
     const p = this.jugador.posicion;
     const perdido = this.inventario.listar();
+    // Las herramientas del bolso NO salen en `listar()`, y es a propósito: si
+    // salieran, el depósito de `Construccion.guardarTodo()` las tragaría como
+    // «unidades de hacha» y una receta podría fundirlas para pagar madera. Pero
+    // `vaciar()` sí se las lleva, así que sin esto la pantalla de fin contaba
+    // los kilos y **no decía que perdiste el hacha**: la regla estaba bien y el
+    // mensaje mentía por omisión.
+    const herramientas = (this.inventario.instancias?.() || []).map(({ cosa }) => ({
+      id: cosa.id,
+      nombre: this._equipo?.definicion?.(cosa.id)?.nombre || cosa.id,
+      cantidad: 1,
+      usos: cosa.usos,
+    }));
     const kg = this.inventario.pesoKg;
     this.inventario.vaciar();
     this.inventario.alCambiar?.();
@@ -108,7 +120,10 @@ export class Partida {
     const destino = this.baseCercana(p.x, p.z);
     this.ultimaMuerte = {
       x: p.x, z: p.z, causa: motivo?.causa || 'agotamiento',
-      perdido: perdido.map(i => ({ id: i.id, nombre: i.nombre, cantidad: i.cantidad })),
+      perdido: [
+        ...herramientas,
+        ...perdido.map(i => ({ id: i.id, nombre: i.nombre, cantidad: i.cantidad })),
+      ],
       kg: +kg.toFixed(1),
       base: destino?.base?.obra?.nombre || null,
       distancia: destino ? Math.round(destino.distancia) : null,

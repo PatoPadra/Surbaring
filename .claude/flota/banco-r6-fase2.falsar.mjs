@@ -136,7 +136,9 @@ const DEFECTOS = [
     id: 'objeto-pesa-por-omision',
     que: 'el objeto pesa el 0,5 kg por omisión de pesoDe en vez de su kg fichado',
     archivo: 'systems/Inventario.js',
-    caeEn: 'y no el 0,5 por omisión',
+    // Contra la asercion de la herramienta GUARDADA: `guardar()` equipa sola,
+    // asi que el parche --que solo toca la grilla-- no llega a la primera.
+    caeEn: 'guardada en un casillero pesa los mismos',
     parche: `{ const _p = Object.getOwnPropertyDescriptor(Inventario.prototype, 'pesoKg');
   Object.defineProperty(Inventario.prototype, 'pesoKg', { configurable: true, get() {
     let extra = 0;
@@ -240,8 +242,13 @@ const DEFECTOS = [
     parche: `{ const _r = Equipo.prototype.reponer;
   Equipo.prototype.reponer = function (d) {
     const r = _r.call(this, d);
+    // Por puesto[ranura] y no por enRanura(): eso devuelve una VISTA, y
+    // escribirle los usos no llega a la instancia. Buen diseno del codigo y mal
+    // parche del falsador -- decia plantar un defecto y no plantaba ninguno en
+    // lo equipado. Sin acentos ni comillas invertidas: esto vive adentro de un
+    // template literal y una comilla invertida corta la cadena.
     for (const ran of ['mano','arma','abrigo','espalda']) {
-      const p = this.enRanura?.(ran);
+      const p = this.puesto?.[ran];
       if (p && p.usos !== undefined) p.usos = this.definicion(p.id)?.durabilidad ?? p.usos;
     }
     for (const c of (this.inventario?.casillas || []))

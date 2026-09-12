@@ -75,6 +75,19 @@ export class Fabricacion {
     const est = this.estacion(obj);
     if (!est.ok) return { estado: 'falta_estacion', motivo: est.motivo };
 
+    // Sin lugar donde ponerla no está lista, y hay que decirlo ACÁ y no recién
+    // al apretar: `estado()` es lo que decide si el botón dice «Hacer» o «No», y
+    // un botón que se ofrece y después se niega es la clase de acción que el
+    // juego promete sin poder cumplir. `fabricar()` lo vuelve a comprobar antes
+    // de consumir nada, porque entre que se dibuja el panel y se aprieta el
+    // botón el bolso puede haberse llenado.
+    if (!obj.produce && this.equipo?.hayLugarPara && !this.equipo.hayLugarPara(obj.id)) {
+      return {
+        estado: 'no_entra',
+        motivo: 'No tenés dónde ponerla: soltá algo o guardá lo que llevás puesto.',
+      };
+    }
+
     return { estado: 'lista' };
   }
 
@@ -106,6 +119,17 @@ export class Fabricacion {
       if (gana - suelta > libre) {
         return { estado: 'no_entra', motivo: 'No te entra en el bolso: soltá algo primero.' };
       }
+    } else if (this.equipo?.hayLugarPara && !this.equipo.hayLugarPara(obj.id)) {
+      // La misma comprobación, del otro lado del mostrador. Desde que las
+      // herramientas son instancias con casillero propio, fabricar la segunda
+      // hacha puede no tener dónde ir; antes el taller era un `Map` por id y no
+      // había forma de que fallara —a costa de que la segunda hacha no
+      // existiera—. Se mira ANTES de consumir: quedarse sin materiales y sin
+      // objeto es robarle al jugador.
+      return {
+        estado: 'no_entra',
+        motivo: 'No te queda ni casillero libre ni la ranura donde se lleva: soltá algo primero.',
+      };
     }
 
     for (const m of obj.materiales || []) {
@@ -118,8 +142,12 @@ export class Fabricacion {
         const n = this.inventario.agregar(p.recurso, p.cantidad);
         salida.push({ recurso: p.recurso, cantidad: n });
       }
-    } else {
-      this.equipo.guardar(obj.id);
+    } else if (!this.equipo.guardar(obj.id)) {
+      // No debería pasar: `hayLugarPara` lo dijo hace tres líneas y en el medio
+      // sólo se consumieron materiales, que liberan casilleros y nunca los
+      // ocupan. Si igual pasa, se dice; un `guardar()` cuyo false nadie mira es
+      // exactamente el agujero por donde el objeto se perdía en silencio.
+      return { estado: 'no_entra', motivo: `${obj.nombre} salió pero no hubo dónde ponerla.` };
     }
 
     this.alCambiar?.();

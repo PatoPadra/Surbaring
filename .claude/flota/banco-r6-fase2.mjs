@@ -112,7 +112,12 @@ async function fase1() {
   s.ok(R.pilaDe(0.5) === 5, 'la madera blanda sigue apilando de a 5', R.pilaDe(0.5));
   s.ok(R.casillasPara(68) === 42, 'la rastra sigue dando 42', R.casillasPara(68));
 
-  inv.agregar('madera_blanda', 6);
+  // DOS llamadas de 3, no una de 6, y la diferencia es todo: pidiendo 6 de una
+  // vez la pila se llena dentro del mismo `agregar` y la prueba pasa aunque el
+  // código no sepa completar una pila que ya estaba abierta de antes. El
+  // falsador lo mostró: escondiéndole las pilas abiertas, el banco seguía verde.
+  inv.agregar('madera_blanda', 3);
+  inv.agregar('madera_blanda', 3);
   const mb = inv.casillas.filter(c => c?.id === 'madera_blanda');
   s.ok(mb.length === 2 && mb[0].n === 5 && mb[1].n === 1,
     'se sigue completando la pila abierta antes de abrir casillero', mb.map(c => c.n).join('+'));
@@ -251,7 +256,16 @@ async function instancias() {
   const kg0 = i2.pesoKg;
   e2.guardar(HACHA);
   s.ok(Math.abs(i2.pesoKg - kg0 - kgHacha) < 1e-9,
-    `el hacha pesa sus ${kgHacha} kg y no el 0,5 por omisión`, i2.pesoKg.toFixed(3));
+    `puesta, el hacha pesa sus ${kgHacha} kg y no el 0,5 por omisión`, i2.pesoKg.toFixed(3));
+  // Y EN LA GRILLA también, que es el otro camino. Hacían falta las dos: como
+  // `guardar()` equipa sola, la de arriba sólo probaba la ranura, y un peso mal
+  // calculado para lo que está en el bolso pasaba entero. Lo mostró el falsador.
+  e2.desequipar('mano');
+  s.ok(Math.abs(i2.pesoKg - kg0 - kgHacha) < 1e-9,
+    `guardada en un casillero pesa los mismos ${kgHacha} kg`, i2.pesoKg.toFixed(3));
+  e2.guardar(HACHA);
+  s.ok(Math.abs(i2.pesoKg - kg0 - kgHacha * 2) < 1e-9,
+    'y dos hachas pesan el doble que una', i2.pesoKg.toFixed(3));
 
   return s;
 }
