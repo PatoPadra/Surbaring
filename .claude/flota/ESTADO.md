@@ -1,5 +1,31 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **12/9/2026 — RONDA 6, FASE 1 (`casillero`) CERRADA: la grilla.** El bolso es
+> una grilla de **24 casilleros** que crece con la capacidad, las pilas salen del
+> peso sin una sola tabla escrita a mano, las posiciones no se compactan al
+> sacar, y mover, partir y juntar no pierden un gramo. **El guardado viejo entra
+> y `VERSION` sigue en 1.** Los 75 sitios de llamada en 16 archivos no se
+> tocaron: la API de afuera es la misma.
+>
+> **Banco 7/7 con 118 aserciones y falsador 24 de 24, todos cazados por la
+> aserción declarada: cero puntos ciegos.** Es el mejor resultado de falsador de
+> todas las rondas, y costó: **cuatro de los defectos que encontró eran del
+> banco**, no del código. El más caro fue una aserción imposible —le puse al
+> bolso 999 kg para «sacar del medio» el tope de peso, sin ver que las casillas
+> se derivan de la capacidad, así que pedía llenar 630 casilleros con las 42
+> fichas livianas que existen. **El agente lo demostró en vez de acomodar su
+> código**, que es exactamente lo que tiene que hacer un agente con un banco
+> ajeno.
+>
+> **C10 no reproduce.** El agente informó que la grilla sale a 0,58× el costo de
+> la lista. Medido por el coordinador alternando A/B/A/B con la misma carga y en
+> tandas de 20 pintadas —el reloj cuantiza a 0,1 ms y una sola pintada no se
+> puede medir—, la lista da 0,76 ms de mediana y la grilla 0,775: **+2 %, no
+> −42 %**. No hay regresión, pero la ganancia informada no existe.
+>
+> *Un informe que dice un número redondo a favor propio es el que hay que volver
+> a medir. Éste dio al revés, y el resto del informe era honesto.*
+
 > **12/9/2026 — RONDA 6 ABIERTA: el inventario de casilleros.** Estilo Diablo 2
 > o Rust, pedido por el dueño. Rama `mejoras/ronda6-inventario`, sacada de
 > `mejoras/ronda5-graficos`. **La ronda 5 sigue sin fusionarse a `main` y sigue

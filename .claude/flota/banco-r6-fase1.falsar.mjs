@@ -145,13 +145,20 @@ const DEFECTOS = [
     id: 'no-completa-la-pila',
     que: 'cada agregar abre casilla nueva en vez de completar la abierta',
     archivo: 'systems/Inventario.js',
-    caeEn: '3 + 3 con pila de 5 ocupa dos casillas',
+    // Con el defecto puesto siguen siendo dos casillas —[3,3] en vez de
+    // [5,1]—, asi que la que cae es la que mira el contenido, no la cuenta.
+    caeEn: 'la primera queda llena',
     // Se le esconden las pilas abiertas cambiándoles el id un instante: la
     // implementación no encuentra dónde juntar y abre casilla nueva.
+    //
+    // Sólo las del MISMO recurso. Escondiéndolas todas —como estaba— el parche
+    // le mentía además al peso y a las equivalencias, y el banco caía por la
+    // sección 1 en vez de por la que este defecto ataca: el falsador decía «lo
+    // vio por otro motivo», que es medio ver.
     parche: `{ const _a = Inventario.prototype.agregar;
   Inventario.prototype.agregar = function (r, n) {
     const tocadas = [];
-    for (const c of this.casillas) if (c) { tocadas.push([c, c.id]); c.id = '__oculto__' + c.id; }
+    for (const c of this.casillas) if (c && c.id === r) { tocadas.push([c, c.id]); c.id = '__oculto__' + c.id; }
     const e = _a.call(this, r, n);
     for (const [c, id] of tocadas) c.id = id;
     return e; }; }`,
@@ -188,7 +195,7 @@ const DEFECTOS = [
     id: 'achicar-pierde',
     que: 'bajar la capacidad tira lo que quedaba en las casillas de más',
     archivo: 'systems/Inventario.js',
-    caeEn: 'ni al volver a achicar',
+    caeEn: 'ni una casilla ocupada',
     parche: `Inventario.prototype.ajustarCasillas = function () {
     const n = Math.max(18, 6 * Math.round(this.capacidadKg * 0.63 / 6));
     this.casillas.length = n; };`,
@@ -221,7 +228,13 @@ const DEFECTOS = [
     id: 'partir-duplica',
     que: 'partir deja la mitad y además la copia entera: se crea materia',
     archivo: 'systems/Inventario.js',
-    caeEn: 'y sin perder una sola',
+    // Se declara «partidas por la mitad» y no «sin perder una sola» a
+    // sabiendas: el parche escribe `casillas[i].n` a mano, y la implementación
+    // lleva el total por recurso en un contador que recuenta cuando algo se
+    // mueve. Escribiendo la casilla por atrás, `cantidad()` no se entera, pero
+    // `pesoKg` y la forma de las pilas sí. La aserción que cae es la que mira
+    // la grilla, que es donde el defecto de verdad se ve.
+    caeEn: 'partidas por la mitad',
     parche: `{ const _p = Inventario.prototype.partir;
   Inventario.prototype.partir = function (i) {
     const antes = this.casillas[i]?.n ?? 0;
@@ -243,9 +256,13 @@ const DEFECTOS = [
   },
   {
     id: 'mover-al-azar-rompe',
-    que: 'mover a una casilla que no existe crea un agujero fuera de la grilla',
+    que: 'mover a una casilla que no existe tira una excepción',
     archivo: 'systems/Inventario.js',
-    caeEn: 'ni una excepción en 400 movimientos',
+    // Se declaraba contra los 400 movimientos al azar, y ésa fue justamente la
+    // lección: el sorteo nunca sale del rango, así que el defecto no lo podía
+    // ver nadie. La aserción que lo ve es la de índices imposibles, que se
+    // agregó al banco por culpa de este mismo defecto.
+    caeEn: 'ni mover ni partir tiran con un índice imposible',
     parche: `{ const _m = Inventario.prototype.mover;
   Inventario.prototype.mover = function (a, b) {
     if (b >= this.casillas.length || b < 0) throw new Error('casilla ' + b + ' fuera de la grilla');
@@ -268,10 +285,18 @@ const DEFECTOS = [
     que: 'serializar guarda las pilas compactadas y pierde las posiciones',
     archivo: 'systems/Inventario.js',
     caeEn: 'ida y vuelta deja la grilla idéntica',
+    // Compacta la grilla venga en la forma que venga. La primera versión sólo
+    // sabía compactar un array pelado, y la implementación devuelve
+    // `{ casillas: [...] }`: el parche no tocaba nada y el falsador cantaba «NO
+    // LO VIO» contra un defecto que en realidad nunca llegó a plantarse. Un
+    // falsador que no planta lo que dice es peor que no tenerlo.
     parche: `{ const _s = Inventario.prototype.serializar;
+  const compactar = (a) => a.filter(Boolean);
   Inventario.prototype.serializar = function () {
     const d = _s.call(this);
-    return Array.isArray(d) ? d.filter(Boolean) : d; }; }`,
+    if (Array.isArray(d)) return compactar(d);
+    if (d && Array.isArray(d.casillas)) return { ...d, casillas: compactar(d.casillas) };
+    return d; }; }`,
   },
   {
     id: 'muerte-no-vacia',

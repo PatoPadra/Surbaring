@@ -102,7 +102,7 @@ export class Partida {
     const p = this.jugador.posicion;
     const perdido = this.inventario.listar();
     const kg = this.inventario.pesoKg;
-    this.inventario.items.clear();
+    this.inventario.vaciar();
     this.inventario.alCambiar?.();
 
     const destino = this.baseCercana(p.x, p.z);
@@ -175,7 +175,7 @@ export class Partida {
         temperatura: j.temperatura, horasVividas: j.horasVividas,
       },
       tiempo: { ms: this.tiempo?.fecha?.getTime?.() ?? null },
-      inventario: [...this.inventario.items],
+      inventario: this.inventario.serializar(),
       saberes: {
         puntos: this.saberes.puntos,
         ganadosTotales: this.saberes.ganadosTotales,
@@ -308,7 +308,7 @@ export class Partida {
       }
       if (d.tiempo?.ms && this.tiempo?.fecha) this.tiempo.fecha.setTime(d.tiempo.ms);
 
-      this.inventario.items = new Map(d.inventario || []);
+      this.inventario.reponer(d.inventario);
       this.inventario.alCambiar?.();
 
       const s = d.saberes || {};

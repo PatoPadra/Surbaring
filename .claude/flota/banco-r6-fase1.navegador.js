@@ -17,6 +17,11 @@
  *   const S = window.SurviBar;
  *   await bancoR6Fase1();
  */
+function nombreDeLaCasilla(inv, i) {
+  const c = inv.casillas?.[i];
+  return c ? (window.SurviBar?.inventario?.listar().find(x => x.id === c.id)?.nombre || c.id) : '';
+}
+
 window.bancoR6Fase1 = async function bancoR6Fase1({ vueltas = 240, calentar = 40 } = {}) {
   const S = window.SurviBar;
   if (!S) return console.error('window.SurviBar no existe: ¿entraste al parque?');
@@ -49,7 +54,9 @@ window.bancoR6Fase1 = async function bancoR6Fase1({ vueltas = 240, calentar = 40
     const t = performance.now();
     bolso.pintar();
     ms.push(performance.now() - t);
-    if (i % 40 === 39) await new Promise(r => requestAnimationFrame(r));
+    // setTimeout y no requestAnimationFrame: con la pestana en segundo plano
+    // el rAF no dispara y la medicion se cuelga para siempre. Costo esa corrida.
+    if (i % 40 === 39) await new Promise(r => setTimeout(r, 0));
   }
   ms.sort((a, b) => a - b);
   const p = (q) => ms[Math.floor(q * (ms.length - 1))];
@@ -63,14 +70,13 @@ window.bancoR6Fase1 = async function bancoR6Fase1({ vueltas = 240, calentar = 40
   ok(panel && getComputedStyle(panel).display !== 'none', 'y está abierto');
 
   const texto = panel?.textContent || '';
-  // Lo que el bolso ya sabía hacer y no se puede perder con la grilla.
-  for (const [q, nombre] of [['Tirar', 'tirar'], ['kg', 'el peso']])
-    ok(texto.includes(q), `el bolso sigue diciendo «${nombre}»`);
-  ok(panel?.querySelector('[data-accion="tirar"]'), 'sigue el botón de tirar');
   ok(/\d+[,.]\d\s*\/\s*\d+\s*kg/.test(texto), 'sigue la barra de peso', texto.match(/[\d.,]+\s*\/\s*\d+\s*kg/)?.[0]);
 
   if (inv.casillas) {
-    const celdas = panel?.querySelectorAll('[data-casilla]') || [];
+    // `data-cs`, que es como quedó marcada la casilla. El compañero buscaba
+    // `data-casilla`, un nombre que el contrato nunca fijó y que el jefe dio por
+    // sentado: seis fallos que no eran del agente.
+    const celdas = panel?.querySelectorAll('[data-cs]') || [];
     ok(celdas.length === inv.casillas.length,
       `se dibujan las ${inv.casillas.length} casillas`, celdas.length);
     const llenas = [...celdas].filter(c => c.textContent.trim()).length;
@@ -81,12 +87,30 @@ window.bancoR6Fase1 = async function bancoR6Fase1({ vueltas = 240, calentar = 40
     const conNumero = [...celdas].filter(c => /\d/.test(c.textContent)).length;
     ok(conNumero >= inv.casillas.filter(c => c && c.n > 1).length,
       'las pilas dicen su cantidad', conNumero);
+    // Los botones que tenía cada renglón de la lista vieja ahora viven en un
+    // panel de detalle que se llena al apuntar una casilla. Hay que apuntar
+    // primero: sin eso el panel está vacío y «no está Tirar» es un falso rojo.
+    const iAlgo = inv.casillas.findIndex(Boolean);
+    celdas[iAlgo]?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    celdas[iAlgo]?.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    const conDetalle = panel?.textContent || '';
+    ok(conDetalle.includes('Tirar'), 'apuntando una casilla aparece «Tirar»');
+    ok(!!panel?.querySelector('[data-accion="tirar"]'), 'y el botón de tirar existe');
+    ok(conDetalle.includes(nombreDeLaCasilla(inv, iAlgo)),
+      'el detalle dice qué hay en la casilla apuntada', nombreDeLaCasilla(inv, iAlgo));
+
     // Clic y clic: tomar de una llena y poner en una vacía.
     const iLlena = inv.casillas.findIndex(Boolean);
     const iVacia = inv.casillas.findIndex(c => !c);
     if (iLlena >= 0 && iVacia >= 0 && celdas.length) {
       const antesKg = inv.pesoKg, queHabia = { ...inv.casillas[iLlena] };
-      celdas[iLlena]?.click(); celdas[iVacia]?.click();
+      // El DOM se reconsulta entre los dos clics: tomar repinta el panel entero,
+      // así que el nodo de la segunda casilla que teníamos en la mano quedó
+      // desprendido y clickearlo no hace nada. El compañero daba «no movió»
+      // contra una interfaz que movía perfecto.
+      const cel = () => panel.querySelectorAll('[data-cs]');
+      cel()[iLlena]?.click();
+      cel()[iVacia]?.click();
       ok(Math.abs(inv.pesoKg - antesKg) < 1e-9, 'clic y clic no cambia el peso', inv.pesoKg);
       ok(inv.casillas[iVacia]?.id === queHabia.id,
         'clic y clic mueve de verdad', `${queHabia.id} -> casilla ${iVacia}: ${inv.casillas[iVacia]?.id}`);

@@ -219,3 +219,103 @@ Sigue viva la lista de RONDA5.md, entera y sin tocar. Se le suman:
     coordinador.
 13. **Los cuatro contenedores dan kg y nada más.** Con la grilla, `odre_cuero`
     («guarda 6 de agua») pide ser un contenedor de verdad y no un número suelto.
+
+---
+
+## FASE 1 CERRADA — 12/9/2026
+
+**Banco 7/7 con 118 aserciones. Falsador 24 de 24, todos cazados por la aserción
+declarada: cero puntos ciegos.** `vite build` limpio. El agente tocó sus cuatro
+archivos y ninguno más.
+
+### Lo que quedó
+
+`Recursos.js` sumó `pilaDe` y `casillasPara`, y nada más: ni una ficha ni una
+equivalencia cambiaron. `Inventario.js` se reescribió con `casillas` como única
+fuente de verdad y un caché de totales que **se recuenta entero** después de cada
+cambio en vez de actualizarse al vuelo — la decisión es del agente y es la
+correcta: un caché que se toca a mano en siete lugares se desincroniza en el
+octavo, y el síntoma sería que el bolso dice cuatro leñas y la grilla muestra
+tres.
+
+`capacidadKg` pasó a ser propiedad con `set`, que llama a `ajustarCasillas()`.
+Por eso **la fase no necesitó una sola línea de cableado en `main.js`**:
+`aplicarEfectos()` ya escribía `inventario.capacidadKg = …` derecho, y sin el
+setter el canasto habría dado kilos y ningún casillero hasta el próximo arranque.
+Se comprobó que `aplicarEfectos()` corre en tres puntos sueltos y no por cuadro.
+
+`quitar` descuenta **desde el final hacia adelante**, así los restos del fondo se
+van primero y las pilas llenas del principio quedan enteras. `mover` sobre una
+pila ya llena devuelve `false` a propósito, para que la interfaz no suelte lo que
+tiene tomado creyendo que lo puso.
+
+### Los cuatro defectos del banco, que fueron míos
+
+1. **La aserción imposible.** Para sacar del medio el tope de peso le puse al
+   bolso 999 kg de capacidad — el reflejo de cuando peso y casillas eran cosas
+   separadas. Pero las casillas se derivan de la capacidad: 999 kg dan 630
+   casilleros, y hay 42 fichas livianas. La aserción pedía llenar 630 casillas
+   sacando de una bolsa de 42. **El agente lo demostró en vez de acomodar su
+   código**, que es exactamente lo que tiene que hacer. La forma correcta de
+   dejar el peso afuera no es agrandar el bolso sino llenarlo de plumas.
+2. **`achicar-pierde` no se veía**: la carga de prueba usaba seis casillas, así
+   que recortar de 42 a 24 no tocaba ninguna ocupada. Ahora la carga pasa de la
+   casilla 24 a propósito.
+3. **`serializar-compacta` no se veía**: las casillas de la prueba estaban
+   ocupadas de corrido desde la cero, y sin un hueco en el medio compactar da
+   idéntico resultado que respetar las posiciones.
+4. **La prueba de las 500 cargas perdonaba una grilla estrangulada.** Sólo
+   contaba fallo si además el peso estaba por debajo del 90 % del tope, y con la
+   grilla ahogada a 18 casilleros las cargas llegaban a 34 de 38 kg y pasaban. El
+   fallo es que la grilla se llene mientras el bolso todavía quiere peso, y punto.
+
+Y dos del falsador: un parche que decía compactar el guardado **nunca se
+plantaba** porque buscaba un array y `serializar()` devuelve `{casillas:[…]}`
+—un falsador que no planta lo que dice es peor que no tenerlo—, y otro que
+escondía todas las pilas en vez de las del mismo recurso, con lo que el banco
+caía por la sección equivocada.
+
+### C10 · el costo, medido por el coordinador y no por el informe
+
+El agente informó que la grilla sale a **0,58× el costo** de la lista. **No
+reproduce.** Medido alternando A/B/A/B con `git stash`, la misma carga de 37,9 kg
+y la misma semilla, en tandas de 20 pintadas para tener resolución de verdad —el
+reloj del navegador cuantiza a 0,1 ms y una sola pintada no se puede medir:
+
+| | mediana de `pintar()` |
+|---|---|
+| lista vieja | 0,755 · 0,765 · 0,760 · 0,765 ms |
+| grilla nueva | 0,775 · 0,775 · 0,765 ms |
+
+**La grilla sale +0,015 ms, o sea un 2 % más cara, no un 42 % más barata.** C10
+se cumple —no hay regresión— pero la ganancia informada no existe. La medición
+del agente decía «los dos bolsos vivos a la vez en la página», que es otra cosa.
+
+### Verificado en pantalla
+
+Compañero de navegador 11/11 contra el juego corriendo: 24 casilleros dibujados
+para 24 casillas, 23 llenas para 23 ocupadas, las cantidades escritas, el detalle
+aparece al apuntar con «Tirar», y clic-clic mueve sin cambiar un gramo.
+
+Tres defectos del compañero, todos míos: buscaba `data-casilla` cuando la grilla
+marca `data-cs` —un nombre que el contrato nunca fijó y que di por sentado—,
+usaba `requestAnimationFrame` para ceder, que con la pestaña oculta no dispara
+nunca, y guardaba los nodos entre los dos clics, cuando **tomar repinta el panel
+entero** y el segundo nodo quedaba desprendido.
+
+### Lo que hay que mirar jugando
+
+1. **La grilla queda debajo del pliegue.** El panel abre en el taller y la
+   primera casilla está a 718 px de arriba, con 618 visibles: se abre el bolso y
+   lo que se ve es el taller. Es herencia del orden viejo, pero ahora el bolso
+   tiene nombre y no se ve.
+2. **Las abreviaturas de tres letras se repiten.** En la captura hay cuatro «Arc»
+   y dos «Tos» en casillas distintas. Es el argumento de la fase 3 hecho visible.
+3. **«Tirar 1» y «Todo» son del recurso, no de la casilla.** Están sobre el
+   detalle de un casillero pero llaman a `quitar(id, n)`, que opera sobre el
+   total: con doce maderas en tres pilas, «Todo» tira las doce. Lo dice el
+   detalle en texto, pero es la costura más visible entre la grilla y la API vieja.
+4. **Tomar es marcar, no levantar**: no hay pila pegada al cursor.
+5. **`lleno` sigue siendo sólo el peso.** Con los 24 casilleros ocupados y 10 kg
+   libres, `lleno === false`. Es lo que pedía C1 al pie de la letra. El agente
+   agregó `sinCasillas` y **no lo usa nadie**: queda para decidir.

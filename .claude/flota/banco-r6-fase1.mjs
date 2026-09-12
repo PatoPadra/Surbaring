@@ -255,8 +255,19 @@ async function topes() {
   }
 
   // LA GRILLA MUERDE: con peso de sobra, la casilla 25 no existe.
-  const ancho = await nuevoInv(999);
-  ancho.capacidadKg = 999;
+  //
+  // Acá el banco se equivocó primero, y vale escribirlo. Para «sacar del medio»
+  // el tope de peso le puse al bolso una capacidad de 999 kg — el reflejo de
+  // cuando el peso y las casillas eran cosas separadas. Pero **las casillas se
+  // derivan de la capacidad**: 999 kg dan 630 casilleros, y en el registro hay
+  // 42 fichas livianas, así que la aserción pedía meter 630 recursos distintos
+  // sacándolos de una bolsa de 42. Imposible con cualquier implementación
+  // correcta, y el agente lo demostró en vez de acomodar su código.
+  //
+  // La forma correcta de dejar el peso afuera no es agrandar el bolso sino
+  // llenarlo de plumas: con la grilla de siempre y sólo cosas de menos de 0,4
+  // kg, las 24 casillas se acaban con 1,1 kg encima de un tope de 38.
+  const ancho = await nuevoInv(38);
   const cuantas = ancho.casillas.length;
   const distintos = f.filter(r => r.kg <= 0.4).slice(0, cuantas + 6);
   let metidos = 0, rechazado = null;
@@ -272,22 +283,32 @@ async function topes() {
   // LA GRILLA NO BLOQUEA: 500 cargas mixtas al azar de 38 kg tienen que llegar
   // al tope de peso sin quedarse antes sin casillas. Es la medición de RONDA6.md
   // convertida en aserción: mixto máx 22 casillas < 24.
+  //
+  // La cuenta se llena como en RONDA6.md y no de a pilas enteras, y eso importa:
+  // pedir siempre la pila completa mete ~3 kg por casilla, con lo que 38 kg
+  // entran en trece y la aserción se vuelve floja. El falsador lo mostró — con
+  // la grilla estrangulada a 18 casillas esta prueba seguía verde. Una carga de
+  // verdad se junta de a lo que se encuentra, y ahí es donde llega a 22.
   const rnd = azar(20260912);
   let peor = 0, fallidas = 0, ejemplo = '';
   for (let v = 0; v < 500; v++) {
     const i2 = await nuevoInv(38);
     let vueltas = 0;
     while (i2.pesoKg < 38 * 0.95 && vueltas++ < 400) {
-      const r = f[Math.floor(rnd() * f.length)];
-      const n = i2.agregar(r.id, R.pilaDe ? R.pilaDe(r.kg) : 1);
-      if (n === 0 && i2.pesoKg < 38 * 0.9) {
-        // no entró, y no fue por peso: se quedó sin casillas
-        if (i2.casillas.every(Boolean)) {
-          fallidas++;
-          if (!ejemplo) ejemplo = `${i2.pesoKg.toFixed(1)} kg en ${i2.casillas.length} casillas`;
-          break;
-        }
+      // El fallo es que la grilla se llene mientras el bolso todavía quiere
+      // peso, y punto. Antes esto se contaba sólo si además el peso estaba por
+      // debajo del 90 % del tope, y esa tolerancia se comía el defecto: con la
+      // grilla estrangulada a 18 casillas las cargas llegaban a 34 de 38 kg y
+      // la prueba las daba por buenas. Lo cazó el falsador.
+      if (i2.casillas.every(Boolean)) {
+        fallidas++;
+        if (!ejemplo) ejemplo = `${i2.pesoKg.toFixed(1)} de 38 kg con las ${i2.casillas.length} casillas llenas`;
+        break;
       }
+      const r = f[Math.floor(rnd() * f.length)];
+      const pila = R.pilaDe ? R.pilaDe(r.kg) : 1;
+      const pide = Math.min(pila, Math.max(1, Math.floor((38 - i2.pesoKg) / r.kg)));
+      i2.agregar(r.id, pide);
     }
     peor = Math.max(peor, i2.casillas.filter(Boolean).length);
   }
@@ -342,17 +363,31 @@ async function posiciones() {
   s.ok(inv2.casillas[idx2]?.id === 'yesca', 'lo nuevo entra en el hueco', inv2.casillas[idx2]?.id);
 
   // La capacidad sube en caliente —la cestería, la mochila— y no se pierde nada.
-  const inv3 = await nuevoInv(38);
-  for (const id of seis) inv3.agregar(id, 2);
+  //
+  // La carga tiene que pasar de la casilla 24, o la prueba no prueba: con seis
+  // recursos en las seis primeras casillas, achicar de 42 a 24 no toca ninguna
+  // ocupada y el banco quedaba verde aunque `ajustarCasillas` recortara a lo
+  // bruto. Lo cazó el falsador. Se llena con plumas —todo de menos de 0,3 kg—
+  // así que ocupa treinta y pico de casilleros y pesa menos de 38: cuando la
+  // capacidad vuelve a bajar, nada tendría por qué caerse por peso.
+  const inv3 = await nuevoInv(68);
+  const plumas = (await fichas()).filter(r => r.kg <= 0.3).slice(0, 34);
+  for (const r of plumas) inv3.agregar(r.id, 1);
   const antesKg = inv3.pesoKg, antesN = inv3.casillas.filter(Boolean).length;
-  inv3.capacidadKg = 68;
-  if (typeof inv3.ajustarCasillas === 'function') inv3.ajustarCasillas();
-  s.ok(inv3.casillas.length === 42, 'subir a 68 kg da 42 casillas', inv3.casillas.length);
-  s.ok(Math.abs(inv3.pesoKg - antesKg) < 1e-9, 'y no se perdió peso al crecer', `${antesKg} -> ${inv3.pesoKg}`);
-  s.ok(inv3.casillas.filter(Boolean).length === antesN, 'ni casillas ocupadas');
+  s.ok(inv3.casillas.length === 42, 'con 68 kg son 42 casillas', inv3.casillas.length);
+  s.ok(antesN > 24, 'la carga de prueba pasa de la casilla 24', antesN);
+  s.ok(antesKg < 38, 'y pesa menos de 38 kg, así que nada se cae por peso', antesKg.toFixed(2));
   inv3.capacidadKg = 38;
   if (typeof inv3.ajustarCasillas === 'function') inv3.ajustarCasillas();
-  s.ok(Math.abs(inv3.pesoKg - antesKg) < 1e-9, 'ni al volver a achicar', `${antesKg} -> ${inv3.pesoKg}`);
+  s.ok(Math.abs(inv3.pesoKg - antesKg) < 1e-9, 'achicar la capacidad no pierde un gramo',
+    `${antesKg.toFixed(3)} -> ${inv3.pesoKg.toFixed(3)}`);
+  s.ok(inv3.casillas.filter(Boolean).length === antesN, 'ni una casilla ocupada',
+    `${antesN} -> ${inv3.casillas.filter(Boolean).length}`);
+  s.ok(inv3.casillas.length >= antesN, 'la grilla sólo se achica hasta la última ocupada',
+    `${inv3.casillas.length} casillas para ${antesN} ocupadas`);
+  inv3.capacidadKg = 68;
+  if (typeof inv3.ajustarCasillas === 'function') inv3.ajustarCasillas();
+  s.ok(Math.abs(inv3.pesoKg - antesKg) < 1e-9, 'ni volver a agrandar', `${antesKg} -> ${inv3.pesoKg}`);
 
   return s;
 }
@@ -420,6 +455,25 @@ async function mover() {
   const uno = await nuevoInv(38);
   uno.agregar('tronco', 1);
   s.ok(uno.partir(uno.casillas.findIndex(Boolean)) === false, 'una pila de 1 no se parte');
+
+  // Índices imposibles. Los manda la interfaz, no el banco, y una grilla que
+  // tira una excepción con un índice raro deja el panel a medio dibujar. El
+  // falsador mostró que sin esto el banco no lo veía: el sorteo de más abajo
+  // nunca sale del rango, así que nunca ejercitaba el caso.
+  const z = await nuevoInv(38);
+  z.agregar('piedra', 2);
+  const kgZ = z.pesoKg;
+  let tiro = '';
+  for (const [a, b] of [[-1, 3], [0, 999], [999, 0], [3, 3], [0.5, 2], [NaN, 1]]) {
+    try { z.mover(a, b); } catch (e) { if (!tiro) tiro = `mover(${a},${b}): ${e.message}`; }
+  }
+  for (const i of [-1, 999, NaN, 0.5]) {
+    try { z.partir(i); } catch (e) { if (!tiro) tiro = `partir(${i}): ${e.message}`; }
+  }
+  s.ok(!tiro, 'ni mover ni partir tiran con un índice imposible', tiro);
+  s.ok(Math.abs(z.pesoKg - kgZ) < 1e-9, 'y un índice imposible no cambia nada', `${kgZ} -> ${z.pesoKg}`);
+  s.ok(z.mover(3, 3) === false || z.casillas.filter(Boolean).length === 1,
+    'moverse a sí mismo no duplica');
 
   // Conservación bajo 400 movimientos al azar: ni un gramo.
   const w = await nuevoInv(38);
@@ -491,11 +545,21 @@ async function guardado() {
     `entraron ${guardados} de 40, desbordado=${inv5.desbordado}`);
 
   // IDA Y VUELTA del formato nuevo, con las posiciones intactas.
+  //
+  // Tiene que haber un HUECO en el medio, y no es un detalle de gusto: con las
+  // casillas ocupadas de corrido desde la cero, un `serializar` que compacta da
+  // exactamente el mismo resultado que uno que respeta las posiciones, y la
+  // aserción no prueba nada. El falsador lo cazó — con las pilas compactadas al
+  // guardar, esta sección seguía verde.
   const inv2 = await nuevoInv(38);
   inv2.agregar('madera_blanda', 8);
   inv2.agregar('piedra', 2);
-  inv2.quitar('piedra', 1);
+  inv2.agregar('carne', 1);
   inv2.agregar('junco', 5);
+  inv2.quitar('piedra', 2);              // deja el hueco en el medio
+  s.ok(inv2.casillas.some((c, i) => !c && inv2.casillas.slice(i + 1).some(Boolean)),
+    'la prueba de ida y vuelta tiene un hueco en el medio',
+    inv2.casillas.map(c => c ? c.id[0] : '·').join('').replace(/·+$/, ''));
   const foto = JSON.stringify(inv2.casillas);
   const kg = inv2.pesoKg;
   const inv3 = await nuevoInv(38);
