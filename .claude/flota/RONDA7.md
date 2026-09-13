@@ -867,3 +867,105 @@ del arpón interpreta los dos huesos de la ficha, no un artefacto documentado.
 Con las medidas reales, tres fichas pesan más de lo que dan sus objetos: la **lanza**
 1,1 kg contra ~0,75, la **estólica** 0,6 contra ~0,38 y la **línea de mano** 0,2
 contra ~0,1. Está en `pendiente-r7-empunadura.md`; `herramientas.json` no se tocó.
+
+---
+
+## FASE 3 · `barro` — la arcilla y la arena se alcanzan, y el juego dice dónde
+
+### Lo que se midió antes de encargar nada
+
+Además de la sección 2 de arriba —la arena legal a 8,6 km, la arcilla desde el 1,06
+% de la tierra en Node y el 30 % de la banda en el juego real—:
+
+- **El dataset ya tiene el gesto y nadie lo usa.** `acciones.extraer_arcilla` en
+  `herramientas.json`: sin herramienta rinde **1** («De barranca, con la mano, un
+  puñado») y con herramienta **6**. Lo habilitan la pala de omóplato (nivel 2), el
+  pico de asta (3) y la pala de hierro (4). `nivelMinimo` no traba nada en el código:
+  sólo lo lee `Equipo.faltaPara()` para explicar.
+- **El dataset ya sabe de dónde sale cada material.** `mineria.json` →
+  `materiales[]` trae `origen` y `dondeSeSaca`: la arcilla es «Depósitos
+  glacilacustres de las orillas» y de `superficie`; la arena, «Depósitos
+  glacifluviales y playas de lago» y de `cantera`. **Sólo el códice muestra el
+  origen.** El taller dice «Arcilla 0/10» y nada más (`Taller.js:133`).
+- **La exploración sabe qué se conoce**: `Exploracion.conocimientoEn(x, z)`, de 0 a
+  1, por celdas de 256 m. Y `Hallazgos` guarda dónde se **vio** arcilla y arena, con
+  una regla escrita en su cabecera que es la tesis del juego: *no revela nada que no
+  se haya visitado*.
+- **Lo que pide cada obra**: la fogata, leña y piedra; la carbonera, 4 de arcilla; el
+  horno de barro, **10 de arcilla, 8 de piedra y 4 de arena**; la fragua, 4 de
+  arcilla. Sin arcilla y arena no hay horno de barro, y sin arcilla no hay carbonera
+  ni fragua: se corta la cadena del metal.
+
+### Las tres decisiones, del jefe, dichas
+
+1. **La arcilla sale de la barranca, con gesto propio.** No de la suerte de levantar
+   una piedra. El gesto usa `extraer_arcilla` tal como está en el dataset, con y sin
+   herramienta. La piedra de orilla sigue dando «a veces arcilla»: es cierto, y el
+   banco de la fase 1 lo mide.
+2. **La arena de playa se junta a puñados, como licencia de juego declarada.** La
+   Ley 22.351 prohíbe en el Parque toda extracción, y en la Reserva la cantera pide
+   permiso escrito: eso sigue igual para la cantera, que es volumen. Pero cuatro
+   puñados de arena para un horno de barro, en la playa de la Reserva, se toman como
+   licencia —igual que el fuego y el arco—, se declaran en `licenciasDeJuego` y el
+   juego lo dice al hacerlo. **En el Parque, ni un puñado**: la negativa enseña la
+   línea.
+3. **El juego dice dónde, sin revelar lo que no se vio.** Lo que falta para una obra
+   dice de dónde sale, con el dato que ya está en `mineria.json`, y si el jugador
+   **ya vio** un lugar donde se consigue, hacia dónde queda y a cuánto. Nunca un lugar
+   no visitado: marcarlo sería romper la tesis del mapa. El dueño pidió «dirigir al
+   primer spot»; esto lo dirige al primero que ya pisó, y le enseña a buscar el que no.
+
+### Propiedad exclusiva de archivos
+
+- `src/systems/Recoleccion.js` — los dos gestos nuevos en la cadena de la tecla
+- `src/systems/Hallazgos.js` — marcar con el mismo criterio que el gesto
+- `src/ui/Taller.js` — lo que falta dice de dónde sale y hacia dónde
+- `src/data/herramientas.json` — **sólo** la licencia nueva en `licenciasDeJuego`
+
+Del coordinador: `src/main.js`, el banco, el falsador y esta carta. Si hace falta
+algo de `Mundo`, `Mineria` o `Exploracion`, va a `pendiente-r7-barro.md`. Bitácora:
+`.claude/flota/r7-barro.md`.
+
+### El contrato
+
+**A1 · La barranca da arcilla con la tecla.** En la banda de orilla —`orillaCerca`
+y sin el agua a mano, el mismo predicado de hoy—, la tecla ofrece «Sacar arcilla de
+la barranca», con el paréntesis de la fase 1, y rinde lo que dice
+`extraer_arcilla`: la rama sin herramienta a mano limpia y la de con herramienta con
+la pala o el pico en la mano, gastando un uso. **Ningún número del rinde se escribe
+en el código**: si cambia el dataset, cambian el cartel y la tecla.
+
+**A2 · No es una canilla.** Una barranca que se sacó descansa, como la chatarra y la
+cantera, y el cartel no la ofrece mientras descansa.
+
+**A3 · La arcilla se alcanza.** Medido en el juego real con el mismo instrumento de
+la apertura —240 puntos de la banda a menos de 3 km del arranque, con sotobosque y
+vegetación sembrados—: **la tecla ofrece arcilla en al menos el 80 % de la banda**
+(hoy 30 %), y el punto más cercano al arranque sigue a menos de 600 m. El orden en la
+cadena lo decide el agente con la vara que ya usa el archivo —«no cuánto vale, sino
+cuál se puede hacer en otro lado»— y lo escribe.
+
+**A4 · La arena a puñados.** Donde `Mineria` decide un banco de arena, en Reserva o
+fuera del área protegida, la tecla ofrece «Juntar arena de la playa» con un puñado;
+en el Parque no la ofrece, y apretar R sigue explicando la ley como hoy. La cantera no
+cambia. Descansa como la barranca. **Una licencia nueva en `licenciasDeJuego`**, con
+la norma real, por qué se toma y cómo lo dice el juego, y el aviso del primer puñado
+lo dice. Medido: **hay arena a puñados a menos de 600 m del arranque**.
+
+**A5 · Lo que falta dice de dónde sale.** En el taller, cada material que falta para
+un horno o una obra lleva su origen, leído de `mineria.json` y no escrito en la UI. Y
+si `Hallazgos` tiene anotado un lugar de ese material, **dice hacia dónde y a cuánto
+queda el más cercano**, en rumbo cardinal y metros redondeados. Si no hay ninguno
+anotado, no inventa uno: dice cómo se reconoce el lugar.
+
+**A6 · Una sola regla de orilla.** `Hallazgos` marca arcilla y arena con el mismo
+predicado que ofrece el gesto: si el mapa dice «acá hay», la tecla lo da, y si la
+tecla lo da, el mapa lo puede marcar.
+
+**A7 · Sin regresión.** Los bancos de la ronda 7 (fases 1, 2 y 2b), `vite build`, y
+la negativa de la cantera en Parque y en Reserva sin cambios.
+
+### Lo que NO es de esta fase
+
+Los recipientes (fase 4). Mover la línea de los límites. Sacar la equivalencia
+`madera_dura → tronco`. Recetas nuevas de cerámica.
