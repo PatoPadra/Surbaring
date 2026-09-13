@@ -27,7 +27,13 @@ de citar la fuente. Se cita así, en el código que la use y en el códice:
 - Las posiciones de interés están en J2000.0. La precesión desde el 2000 a la fecha
   del juego es de unos 0,4°, del orden del tamaño de la luna: hay que decidir con un
   número si se aplica.
-- Los nombres propios —Acrux, Hadar, Rigil Kentaurus— **no están en las columnas
-  del catálogo**: están en el archivo de observaciones, que no se bajó. La
-  identificación de las estrellas que el juego nombre sale de su número HR y se
-  verifica, no se supone.
+- **Las designaciones de Bayer y Flamsteed sí están**, en la columna `Name` (bytes
+  5 a 14): «Alp1Cru», «Bet Cen», «58Alp Ori». Lo que **no** está son los nombres
+  propios —Acrux, Hadar, Rigil Kentaurus—, que viven en el archivo de
+  observaciones, no bajado. *Corregido el mismo día: la primera versión de este
+  archivo decía que no había ningún nombre, y no se había leído la columna.*
+- Verificado contra el catálogo el 12/9/2026, parseando con las columnas del
+  `ReadMe`: Acrux α¹ Cru HR 4730 (AR 186,650° · Dec −63,099° · V 1,33), α² HR 4731,
+  Mimosa β Cru HR 4853 (V 1,25), Gacrux γ Cru HR 4763 (V 1,63), δ Cru HR 4656, ε Cru
+  HR 4700; los punteros α¹ Cen HR 5459 (V −0,01) y β Cen HR 5267 (V 0,61); Sirio
+  V −1,46 y Canopo V −0,72.

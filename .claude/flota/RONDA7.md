@@ -208,6 +208,25 @@ fija en `(0,42 · 0,36 · −0,83)`. **Y la luna es inventada** (`:188-192`): va
 sin una época sinódica: **la fase no es la de esa fecha**. El sol sí es real
 (NOAA, `:56`).
 
+> **Medido el 12/9/2026, porque ya me había equivocado con la fogata por no
+> medir.** Referencia: luna nueva del 6/1/2000 a las 18:14 UTC y mes sinódico
+> medio de 29,530588853 días (Meeus). La referencia se validó primero contra dos
+> fases conocidas: la luna nueva del 9/2/2024 a las 22:59 UTC da edad 0,1 días y
+> 0 % iluminada, y la llena del 24/2/2024 a las 12:30 da 100 %.
+>
+> | fecha | real | juego (`uFaseLunar`) |
+> |---|---|---|
+> | 15/2/2024 23:40, la noche de las capturas | 38 % | **98 %** |
+> | 12/2/2025 10:21, la partida del HUD | 100 % | **56 %** |
+> | luna nueva conocida, 9/2/2024 | 0 % | **50 %** |
+> | luna llena conocida, 24/2/2024 | 100 % | **52 %** |
+>
+> Sobre todo 2024, la iluminación del juego se aparta de la real **44 puntos en
+> promedio y 70 en el peor día**. No es una luna aproximada: es una luna sin
+> relación con la fecha. Y como la luna aclara la niebla de la noche
+> (`Cielo.colorNiebla`) y el relleno del cielo, la oscuridad de cada noche del juego
+> también es inventada.
+
 Un cielo que dé referencias pide un catálogo de estrellas de verdad —el *Yale
 Bright Star Catalogue* es de dominio público—, el tiempo sidéreo local para que
 el cielo gire alrededor del polo sur celeste a −41°, la luna con efemérides de
@@ -217,6 +236,19 @@ sur. **Descargar el catálogo pide permiso del dueño.**
 > **Permiso dado el 12/9/2026, y ya está bajado:** `tools/catalogos/bsc5/`, desde
 > el CDS (catálogo V/50), 9110 objetos en 574 kB comprimidos. La fuente, la cita y
 > lo que hay que saber antes de usarlo están en `tools/catalogos/bsc5/LEEME.md`.
+>
+> **Medido sobre el catálogo el mismo día.** 9096 estrellas con posición y
+> magnitud. Las que alguna vez suben sobre el horizonte a −41,1° (declinación menor
+> a +48,9°):
+>
+> | hasta magnitud | 4,5 | 5 | 5,5 | 6 |
+> |---|---|---|---|---|
+> | estrellas | 817 | 1439 | 2531 | 4439 |
+>
+> y 436 hasta magnitud 5,5 son circumpolares: nunca se ponen. **El cielo es de unos
+> pocos miles de puntos**, que para la HD 4000 es poco si van en un solo dibujo. La
+> Cruz del Sur y los punteros están con su designación de Bayer en el catálogo y se
+> verificaron por número HR, posición y magnitud.
 
 ---
 
