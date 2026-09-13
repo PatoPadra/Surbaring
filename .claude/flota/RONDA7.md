@@ -1311,3 +1311,129 @@ canasto no se volvió recipiente.
 - **Los «115» de los comentarios** de `Iconos.js` y `Bolso.js`, que ahora son 116.
 - **El bloque espejo `efectosAAgregar`** de `herramientas.json` no lista el metawe;
   nadie lo lee.
+
+
+---
+
+## FASE 5 · `witral` — el telar es una cosa, se hila, y la lana alcanza
+
+### Lo que se midió antes de encargar nada
+
+- **La lana no es escasa: cuesta.** La carta decía «unos 88 coirones», con la cuenta
+  del 16 %. Se midió en el juego real, parado en un lugar y apretando, con el
+  sotobosque y la vegetación sembrados de verdad. Fueron 61 puntos de tierra a menos
+  de 3 km del arranque, todos en la Reserva:
+  - el coirón llega a la tecla en **58 de 61**;
+  - llega en la **octava apretada** de mediana, porque antes le ganan la planta, la
+    piedra, el michay y el tronco, que valen más;
+  - hay **55 coirones** a mano por lugar;
+  - cada coirón da 2 de fibra y 0,151 de lana.
+
+  **Las 14 lanas del nodo y el poncho son 93 apretadas y meten 9,3 kg de fibra en el
+  bolso**, la cuarta parte de los 38 kg. En el arranque: primer coirón en la apretada
+  12, 48 coirones, 10 lanas.
+- **Moviéndose a cada apretada, el coirón no sale nunca.** En 600 posiciones a menos
+  de 40 m del arranque, la tecla ofreció piedra 333 veces, y además michay, tronco,
+  maitén y colihue. Coirón, ninguna. `VALE` le da 0 a propósito: el coirón tapaba el
+  tronco caído, que es la leña. Eso no se toca.
+- **No hay guanacos a la vista.** La fauna viva alrededor del arranque es de bosque:
+  cachañas, rayaditos, palomas araucanas, un pudú, un chucao. El guanaco de
+  `fauna.json` es de estepa y ecotono, entre 750 y 1800 m. Que la lana del coirón sea
+  «fibra de guanaco enganchada» está dicho como hecho en `Recoleccion.js`, sin fuente.
+- **El telar entra por un camino que existe, con dos trampas.** Una obra con `procesa`
+  queda anotada como horno sin fuego en `Fundicion` (lo hace `Construccion.levantar()`,
+  y `Partida` la repone). `Fabricacion.estacion()` acepta un `donde` con ese id.
+  - **La primera trampa:** `Fundicion.cercano()` devuelve **un solo** horno, el más
+    cercano a menos de 8 m. Con una fogata más cerca que el telar, el poncho diría que
+    falta el telar.
+  - **La segunda trampa:** `Construccion.actualizar()` saca del mundo la obra que vence,
+    pero **no saca su horno**. Hoy no se nota, porque todas las obras que procesan son
+    permanentes.
+- **Dónde se puede levantar una obra.** Una `permanente` sólo fuera del área protegida.
+  Una de `campamento`, como el toldo o el canasto, en la Reserva y fuera, por 30 días.
+  El arranque está en la Reserva.
+- **Hilar no existe.** El poncho pide lana cruda y cordel. La tecnología dice «lana de
+  oveja hilada», y en el juego no hay ovejas.
+- **`Obras.js` dibuja cada obra por su id.** La que no tiene caso propio sale como una
+  caja con techo.
+
+### Las decisiones, del jefe, dichas
+
+1. **El telar es una obra de campamento**, no un objeto del bolso ni una construcción
+   permanente. Un witral son postes y travesaños que se arman donde se vive: se levanta
+   en la Reserva y fuera, no en el Parque —la misma negativa que el toldo—, dura lo que
+   dura un campamento y se ve con su silueta.
+2. **Se teje al lado del telar, y se hila en cualquier lado con un huso.** El huso se
+   lleva encima.
+3. **La lana sale del coirón, y alcanza.** No se agrega fauna ni se habilita cazar al
+   guanaco, que está protegido. Lo que se baja es el costo, a un número que se pueda
+   jugar, con fuente o con una licencia dicha.
+4. **Una sola prenda sigue siendo una sola prenda.** Mantas, fajas y teñido quedan para
+   después: primero, que la cadena exista.
+
+### Propiedad exclusiva de archivos
+
+- `src/data/construccion.json` — **sólo** la obra del telar
+- `src/world/Obras.js` — **sólo** el caso del telar
+- `src/systems/Construccion.js` — **sólo** `actualizar()`
+- `src/systems/Fabricacion.js` — la estación y el requisito de herramienta
+- `src/data/herramientas.json` — **sólo** el poncho, el huso, la receta de hilado y, si
+  hace falta, la licencia de la lana
+- `src/systems/Recursos.js` — **sólo** el recurso hilado
+- `src/systems/Recoleccion.js` — **sólo** lo que da el coirón
+- `src/ui/Iconos.js` — **sólo** los iconos nuevos
+
+Del coordinador: `src/main.js`, el banco, el falsador y esta carta. `historia.json`,
+`Fundicion.js` y `Partida.js` se piden en `pendiente-r7-witral.md`. Bitácora:
+`.claude/flota/r7-witral.md`.
+
+### El contrato
+
+**W1 · El telar es una cosa.** Existe la obra `telar_witral` en `construccion.json`:
+categoría `campamento`, con `procesa`, y pide la tecnología `telar_witral`. Se levanta
+en la Reserva y fuera; en el Parque se niega igual que el toldo. Aparece en la lista de
+obras del taller. En el mundo tiene su propia silueta, más alta que ancha, con postes y
+travesaños, y no la caja por defecto. Levantarlo no compila programas nuevos: eso lo
+mide el coordinador en el juego.
+
+**W2 · Se teje al lado del telar.** El poncho se fabrica sólo a menos de 8 m de un telar
+en pie. Lejos, el estado dice que falta el telar. Con una fogata o un horno más cerca
+que el telar, se teje igual. Nada de lo que hoy se fabrica desde el bolso cambia de
+estación.
+
+**W3 · Se hila antes de tejer.** Existen el objeto `huso` y el recurso `hilado`. Una
+receta hace hilado con lana y pide tener el huso: sin él, el estado dice que falta el
+huso y no se consume nada. El poncho pide hilado, no lana. Las moscas siguen pidiendo
+lana, porque se atan y no se tejen.
+
+**W4 · La lana alcanza.** Con el mismo instrumento de la apertura —61 puntos, parado y
+apretando—, la mediana de los puntos tiene que dar dos números:
+- juntar toda la lana que hace falta para ir de cero al poncho puesto, contando el nodo
+  y el hilado, cuesta **60 apretadas o menos**;
+- lo que entra de paso al bolso **no pesa más de 3 kg**.
+
+El tronco caído le sigue ganando la tecla al coirón.
+
+**W5 · Con fuente o con licencia.** Tres cosas se verifican con fuente:
+- que el guanaco deje vellón en el coirón;
+- el huso con tortero;
+- si el witral se tejía con lana de guanaco o de oveja.
+
+Lo que no se pueda sostener se declara en `licenciasDeJuego`, con los campos de
+`arenaDePlaya`. El número de W4 sale de un criterio dicho, no de ajustar hasta que dé.
+
+**W6 · El telar se va entero.** Cuando vence, sale del mundo, del taller y de
+`Fundicion`: no queda una estación fantasma donde se pueda tejer. Un guardado con un
+telar en pie lo repone con su estación. `VERSION` sigue en 1.
+
+**W7 · Nada más cambia.** Todo lo demás se fabrica donde se fabricaba. Los objetos y
+recursos nuevos tienen icono.
+
+**W8 · Sin regresión.** Los bancos de la ronda 6 y de la ronda 7 siguen verdes, y
+`vite build` termina limpio.
+
+### Lo que NO es de esta fase
+
+Mantas, fajas y otras prendas. Teñir. Ovejas o chilihueques. Cazar guanaco. La
+recolección en el Parque, que sigue siendo una licencia sin declarar y la decide el
+dueño.
