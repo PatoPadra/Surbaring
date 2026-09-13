@@ -197,6 +197,11 @@ export class Cuerpo {
     this._paleta = new Map();
     this._modeloEnMano = null;
     this._punto = new THREE.Vector3();
+    /**
+     * Si lo que se lleva en la mano está prendido. Arranca apagado: una antorcha
+     * recién equipada no tiene fuego, y `main` lo escribe en cada cuadro.
+     */
+    this._llamaEncendida = false;
 
     this.aplicar(aspecto);
   }
@@ -612,6 +617,32 @@ export class Cuerpo {
     if (!modelo) return;
     mano.add(modelo);
     this._modeloEnMano = modelo;
+    // El modelo cacheado conserva la visibilidad de la última vez que se colgó:
+    // sin esto, la antorcha apagada volvía a la mano con la llama que tenía.
+    if (modelo.llama) modelo.llama.visible = this._llamaEncendida;
+  }
+
+  /**
+   * Si lo que está en la mano está prendido. La escribe `main` por cuadro, con
+   * la luz de mano de ese cuadro.
+   *
+   * Existe porque la tinta `llama` es emisiva: la antorcha apagada en la mano
+   * mostraba igual su llama, y era el triángulo amarillo de las capturas de la
+   * ronda 7 (B5). Se esconde la malla y no se toca el material: `visible` no
+   * entra en la clave del programa, así que prender y apagar no compila nada, y
+   * el material sigue siendo el mismo para la antorcha y el candil.
+   *
+   * Escribirla con el mismo valor no hace nada, igual que `enMano`.
+   * @type {boolean}
+   */
+  get llamaEncendida() { return this._llamaEncendida; }
+
+  set llamaEncendida(v) {
+    const prendida = !!v;
+    if (prendida === this._llamaEncendida) return;
+    this._llamaEncendida = prendida;
+    const llama = this._modeloEnMano?.llama;
+    if (llama) llama.visible = prendida;
   }
 
   /**

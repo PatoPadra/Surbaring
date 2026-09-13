@@ -740,3 +740,111 @@ siguen verdes, y `vite build` limpio.
 
 Animar el gesto de tirar, lanzar o pescar. Cambiar cómo cazan o pescan las armas.
 Recuperar flechas.
+
+---
+
+## FASE 2b CERRADA — 13/9/2026
+
+**Banco 7/7**, corrido por el coordinador: las cinco secciones propias, los bancos
+de la ronda 5 fase 3 (4/4) y de la ronda 7 fases 1 y 2, y `vite build`. **Falsador
+14 de 14** vistos por la aserción declarada. El agente tocó `Herramientas3D.js` y
+`Cuerpo.js`, y nada más; `main.js` ya tenía las dos líneas del coordinador.
+
+El agente se cortó por el límite de uso antes de tocar código, con la bitácora
+empezada. **Se lo retomó con su contexto y no se lo relanzó**: siguió desde lo que
+había leído y medido.
+
+### Medido en el juego
+
+En la vista previa, HD 4000 a Baja 1024×576:
+
+- **Equipar no compila nada**: colgar cada una de las 12 armas, más la antorcha
+  prendida y el candil, deja `render.info.programs` en **17** antes, durante y
+  después. Era la duda de `receiveShadow` otra vez, y la medición la cierra.
+- **Costo de la caña de colihue**, que el agente anotó como la peor por las sombras,
+  contra la mano vacía, alternado en tres rondas y mediana de 16 cuadros:
+
+  | | mano vacía | caña | Δ |
+  |---|---|---|---|
+  | primera persona | 31,95 · 32,02 · 31,96 | 32,16 · 32,07 · 32,02 | **+0,11 ms** |
+  | tercera persona | 33,39 · 34,03 · 33,21 | 33,27 · 33,36 · 33,21 | **−0,26 ms** |
+
+  El −0,26 es ruido: una lectura de la mano vacía dio 34,03 contra 33,2 de las
+  otras. Dentro del tope de +0,3 en las dos, y el agente había predicho +0,05 a
+  +0,15.
+- **Las capturas**, en `capturas/r7f2b-*.png`:
+  - `garrote-1p-abajo`: **el garrote se lee entero en la mano derecha**, nudo pardo
+    y cabo. Es lo que el dueño no veía.
+  - `garrote-1p`: mirando adelante, el nudo asoma abajo a la derecha.
+  - `garrote-3p`: **de espaldas no se lee**, porque el cuerpo lo tapa. Es lo mismo
+    que anotó la ronda 5 con el hacha: «se intuye pero no resuelve».
+  - `cana-1p`: la vara amarilla de colihue sube por el lado derecho de la vista.
+  - `antorcha-apagada-1p`: de noche y apagada, **ya no está el triángulo amarillo**.
+
+### Los doce
+
+| id | caja (m) | tri | mallas | tintas | pose | sobre los pies (m) |
+|---|---|---|---|---|---|---|
+| garrote | 0,66×0,12×0,11 | 256 | 2 | madera, cordel | cabo | 0,81 |
+| honda | 0,75×0,06×0,03 | 112 | 2 | cordel, cuero | colgando | 0,20 |
+| lanza_colihue | 1,70×0,03×0,03 | 80 | 2 | colihue, obsidiana | vara | 0,84 |
+| estolica | 0,68×0,05×0,05 | 44 | 2 | madera, asta | cabo | 0,83 |
+| bola_perdida | 0,38×0,07×0,07 | 96 | 1 | cuero | colgando | 0,55 |
+| boleadora_dos | 0,80×0,08×0,08 | 176 | 1 | cuero | colgando | 0,20 |
+| boleadora_tres | 0,76×0,18×0,11 | 296 | 1 | cuero | colgando | 0,22 |
+| arco_colihue_obj | 1,20×0,12×0,02 | 304 | 2 | colihue, cordel | arco | 0,33 |
+| linea_mano | 0,22×0,15×0,02 | 192 | 1 | cordel | cuenco | 0,79 |
+| cana_colihue | 3,00×0,05×0,04 | 72 | 2 | colihue, cordel | vara | 0,84 |
+| arpon_hueso | 2,20×0,08×0,03 | 176 | 2 | colihue, hueso | vara | 0,84 |
+| equipo_mosca | 2,74×0,11×0,03 | 124 | 2 | colihue, hierro | vara | 0,77 |
+
+Las tintas pasan de 9 a **11**: `colihue`, con el color con que `flora.json` pinta
+el cañaveral, porque cinco de los doce son de caña y con `madera` eran palos pardos;
+y `cordel`, porque la honda con `cuero` para las dos piezas era una sola mancha. Queda
+una libre. Hay tres familias de pose nuevas —`vara`, `arco` y `colgando`—, cada una
+con escrito contra qué parte del cuerpo chocaba antes de ajustarla.
+
+**De dónde salen las medidas**, con el detalle en `r7-empunadura.md`: la lanza de a
+pie (1,70 m), el arco mapuche (1,20 m, el corto del rango), la honda, el carrete de
+mosca y los ramales de las boleadoras salen de fuentes leídas en la página. La
+densidad y el diámetro del colihue y el largo de la estólica salen de resúmenes de
+búsqueda que el agente no pudo verificar contra la página, y lo dice. El garrote, el
+arpón, la línea de mano y el tramo colgado de las boleadoras son **estimaciones
+declaradas**: el garrote y el arpón salen de los kilos de sus fichas, y la horqueta
+del arpón interpreta los dos huesos de la ficha, no un artefacto documentado.
+
+### Los defectos del banco y del falsador, que fueron míos
+
+1. **`suelo()` medía otra pose, y lo encontró el agente leyendo el banco antes de
+   escribir código.** `Box3.setFromObject` no recalcula los padres, así que cada
+   modelo se medía contra la matriz vieja de la mano sin carga, y con un solo cuadro
+   la carga no se asentaba. El banco veía los objetos unos 10 cm más abajo y más
+   inclinados que en el juego. Rehecha la cuenta leyendo el código y validado contra
+   lo commiteado: el pico de asta pasó de 0,64 a 0,82 m. **Y la medición de apertura
+   de esta fase tenía el mismo defecto**, porque salió del mismo código.
+2. **En el falsador, `llama-siempre` no plantaba lo que decía.** El setter falso no
+   actualizaba el estado interno, y `_colgar()` cuelga cada modelo con la llama según
+   ese estado, que arranca apagado: plantó «la llama nunca se muestra» y el banco lo
+   cazó por las premisas. Arreglado para forzar la llama visible: visto por la
+   aserción declarada.
+3. Un error de cuenta en el mensaje de un commit: el falsador tiene **14** defectos, no
+   15.
+
+### Lo que hay que mirar jugando
+
+1. **Las varas en primera persona.** Se agarran del regatón y van casi paradas: la
+   caña sube por el costado derecho de la vista. El agente midió 30° al centro, contra
+   23 a 25° del pico, la pala y la barreta de la ronda 5.
+2. **De espaldas, en tercera persona, el garrote no se ve.**
+3. **Al correr, dos siguen tocando el muslo derecho** según una aproximación del
+   cuerpo con cápsulas: el arco 1,1 cm y el equipo de mosca 4,8 cm. Parado y andando,
+   ninguno.
+4. **Agachado, lo que cuelga baja a 9–11 cm del suelo.** E4 es de pie.
+5. **El color de las boleadoras**: van con `cuero`, que es curtido y más oscuro que el
+   cuero crudo de la ficha. Queda la duodécima tinta si el ojo lo pide.
+
+### Deuda de datos, que no es de esta fase
+
+Con las medidas reales, tres fichas pesan más de lo que dan sus objetos: la **lanza**
+1,1 kg contra ~0,75, la **estólica** 0,6 contra ~0,38 y la **línea de mano** 0,2
+contra ~0,1. Está en `pendiente-r7-empunadura.md`; `herramientas.json` no se tocó.

@@ -1,5 +1,20 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **13/9/2026 — RONDA 7, FASE 2b (`empuñadura`) CERRADA: el garrote se ve en la
+> mano.** Los 12 objetos de la ranura del arma tienen modelo, y la mano lleva la
+> herramienta si hay y si no el arma. Banco 7/7, falsador 14 de 14. En el juego,
+> **equipar cualquiera de los doce no compila nada** (17 programas antes y después),
+> la caña cuesta +0,11 ms en primera persona, y **la antorcha apagada ya no muestra
+> el triángulo amarillo**.
+>
+> El agente se cortó por el límite de uso antes de escribir código y **se lo retomó
+> con su contexto**, no se lo relanzó. Y encontró un defecto del banco leyéndolo
+> antes de escribir una línea: la sección del suelo medía cada objeto contra la
+> matriz vieja de la mano, unos 10 cm más abajo que en el juego.
+>
+> *De espaldas, en tercera persona, el garrote no se ve: lo tapa el cuerpo. Es para
+> mirar jugando.*
+
 > **12/9/2026 — RONDA 7, FASE 2 (`brasa`) CERRADA: el fuego se ve encendido y
 > alumbra.** Mitad Node 4/4, falsador 12 de 12, **mitad navegador 38 de 38**. La
 > fogata tenía el suelo en +5,5 de 255 a 2 m, o sea negro, y ahora en **+45,3**; la

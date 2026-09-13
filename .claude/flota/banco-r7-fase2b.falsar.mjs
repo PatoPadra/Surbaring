@@ -119,14 +119,31 @@ construirHerramienta = function (id, tinta) {
 
   // ── La llama apagada ──
   {
+    // La primera versión reemplazaba el setter por uno que no hacía nada, y eso no
+    // planta «no esconde»: el cuerpo cuelga cada modelo con la llama según su
+    // estado interno, que arranca apagado, así que la llama no se mostraba nunca y
+    // caían las premisas. Ahora la fuerza visible al escribir y al colgar.
     id: 'llama-siempre', archivo: 'entities/Cuerpo.js', que: 'llamaEncendida existe pero no esconde nada',
     caeEn: 'apagada, la antorcha en la mano no brilla',
     anexo: String.raw`
-Object.defineProperty(Cuerpo.prototype, 'llamaEncendida', {
-  configurable: true,
-  get() { return !!this.__falsaLlama; },
-  set(v) { this.__falsaLlama = !!v; },
-});
+function __mostrarLlama(cuerpo) {
+  const mano = cuerpo.manos && cuerpo.manos[1];
+  if (mano) mano.traverse((o) => {
+    if (o.isMesh && o.material && o.material.emissive && (o.material.emissive.r + o.material.emissive.g + o.material.emissive.b) > 0.3) o.visible = true;
+  });
+}
+{
+  const __dL = Object.getOwnPropertyDescriptor(Cuerpo.prototype, 'llamaEncendida');
+  Object.defineProperty(Cuerpo.prototype, 'llamaEncendida', {
+    configurable: true, get: __dL.get,
+    set(v) { __dL.set.call(this, v); __mostrarLlama(this); },
+  });
+  const __dM = Object.getOwnPropertyDescriptor(Cuerpo.prototype, 'enMano');
+  Object.defineProperty(Cuerpo.prototype, 'enMano', {
+    configurable: true, enumerable: __dM.enumerable, get: __dM.get,
+    set(v) { __dM.set.call(this, v); __mostrarLlama(this); },
+  });
+}
 `,
   },
   {
