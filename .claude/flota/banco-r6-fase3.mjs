@@ -99,7 +99,11 @@ async function completos() {
   s.ok(true, 'existe src/ui/Iconos.js');
 
   const { recursos, objetos, todos } = await todosLosIds();
-  s.ok(todos.length === 115, 'son 115 los que hay que dibujar', todos.length);
+  // Al menos, y no exactamente: 115 era la cuenta de la ronda 6, y cada objeto
+  // nuevo la sube —el metawe de la ronda 7 la llevó a 116—. Lo que esto cuida es
+  // que la lista no se achique, porque con una lista corta «todos tienen dibujo»
+  // sería verdad sin decir nada. Lo encontró el agente de la ronda 7, fase 4.
+  s.ok(todos.length >= 115, 'son al menos los 115 de la ronda 6', todos.length);
 
   const arte = new Map();
   for (const id of todos) { const a = arteDe(I, id); if (a) arte.set(id, a); }

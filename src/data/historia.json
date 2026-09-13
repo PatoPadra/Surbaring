@@ -1102,7 +1102,7 @@
       "nombre": "Cestería de junco y colihue",
       "era": "pueblos_originarios",
       "descripcion": "Tejido en espiral o cruzado con juncos, colihue partido y fibras de junquillo y coiron.",
-      "contextoHistorico": "Los cestos servían para recolectar piñones, frutos del bosque y para almacenar grano. Algunos tejidos apretados podían contener líquidos.",
+      "contextoHistorico": "Los cestos servían para recolectar piñones y frutos del bosque, y para almacenar grano. La cestería en espiral cosida queda tan tupida que retiene el agua que se le echa adentro, pero se tejía con ñocha, al oeste de la cordillera, y no hay registro de cestos para llevar agua en el Nahuel Huapi.",
       "materiales": [
         {
           "recurso": "junco",
@@ -1123,7 +1123,7 @@
           "red_fibra"
         ]
       },
-      "notaCorreccion": "Decia «fibras de nocha». Greigia landbeckii es endemica de Chile y ninguna de las 63 especies de flora.json es nocha: como la obsidiana, cruzaba la cordillera por intercambio. Corregido en la ronda 4 por la revision de rigor."
+      "notaCorreccion": "Decia «fibras de nocha». Greigia landbeckii es endemica de Chile y ninguna de las 63 especies de flora.json es nocha: como la obsidiana, cruzaba la cordillera por intercambio. Corregido en la ronda 4 por la revision de rigor. Decía además «algunos tejidos apretados podían contener líquidos», y es verdad a medias: la estanqueidad de la cestería en aduja la describe Piñeiro (1967), citada en Carrasco y Cisterna (2019), Cestería mapuche: usos y prácticas culturales, Museo Mapuche de Cañete, para piezas de Arauco y Cautín, y no es un uso para llevar agua. Por eso el recipiente de antes del cuero es de greda y no un canasto. Corregido en la ronda 7, fase 4."
     },
     {
       "id": "alfareria_bicroma",
@@ -1148,7 +1148,8 @@
       "efecto": {
         "horno": "horno_barro",
         "herramienta": [
-          "candil_grasa"
+          "candil_grasa",
+          "metawe_greda"
         ]
       }
     },

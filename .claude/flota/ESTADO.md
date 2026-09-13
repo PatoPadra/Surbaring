@@ -1,5 +1,23 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **13/9/2026 — RONDA 7, FASE 4 (`vasija`) CERRADA: el agua viaja en un
+> recipiente.** Banco 10/10 con la regresión de siete bancos, falsador 24 de 24 y los
+> 3 controles al revés verdes. En el juego, **sin recipiente entran 0 medidas**; con
+> el metawe nuevo, **2 de 5**; y soltarlo con un odre y 8 medidas **derrama 2 y lo
+> dice**. El cartel de beber promete la medida sólo si entra, con la misma cuenta que
+> la da.
+>
+> El recipiente de antes del cuero es **un metawe de greda**, con cerámica local de la
+> Isla Victoria como fuente y los 2 litros declarados como criterio. La cestería
+> tupida de `historia.json` era verdad a medias para la región, y se corrigió.
+>
+> *Dos defectos de los bancos fueron míos, y los encontró el agente haciendo la cuenta
+> en vez de esquivarla: el `=== 115` de la ronda 6 y un número en la descripción de una
+> aserción, que le escondía un defecto al falsador.*
+>
+> **Queda para mirar jugando**: el metawe parece un retroceso al lado del odre, y lo
+> es a propósito.
+
 > **13/9/2026 — RONDA 7, FASE 3 (`barro`) CERRADA: la arcilla y la arena se
 > alcanzan, y el juego dice dónde.** Banco 6/6, falsador 18 de 18, y en el juego
 > real **la orilla promete arcilla en 240 de 240 puntos** (antes, «a veces» en 72),

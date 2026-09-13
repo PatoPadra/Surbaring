@@ -47,16 +47,44 @@
  * Este archivo **no aprende qué es una herramienta**. No importa
  * `herramientas.json`, no sabe qué es una durabilidad y no decide quién puede
  * llevar qué: sólo sabe que una casilla con `usos` se entrega entera y no se
- * junta con su vecina. Dos cosas necesita de afuera, y las dos entran por la
+ * junta con su vecina. Tres cosas necesita de afuera, y las tres entran por la
  * puerta de adelante:
  *
- * - **Un catálogo de pesos** —`id → {kg}`— para poder pesar lo que no está en
- *   `RECURSOS`. Sin él un hacha pesaría los 0,5 kg que `pesoDe()` inventa para
- *   lo desconocido, y el bolso mentiría por 0,3 kg cada vez.
+ * - **Un catálogo** —`id → {kg, guardaLiquido}`— para poder pesar lo que no está
+ *   en `RECURSOS` y saber cuántas medidas de líquido guarda. Sin él un hacha
+ *   pesaría los 0,5 kg que `pesoDe()` inventa para lo desconocido, y el bolso
+ *   mentiría por 0,3 kg cada vez.
  * - **`pesoAparte`**, una función que dice cuánto pesa lo que se lleva encima y
  *   no está en la grilla: las cuatro ranuras del equipo. Es una función y no un
  *   número porque el que lo sabe es `Equipo`, y un número copiado se
  *   desactualiza en el primer equipar que nadie avise.
+ * - **`guardaAparte`**, lo mismo para el líquido: cuántas medidas guarda lo que
+ *   se lleva puesto.
+ *
+ * ── Ronda 7, fase 4: el agua viaja en un recipiente ─────────────────────────
+ *
+ * Hasta acá el agua entraba suelta, como la piedra: se bebía en la orilla y la
+ * medida caía al bolso sin preguntar en qué. El dueño lo dijo jugando —«el agua
+ * se puede tomar pero no cargar; hace falta alguna vasija»— y ahora hay **un
+ * tercer tope**, que muerde a los tres líquidos y a nada más: entran tantas
+ * medidas como guarden los recipientes que se llevan, en la grilla o puestos,
+ * contando agua, agua hervida e infusión juntas. Una medida es un litro.
+ *
+ * No se le da a cada recipiente su propia agua, y es a propósito: eso obligaría
+ * a que las seis recetas, la Q, los hornos, los depósitos y el guardado vaciaran
+ * instancias. Que dos odres sean dos aguas queda escrito como deuda.
+ *
+ * Tres reglas del tope que se notan al jugar:
+ *
+ * 1. **Decide al entrar, no al estar.** Un guardado de antes de los recipientes
+ *    trae el agua que traía y la conserva entera hasta que se tome; lo único que
+ *    pasa es que no entra más. Y pasar un odre de la grilla a la ranura —que por
+ *    un instante no está en ningún lado— no toca el agua.
+ * 2. **Se derrama sólo al soltar, y lo pide el que suelta**: `derramar()`. Si lo
+ *    hiciera `sacar()`, equipar derramaría.
+ * 3. **Un recipiente gastado sigue guardando.** Hoy nada gasta un recipiente
+ *    —`Equipo.desgastar()` sólo toca la mano—, y si dejara de guardar al
+ *    gastarse, el agua se iría en un momento que no es soltar.
  */
 
 import { RECURSOS, normalizar, pesoDe, nombreDe, satisface, pilaDe, casillasPara } from './Recursos.js';
@@ -72,6 +100,20 @@ import { RECURSOS, normalizar, pesoDe, nombreDe, satisface, pilaDe, casillasPara
 const EPS_KG = 1e-9;
 
 /**
+ * Los líquidos, que no viajan sueltos: entran sólo si hay en qué.
+ *
+ * El orden es el del derrame. Se va primero el agua común, que se vuelve a
+ * juntar en cualquier orilla, y queda para lo último la infusión, que costó
+ * canelo, leña y horno. Al soltar un recipiente nadie elige qué tirar, y lo
+ * justo es perder lo que menos costó.
+ *
+ * Es una lista de recursos y no de herramientas, así que la regla de que este
+ * archivo no aprende qué es una herramienta sigue en pie. Vive acá y no al lado
+ * de `RECURSOS` porque el tope es el único que la usa.
+ */
+export const LIQUIDOS = ['agua', 'agua_segura', 'infusion_canelo'];
+
+/**
  * Una casilla con `usos` es una instancia: se entrega entera, no apila y no se
  * junta con la de al lado aunque sean lo mismo.
  *
@@ -84,10 +126,10 @@ export const esInstancia = (c) => !!c && c.usos !== undefined;
 export class Inventario {
   /**
    * @param {number} capacidadKg
-   * @param {{catalogo?: Map<string,{kg:number}>|object}} [opciones] pesos de lo
-   *   que no está en `RECURSOS`. Opcional a propósito: sin catálogo esto sigue
-   *   siendo el inventario de la fase 1, y los 75 sitios de llamada que lo
-   *   construyen a secas no se enteran.
+   * @param {{catalogo?: Map<string,{kg:number, guardaLiquido?:number}>|object}} [opciones]
+   *   pesos de lo que no está en `RECURSOS`, y cuánto líquido guarda. Opcional a
+   *   propósito: sin catálogo esto sigue siendo el inventario de la fase 1, y los
+   *   75 sitios de llamada que lo construyen a secas no se enteran.
    */
   constructor(capacidadKg = 38, { catalogo } = {}) {
     this._capacidadKg = capacidadKg;
@@ -109,6 +151,13 @@ export class Inventario {
      */
     this.pesoAparte = null;
     /**
+     * Cuántas medidas de líquido guarda lo que se lleva puesto. Es el hermano de
+     * `pesoAparte`, por la misma costura y por la misma razón: un odre a la
+     * espalda no está en la grilla, y el único que sabe que está es `Equipo`.
+     * @type {null|(() => number)}
+     */
+    this.guardaAparte = null;
+    /**
      * Se prende cuando un guardado traía más de lo que entra en la grilla. Que
      * el jugador pierda cosas es aceptable; que las pierda **en silencio**, no.
      */
@@ -117,16 +166,23 @@ export class Inventario {
   }
 
   /**
-   * Suma fichas de peso al catálogo. Se puede llamar más de una vez porque el
-   * que tiene `herramientas.json` en la mano es `Equipo`, y se construye
-   * después que el bolso: si esto exigiera venir completo desde el constructor,
-   * `main.js` tendría que aprender qué es una herramienta para pasárselo.
+   * Suma fichas al catálogo: cuánto pesa una unidad y cuántas medidas de
+   * líquido guarda. Se puede llamar más de una vez porque el que tiene
+   * `herramientas.json` en la mano es `Equipo`, y se construye después que el
+   * bolso: si esto exigiera venir completo desde el constructor, `main.js`
+   * tendría que aprender qué es una herramienta para pasárselo.
    */
   fichar(catalogo) {
     if (!catalogo) return;
     const pares = catalogo instanceof Map ? catalogo : Object.entries(catalogo);
     for (const [id, ficha] of pares) {
-      if (id) this.catalogo.set(normalizar(id), { kg: Number(ficha?.kg) || 0 });
+      if (!id) continue;
+      this.catalogo.set(normalizar(id), {
+        kg: Number(ficha?.kg) || 0,
+        // En medidas enteras, como todo lo que cuenta este archivo: una ficha que
+        // dijera 1,5 dejaría media medida que no se puede agregar ni quitar.
+        guardaLiquido: Math.max(0, Math.floor(Number(ficha?.guardaLiquido) || 0)),
+      });
     }
   }
 
@@ -213,29 +269,16 @@ export class Inventario {
    *
    * Ahora "lo que entre" mira los dos topes. Puede sobrar peso y no haber
    * casillero, y puede haber casillero y no sobrar peso; manda el que se acabe
-   * primero.
+   * primero. Y para los líquidos hay un tercero, el de los recipientes: cuando
+   * corta, este número es el que deja la hornada de agua hervida esperando
+   * junto al horno en vez de tirarla.
    */
   agregar(recurso, cantidad) {
     const k = normalizar(recurso);
-    const pedido = Math.max(0, Math.floor(Number(cantidad) || 0));
-    if (pedido === 0) return 0;
-
-    const unidad = pesoDe(k);
-    const libre = Math.max(0, this._capacidadKg - this.pesoKg);
-    const porPeso = unidad > 0 ? Math.floor((libre + EPS_KG) / unidad) : pedido;
-
-    const tope = pilaDe(unidad);
-    let porCasillas = 0;
-    for (const c of this.casillas) {
-      if (!c) porCasillas += tope;
-      // Una instancia con el mismo id no es hueco de pila: un hacha en la
-      // casilla 3 no admite «una unidad más de hacha», admite cero.
-      else if (c.id === k && !esInstancia(c)) porCasillas += Math.max(0, tope - c.n);
-    }
-
-    const n = Math.max(0, Math.min(pedido, porPeso, porCasillas));
+    const n = this._entra(k, cantidad);
     if (n === 0) return 0;
 
+    const tope = pilaDe(pesoDe(k));
     let falta = n;
     // Primero las pilas abiertas, en orden: si no, dos recolecciones seguidas
     // dejan dos casilleros a medio llenar en vez de uno lleno.
@@ -258,6 +301,109 @@ export class Inventario {
     this._recontar();
     this.alCambiar?.();
     return n;
+  }
+
+  /**
+   * Cuánto de esto entraría ahora, sin meter nada.
+   *
+   * Es la misma cuenta que usa `agregar`, y no una parecida: existe para que un
+   * cartel pueda prometer sólo lo que entra. «Beber agua (1 × agua)» con los
+   * recipientes llenos sería prometer de más, y dos cuentas que se parecen se
+   * separan en el primer tope que se le agregue a una sola.
+   */
+  entra(recurso, cantidad) {
+    return this._entra(normalizar(recurso), cantidad);
+  }
+
+  /** Los tres topes, con el id ya normalizado. */
+  _entra(k, cantidad) {
+    const pedido = Math.max(0, Math.floor(Number(cantidad) || 0));
+    if (pedido === 0) return 0;
+
+    const unidad = pesoDe(k);
+    const libre = Math.max(0, this._capacidadKg - this.pesoKg);
+    const porPeso = unidad > 0 ? Math.floor((libre + EPS_KG) / unidad) : pedido;
+
+    const tope = pilaDe(unidad);
+    let porCasillas = 0;
+    for (const c of this.casillas) {
+      if (!c) porCasillas += tope;
+      // Una instancia con el mismo id no es hueco de pila: un hacha en la
+      // casilla 3 no admite «una unidad más de hacha», admite cero.
+      else if (c.id === k && !esInstancia(c)) porCasillas += Math.max(0, tope - c.n);
+    }
+
+    // El tercero muerde sólo a los líquidos. Con más de lo que cabe —un guardado
+    // de antes de los recipientes— da cero y no un número negativo: lo que sobra
+    // se conserva, pero no crece.
+    const porLiquido = LIQUIDOS.includes(k)
+      ? Math.max(0, this._cabeLiquido() - this._llevaLiquido())
+      : pedido;
+
+    return Math.max(0, Math.min(pedido, porPeso, porCasillas, porLiquido));
+  }
+
+  // ── El líquido ────────────────────────────────────────────────────────────
+
+  /**
+   * Cuánto líquido se lleva y cuánto cabe, **en medidas y no en kilos**. La
+   * infusión pesa 0,4 kg la medida y el agua 1: con un tope en kilos, el mismo
+   * odre guardaría dos veces y media más infusión que agua.
+   *
+   * `lleva` puede pasarse de `cabe`, y se dice tal cual. Pasa con un guardado
+   * de antes de los recipientes, o con uno cuyo odre el dataset dejó de conocer.
+   *
+   * Se cuenta cada vez y no se guarda en caché como el peso. Se pregunta al
+   * agregar un líquido, al armar el cartel de beber y al pintar el bolso, y no
+   * por cuadro: el caché no ahorraría nada y sería una cuenta más que se puede
+   * desincronizar.
+   * @returns {{lleva: number, cabe: number}}
+   */
+  get liquido() {
+    return { lleva: this._llevaLiquido(), cabe: this._cabeLiquido() };
+  }
+
+  _llevaLiquido() {
+    let n = 0;
+    for (const id of LIQUIDOS) n += this._total.get(id) || 0;
+    return n;
+  }
+
+  /**
+   * Lo que guardan los recipientes de la grilla más los que se llevan puestos.
+   * Se mira el catálogo por id y no si la casilla es una instancia: el
+   * inventario no sabe qué es un recipiente, sabe que esa ficha guarda.
+   */
+  _cabeLiquido() {
+    let n = 0;
+    for (const c of this.casillas) {
+      if (c) n += (this.catalogo.get(c.id)?.guardaLiquido || 0) * c.n;
+    }
+    return n + Math.max(0, Math.floor(this.guardaAparte?.() || 0));
+  }
+
+  /**
+   * Tira el líquido que no cabe y devuelve lo que se fue, `[{id, n}]`, en el
+   * orden de `LIQUIDOS`. Si no sobraba nada, devuelve una lista vacía.
+   *
+   * **Nadie de este archivo lo llama, y ésa es la regla entera.** Lo llama quien
+   * suelta un recipiente. Si lo llamara `sacar()`, pasar el odre de la grilla a
+   * la espalda lo derramaría, porque `Equipo.equipar()` lo saca del casillero un
+   * instante antes de ponerlo en la ranura. Si lo llamara `reponer()`, un
+   * guardado viejo perdería el agua al cargar.
+   */
+  derramar() {
+    let sobra = this._llevaLiquido() - this._cabeLiquido();
+    const fue = [];
+    for (const id of LIQUIDOS) {
+      if (sobra <= 0) break;
+      const n = Math.min(sobra, this._total.get(id) || 0);
+      if (n > 0 && this.quitar(id, n)) {
+        fue.push({ id, n });
+        sobra -= n;
+      }
+    }
+    return fue;
   }
 
   /**

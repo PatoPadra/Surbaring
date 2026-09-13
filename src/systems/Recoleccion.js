@@ -583,15 +583,21 @@ export class Recoleccion {
    *
    * Si además hay un cardumen a mano se dice, porque pescar tiene tecla propia y
    * nadie la descubre solo: el momento de nombrar la `P` es cuando sirve.
+   *
+   * La medida que uno se lleva se promete sólo si entra de verdad, con la misma
+   * cuenta que hace `agregar`: sin recipiente, con los recipientes llenos o con
+   * el bolso al tope, el cartel dice «Beber agua» y nada más. Beber hidrata
+   * igual en los tres casos; lo que no se promete es llevarse agua.
    */
   _beber() {
     const hay = this.pesca?.loQueHayCerca();
     const sinPermiso = hay && !this.pesca?.tienePermiso;
+    const medida = this.inventario?.entra?.('agua', 1) > 0
+      ? parentesisDeRinde([{ recurso: 'agua', cantidad: 1 }]) : '';
     return {
       tipo: 'beber',
-      etiqueta: hay
-        ? (sinPermiso ? 'Beber agua · P para pescar (hace falta permiso)' : 'Beber agua · P para tirar la línea')
-        : 'Beber agua',
+      etiqueta: `Beber agua${medida}`
+        + (hay ? (sinPermiso ? ' · P para pescar (hace falta permiso)' : ' · P para tirar la línea') : ''),
     };
   }
 
@@ -750,9 +756,20 @@ export class Recoleccion {
         // mirar. Con el bolso al tope decía «bebiste» y además mentía por
         // omisión: uno creía que se llevaba agua y no se llevaba nada.
         const llevo = this.inventario.agregar('agua', 1);
+        // Y desde la ronda 7 hay tres razones para no llevársela, y cada una
+        // pide hacer algo distinto: sin recipiente hay que fabricar uno, con los
+        // recipientes llenos hay que tomar o soltar agua, y con el bolso al tope
+        // de peso o de casilleros hay que soltar otra cosa. Decir «no entra» a
+        // secas en los tres casos mandaría a vaciar el bolso al que no tiene odre.
+        const liq = this.inventario.liquido;
+        let medida = 'te llevaste una medida';
+        if (!(llevo > 0)) {
+          if (liq && liq.cabe === 0) medida = 'no tenés en qué llevarte una medida: el agua viaja en un recipiente';
+          else if (liq && liq.lleva >= liq.cabe) medida = `los recipientes van llenos, ${liq.lleva} de ${liq.cabe} medidas`;
+          else medida = 'no entra más en el bolso';
+        }
         this.hud.aviso('Bebiste agua',
-          `Hidratación ${antes.toFixed(0)} → ${this.jugador.sed.toFixed(0)}`
-          + (llevo > 0 ? ' · te llevaste una medida' : ' · no entra más en el bolso'));
+          `Hidratación ${antes.toFixed(0)} → ${this.jugador.sed.toFixed(0)} · ${medida}`);
         return;
       }
 

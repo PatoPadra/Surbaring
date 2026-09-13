@@ -1604,6 +1604,20 @@ const RECETAS_OBJETOS = {
     ...gota(M.agua, { cx: 48, cy: 24, r: 5 }),
   ],
 
+  // Metawe: el jarro de greda de cuerpo redondo, boca ancha y asa, en su red de
+  // fibra. La cerámica suelta es un frasco con una franja, y el odre un saco:
+  // lo que separa a éste de los dos es la panza redonda con la red encima y el
+  // agua a la vista en la boca.
+  metawe_greda: () => [
+    E(33.5, 42, 16, 14, M.ceramica[2]),
+    E(32, 40.5, 16, 14, M.ceramica[1]),
+    E(26.5, 35, 6.5, 4.5, M.ceramica[0]),
+    R(25.5, 18, 14, 10, M.ceramica[2], 2), R(25, 17, 14, 10, M.ceramica[1], 2),
+    E(32, 17.5, 7, 2.6, M.agua[1]),
+    T('M39 20q9 2 6 14', M.ceramica[2], 3.4),
+    ...malla(M.fibra, { x: 18, y: 36, w: 28, h: 13, paso: 9, marco: false }),
+  ],
+
   // Rastra: dos varas largas en V y los travesaños. No es un cesto ni una
   // mochila: es lo que se arrastra, y por eso las puntas salen del cuadro abajo.
   rastra: () => [

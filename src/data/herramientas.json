@@ -1763,6 +1763,32 @@
       "kg": 0.8
     },
     {
+      "id": "metawe_greda",
+      "nombre": "Metawe de greda",
+      "categoria": "contenedor",
+      "nivel": 3,
+      "tecnologia": "alfareria_bicroma",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "ceramica",
+          "cantidad": 2
+        },
+        {
+          "recurso": "fibra",
+          "cantidad": 3
+        }
+      ],
+      "durabilidad": 60,
+      "efecto": {
+        "guardaAgua": 2
+      },
+      "nota": "Jarro de greda cocida, de cuerpo redondo, boca ancha y asa, colgado en una red de fibra. Es el recipiente de antes del cuero: guarda la tercera parte que el odre y pesa más.",
+      "fuente": "Hajduk, Scartascini, Vargas y Lezcano (2018), «Arqueología de la Isla Victoria, Parque Nacional Nahuel Huapi», Intersecciones en Antropología: hay cerámica desde ca. 640 años AP, «se reconoce, al menos, la presencia de formas de ollas y jarras», y hay recipientes sin cocción que indican producción local. Tesauro Regional Patrimonial, término «metawe», que cita a Joseph (1931): recipiente mapuche de uso doméstico para servir líquidos, de base plana, cuerpo globular, boca ancha y asa vertical. Los hay grandes (fütametawe) y chicos (pichimetawe). SURDOC, registro 67-30: jarro bícromo del Complejo El Vergel, de 13 cm de alto y 13,4 de ancho.",
+      "criterio": "Guarda 2 medidas, o sea 2 litros. No se encontró ninguna capacidad publicada en litros, así que el número sale de la cuenta. El jarro de SURDOC es una esfera de unos 13 cm, poco más de un litro. Un metawe mediano, de 16 cm de cuerpo, llega a dos. El odre guarda el triple en menos peso, y es la mejora. Licencia de juego: la greda cocida a fuego abierto es frágil, y acá no se rompe en el bolso. La red de fibra para colgarla es diseño, no dato. Por qué no un canasto: un tejido en aduja retiene el agua que se le echa adentro (Piñeiro, 1967, p. 26, citada en Carrasco y Cisterna, 2019, Museo Mapuche de Cañete). Pero es una técnica de Arauco y Cautín, tejida con ñocha, y no hay registro de cestos para llevar agua en el Nahuel Huapi. Los que sí la llevaron, los paiute de la Gran Cuenca, los sellaban con resina de pino.",
+      "kg": 0.9
+    },
+    {
       "id": "rastra",
       "nombre": "Rastra",
       "categoria": "contenedor",

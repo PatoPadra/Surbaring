@@ -266,7 +266,10 @@ async function elRecipiente() {
     const e = await armarBolso({ con: [o.id] });
     const puso = [...e.equipo.todas()].some((x) => x.cosa.id === o.id);
     const en = e.inventario.agregar('agua', o.efecto.guardaAgua + 5);
-    s.ok(puso && en === o.efecto.guardaAgua, `${o.id} guarda las ${o.efecto.guardaAgua} que declara`, puso ? en : 'no se pudo fabricar');
+    // Sin el número en la descripción: el falsador reconoce cada aserción por su
+    // texto, y un defecto que cambia la capacidad cambiaba también la clave, así
+    // que la caída no se contaba. Lo encontró el agente con `capacidad-sin-fuente`.
+    s.ok(puso && en === o.efecto.guardaAgua, `${o.id} guarda lo que declara su ficha`, puso ? `${en} de ${o.efecto.guardaAgua}` : 'no se pudo fabricar');
   }
 
   const f = await armarBolso({ con: ['odre_cuero'] });
@@ -386,7 +389,7 @@ async function antesDelCuero() {
   for (const o of sinCuero) {
     const txt = [o.fuente, o.criterio].filter((x) => typeof x === 'string').join(' ');
     s.ok(txt.length >= 60, `${o.id} trae su fuente o su criterio en la ficha`, `${txt.length} caracteres`);
-    s.ok(diceNumero(txt, o.efecto.guardaAgua), `${o.id}: la fuente dice para cuánto guarda (${o.efecto.guardaAgua})`, txt.slice(0, 160));
+    s.ok(diceNumero(txt, o.efecto.guardaAgua), `${o.id}: la fuente dice para cuánto guarda`, `${o.efecto.guardaAgua} · ${txt.slice(0, 160)}`);
     s.ok(!o.tecnologia || tecs.has(o.tecnologia), `${o.id}: su tecnología existe en el árbol`, o.tecnologia);
     s.nota(`${o.id} · guarda ${o.efecto.guardaAgua} · ${(o.materiales || []).map((m) => `${m.cantidad} ${m.recurso}`).join(', ')} · ${o.tecnologia || 'sin tecnología'} · ${o.kg ?? '?'} kg`);
   }

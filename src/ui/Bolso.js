@@ -370,10 +370,22 @@ export class Bolso {
             'No te queda un casillero libre donde guardarla. Soltá algo primero.');
         }
       } else if (accion === 'tirar_obj') {
+        // Soltar un recipiente derrama el líquido que ya no tiene en qué ir, y
+        // pasa ACÁ, al soltar. No en `sacar()`: `Equipo.equipar()` también saca
+        // del casillero, y pasar el odre a la espalda no puede tirar el agua. Ni
+        // al pintar, que corre en cada clic y derramaría por mirar.
+        //
+        // Se pregunta si el tope bajó y no si lo soltado «es un recipiente»: así
+        // el bolso no tiene que saber qué guarda cada ficha, se lo dice el
+        // inventario. Soltar un hacha con un guardado viejo que trae agua de más
+        // no derrama nada, porque el tope no se movió.
+        const cabia = this.inventario.liquido?.cabe ?? 0;
         const cosa = this.inventario.sacar(+b.dataset.i);
         if (cosa) {
+          const bajo = (this.inventario.liquido?.cabe ?? 0) < cabia;
+          const fue = bajo ? this.inventario.derramar() : [];
           this.hud?.aviso(`Tiraste ${(this.equipo?.definicion(cosa.id)?.nombre || cosa.id).toLowerCase()}`,
-            `Cargás ${this.inventario.pesoKg.toFixed(1)} kg`);
+            `${this._derrameTexto(fue)}Cargás ${this.inventario.pesoKg.toFixed(1)} kg`);
         }
       } else if (accion === 'reparar') {
         // Del casillero o de la ranura, pero siempre una instancia concreta:
@@ -559,13 +571,45 @@ export class Bolso {
   }
 
   /**
+   * Cuánto líquido se lleva sobre cuánto cabe, al lado del largo de la grilla.
+   *
+   * Va siempre, también sin recipiente, porque es la respuesta a «¿por qué no me
+   * llevé agua?». En medidas y no en kilos, que es como se cuenta el tope: la
+   * infusión pesa 0,4 kg la medida, y en kilos el mismo odre parecería guardar
+   * más infusión que agua. Si se lleva de más —un guardado de antes de los
+   * recipientes— se dice en ámbar cuánto hay que tomar antes de que entre otra.
+   */
+  _liquidoHTML() {
+    const l = this.inventario.liquido;
+    if (!l) return '';
+    const sobra = l.lleva - l.cabe;
+    return ` · líquido ${l.lleva} de ${l.cabe} medidas`
+      + (l.cabe === 0 && l.lleva === 0 ? ', sin recipiente' : '')
+      + (sobra > 0 ? ` <b style="color:#e0a050">· no entra otra hasta tomar ${sobra}</b>` : '');
+  }
+
+  /**
+   * El renglón del derrame, o nada. Dice cuánto y de qué, porque «se derramó
+   * agua» a secas no deja saber si se fue la común o la hervida que costó leña.
+   */
+  _derrameTexto(fue) {
+    const total = (fue || []).reduce((s, x) => s + x.n, 0);
+    if (!total) return '';
+    const cuanto = total === 1 ? 'Se derramó una medida' : `Se derramaron ${total} medidas`;
+    const deQue = fue.length === 1
+      ? ` de ${nombreDe(fue[0].id).toLowerCase()}`
+      : `: ${fue.map(x => `${x.n} de ${nombreDe(x.id).toLowerCase()}`).join(' y ')}`;
+    return `${cuanto}${deQue}, que ya no tenía${total === 1 ? '' : 'n'} en qué ir · `;
+  }
+
+  /**
    * La grilla. Un casillero por posición, ocupado o no: los vacíos también se
    * dibujan porque son la mitad de la información —cuánto lugar queda— y porque
    * son el destino de lo que se está por soltar.
    */
   _pintarGrilla() {
     const inv = this.inventario;
-    let html = `<h3>Bolso · ${inv.casillas.length} casilleros</h3><div class="bp-grilla">`;
+    let html = `<h3>Bolso · ${inv.casillas.length} casilleros${this._liquidoHTML()}</h3><div class="bp-grilla">`;
     for (let i = 0; i < inv.casillas.length; i++) {
       const c = inv.casillas[i];
       if (!c) { html += `<button class="bp-cs" data-cs="${i}"></button>`; continue; }
@@ -640,9 +684,14 @@ export class Bolso {
     const alumbra = !!def?.efecto?.luz;
     const hermanas = this.inventario.instancias(c.id).length;
     const it = { usos: c.usos, tope: def?.durabilidad ?? Infinity };
+    // Lo que guarda un recipiente se dice acá, al lado de lo que pesa: es el
+    // número por el que se decide qué soltar, y el que explica el aviso de
+    // derrame antes de que pase.
+    const guarda = Number(def?.efecto?.guardaAgua) || 0;
     return `<div class="bp-it" style="border-top:none;padding-top:0">
         <b class="bp-det-ic ${claseDe(c.id)}"></b>
         <span>${nombre}<small style="color:var(--tinta-tenue)"> · nivel ${def?.nivel ?? 0}${
+          guarda ? ` · guarda ${guarda} medida${guarda === 1 ? '' : 's'} de líquido` : ''}${
           rota ? ' · <b style="color:#c8503f">gastada</b>' : ''}${
           hermanas > 1 ? ` · tenés ${hermanas} en el bolso, cada una con lo suyo` : ''}</small></span>
         ${finito ? this._durabilidadHTML(it) : '<span class="bp-kg">no se gasta</span>'}

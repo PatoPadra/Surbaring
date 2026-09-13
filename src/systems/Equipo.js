@@ -85,14 +85,28 @@ export class Equipo {
     this.alCambiar = null;
 
     // El inventario no sabe qué es una herramienta y no tiene por qué
-    // aprenderlo, pero tiene que poder pesar una: el único que tiene
-    // `herramientas.json` en la mano es este archivo, así que se lo pasa él.
-    // Hacerlo acá y no en `main.js` es lo que deja esta fase sin cableado.
+    // aprenderlo, pero tiene que poder pesar una y, desde la ronda 7, saber
+    // cuánto líquido guarda: el único que tiene `herramientas.json` en la mano
+    // es este archivo, así que se lo pasa él. Hacerlo acá y no en `main.js` es
+    // lo que deja esta fase sin cableado. Lo que guarda se lee de
+    // `efecto.guardaAgua` cada vez y no se copia a ningún número propio: la
+    // ficha es el único lugar donde está escrito.
     this.inventario?.fichar?.(new Map(
-      [...this.porId].map(([id, o]) => [id, { kg: Number.isFinite(o.kg) ? o.kg : 0 }])));
-    // Y lo puesto pesa aunque no ocupe casillero. Va como función y no como
-    // número para que no exista el instante en que el bolso pesa lo de antes.
-    if (this.inventario) this.inventario.pesoAparte = () => this.pesoPuesto();
+      [...this.porId].map(([id, o]) => [id, {
+        kg: Number.isFinite(o.kg) ? o.kg : 0,
+        guardaLiquido: Number(o.efecto?.guardaAgua) || 0,
+      }])));
+    if (this.inventario) {
+      // Y lo puesto pesa aunque no ocupe casillero. Va como función y no como
+      // número para que no exista el instante en que el bolso pesa lo de antes.
+      this.inventario.pesoAparte = () => this.pesoPuesto();
+      // Lo puesto también guarda: un odre a la espalda lleva el agua igual que
+      // en un casillero. Por la misma costura que el peso, y sin mirar si está
+      // gastado, a diferencia de `suma()`: nada gasta un recipiente, y si dejara
+      // de guardar al gastarse el agua se derramaría sin que nadie lo soltara.
+      this.inventario.guardaAparte = () => Object.values(this.puesto).reduce((n, cosa) =>
+        n + (cosa ? Number(this.porId.get(cosa.id)?.efecto?.guardaAgua) || 0 : 0), 0);
+    }
 
     /**
      * La llama encendida, o null. `hasta` y `desde` son milisegundos del reloj

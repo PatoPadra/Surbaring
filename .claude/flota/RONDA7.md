@@ -1206,3 +1206,108 @@ tirado. Se juzga ahora que diga que se derramó, y no que diga que no.
 código del agente, porque casi todos se montan sobre el tope, que hoy no existe; en
 modo `--sintaxis` los parches ya cargan contra la base, y los cuatro que no se
 plantan todavía esperan un recipiente nuevo o la puerta `liquido`.
+
+
+---
+
+## FASE 4 CERRADA — 13/9/2026
+
+**Banco 10/10**, con la regresión de siete bancos —ronda 6 y ronda 7— y `vite build`;
+**falsador 24 de 24** vistos por la aserción declarada, y **los 3 controles al revés
+verdes**: el banco no fija ni el cartel que promete cuando sí entra, ni otra redacción
+del aviso, ni campos de más en la puerta. El agente tocó sus seis archivos y nada más,
+y dejó seis pedidos en `pendiente-r7-vasija.md`.
+
+### Medido en el juego
+
+Con la partida de desarrollo, el guardado apagado y la pestaña recargada después:
+
+- **Sin recipiente**, la cabecera del bolso dice «Bolso · 24 casilleros · líquido 0 de 0
+  medidas, sin recipiente».
+- **Con un metawe**, de 5 medidas ofrecidas **entran 2**, y dice «líquido 2 de 2
+  medidas». El detalle: «Metawe de greda · nivel 3 · guarda 2 medidas de líquido». El
+  icono se lee: el jarro con la red encima, al lado del agua.
+- **Soltado con el botón «Tirar» de verdad**, con un odre y 8 medidas: «Tiraste metawe de
+  greda · Se derramaron 2 medidas de agua, que ya no tenían en qué ir · Cargás 6.8 kg».
+  De 8 de 8 a **6 de 6**.
+- **El costo**: preguntar si entra una medida cuesta 2,4 µs contra 1,3 µs de una piedra,
+  mediana de 20 tandas alternadas de 200 000 llamadas. El cartel lo pregunta una vez por
+  cuadro cerca del agua: unos 0,001 ms.
+
+### Lo que quedó, leído en el código
+
+- **El tope decide al entrar, no al estar.** `Inventario._entra()` es la cuenta de los
+  tres topes y la usan `agregar()` y `entra()`: el cartel de beber promete la medida con
+  la misma cuenta que después la da. Nada recorta lo que ya está: un guardado con agua
+  de más la conserva, y equipar un odre —que por un instante no está en ningún lado— no
+  toca el agua.
+- **Sólo derrama quien suelta.** `derramar()` no la llama nadie de `Inventario`; la llama
+  el `tirar_obj` del bolso, y sólo si el tope bajó al soltar. Soltar un hacha con agua de
+  más de un guardado viejo no derrama.
+- **Lo puesto guarda por `guardaAparte`**, hermano de `pesoAparte`, en el mismo bloque de
+  `Equipo`. A diferencia de `suma()`, no salta lo gastado: nada gasta un recipiente, y si
+  dejara de guardar al gastarse el agua se iría sin que nadie soltara nada.
+- **El derrame va en orden**: primero el agua común, al final la infusión, que costó
+  canelo, leña y horno.
+- **Beber dice por qué no se llevó la medida**, en tres casos que piden cosas distintas:
+  sin recipiente, con los recipientes llenos, o con el bolso al tope.
+
+### El recipiente: `metawe_greda`
+
+**Guarda 2 medidas**, con 2 de cerámica y 3 de fibra, tecnología `alfareria_bicroma`;
+nivel 3 como el candil, que es el nivel del horno de barro. **Ningún eslabón pide
+cuero.** Las fuentes están en la ficha: Hajduk y otros (2018) sobre la Isla Victoria
+—cerámica local dentro del Parque—, el «metawe» del Tesauro Regional Patrimonial
+—jarro de servir líquidos, de cuerpo globular, boca ancha y asa— y un jarro de El
+Vergel en SURDOC. El coordinador comprobó las dos primeras; la tercera no. **Los 2
+litros son criterio y la ficha lo dice**: no hay capacidad publicada, y sale de las
+medidas del jarro. También declara como licencia que la greda no se rompe en el bolso.
+
+**La cestería tupida de `historia.json` era verdad a medias.** La estanqueidad de la
+aduja está descrita —Piñeiro (1967), citada por Carrasco y Cisterna (2019)— para
+piezas de Arauco y Cautín tejidas con ñocha, y no hay registro de cestos para llevar
+agua en el Nahuel Huapi. Se corrigió la frase, con la cita en `notaCorreccion`, y el
+canasto no se volvió recipiente.
+
+### Lo que puso el coordinador
+
+1. **`Fundicion`**: la hornada que espera por líquido ya no dice «hacé lugar», que manda
+   a vaciar el bolso a quien no tiene en qué llevarla. Medido en Node: sin recipiente,
+   «Queda junto al horno: el líquido viaja en un recipiente, y no llevás ninguno»; con el
+   metawe lleno, «… hasta que haya lugar en los recipientes: llevás 2 de 2 medidas»; y si
+   lo que espera no es sólo líquido, lo de siempre.
+2. **`historia.json`**: la frase de la cestería, y el metawe en la lista de la alfarería.
+   Ningún código lee esa lista; es coherencia del dato.
+
+### Los defectos del banco, que fueron míos
+
+1. **Dos descripciones de aserción llevaban adentro el número que el defecto cambia.**
+   El falsador reconoce cada aserción por su texto; con el metawe en 9, «… guarda (2)»
+   pasaba a «… guarda (9)», la aserción caída tenía una clave nueva y no se contaba. **Lo
+   encontró el agente**, reproduciéndolo a mano. El número pasó al detalle, y
+   `capacidad-sin-fuente` se ve.
+2. **El banco de la ronda 6 fase 3 tenía escrito `=== 115`.** V3 obligaba a un objeto
+   nuevo, y con él son 116: el contrato y la regresión chocaban, y fue **el agente el que
+   hizo la cuenta** en vez de esquivarla declarando el metawe como receta. Ahora es «al
+   menos los 115 de la ronda 6», que es lo que cuidaba: que la lista no se achique.
+
+### Lo que hay que mirar jugando
+
+1. **El metawe parece un retroceso** al lado del odre: nivel 3 contra 2, y guarda la
+   tercera parte en más peso. Es el de antes del cuero, no el mejor. Si 2 litros cambian
+   algo la primera tarde, se sabe jugando.
+2. **Sin recipiente se sigue bebiendo** en la orilla, y el aviso dice que el agua viaja en
+   un recipiente.
+3. **Soltar un recipiente con un guardado viejo** derrama también el sobrante que traía.
+4. **Con pesca cerca**, el cartel dice «Beber agua (1 × Agua) · P para tirar la línea».
+   El paréntesis no queda al final, así que la gramática de la fase 1 no lo lee; sólo
+   aparece cuando la medida entra.
+5. **La barra de usos del metawe no baja nunca**, igual que la del odre: nada gasta un
+   recipiente.
+
+### Deuda
+
+- **Que dos odres sean dos aguas**, escrita desde el contrato.
+- **Los «115» de los comentarios** de `Iconos.js` y `Bolso.js`, que ahora son 116.
+- **El bloque espejo `efectosAAgregar`** de `herramientas.json` no lista el metawe;
+  nadie lo lee.
