@@ -952,11 +952,24 @@ cambia. Descansa como la barranca. **Una licencia nueva en `licenciasDeJuego`**,
 la norma real, por qué se toma y cómo lo dice el juego, y el aviso del primer puñado
 lo dice. Medido: **hay arena a puñados a menos de 600 m del arranque**.
 
+> **Barranca y playa en el mismo lugar.** La banda de 12 m de la arcilla y el banco
+> de arena de `Mineria` se tocan, así que muchas orillas van a tener las dos cosas.
+> Cómo conviven lo decide el agente —un gesto que da las dos, o una después de la
+> otra cuando la primera descansa— y lo escribe. El banco acepta las dos formas:
+> juzga lo que el cartel promete y lo que la tecla da, apretando varias veces seguidas.
+
 **A5 · Lo que falta dice de dónde sale.** En el taller, cada material que falta para
 un horno o una obra lleva su origen, leído de `mineria.json` y no escrito en la UI. Y
 si `Hallazgos` tiene anotado un lugar de ese material, **dice hacia dónde y a cuánto
 queda el más cercano**, en rumbo cardinal y metros redondeados. Si no hay ninguno
-anotado, no inventa uno: dice cómo se reconoce el lugar.
+anotado, no inventa uno: dice cómo se reconoce el lugar. `Taller` recibe
+`hallazgos` como dependencia; el cableado en `main.js` es del coordinador.
+
+> **Cambio a la vista en un banco ya cerrado, antes de encargar:** el caso «piedra en
+> la orilla» del banco de la fase 1 exigía que la tecla ofreciera la piedra. Con la
+> barranca, en la banda puede ganar la barranca, que también promete arcilla. El caso
+> ahora acepta cualquiera de las dos, y sigue exigiendo que se prometa arcilla y se dé
+> lo prometido.
 
 **A6 · Una sola regla de orilla.** `Hallazgos` marca arcilla y arena con el mismo
 predicado que ofrece el gesto: si el mapa dice «acá hay», la tecla lo da, y si la

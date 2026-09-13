@@ -497,7 +497,12 @@ async function cartel() {
     { nombre: 'planta pino oregón', tipo: 'planta', armar: async () => ({ en: LEJOS, mundo: await mundoFalso(), planta: { esp: especie('pino_oregon'), x: 1, y: 800, z: 0, distancia: 1 } }) },
     { nombre: 'planta taique (no da nada)', tipo: 'planta', nada: true, armar: async () => ({ en: LEJOS, mundo: await mundoFalso(), planta: { esp: especie('taique'), x: 1, y: 800, z: 0, distancia: 1 } }) },
     { nombre: 'piedra lejos del agua y abajo', tipo: 'sotobosque', noPromete: ['arcilla', 'obsidiana'], armar: async () => ({ en: LEJOS, mundo: await mundoFalso(), lotes: [mata('piedra', 'Piedra suelta', LEJOS)] }) },
-    { nombre: 'piedra en la orilla', tipo: 'sotobosque', promete: ['arcilla'], noPromete: ['obsidiana'], armar: async () => ({ en: ORILLA, mundo: await mundoFalso({ aguaDesdeX: 1000 }), lotes: [lote('piedra', 'Piedra suelta', 988, 800, 0)] }) },
+    // Desde la fase 3, en la banda de orilla la tecla puede ofrecer la barranca en vez
+    // de la piedra, y las dos prometen arcilla. Lo que este caso cuida es eso —que en
+    // la orilla se prometa arcilla y se dé lo prometido—, no que gane la piedra. Se
+    // cambió a la vista, antes de encargar la fase 3, para que el gesto nuevo no lo
+    // pusiera rojo por diseño.
+    { nombre: 'piedra en la orilla', tipo: 'sotobosque', acepta: (acc) => acc?.tipo === 'sotobosque' || /arcilla/i.test(acc?.etiqueta || ''), promete: ['arcilla'], noPromete: ['obsidiana'], armar: async () => ({ en: ORILLA, mundo: await mundoFalso({ aguaDesdeX: 1000 }), lotes: [lote('piedra', 'Piedra suelta', 988, 800, 0)] }) },
     { nombre: 'piedra en altura', tipo: 'sotobosque', promete: ['obsidiana'], noPromete: ['arcilla'], armar: async () => ({ en: ALTO, mundo: await mundoFalso({ altura: 1700 }), lotes: [mata('piedra', 'Piedra suelta', ALTO, 1700)] }) },
     { nombre: 'coirón', tipo: 'sotobosque', promete: ['lana'], armar: async () => ({ en: LEJOS, mundo: await mundoFalso(), lotes: [mata('coiron', 'Coirón', LEJOS)] }) },
     { nombre: 'pasto húmedo', tipo: 'sotobosque', promete: ['pluma'], armar: async () => ({ en: LEJOS, mundo: await mundoFalso(), lotes: [mata('pasto_humedo', 'Pasto húmedo', LEJOS)] }) },
@@ -515,7 +520,7 @@ async function cartel() {
   for (const caso of CASOS) {
     const c = await barrer(caso);
     const n = caso.nombre;
-    const tipoBien = c.every((x) => x.tipo === caso.tipo);
+    const tipoBien = c.every((x) => (caso.acepta ? caso.acepta(x.acc) : x.tipo === caso.tipo));
     s.ok(tipoBien, `premisa · ${n}: la tecla ofrece «${caso.tipo}»`, [...new Set(c.map((x) => `${x.tipo}: ${x.etiqueta}`))].slice(0, 2).join(' | '));
     if (caso.puede) {
       s.ok(c[0].w.equipo.puede(caso.puede) || Object.keys(c[0].obtenido).length > 0, `premisa · ${n}: ${caso.herramienta} en la mano habilita ${caso.puede}`);

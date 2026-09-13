@@ -393,6 +393,10 @@ async function iniciar() {
   // se abre a kilómetros desde un mirador, y desde un mirador no se distingue si
   // esa playa tiene arena o canto rodado.
   const hallazgos = new Hallazgos({ mundo, mineria, vegetacion, sotobosque });
+  // El taller dice hacia dónde queda el lugar más cercano que ya se vio de un
+  // material que falta (ronda 7, fase 3). Se le da acá porque el taller se arma
+  // antes que los hallazgos.
+  taller.hallazgos = hallazgos;
   const mapa = new Mapa({
     mundo, jugador, tiempo, exploracion, codice, construccion, hallazgos,
   });
