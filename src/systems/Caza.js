@@ -322,11 +322,14 @@ export class Caza {
    * de las dos herramientas de nivel 3. Media rama del árbol estaba apagada por
    * una cadena literal.
    */
-  sortearFuente() {
+  sortearFuente(azar = Math.random()) {
+    // `azar` es el mismo número de 0 a 1 que se sorteaba acá adentro, y por
+    // omisión se sigue sorteando igual. Se puede pasar de afuera para que un
+    // resto sea siempre la misma clase de resto: ver `Recoleccion._azarDelLugar`.
     const fuentes = this.n?.carronia?.fuentes || [];
     if (!fuentes.length) return null;
     const total = fuentes.reduce((s, f) => s + (f.probabilidadRelativa || 1), 0);
-    let r = Math.random() * total;
+    let r = azar * total;
     for (const f of fuentes) {
       r -= (f.probabilidadRelativa || 1);
       if (r <= 0) return f;
@@ -335,22 +338,42 @@ export class Caza {
   }
 
   /**
-   * @param {{fuenteId?: string, fuente?: object, soloHueso?: boolean}} resto
+   * Qué clase de resto es: la fuente pasada, la del id, o una sorteada con el
+   * `azar` que traiga (y si no trae, con `Math.random`). Lo usan `aprovechar()`
+   * y el cartel de la tecla, así los dos caen en la misma fuente y en el mismo
+   * reemplazo cuando el dataset no tiene ninguna.
+   *
+   * @param {{fuenteId?: string, fuente?: object, azar?: number}} resto
    */
-  aprovechar(resto) {
-    const fuente = resto.fuente
+  fuenteDe(resto = {}) {
+    return resto.fuente
       || (this.n?.carronia?.fuentes || []).find(f => f.id === resto.fuenteId)
-      || this.sortearFuente()
+      || this.sortearFuente(resto.azar)
       || { rinde: [{ recurso: 'cuero', cantidad: 1 }, { recurso: 'tendon', cantidad: 1 }] };
+  }
 
+  /**
+   * Lo que rinde un resto de esa fuente, con filo o sin él. `aprovechar()` lo
+   * pone en el bolso y el cartel lo escribe: una sola cuenta para los dos.
+   */
+  rindeDeRestos(fuente, soloHueso) {
     // A mano limpia se junta el hueso limpio y nada más: el cuero no se arranca,
     // se corta. Es el eslabón que trababa el juego entero —el arco pide tendón,
     // el tendón sale de acá— y ahora la lasca lo destraba.
     let rinde = fuente.rinde || [];
-    if (resto.soloHueso) {
+    if (soloHueso) {
       rinde = rinde.filter(r => r.recurso === 'hueso');
       if (!rinde.length) rinde = [{ recurso: 'hueso', cantidad: 1 }];
     }
+    return rinde;
+  }
+
+  /**
+   * @param {{fuenteId?: string, fuente?: object, azar?: number, soloHueso?: boolean}} resto
+   */
+  aprovechar(resto) {
+    const fuente = this.fuenteDe(resto);
+    const rinde = this.rindeDeRestos(fuente, resto.soloHueso);
 
     const obtenido = [];
     for (const r of rinde) {

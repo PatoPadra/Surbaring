@@ -11,7 +11,7 @@
  * real del lugar, y de paso enseña por qué existe.
  */
 
-import { cosechaDe, COSECHA_SOTOBOSQUE, nombreDe, RECURSOS } from './Recursos.js';
+import { cosechaDe, cosechaPosibleDe, COSECHA_SOTOBOSQUE, nombreDe, RECURSOS } from './Recursos.js';
 
 const DESCANSO_S = 150;   // segundos de juego antes de volver a cosechar lo mismo
 
@@ -50,6 +50,78 @@ const VALE = { tronco: 4, piedra: 3, michay: 2, helecho: 1, coiron: 0, pasto_hum
  * troza el fuste. La misma mata, dos rindes.
  */
 const ACCION_POR_MATA = { tronco: 'trozar' };
+
+/** Sobre esta cota la piedra suelta puede ser obsidiana. */
+const ALTURA_OBSIDIANA_M = 1500;
+
+/**
+ * Lo que una mata da a veces, con qué probabilidad y dónde.
+ *
+ * Estos números vivían escritos en línea adentro de `actuar()`, y ahí no los
+ * podía leer nadie más. Ahora los lee también el cartel de la tecla, y ése es
+ * el motivo: decir «a veces arcilla» en la piedra de la orilla es lo único que
+ * le cuenta al jugador que la arcilla sale de ahí, y decirlo lejos del agua
+ * sería mentirle. `donde` es la condición de lugar; lo que no la trae sale en
+ * cualquier lado. El sorteo sigue siendo uno por renglón y en este orden, igual
+ * que antes.
+ */
+const EXTRAS_MATA = {
+  piedra: [
+    // No es azar decorativo: la obsidiana es vidrio volcánico y aparece en
+    // altura.
+    { recurso: 'obsidiana', cantidad: 1, probabilidad: 0.28, donde: (mata) => mata.y > ALTURA_OBSIDIANA_M },
+    // Y la arcilla se deposita en las orillas. `_orillaCerca()`, no
+    // `_aguaCerca()`: ver el comentario de esa función. Con `_aguaCerca()` este
+    // renglón era inalcanzable por orden de ramas y la arcilla no existía en el
+    // juego.
+    { recurso: 'arcilla', cantidad: 2, probabilidad: 0.45, donde: (mata, rec) => rec._orillaCerca() },
+  ],
+  // Las dos fuentes que el árbol daba por sentadas y no entregaba nadie.
+  // Ninguna de las dos pide matar, que es la condición del lugar.
+  //
+  // La lana es fibra de guanaco enganchada en el coirón: el guanaco muda en
+  // primavera y deja el vellón prendido en las matas por donde se rasca. Se
+  // junta del suelo, y es lo que destraba el telar mapuche, que estaba en el
+  // árbol sin producir nada.
+  coiron: [{ recurso: 'lana', cantidad: 1, probabilidad: 0.16 }],
+  // Las plumas se juntan del pastizal húmedo, que es donde hay aves. Sin ellas
+  // no hay flechas: un astil sin emplumar cabecea y no va a ningún lado.
+  pasto_humedo: [{ recurso: 'pluma', cantidad: 2, probabilidad: 0.22 }],
+};
+
+/**
+ * El paréntesis del cartel: lo que la tecla pone en el bolso.
+ *
+ * El rinde tiene tres formas y el cartel las distingue para no mentir: lo fijo
+ * con su número («2 × piedra»), lo que sale en cantidad al azar con su rango
+ * («2–4 × frutos») y lo que sale o no sale con «a veces», sin número, porque
+ * prometer «2 × arcilla» en una piedra que la da al 45 % sería prometer de más.
+ *
+ * Lo que se repite se suma: el maqui da 3 frutos fijos y 2 a 4 al azar, y
+ * «5–7 × frutos» se lee mejor que dos renglones del mismo fruto. Los dos
+ * extremos de la suma se alcanzan, porque lo fijo no depende del sorteo.
+ *
+ * Recibe renglones de la forma en que ya los devuelven los sistemas —
+ * `{recurso, cantidad}` o `{recurso, min, max}`— y `{recurso, aVeces: true}`.
+ * Sin nada que dar, no hay paréntesis: un «()» se leería como un cartel roto.
+ */
+function parentesisDeRinde(renglones) {
+  const fijos = new Map();
+  const aVeces = [];
+  for (const r of renglones) {
+    if (r.aVeces) { if (!aVeces.includes(r.recurso)) aVeces.push(r.recurso); continue; }
+    const min = r.min ?? r.cantidad, max = r.max ?? r.cantidad;
+    if (!(max > 0)) continue;
+    const suma = fijos.get(r.recurso);
+    if (suma) { suma.min += min; suma.max += max; } else fijos.set(r.recurso, { min, max });
+  }
+  const nombre = (id) => nombreDe(id).toLowerCase();
+  const partes = [
+    ...[...fijos].map(([id, { min, max }]) => `${min === max ? min : `${min}–${max}`} × ${nombre(id)}`),
+    ...aVeces.map(id => `a veces ${nombre(id)}`),
+  ];
+  return partes.length ? ` (${partes.join(' · ')})` : '';
+}
 
 export class Recoleccion {
   constructor({ mundo, jugador, vegetacion, sotobosque, fauna, inventario, saberes, codice, hud }) {
@@ -91,16 +163,60 @@ export class Recoleccion {
    * Es la mitad barata de «que se note qué hace cada herramienta»: el indicador
    * ya existía y ya se dibujaba, sólo que decía siempre lo mismo.
    */
-  _etiquetaMata(mata) {
+  _etiquetaMata(mata, rinde = this._rindeMata(mata)) {
+    const dice = parentesisDeRinde([
+      ...rinde.fijo,
+      ...rinde.aVeces.map(e => ({ recurso: e.recurso, aVeces: true })),
+    ]);
     const accionId = ACCION_POR_MATA[mata.tipo.id];
     if (accionId && this._accion(accionId)) {
       const acc = this._accion(accionId);
       if (this.equipo?.puede(accionId)) {
-        return `${acc.nombre} · ${this.equipo.enRanura('mano')?.nombre.toLowerCase()}`;
+        return `${acc.nombre} · ${this.equipo.enRanura('mano')?.nombre.toLowerCase()}${dice}`;
       }
-      return `Juntar ramas del ${mata.tipo.nombre.toLowerCase()}`;
+      return `Juntar ramas del ${mata.tipo.nombre.toLowerCase()}${dice}`;
     }
-    return `Juntar ${mata.tipo.nombre.toLowerCase()}`;
+    return `Juntar ${mata.tipo.nombre.toLowerCase()}${dice}`;
+  }
+
+  /**
+   * Todo lo que puede dar esta mata acá: lo fijo según la mano, y lo que sale a
+   * veces según el lugar. Se arma UNA vez, en `quePuedoHacer()`, y viaja en la
+   * acción: el cartel lo escribe y `actuar()` sortea sobre el mismo objeto, así
+   * que no hay forma de que prometan cosas distintas.
+   */
+  _rindeMata(mata) {
+    const id = mata.tipo.id;
+    return {
+      fijo: this._rinde(id),
+      aVeces: (EXTRAS_MATA[id] || []).filter(e => !e.donde || e.donde(mata, this)),
+    };
+  }
+
+  /** La acción de sotobosque completa, con su rinde adentro. */
+  _accionMata(mata) {
+    const rinde = this._rindeMata(mata);
+    return { tipo: 'sotobosque', etiqueta: this._etiquetaMata(mata, rinde), mata, rinde };
+  }
+
+  /**
+   * Un número de 0 a 1 fijo para cada lugar, con la misma grilla de 25 cm que el
+   * descanso.
+   *
+   * Sirve para que un resto sea siempre la misma clase de resto. `Caza` sorteaba
+   * la fuente al apretar la tecla, y con eso el cartel tenía dos salidas malas:
+   * sortear también cada medio segundo, y parpadear entre «cuero» y «asta», o
+   * nombrar la unión de las cuatro fuentes con cinco «a veces», que es verdad y
+   * no dice nada. Fijada por lugar dice exactamente lo que va a dar, y además es
+   * lo que pasa en el monte: una presa de puma no se vuelve un desmogue porque
+   * uno la deje descansar dos minutos y medio. Las posiciones de los restos las
+   * siembra `Sotobosque` con semilla fija por celda, así que el mismo resto cae
+   * siempre en el mismo número, y la proporción entre fuentes sobre todo el mapa
+   * sigue siendo la del dataset.
+   */
+  _azarDelLugar(x, z) {
+    const h = Math.sin(Math.round(x * 4) * 12.9898 + Math.round(z * 4) * 78.233) * 43758.5453;
+    return h - Math.floor(h);
   }
 
   /**
@@ -178,10 +294,14 @@ export class Recoleccion {
     // Un solo barrido del suelo para las dos cosas que se sacan de él
     const { mata, carronia: resto } = this._delSuelo(p, ahora);
     if (resto) {
+      const conFilo = !!this.equipo?.puede('descuerar');
+      // La fuente se fija por lugar y viaja en la acción hasta `aprovechar()`:
+      // ver `_azarDelLugar()`.
+      const fuente = this.caza?.fuenteDe({ azar: this._azarDelLugar(resto.x, resto.z) }) || null;
+      const dice = fuente ? parentesisDeRinde(this.caza.rindeDeRestos(fuente, !conFilo)) : '';
       return {
-        tipo: 'carronia', resto,
-        etiqueta: this.equipo?.puede('descuerar')
-          ? 'Aprovechar los restos' : 'Juntar los huesos · sin filo no sale más',
+        tipo: 'carronia', resto, fuente,
+        etiqueta: (conFilo ? 'Aprovechar los restos' : 'Juntar los huesos · sin filo no sale más') + dice,
       };
     }
 
@@ -205,9 +325,7 @@ export class Recoleccion {
     // sirve para «madera» y para «tronco», pero NO para «leña»— y hay uno cada
     // 1939 m² contra una planta cada pocos metros. La planta sigue ahí cuando
     // uno vuelva; el tronco es el que hay que levantar mientras se lo pisa.
-    if (mata && mata.vale >= 4) {
-      return { tipo: 'sotobosque', etiqueta: this._etiquetaMata(mata), mata };
-    }
+    if (mata && mata.vale >= 4) return this._accionMata(mata);
 
     // El material del suelo va ANTES de todo lo que se junta caminando, y ésa
     // es toda la diferencia.
@@ -246,13 +364,22 @@ export class Recoleccion {
     // `chatarraAMano()` y no `hayChatarra()`: la segunda contesta por la
     // geografía y sigue diciendo que sí con la veta agotada y adentro de un
     // sitio patrimonial. Ver el comentario de ese método en `Mineria.js`.
+    //
+    // La «(o R)» ya no va adentro de la etiqueta: el paréntesis es del rinde, y
+    // la R la marca `HUD.mostrarAccion()` al final, leyendo `tecla`.
     if (this.mineria?.chatarraAMano(p.x, p.z, ahora)) {
-      return { tipo: 'chatarra', etiqueta: 'Levantar chatarra (o R)', tecla: 'R' };
+      return {
+        tipo: 'chatarra', tecla: 'R',
+        etiqueta: `Levantar chatarra${parentesisDeRinde(this.mineria.rindeChatarra())}`,
+      };
     }
 
     const planta = this.vegetacion.masCercana(p, 7);
     if (planta && !this._enDescanso(planta.x, planta.z, ahora)) {
-      return { tipo: 'planta', etiqueta: `Recolectar ${planta.esp.nombreComun.toLowerCase()}`, planta };
+      return {
+        tipo: 'planta', planta,
+        etiqueta: `Recolectar ${planta.esp.nombreComun.toLowerCase()}${parentesisDeRinde(cosechaPosibleDe(planta.esp))}`,
+      };
     }
 
     // El árido, y sólo cuando de verdad se puede sacar.
@@ -280,7 +407,12 @@ export class Recoleccion {
     if (this.mineria) {
       const v = this.mineria.evaluar(p.x, p.z, ahora);
       if (v.permitido) {
-        return { tipo: 'cantera', etiqueta: `Abrir ${v.yacimiento.nombre.toLowerCase()} (o R)`, tecla: 'R' };
+        // El rinde del frente ya viene en el veredicto, y es el mismo arreglo
+        // que `extraer()` pone en el bolso.
+        return {
+          tipo: 'cantera', tecla: 'R',
+          etiqueta: `Abrir ${v.yacimiento.nombre.toLowerCase()}${parentesisDeRinde(v.yacimiento.rinde)}`,
+        };
       }
     }
 
@@ -308,15 +440,11 @@ export class Recoleccion {
     if (aguaAMano) return this._beber();
 
     // Lo que vale, después de la planta: piedra, michay, helecho
-    if (mata && mata.vale > 0) {
-      return { tipo: 'sotobosque', etiqueta: this._etiquetaMata(mata), mata };
-    }
+    if (mata && mata.vale > 0) return this._accionMata(mata);
 
     // Y recién ahora el relleno: coirón y pastizal, que dan fibra y están en
     // todos lados.
-    if (mata) {
-      return { tipo: 'sotobosque', etiqueta: this._etiquetaMata(mata), mata };
-    }
+    if (mata) return this._accionMata(mata);
 
     // El animal ya conocido: volver a mirarlo muestra la ficha otra vez, que es
     // informativo, pero no da puntos ni le saca la tecla a nada.
@@ -496,47 +624,27 @@ export class Recoleccion {
       case 'carronia': {
         this.descansando.set(this._clave(acc.resto.x, acc.resto.z), ahora);
         const conFilo = this.equipo?.puede('descuerar');
-        this.caza?.aprovechar({ soloHueso: !conFilo });
+        // La misma fuente que nombró el cartel, y no una sorteada ahora.
+        this.caza?.aprovechar({ fuente: acc.fuente, soloHueso: !conFilo });
         if (conFilo) this._gastarHerramienta();
         return;
       }
 
       case 'sotobosque': {
-        const cosecha = [...this._rinde(acc.mata.tipo.id)];
+        // El rinde viene armado en la acción, el mismo objeto que escribió el
+        // cartel: lo fijo según la mano, y lo de a veces ya filtrado por lugar.
+        // Se lee antes de gastar la herramienta, como siempre: si el hacha se
+        // rompe en este golpe, este golpe todavía es de hacha.
+        const { fijo, aVeces } = acc.rinde;
+        const cosecha = [...fijo];
         const accionMata = ACCION_POR_MATA[acc.mata.tipo.id];
         if (accionMata && this.equipo?.puede(accionMata)) this._gastarHerramienta();
         this.descansando.set(this._clave(acc.mata.x, acc.mata.z), ahora);
 
-        // Extras según dónde está la piedra. No es azar decorativo: la
-        // obsidiana es vidrio volcánico y aparece en altura, y la arcilla se
-        // deposita en las orillas.
-        if (acc.mata.tipo.id === 'piedra') {
-          if (acc.mata.y > 1500 && Math.random() < 0.28) {
-            cosecha.push({ recurso: 'obsidiana', cantidad: 1 });
-          }
-          // `_orillaCerca()`, no `_aguaCerca()`: ver el comentario de esa
-          // función. Con `_aguaCerca()` esta línea era inalcanzable por orden de
-          // ramas y la arcilla no existía en el juego.
-          if (this._orillaCerca() && Math.random() < 0.45) {
-            cosecha.push({ recurso: 'arcilla', cantidad: 2 });
-          }
-        }
-
-        // Las dos fuentes que el arbol daba por sentadas y no entregaba nadie.
-        // Ninguna de las dos pide matar, que es la condicion del lugar.
-        //
-        // La lana es fibra de guanaco enganchada en el coiron: el guanaco muda
-        // en primavera y deja el vellon prendido en las matas por donde se
-        // rasca. Se junta del suelo, y es lo que destraba el telar mapuche, que
-        // estaba en el arbol sin producir nada.
-        if (acc.mata.tipo.id === 'coiron' && Math.random() < 0.16) {
-          cosecha.push({ recurso: 'lana', cantidad: 1 });
-        }
-        // Las plumas se juntan del pastizal humedo, que es donde hay aves. Sin
-        // ellas no hay flechas: un astil sin emplumar cabecea y no va a ningun
-        // lado.
-        if (acc.mata.tipo.id === 'pasto_humedo' && Math.random() < 0.22) {
-          cosecha.push({ recurso: 'pluma', cantidad: 2 });
+        // Acá sólo se sortea. Los números y las condiciones de lugar viven en
+        // `EXTRAS_MATA`, con el porqué de cada uno.
+        for (const e of aVeces) {
+          if (Math.random() < e.probabilidad) cosecha.push({ recurso: e.recurso, cantidad: e.cantidad });
         }
 
         const obtenido = [];

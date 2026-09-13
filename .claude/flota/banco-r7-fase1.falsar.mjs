@@ -45,6 +45,11 @@ const TMP = path.join(AQUI, '.tmp-falsar-r7f1');
 function entrada({ ventana = '', doc = '', despues = '', proto = '' }) {
   return `
 const __EntradaOriginal = Entrada;
+// Deja a una instancia andando sola sin pasar por el setter, que puede negarse.
+function __pegado(inst) {
+  Object.defineProperty(inst, 'autoAndar', { configurable: true, get: () => true, set: () => {} });
+  Object.defineProperty(inst, 'adelante', { configurable: true, get: () => 1 });
+}
 function __envVentana(t, fn, yo) { ${ventana}
   return fn; }
 function __envDoc(t, fn, yo) { ${doc}
@@ -112,7 +117,12 @@ const DEFECTOS = [
   {
     id: 'soltar-no-corta', archivo: 'engine/Entrada.js', que: 'abrir un panel suelta el puntero y el personaje sigue caminando',
     caeEn: 'soltar el puntero (abrir un panel, morir) lo corta',
-    anexo: entrada({ doc: String.raw`if (t === 'pointerlockchange') return (e) => { const antes = yo() && yo().autoAndar; fn(e); if (antes) yo().autoAndar = true; };` }),
+    // Se pisa la propiedad en la instancia y no se escribe por el setter. La
+    // primera versión hacía `yo().autoAndar = true` con el puntero ya suelto, y
+    // el setter del agente se niega a prender sin puntero —con razón—: el defecto
+    // decía plantarse y no plantaba nada, y el falsador lo contó como punto ciego.
+    anexo: entrada({ doc: String.raw`if (t === 'pointerlockchange') return (e) => { const antes = yo() && yo().autoAndar; fn(e);
+      if (antes && !yo().bloqueado) __pegado(yo()); };` }),
   },
   {
     id: 'blur-no-corta', archivo: 'engine/Entrada.js', que: 'cambiar de ventana no corta el andar solo',
@@ -127,7 +137,8 @@ const DEFECTOS = [
   {
     id: 'z-sin-puntero', archivo: 'engine/Entrada.js', que: 'Z prende con un panel abierto y el personaje se va caminando solo',
     caeEn: 'con el puntero suelto (un panel abierto), Z no prende',
-    anexo: entrada({ ventana: String.raw`if (t === 'keydown') return (e) => { fn(e); if (e.code === 'KeyZ' && !e.repeat && yo() && !yo().bloqueado) yo().autoAndar = true; };` }),
+    // Por `__pegado` y no por el setter, por el mismo motivo de `soltar-no-corta`.
+    anexo: entrada({ ventana: String.raw`if (t === 'keydown') return (e) => { fn(e); if (e.code === 'KeyZ' && !e.repeat && yo() && !yo().bloqueado) __pegado(yo()); };` }),
   },
   {
     id: 'z-escribiendo', archivo: 'engine/Entrada.js', que: 'escribir una z en el buscador del códice prende el andar solo',

@@ -338,25 +338,44 @@ export function satisface(id) {
  * regla real del lugar.
  */
 export function cosechaDe(esp) {
+  // Un solo sorteo por renglón con rango, y en el mismo orden de siempre: el
+  // fruto sigue siendo `2 + floor(azar · 3)`, sólo que el 2 y el 4 se leen de
+  // `cosechaPosibleDe()` y no de esta línea.
+  return cosechaPosibleDe(esp).map(r => ({
+    recurso: r.recurso,
+    cantidad: r.min === r.max ? r.min : r.min + Math.floor(Math.random() * (r.max - r.min + 1)),
+  }));
+}
+
+/**
+ * Lo que una planta PUEDE dar, con el azar escrito como rango y sin sortear.
+ *
+ * Existe para que el cartel de la tecla diga «2–4 × frutos» leyendo la misma
+ * fuente que `cosechaDe()`, que la usa para sortear. Si el cartel copiara el 2
+ * y el 4, el día que alguien cambie el rinde del fruto el cartel mentiría y
+ * nadie se enteraría.
+ *
+ * @returns {Array<{recurso: string, min: number, max: number}>}
+ */
+export function cosechaPosibleDe(esp) {
   const salida = [];
   if (esp.recursoJuego) {
     const k = normalizar(esp.recursoJuego);
     const base = esp.rendimientoRecurso || 5;
     // Rinde una fracción: se toma lo que la planta puede ceder sin morir
-    salida.push({ recurso: k, cantidad: Math.max(1, Math.round(base * 0.14)) });
+    const n = Math.max(1, Math.round(base * 0.14));
+    salida.push({ recurso: k, min: n, max: n });
   }
   // Algunas especies dan además algo que no es su recurso principal: la
   // hojarasca de los pinos exóticos, que se junta del suelo sin tocar el árbol.
   if (esp.recursoExtra) {
-    salida.push({
-      recurso: normalizar(esp.recursoExtra.recurso),
-      cantidad: esp.recursoExtra.cantidad || 1,
-    });
+    const n = esp.recursoExtra.cantidad || 1;
+    salida.push({ recurso: normalizar(esp.recursoExtra.recurso), min: n, max: n });
   }
   if (esp.comestible && esp.parteComestible) {
     const parte = normalizar(esp.parteComestible);
     if (parte === 'fruto' || parte === 'semilla') {
-      salida.push({ recurso: parte === 'semilla' ? 'semilla' : 'fruto', cantidad: 2 + Math.floor(Math.random() * 3) });
+      salida.push({ recurso: parte === 'semilla' ? 'semilla' : 'fruto', min: 2, max: 4 });
     }
   }
   return salida;

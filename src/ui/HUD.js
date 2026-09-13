@@ -109,6 +109,16 @@ export class HUD {
         opacity: 0; transition: opacity .2s ease; text-align: center; }
       #accion.visible { opacity: 1; }
       #accion b { color: var(--acento); }
+      /* Andar solo. Sale de la clase que pone Entrada, sin un elemento ni una
+         línea en el bucle: el estado ya está en el cuerpo del documento. Va
+         debajo del cartel de acción, que es donde se mira mientras se camina, y
+         dice cómo se para, porque quien lo prendió sin querer no sabe con qué. */
+      body.auto-andar #hud::after { content: 'Andando solo  ·  W o S para frenar';
+        position: absolute; bottom: 16.5%; left: 50%; transform: translateX(-50%);
+        white-space: nowrap; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase;
+        color: var(--tinta); padding: .22rem .65rem; border-radius: 2px;
+        background: rgba(12,14,13,.62); border-left: 2px solid var(--acento);
+        text-shadow: 0 1px 2px rgba(0,0,0,.95); }
       #termico { position: absolute; top: 46%; left: 50%; transform: translateX(-50%);
         font-size: .8rem; letter-spacing: .16em; text-transform: uppercase;
         text-shadow: 0 1px 2px rgba(0,0,0,.95), 0 0 10px rgba(0,0,0,.85);
@@ -141,14 +151,22 @@ export class HUD {
     this.elFenomenos = fen;
   }
 
-  /** @param {{tipo:string, etiqueta:string}|null} accion */
+  /**
+   * La tecla de acción, y la propia si la hay, cada una en su lugar.
+   *
+   * Antes la tecla propia se marcaba con `etiqueta.replace('R', '<b>R</b>')`,
+   * o sea la **primera R mayúscula** que apareciera. Daba bien de casualidad,
+   * porque «(o R)» era la única. Con el rinde entre paréntesis, «Abrir frente de
+   * Roca» habría pintado la letra equivocada. Ahora la etiqueta sale textual y
+   * las marcas van afuera: E adelante, porque la E también lo hace, y la propia
+   * al final.
+   *
+   * @param {{tipo:string, etiqueta:string, tecla?:string}|null} accion
+   */
   mostrarAccion(accion) {
     if (!accion) { this.elAccion.classList.remove('visible'); return; }
-    // Algunas acciones tienen tecla propia: extraer no es recolectar
-    const tecla = accion.tecla || 'E';
-    this.elAccion.innerHTML = accion.tecla
-      ? accion.etiqueta.replace(tecla, `<b>${tecla}</b>`)
-      : `<b>E</b> · ${accion.etiqueta}`;
+    this.elAccion.innerHTML = `<b>E</b> · ${accion.etiqueta}`
+      + (accion.tecla ? ` · o <b>${accion.tecla}</b>` : '');
     this.elAccion.classList.add('visible');
   }
 
