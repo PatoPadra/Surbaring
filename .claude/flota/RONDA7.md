@@ -580,8 +580,14 @@ motivo; **en total, a lo sumo doce tintas**.
 
 **E3 · Se distinguen por la silueta**, que es la regla de la ronda 5 («un hacha de
 piedra y un pico de asta se distinguen de lejos por la forma, no por el color»).
-Medido: **no hay dos modelos de los treinta con las tres medidas de su caja dentro
-del 15 % entre sí**. Las medidas salen de objetos reales —el largo de una lanza de
+Medido: **no hay dos modelos de los treinta con las tres medidas de su caja —en el
+espacio del modelo, sin la pose— dentro del 15 % entre sí**.
+
+> **Medido contra los 18 de hoy antes de escribir el banco**: en el espacio del
+> modelo, **cero pares** dentro del 15 %; con la caja ya posada en la mano, uno
+> —azuela y sierra—, porque la pose las inclina parecido. Medida posada, la
+> aserción habría estado roja antes de que nadie tocara nada, que es el defecto de
+> B4 otra vez. Por eso va sin la pose. La barreta, la más larga, mide 1,06 m. Las medidas salen de objetos reales —el largo de una lanza de
 colihue de a pie, de un arco, de los ramales de una boleadora— y la fuente o el
 criterio de cada una va en la bitácora.
 
