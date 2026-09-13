@@ -104,7 +104,26 @@ pone cuatro filtros encima:
 **Y el 1,06 % es una cota superior**: `quePuedoHacer()` le da la tecla a cualquier
 planta a menos de 7 m antes que a la piedra, y la vegetación no se arma en Node
 (hornea impostores con la placa). En una orilla de bosque ese filtro puede comerse
-casi todo. El horno de barro pide 10 de arcilla y la carbonera 4: a 0,9 por
+casi todo.
+
+> **Medido en el juego el 13/9/2026, con la fase 1 ya puesta**, para abrir la fase
+> 3. Doscientos cuarenta puntos al azar de esa misma banda —orilla a 12 m y el agua
+> fuera de alcance— a menos de 3 km del arranque, con el sotobosque y la vegetación
+> sembrados de verdad en cada uno, preguntándole a `recoleccion.quePuedoHacer()`:
+>
+> | qué ofrece la tecla | puntos | |
+> |---|---|---|
+> | **piedra, y el cartel dice «a veces arcilla»** | 72 | **30 %** |
+> | michay | 63 | 26 % |
+> | una planta a menos de 7 m | 45 | 19 % |
+> | chatarra | 27 | 11 % |
+> | tronco caído | 21 | 9 % |
+> | helecho | 12 | 5 % |
+>
+> **La planta no se comió casi todo: se come uno de cada cinco.** Queda un 30 % de la
+> banda, o sea cerca del **0,75 % de la tierra** contra la cota de 1,06. El punto útil
+> más cercano está a **499 m** del arranque, el p10 a 859 m y la mediana a **1,9 km**.
+> Los 240 puntos son de la Reserva: la arena de esa orilla sigue prohibida. El horno de barro pide 10 de arcilla y la carbonera 4: a 0,9 por
 piedra son **16 piedras de orilla**, y ningún cartel dice que hay que buscarlas
 ahí.
 
