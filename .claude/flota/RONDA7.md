@@ -1123,9 +1123,18 @@ odres sean dos aguas.
 - `src/data/herramientas.json` — **sólo** los recipientes: el odre, y los objetos nuevos
 - `src/ui/Iconos.js` — **sólo** los iconos de los objetos nuevos
 
-Del coordinador: `src/main.js` —si el catálogo que llega al inventario tiene que
-llevar lo que guarda cada objeto—, el banco, el falsador y esta carta. `Equipo.js`,
-`Fundicion.js` y `Partida.js` se piden en `pendiente-r7-vasija.md`. Bitácora:
+- `src/systems/Equipo.js` — **sólo** el bloque del constructor que conecta con el
+  inventario: la ficha del catálogo y `pesoAparte` (`Equipo.js:87-95`)
+
+> **Corregido antes de escribir el banco, dos veces.** Decía que `Equipo.js` se pedía
+> por pendiente. Pero el catálogo que le llega al inventario lo arma `Equipo` en su
+> constructor, con el peso de cada objeto y nada más: lo que guarda un recipiente no
+> tiene otra puerta. Y un recipiente puesto en una ranura no está en la grilla: el
+> inventario sólo se entera por la misma costura por la que se entera de cuánto pesa
+> lo puesto. Es un bloque de ocho líneas, no el archivo.
+
+Del coordinador: `src/main.js`, el banco, el falsador y esta carta. `Fundicion.js` y
+`Partida.js` se piden en `pendiente-r7-vasija.md`. Bitácora:
 `.claude/flota/r7-vasija.md`.
 
 ### El contrato
@@ -1136,10 +1145,11 @@ casillero. Los demás recursos no cambian en nada.
 
 **V2 · El recipiente guarda lo que dice su ficha.** El tope es la suma de lo que
 guardan los recipientes que se llevan, contando las tres clases de líquido juntas. El
-odre guarda las 6 que ya declara. Soltarlo baja el tope.
+odre guarda las 6 que ya declara. Soltarlo baja el tope. Lo que guarda un recipiente
+se lee de su ficha, de `efecto.guardaAgua`, y cuenta en medidas.
 
 **V3 · Un recipiente antes del cuero.** Al menos uno se fabrica sin cuero ni cuero
-curtido en ningún eslabón de su cadena, con fuente —o el criterio, dicho— para que
+curtido en ningún eslabón de su cadena, con fuente —o el criterio, dicho, en la ficha: `fuente` o `criterio`— para que
 exista en la región y para cuánto guarda. El dato de la cestería tupida que trae
 `historia.json` se verifica o se descarta, no se copia. Una medida es un litro.
 
@@ -1151,10 +1161,14 @@ llevarla. El cartel de la tecla no promete una medida que no entra.
 lugar; lo que no entra se queda en el horno esperando, con el mecanismo que ya existe.
 
 **V6 · Soltar un recipiente con agua derrama lo que ya no cabe**, y el aviso lo dice.
+Se suelta con la acción del bolso que ya existe, `tirar_obj`, y el derrame pasa al
+soltar: no al pintar el bolso, ni al pasar un recipiente de la grilla a una ranura.
 Un guardado viejo con más líquido que el tope no pierde nada al cargar: se conserva
 hasta que se consuma, y no entra más hasta que haya lugar. `VERSION` sigue en 1.
 
-**V7 · Se ve.** El bolso dice cuánto líquido se lleva sobre cuánto cabe.
+**V7 · Se ve.** `inventario.liquido` devuelve `{ lleva, cabe }`, en medidas, y el
+bolso dice las dos cosas. El banco mide la puerta; que se lea, lo mira el coordinador
+en el juego.
 
 **V8 · Nada más cambia de forma.** Las seis recetas, la tecla Q, `consumirPara` y
 `disponiblePara` siguen igual. Los objetos nuevos tienen icono.
@@ -1166,3 +1180,29 @@ siguen verdes, y `vite build` limpio.
 
 Que cada recipiente lleve su propia agua. Pudrir o enfriar lo que se lleva. Llenar un
 recipiente en un arroyo sin beber.
+
+### El banco, contra la base
+
+`banco-r7-fase4.mjs`, diez secciones. Contra el código de hoy:
+
+- **Premisas verdes**: el odre declara 6 y queda en un casillero; con ranura en una
+  copia de la ficha va puesto; el recorrido de la cadena ve el cuero curtido del odre
+  y el tiento de la mochila, y da por alcanzables el canasto y el candil, que llega a
+  la cerámica por el horno de barro; el botón del bolso suelta un odre de verdad.
+- **El contrato, rojo por lo que tiene que ser rojo**: sin recipiente entran 3 de 3
+  de cada líquido; con el odre entran 10 de 10; beber se lleva la medida y dice «te
+  llevaste una medida»; la hornada de agua hervida no espera; soltar un odre deja las
+  10 medidas; `inventario.liquido` no existe.
+- **Verde, porque es lo que no tiene que cambiar**: los otros 68 recursos entran igual,
+  también los 7 que hidratan (fruto, hongo, carne, carne asada, pescado asado,
+  pescado, miel); beber hidrata 32; la Q bebe; `disponiblePara` y `consumirPara`;
+  un guardado conserva el agua que traía; `VERSION` en 1. Regresión 7/7.
+
+**Un defecto mío, encontrado antes de encargar nada**: el aviso del soltar sin
+derrame se juzgaba con «no dice `derram`», y un «no se derramó nada» lo habría
+tirado. Se juzga ahora que diga que se derramó, y no que diga que no.
+
+`banco-r7-fase4.falsar.mjs`: 24 defectos y 3 controles al revés. Se corre con el
+código del agente, porque casi todos se montan sobre el tope, que hoy no existe; en
+modo `--sintaxis` los parches ya cargan contra la base, y los cuatro que no se
+plantan todavía esperan un recipiente nuevo o la puerta `liquido`.
