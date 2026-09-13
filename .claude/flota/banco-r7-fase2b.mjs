@@ -247,23 +247,43 @@ async function siluetas() {
   return s;
 }
 
+/**
+ * El cuerpo con este id en la mano, **en la pose del juego**: la carga asentada y
+ * las matrices de TODO el cuerpo recalculadas.
+ *
+ * La primera versión medía mal, y lo encontró el agente leyendo este banco antes
+ * de escribir una línea. Actualizaba las matrices una sola vez con la mano vacía y
+ * después, por modelo, sólo `m.updateMatrixWorld(true)`; pero `Box3.setFromObject`
+ * no recalcula los padres, así que el objeto se medía contra la matriz vieja de la
+ * mano sin carga. Y con un solo cuadro por id la pose de carga, que se suaviza, no
+ * llegaba a asentarse. El banco veía el objeto unos 10 cm más abajo y más inclinado
+ * que en el juego: el pico de asta daba 0,64 m y asentado da 0,82.
+ */
+function asentado(cuerpo, id) {
+  cuerpo.enMano = id;
+  for (let k = 0; k < 60; k++) cuerpo.actualizar(1 / 60, jugador());
+  cuerpo.grupo.updateMatrixWorld(true);
+  return id ? (cuerpo.manos?.[1]?.getObjectByName(`mano:${id}`) ?? cuerpo.grupo.getObjectByName(`mano:${id}`) ?? null) : null;
+}
+
 async function suelo() {
   const s = seccion(4, 'EL SUELO — parado, nada baja a menos de 2 cm de los pies');
   const { THREE, cuerpo } = await armar();
-  cuerpo.enMano = null;
-  cuerpo.actualizar(1 / 60, jugador());
-  cuerpo.grupo.updateMatrixWorld(true);
+  asentado(cuerpo, null);
   const pies = new THREE.Box3().setFromObject(cuerpo.grupo).min.y;
   s.ok(Number.isFinite(pies) && Math.abs(pies - 800) < 0.1, 'premisa: la planta de los pies está en el suelo', (pies - 800).toFixed(3));
   let medidos = 0;
   const bajos = [];
+  const tabla = [];
   for (const id of TODOS) {
-    const m = modelo(cuerpo, id);
+    const m = asentado(cuerpo, id);
     if (!m) continue;
     if (IDS_ARMA.includes(id)) medidos++;
     const minY = new THREE.Box3().setFromObject(m).min.y - pies;
+    tabla.push(`${id} ${minY.toFixed(2)}`);
     if (minY < 0.02) bajos.push(`${id} ${minY.toFixed(2)}`);
   }
+  s.nota(`sobre la planta de los pies, en metros: ${tabla.join(' · ')}`);
   s.ok(bajos.length === 0, 'ningún modelo baja a menos de 2 cm de la planta de los pies', bajos.join(' · ') || 'ninguno');
   s.feliz = medidos > 0;
   s.felizQue = `${medidos} modelos del arma medidos contra el suelo`;
