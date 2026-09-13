@@ -515,3 +515,96 @@ ronda 7 fase 1 siguen verdes, y `vite build` limpio.
 El cielo y la luna (fase 6). La exposición nocturna y la cadena de color. El
 incendio forestal, salvo que se rompa. La antorcha dibujada en la mano, que ya
 existe.
+
+---
+
+## FASE 2b · `empuñadura` — lo que va en la ranura del arma también se ve
+
+Abre cuando cierre la fase 2. Pedida por el dueño el 12/9/2026: *«el garrote no
+se veía»*.
+
+### Lo que se midió antes de encargar nada
+
+- **`main.js:752` pone en la mano sólo la ranura `mano`**: `cuerpo.enMano =
+  equipo.enRanura('mano')?.id ?? null`. Con el garrote equipado y la mano vacía,
+  el cuerpo no recibe nada.
+- **`Herramientas3D.js` modela los 18 objetos de ranura `mano`** y ninguno de la
+  ranura `arma`. `construirHerramienta()` devuelve `null` para un id sin receta, así
+  que aunque se cableara el arma, la mano seguiría vacía.
+- **Son 12 en la ranura del arma**, y la ficha de la ranura dice cómo conviven con
+  la herramienta: *«se saca sin guardar la herramienta»*.
+
+  | id | qué es | kg | materiales de la ficha |
+  |---|---|---|---|
+  | `garrote` | rama con peso en la punta | 1,2 | madera, cordel |
+  | `honda` | dos cordeles y una badana | 0,15 | cordel, cuero |
+  | `lanza_colihue` | astil de colihue con punta | 1,1 | caña, punta, brea, tiento |
+  | `estolica` | palo con tope que lanza el dardo | 0,6 | madera, asta, tiento |
+  | `bola_perdida` | una bola con manija corta | 0,7 | bola, tiento |
+  | `boleadora_dos` | dos bolas desiguales | 1,3 | bola, tiento, cuero |
+  | `boleadora_tres` | tres ramales desde un nudo | 2,0 | bola, tiento, cuero curtido |
+  | `arco_colihue_obj` | arco de colihue | 0,9 | caña, tendón, cordel |
+  | `linea_mano` | cordel enrollado en la mano | 0,2 | cordel, anzuelo |
+  | `cana_colihue` | caña de colihue | 0,6 | caña, cordel, anzuelo |
+  | `arpon_hueso` | astil con púas de hueso | 0,8 | hueso, caña, brea, tiento |
+  | `equipo_mosca` | caña con carrete | 1,0 | caña, hierro, cordel, cuero curtido |
+
+- **El molde ya existe y está medido** (ronda 5, fase 3): origen en el puño y +Y
+  hacia lo que trabaja, a lo sumo dos materiales por objeto con las piezas
+  fusionadas, tintas compartidas desde `Cuerpo._tinta()` —así equipar no compila
+  nada— y cinco familias de pose en `MONTAJES`. Topes: ≤ 900 triángulos y ≤ 2
+  mallas por objeto, y **−0,01 ms** medido para una herramienta en la mano.
+- **La tinta `llama` es emisiva siempre** (`PALETA.llama`): la punta de la antorcha
+  brilla aunque esté apagada. Es la hipótesis de B5 en la fase 2; si esa fase la
+  confirma, el arreglo cae en los archivos de ésta.
+
+### Propiedad exclusiva de archivos
+
+- `src/entities/Herramientas3D.js` — los doce modelos y sus poses
+- `src/entities/Cuerpo.js` — **sólo** si una pose o la emisión de la llama lo piden
+
+Del coordinador: `src/main.js` (qué va a la mano). Bitácora:
+`.claude/flota/r7-empunadura.md`.
+
+### El contrato
+
+**E1 · Lo del arma se ve.** Con la mano vacía y algo en la ranura del arma, el
+cuerpo lo lleva. **Con una herramienta en la mano, va la herramienta** —la antorcha
+encendida también es de mano—. El cableado es una línea de `main.js`, del
+coordinador.
+
+**E2 · Los doce tienen modelo**, con el molde de los dieciocho: ≤ 900 triángulos y
+≤ 2 mallas cada uno, y materiales sacados de la paleta compartida. Si hace falta
+una tinta nueva —el colihue no es madera parda—, se agrega a la paleta con su
+motivo; **en total, a lo sumo doce tintas**.
+
+**E3 · Se distinguen por la silueta**, que es la regla de la ronda 5 («un hacha de
+piedra y un pico de asta se distinguen de lejos por la forma, no por el color»).
+Medido: **no hay dos modelos de los treinta con las tres medidas de su caja dentro
+del 15 % entre sí**. Las medidas salen de objetos reales —el largo de una lanza de
+colihue de a pie, de un arco, de los ramales de una boleadora— y la fuente o el
+criterio de cada una va en la bitácora.
+
+**E4 · Nada se clava en el suelo ni atraviesa el cuerpo parado.** Con el jugador
+de pie, el punto más bajo de cada modelo queda al menos 2 cm sobre la planta de los
+pies. Las boleadoras y la honda pueden colgar: colgar no es enterrarse.
+
+**E5 · Equipar no compila nada.** Todo material de un modelo es un material de la
+paleta de `Cuerpo`: ninguna bandera nueva en la clave del programa.
+
+**E6 · Cachear y no crecer.** Cien cambios entre mano y arma dejan el grafo del
+mismo tamaño y los modelos con los mismos triángulos.
+
+**E7 · Si la fase 2 confirma B5**: la antorcha y el candil apagados no brillan; la
+emisión de la llama sigue a `equipo.luzActiva()`, sin compilar nada.
+
+**E8 · Costo.** A Baja 1024×576, en primera y tercera persona, con el objeto más
+grande en pantalla —lo mide el coordinador, alternado—: **≤ +0,3 ms**.
+
+**E9 · Sin regresión.** El banco de la ronda 5 fase 3 (4/4) y los de la ronda 7
+siguen verdes, y `vite build` limpio.
+
+### Lo que NO es de esta fase
+
+Animar el gesto de tirar, lanzar o pescar. Cambiar cómo cazan o pescan las armas.
+Recuperar flechas.
