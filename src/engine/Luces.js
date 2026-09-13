@@ -379,17 +379,27 @@ function lineal(hex) {
  * Cómo alumbra cada cosa que se lleva en la mano.
  *
  * El radio y la duración son de la ficha (`herramientas.json`); esto es sólo el
- * color, la intensidad y cuánto tiembla. Todas por debajo de la fogata (2,6 en
+ * color, la intensidad y cuánto tiembla. Todas por debajo de la fogata (20 en
  * 14 m), que es fuego de verdad. La antorcha de resina es la más viva y la que
  * más parpadea; el candil de grasa da una llama chica, roja y humosa; la vela de
  * cera, la más amarilla y la más quieta.
  *
- * Números elegidos sin haber visto la captura nocturna: se ajustan mirándola.
+ * **Las intensidades se multiplicaron por siete en la ronda 7, medido en la
+ * imagen final.** Con 2,0 la antorcha dejaba el suelo en +3,4 de 255 a 2 m, que a
+ * la vista es negro: por debajo de cierto nivel ACES devuelve cero, y la
+ * exposición de noche y la curva del grado aplastan lo que queda. Con 14, la
+ * cadena modelada en `.claude/flota/r7-brasa-cadena.mjs` y calibrada contra esa
+ * medición predice +30 a +41 a 2 m. El candil y las velas suben en la misma
+ * proporción: tenían el mismo problema y conservan su orden.
+ *
+ * De día la antorcha alumbraría el suelo con la misma fuerza, y eso se ve al
+ * mediodía. Lo resuelve quien junta las luces con `luzDeFuegoSegunSol()` de
+ * `world/Hornos.js` (ver `.claude/flota/pendiente-r7-brasa.md`).
  */
 export const LLAMAS = {
-  antorcha: { color: lineal(0xff8a3a), intensidad: 2.0, parpadeo: 0.12 },
-  candil_grasa: { color: lineal(0xff7430), intensidad: 1.2, parpadeo: 0.06 },
-  velas_cera: { color: lineal(0xffb066), intensidad: 0.9, parpadeo: 0.04 },
+  antorcha: { color: lineal(0xff8a3a), intensidad: 14, parpadeo: 0.12 },
+  candil_grasa: { color: lineal(0xff7430), intensidad: 8.4, parpadeo: 0.06 },
+  velas_cera: { color: lineal(0xffb066), intensidad: 6.3, parpadeo: 0.04 },
 };
 
 /**

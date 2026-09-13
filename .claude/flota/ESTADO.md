@@ -1,5 +1,20 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **12/9/2026 — RONDA 7, FASE 2 (`brasa`) CERRADA: el fuego se ve encendido y
+> alumbra.** Mitad Node 4/4, falsador 12 de 12, **mitad navegador 38 de 38**. La
+> fogata tenía el suelo en +5,5 de 255 a 2 m, o sea negro, y ahora en **+45,3**; la
+> antorcha, de +4,5 a **+32,3**. La fogata tiene llama —pico de 241,8 desde 6 m— y
+> **construir sigue sin compilar nada** (17 programas antes y después). Al mediodía
+> el fuego baja solo: +2,7, menos que los +5,9 de antes.
+>
+> **El agente encontró que `conCSM` compilaba programas de más**: el primer horno de
+> barro y la primera fragua ya compilaban uno cada uno en la base. Arreglado de
+> raíz en `main.js`.
+>
+> *Sus predicciones, sin navegador, dieron adentro en tres de cuatro. La fogata
+> midió un 22 % menos que el centro de la suya: la cuarta vez en dos rondas que el
+> número propio de un agente cae del lado optimista.*
+
 > **12/9/2026 — RONDA 7, FASE 1 (`tecla`) CERRADA: andar solo con Z, y el cartel
 > dice qué da.** Banco 6/6 con los cuatro anteriores y `vite build`; **falsador 27
 > de 27** y los dos controles al revés en verde: cambiar el rinde en su fuente no

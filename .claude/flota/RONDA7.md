@@ -550,6 +550,95 @@ existe.
 
 ---
 
+## FASE 2 CERRADA — 12/9/2026
+
+**Mitad Node 4/4** con los cinco bancos anteriores y `vite build`, **falsador 12 de
+12** vistos por la aserción declarada, y **mitad navegador 38 de 38**, corrida por
+el coordinador en la HD 4000 a Baja 1024×576 con el cableado de `main.js` ya
+aplicado. El agente tocó `Hornos.js` y la tabla `LLAMAS`, y nada más.
+
+### Medido en el juego
+
+| | antes | ahora | contrato |
+|---|---|---|---|
+| programas: construir, prender, apagar, construir la segunda | 17 → 17 | **17 → 17 → 17 → 17** | igual |
+| pico de la fogata desde 6 m, prendida · apagada | 13,9 · 0,8 | **241,8 · 1,4** | ≥ 180 · ≤ 40 |
+| suelo a 1 · 2 · 3 · 8 m de la fogata | +4,4 · +5,5 · +5,2 · +1,9 | **+36,3 · +45,3 · +43,6 · +21,7** | ≤ 200 · ≥ 35 · ≥ 30 · ≥ 8 |
+| suelo a 1 · 2 · 5 m de la antorcha | +3,3 · +4,5 · +3,7 | **+24,5 · +32,3 · +27,9** | ≤ 200 · ≥ 25 · ≥ 4 |
+| mediodía: prendida menos apagada a 2 m | +5,86 | **+2,72** | ≤ 6,5 |
+| la llama · dos luces contra ninguna | — · +0,73 ms | **+0,09 · +0,68 ms** | ≤ 0,3 · ≤ 1,32 |
+
+Las capturas son `capturas/r7f2-despues-noche-6m.png` y `-mediodia-6m.png`, contra
+`r7f2-fogata-noche-6m.png` de la apertura. De noche la fogata tiene llama amarilla
+y el suelo se lee de naranja hasta el borde del campamento; al mediodía la llama se
+ve y el suelo no se enciende.
+
+### Las predicciones del agente, contra la medición
+
+`brasa` no podía abrir el navegador, así que modeló la cadena de la imagen
+(`r7-brasa-cadena.mjs`: Lambert, exposición, ACES como lo escribe three, sRGB y la
+curva del grado), la calibró contra la base y la validó prediciendo el mediodía de
+la base antes de tocar nada: +5,1 a +6,6 donde se había medido +5,86.
+
+| | predijo | se midió |
+|---|---|---|
+| mediodía a 2 m | +2,6 (2,3 a 3,0) | **+2,72** |
+| costo de la llama | ≤ +0,1 ms | **+0,09** |
+| antorcha a 2 m | +36 (30,5 a 41) | **+32,3** |
+| fogata a 2 m | **+58** (52 a 65) | **+45,3** |
+
+Tres de cuatro, adentro. **La fogata dio un 22 % menos que el centro de su
+predicción**, cerca del piso de «no menos de +40» que el propio agente se había
+anotado como riesgo: el anillo mezcla briznas encendidas con suelo oscuro, y un
+modelo de un solo valor sobreestima. Pasa el contrato con margen, pero es la cuarta
+vez en dos rondas que el número propio de un agente cae del lado optimista. **Que no
+se cierre una fase sin la medición.**
+
+### Lo que encontró el agente y el coordinador verificó
+
+1. **`conCSM` compilaba programas de más.** Cada llamada guarda la clave que había
+   como «propia» y arma la nueva encima, así que un material que pasa dos veces
+   pide otro programa. `dibujarHorno` recorre todas las mallas del horno, y **en la
+   base el primer horno de barro y la primera fragua compilaban un programa cada
+   uno**, porque sus dos mallas compartían material. Una llama compartida entre
+   fogatas habría compilado en la segunda. Leído en `main.js` y arreglado de raíz
+   por el coordinador: `conCSM` no envuelve dos veces lo mismo. `Hornos.js` clona el
+   material repetido y se defiende solo, y con el arreglo de raíz eso sobra y no
+   molesta.
+2. **B5: el triángulo amarillo era la llama del modelo de la antorcha**, apagada en
+   la mano. `PALETA.llama` es emisiva y nada la esconde. El agente lo mostró por el
+   color —la cadena predice 244·177·53 para ese emisivo y la captura tiene
+   241·171·50; una brizna de albedo 1 de frente al fuego no pasa de 230·110·21— y
+   por el tamaño. Sigue en las capturas de cierre, y **pasa a la fase 2b como E7
+   confirmado**, con el parche escrito en `pendiente-r7-brasa.md`.
+
+### Lo que el coordinador puso en `main.js`
+
+- `hornos.fuentesDeLuz(cielo.direccionSol.y)`: el fuego baja de 20 a 1 al sol, que
+  es la adaptación del ojo que la exposición no hace. Sin eso el mediodía sumaba
+  +40.
+- La antorcha, por el mismo factor: subió de 2 a 14, y al sol habría sumado +29.
+- `conCSM` idempotente, con un `WeakSet`.
+
+### Dudas del coordinador que la medición resolvió
+
+- **`receiveShadow`.** El comentario de la ronda 5 en `Herramientas3D.js` dice que
+  entra en la clave del programa, y la llama lo tiene apagado y las piedras
+  prendido. La comparación de claves del agente era en Node, que no ve los
+  parámetros del renderer. **Medido: 17 programas antes y después.** No compila.
+
+### Lo que hay que mirar jugando
+
+1. **Si el suelo quedó demasiado naranja.** A 5 m de la fogata son +41 de 255, y en
+   la captura el suelo se ve encendido y moteado. Los pisos del contrato eran del
+   jefe; el tono lo decide el ojo del dueño.
+2. **El candil y las velas también subieron ×7**, y nada los mide. Tenían el mismo
+   problema de nivel y conservan su orden.
+3. **La llama es de piezas de un solo color**, sin degradé ni transparencia: es lo
+   que permite no compilar nada. De cerca se lee facetada.
+
+---
+
 ## FASE 2b · `empuñadura` — lo que va en la ranura del arma también se ve
 
 Abre cuando cierre la fase 2. Pedida por el dueño el 12/9/2026: *«el garrote no

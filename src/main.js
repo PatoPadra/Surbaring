@@ -38,7 +38,7 @@ import { Caza } from './systems/Caza.js';
 import { Limites } from './world/Limites.js';
 import { Mineria } from './systems/Mineria.js';
 import { Fundicion } from './systems/Fundicion.js';
-import { Hornos } from './world/Hornos.js';
+import { Hornos, luzDeFuegoSegunSol } from './world/Hornos.js';
 import { Taller } from './ui/Taller.js';
 import { Construccion } from './systems/Construccion.js';
 import { Obras } from './world/Obras.js';
@@ -750,12 +750,19 @@ async function iniciar() {
     // y el punto del que sale la llama. Va en la primera línea y no dentro del
     // if de la luz, porque si no una captura sin antorcha dibuja la mano vacía.
     cuerpo.enMano = equipo.enRanura('mano')?.id ?? null;
-    const fuentes = hornos.fuentesDeLuz();
+    // El fuego sabe la hora: de noche alumbra con 20 y al sol con 1. Es la
+    // adaptación del ojo que la exposición del juego no hace, y sin esto la luz
+    // que hace falta a medianoche encendía el suelo del mediodía (ronda 7, B4).
+    const alSol = cielo.direccionSol.y;
+    const fuentes = hornos.fuentesDeLuz(alSol);
     const incendio = clima.fuenteDeLuz?.();
     if (incendio) fuentes.push(incendio);
     const enMano = fuenteDeMano(equipo.luzActiva(tiempo.fecha.getTime(), est),
       jugador, camara, tiempo.segundosTotales);
     if (enMano) {
+      // La antorcha también: subió de 2 a 14 para que de noche se vea el suelo,
+      // y al sol, sin esto, sumaría +29 de 255 a dos metros.
+      enMano.intensidad *= luzDeFuegoSegunSol(alSol);
       // La llama sale de la punta del modelo, no de la cuenta aproximada de la
       // fase 1: con la herramienta dibujada, el punto de la mano es el de verdad.
       cuerpo.puntoDeMano(enMano);
@@ -1004,7 +1011,21 @@ async function iniciar() {
  * inyecciones desaparecen sin dar ningún error — el terreno se dibuja liso, a
  * cota cero y sin color. Acá se guardan ambas y se ejecutan en orden.
  */
+/**
+ * Lo que ya pasó por `conCSM`.
+ *
+ * Envolver dos veces no es inocuo: la segunda vuelta toma como «propia» la clave
+ * que armó la primera y arma otra encima, así que el material pide un programa
+ * nuevo. Le pasaba a todo material repetido dentro de un nodo que `dibujarHorno`
+ * recorre entero —el primer horno de barro y la primera fragua compilaban uno cada
+ * uno— y le habría pasado a la llama compartida entre fogatas. Lo encontró el
+ * agente `brasa` en la ronda 7.
+ */
+const envueltosCSM = new WeakSet();
+
 function conCSM(csm, material) {
+  if (envueltosCSM.has(material)) return;
+  envueltosCSM.add(material);
   const propio = material.onBeforeCompile;
   const clavePropia = material.customProgramCacheKey;
   csm.setupMaterial(material);
