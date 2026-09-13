@@ -1076,3 +1076,93 @@ contrato no lo restringió. Pero no es nuevo: la piedra ya daba arcilla en el Pa
 **la recolección entera —fibra, frutos, ramas, piedra— es una licencia sin declarar
 desde la ronda 1**. Declararla o restringirla cambia el juego en todo el oeste del mapa,
 y es una decisión del dueño, no de una fase.
+
+---
+
+## FASE 4 · `vasija` — el agua viaja en un recipiente
+
+### Lo que se midió antes de encargar nada
+
+- **El agua entra suelta al bolso.** El único que la produce al andar es `beber`,
+  que hace `agregar('agua', 1)` sin preguntar en qué (`Recoleccion.js`). Los hornos
+  producen agua hervida e infusión y las ponen en el bolso igual (`Fundicion.js:628`).
+- **Seis recetas la consumen**, todas de horno (`mineria.json`): agua hervida (2 de
+  agua → 2 de agua hervida), infusión de canelo (2 → 2), emplasto de maqui (1), lavado
+  de michay (3), mortero de ceniza (2) y hormigón (2). La tecla Q bebe del bolso lo
+  que hidrate 20 o más. Los líquidos son tres: `agua`, `agua_segura` e
+  `infusion_canelo`, todos de 1 kg por medida salvo la infusión, de 0,4.
+- **El odre es un número que no llega a ningún lado.** Declara `guardaAgua: 6` y nadie
+  lo lee; y aunque alguien lo leyera con `Equipo.suma()`, que sólo mira lo puesto, el
+  odre no tiene ranura: vive en la grilla. Está en el nivel 2 y pide cuero curtido.
+- **Lo que el juego ya sabe de recipientes, en `historia.json`**: la alfarería de la
+  región hace «vasijas modeladas por rollos y cocidas a fuego abierto» (nodo
+  `alfareria_bicroma`, 16 de saber); la cestería de junco dice que «algunos tejidos
+  apretados podían contener líquidos» (nodo `cesteria_junco`, 10). La cerámica ya se
+  fabrica: el horno de barro hace 2 con 4 de arcilla en 8 h, y desde la fase 3 el horno
+  está al alcance. Ninguna fuente de caza da vejiga ni estómago.
+- **Cómo decide el bolso**: `Inventario.agregar()` entra lo que dejen dos topes, el
+  peso y los casilleros. Un tercero para el líquido entra ahí sin tocar a quien llama.
+  `Inventario` no aprende de herramientas (regla D2 de la ronda 6): lo que pese o
+  guarde un objeto le llega por catálogo.
+
+### La decisión, del jefe, dicha
+
+**Los líquidos siguen siendo recursos, y el bolso acepta tantas medidas de líquido
+como guarden los recipientes que se llevan**, en la grilla o puestos. No se le da a
+cada odre su contenido propio: eso obliga a que las seis recetas, la tecla Q, los
+hornos, los depósitos y el guardado vacíen instancias, y lo que el dueño pidió —«el
+agua se puede tomar pero no cargar; hace falta alguna vasija»— se cumple con un
+recipiente de verdad y con capacidad de verdad. **Queda como deuda escrita**: que dos
+odres sean dos aguas.
+
+### Propiedad exclusiva de archivos
+
+- `src/systems/Inventario.js` — el tope de líquido
+- `src/systems/Recoleccion.js` — **sólo** el caso `beber`
+- `src/ui/Bolso.js` — cuánto líquido se lleva y el aviso del derrame
+- `src/data/herramientas.json` — **sólo** los recipientes: el odre, y los objetos nuevos
+- `src/ui/Iconos.js` — **sólo** los iconos de los objetos nuevos
+
+Del coordinador: `src/main.js` —si el catálogo que llega al inventario tiene que
+llevar lo que guarda cada objeto—, el banco, el falsador y esta carta. `Equipo.js`,
+`Fundicion.js` y `Partida.js` se piden en `pendiente-r7-vasija.md`. Bitácora:
+`.claude/flota/r7-vasija.md`.
+
+### El contrato
+
+**V1 · Sin recipiente, el agua no viaja.** Con el bolso sin nada que guarde líquido,
+`agregar` de `agua`, `agua_segura` o `infusion_canelo` entra cero, aunque sobre peso y
+casillero. Los demás recursos no cambian en nada.
+
+**V2 · El recipiente guarda lo que dice su ficha.** El tope es la suma de lo que
+guardan los recipientes que se llevan, contando las tres clases de líquido juntas. El
+odre guarda las 6 que ya declara. Soltarlo baja el tope.
+
+**V3 · Un recipiente antes del cuero.** Al menos uno se fabrica sin cuero ni cuero
+curtido en ningún eslabón de su cadena, con fuente —o el criterio, dicho— para que
+exista en la región y para cuánto guarda. El dato de la cestería tupida que trae
+`historia.json` se verifica o se descarta, no se copia. Una medida es un litro.
+
+**V4 · Beber siempre hidrata.** La sed sube como hoy; lo que cambia es llevarse una
+medida: sólo si hay lugar en un recipiente, y si no, el aviso dice que no hay en qué
+llevarla. El cartel de la tecla no promete una medida que no entra.
+
+**V5 · Los hornos esperan.** El agua hervida y la infusión salen al bolso sólo si hay
+lugar; lo que no entra se queda en el horno esperando, con el mecanismo que ya existe.
+
+**V6 · Soltar un recipiente con agua derrama lo que ya no cabe**, y el aviso lo dice.
+Un guardado viejo con más líquido que el tope no pierde nada al cargar: se conserva
+hasta que se consuma, y no entra más hasta que haya lugar. `VERSION` sigue en 1.
+
+**V7 · Se ve.** El bolso dice cuánto líquido se lleva sobre cuánto cabe.
+
+**V8 · Nada más cambia de forma.** Las seis recetas, la tecla Q, `consumirPara` y
+`disponiblePara` siguen igual. Los objetos nuevos tienen icono.
+
+**V9 · Sin regresión.** Los bancos de la ronda 6 (el inventario) y de la ronda 7
+siguen verdes, y `vite build` limpio.
+
+### Lo que NO es de esta fase
+
+Que cada recipiente lleve su propia agua. Pudrir o enfriar lo que se lleva. Llenar un
+recipiente en un arroyo sin beber.
