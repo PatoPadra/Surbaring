@@ -1,5 +1,20 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **12/9/2026 — RONDA 7, FASE 1 (`tecla`) CERRADA: andar solo con Z, y el cartel
+> dice qué da.** Banco 6/6 con los cuatro anteriores y `vite build`; **falsador 27
+> de 27** y los dos controles al revés en verde: cambiar el rinde en su fuente no
+> pone rojo al banco, así que el cartel no tiene ningún número copiado.
+>
+> **El número del agente reproduce**, y el informe no redondeó a su favor: dijo
+> 6/6 y dio 6/6. La C ya no cambia la calidad (pasó a F2).
+>
+> Verificado en el juego: 300 posiciones reales alrededor del arranque, todas con
+> su paréntesis, y **en la primera orilla que se miró, a 1,3 km, la piedra dice «a
+> veces arcilla»**. Es la primera vez que el juego cuenta de dónde sale.
+>
+> *Los dos defectos del falsador fueron míos: escribían por un setter que se niega
+> a prender sin puntero, y no plantaban nada.*
+
 > **12/9/2026 — RONDA 7 ABIERTA: lo que vio el dueño.** Las rondas 5 y 6 están
 > en `main` (`96dc0bf`, sin empujar). El dueño jugó un rato y trajo siete
 > anotaciones; la carta las mide una por una antes de encargar nada y está en

@@ -301,3 +301,86 @@ lo que ya pasa. La velocidad al andar solo: es la misma que caminando, y la deci
 sobre `velocidadBase` sigue siendo del dueño.
 
 Bitácora: `.claude/flota/r7-tecla.md`.
+
+---
+
+## FASE 1 CERRADA — 12/9/2026
+
+**Banco 6/6**, corrido por el coordinador y no por el agente: las cuatro secciones
+nuevas con 29 · 10 · 198 · 12 aserciones, los cuatro bancos anteriores en su número
+y `vite build` limpio. **Falsador 27 de 27, todos vistos por la aserción
+declarada**, y **los dos controles al revés en verde**: cambiar el rinde en
+`COSECHA_SOTOBOSQUE` o en el dataset no pone rojo al banco, o sea que el cartel lee
+la misma fuente que la tecla y ningún número está escrito dos veces. El agente tocó
+sus siete archivos y ninguno más; no hizo falta `pendiente-r7-tecla.md`.
+
+### Lo que quedó, leído en el código
+
+- **`Entrada.autoAndar`** pone y saca la clase `auto-andar` desde el setter y desde
+  ningún otro lado, así que ningún camino de apagado la deja puesta. **El setter se
+  niega a prender sin el puntero bloqueado**, también desde afuera: todo lo que
+  apaga pasa por soltar el puntero, así que prendido suelto no lo frenaría nada. Es
+  la decisión correcta y le costó dos defectos al falsador (abajo).
+- **El rinde se arma una vez y viaja en la acción.** `quePuedoHacer()` arma el
+  paréntesis y guarda el rinde en el objeto que devuelve; `actuar()` sortea sobre
+  ese mismo objeto. No hay forma de que el cartel y la tecla prometan cosas
+  distintas. Las probabilidades que vivían escritas en línea en `actuar()` pasaron a
+  `EXTRAS_MATA`, con su condición de lugar. `Recursos.cosechaPosibleDe()`,
+  `Mineria.rindeChatarra()` y `Caza.fuenteDe()`/`rindeDeRestos()` exponen lo que ya
+  calculaban, y los sorteos se consumen en el mismo orden que antes: el filtro de
+  lugar corre antes del sorteo, igual que el `&&` viejo.
+- **Lo repetido se suma**: el maqui da 3 frutos fijos y 2 a 4 al azar, y el cartel
+  dice «5–7 × frutos». El banco confirma que salen los dos extremos.
+- **La carroña queda fija por lugar**, y es el único cambio de juego de la fase. Un
+  hash de la posición en la grilla de 25 cm del descanso elige la fuente, y esa
+  fuente viaja hasta `aprovechar()`. La otra salida honesta daba cinco «a veces» con
+  filo y escondía el asta, que es la puerta del nivel 3. Medido por el agente sobre
+  200 000 posiciones: 0,400 · 0,250 · 0,243 · 0,107 contra 0,40 · 0,25 · 0,25 · 0,10
+  del dataset. La consecuencia: esperar 150 s junto al mismo resto ya no vuelve a
+  sortear qué animal era.
+
+### Los dos defectos del falsador, que fueron míos
+
+`soltar-no-corta` y `z-sin-puntero` plantaban el defecto escribiendo `autoAndar =
+true` con el puntero ya suelto. El setter del agente se niega, con razón, así que
+**el parche decía plantar y no plantaba nada**, y el falsador lo contó como punto
+ciego. Ahora pisan la propiedad en la instancia, que planta el defecto visto desde
+afuera sin depender de cómo se escribió adentro. Con eso, los dos vistos.
+
+Es la tercera vez en dos rondas que un falsador mío no planta lo que dice. La
+lección se repite igual: *antes de anotar un punto ciego, comprobar que el defecto
+llegó a estar puesto.*
+
+### Verificado en el juego
+
+En la vista previa, con el juego de verdad:
+- Las teclas registradas son F, F3, T, **F2**, O, Tab, M, I, F1, E, Q, G, P, R y H:
+  **la C ya no está**.
+- `autoAndar = true` da `adelante = 1`, la clase puesta, y el indicador «Andando
+  solo · W o S para frenar» debajo del cartel de acción.
+- **300 posiciones reales a menos de 60 m del arranque**, con el sotobosque y la
+  vegetación sembrados: todos los carteles traen su paréntesis.
+
+  | tipo | posiciones | ejemplos |
+  |---|---|---|
+  | sotobosque | 201 | «Juntar piedra suelta (2 × piedra)» ×157 · «Trozar un caído · hacha de piedra (2 × tronco · 3 × leña · 2 × corteza)» · «Juntar coirón (2 × fibra vegetal · a veces lana)» |
+  | planta | 80 | «Recolectar caña colihue (4 × caña colihue · 2–4 × semillas)» · «Recolectar coihue (6 × madera dura)» · «Recolectar maqui (5–7 × frutos)» |
+  | chatarra | 16 | «Levantar chatarra (1–3 × chatarra)» |
+  | carroña | 3 | «Juntar los huesos · sin filo no sale más (1 × hueso)» |
+
+- **En la primera orilla que se miró, a 1,3 km del arranque, la piedra dice «Juntar
+  piedra suelta (2 × piedra · a veces arcilla)».** Es la primera vez que el juego le
+  cuenta al jugador dónde sale la arcilla. La captura de esa orilla muestra el
+  cartel y el indicador, legibles.
+
+### Lo que hay que mirar jugando
+
+1. **La piedra se queda con la tecla en media zona de arranque**: 157 de 300
+   posiciones ofrecen «Juntar piedra suelta (2 × piedra)». Ya pasaba antes; ahora
+   se lee, y puede cansar.
+2. **Las etiquetas más largas** —el tronco con hacha, la carroña con filo— rondan los
+   70 caracteres. A 1280 px entran en una línea; a 1024 no se miró.
+3. **La carroña da siempre lo mismo en el mismo lugar.** Es a propósito y está
+   escrito arriba.
+4. **Una planta que no da nada**, como la taique, sigue diciendo «Recolectar taique»
+   sin paréntesis, y está bien: un «()» se leería como un cartel roto.
