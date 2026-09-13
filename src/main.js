@@ -749,7 +749,10 @@ async function iniciar() {
     // Lo que hay en la mano, ANTES de todo: de acá sale el modelo que se dibuja
     // y el punto del que sale la llama. Va en la primera línea y no dentro del
     // if de la luz, porque si no una captura sin antorcha dibuja la mano vacía.
-    cuerpo.enMano = equipo.enRanura('mano')?.id ?? null;
+    // La herramienta si hay, y si no el arma: la ficha de la ranura del arma dice
+    // que «se saca sin guardar la herramienta». Hasta la ronda 7 sólo se miraba la
+    // mano, y el garrote equipado no se veía en ninguna parte.
+    cuerpo.enMano = equipo.enRanura('mano')?.id ?? equipo.enRanura('arma')?.id ?? null;
     // El fuego sabe la hora: de noche alumbra con 20 y al sol con 1. Es la
     // adaptación del ojo que la exposición del juego no hace, y sin esto la luz
     // que hace falta a medianoche encendía el suelo del mediodía (ronda 7, B4).
@@ -759,6 +762,9 @@ async function iniciar() {
     if (incendio) fuentes.push(incendio);
     const enMano = fuenteDeMano(equipo.luzActiva(tiempo.fecha.getTime(), est),
       jugador, camara, tiempo.segundosTotales);
+    // Una antorcha apagada en la mano mostraba la llama igual: su material es
+    // emisivo y nadie la escondía (ronda 7: el triángulo amarillo de las capturas).
+    cuerpo.llamaEncendida = !!enMano;
     if (enMano) {
       // La antorcha también: subió de 2 a 14 para que de noche se vea el suelo,
       // y al sol, sin esto, sumaría +29 de 255 a dos metros.

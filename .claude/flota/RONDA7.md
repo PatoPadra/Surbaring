@@ -722,8 +722,13 @@ paleta de `Cuerpo`: ninguna bandera nueva en la clave del programa.
 **E6 · Cachear y no crecer.** Cien cambios entre mano y arma dejan el grafo del
 mismo tamaño y los modelos con los mismos triángulos.
 
-**E7 · Si la fase 2 confirma B5**: la antorcha y el candil apagados no brillan; la
-emisión de la llama sigue a `equipo.luzActiva()`, sin compilar nada.
+**E7 · La antorcha y el candil apagados no brillan.** **Confirmado por la fase 2**:
+el triángulo amarillo de las capturas era la llama emisiva del modelo de la
+antorcha, apagada en la mano. `Cuerpo` gana `llamaEncendida`, con setter: en
+`false` la malla de la llama del modelo colgado se esconde, y el estado se respeta
+al cambiar de objeto y volver. Esconder una malla no compila nada. `main.js` le
+escribe `!!enMano` en cada cuadro (coordinador). El parche que propuso `brasa` está
+en `pendiente-r7-brasa.md`, punto 3.
 
 **E8 · Costo.** A Baja 1024×576, en primera y tercera persona, con el objeto más
 grande en pantalla —lo mide el coordinador, alternado—: **≤ +0,3 ms**.

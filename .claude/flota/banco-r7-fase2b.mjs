@@ -14,8 +14,11 @@
  *   3. SILUETAS — ningún par de los treinta con las tres medidas de la caja, en el
  *      espacio del modelo, dentro del 15 % (E3).
  *   4. EL SUELO — parado, nada baja a menos de 2 cm de la planta de los pies (E4).
- *   5. SIN REGRESIÓN — r5-fase3, r7-fase1 y r7-fase2.
- *   6. ARRANQUE — `vite build`.
+ *   5. LA LLAMA APAGADA — la antorcha y el candil apagados en la mano no brillan
+ *      (E7, confirmado por la fase 2: era el triángulo amarillo de las capturas).
+ *      Agregada después de cerrar la fase 2 y ANTES de lanzar al agente.
+ *   6. SIN REGRESIÓN — r5-fase3, r7-fase1 y r7-fase2.
+ *   7. ARRANQUE — `vite build`.
  *
  * Medido contra la base antes de escribirlo: de los 18 modelos de hoy, cero pares
  * dentro del 15 % en el espacio del modelo (con la caja posada habría uno, azuela y
@@ -268,11 +271,64 @@ async function suelo() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 5 · SIN REGRESIÓN  ·  6 · ARRANQUE
+// 5 · LA LLAMA APAGADA
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Cuántas mallas visibles con material emisivo hay en un modelo. */
+function brillos(m) {
+  let n = 0;
+  m?.traverse((o) => {
+    if (!o.isMesh) return;
+    for (let p = o; p; p = p.parent) if (p.visible === false) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    if (mats.some((x) => x?.emissive && ((x.emissive.r + x.emissive.g + x.emissive.b) / 3) * (x.emissiveIntensity ?? 1) > 0.15)) n++;
+  });
+  return n;
+}
+
+async function llamaApagada() {
+  const s = seccion(5, 'LA LLAMA APAGADA — la antorcha y el candil apagados no brillan');
+  const { cuerpo } = await armar();
+  // Antes de escribir nada: una asignación a una propiedad que no existe la crea,
+  // y la pregunta daría que sí por la propia pregunta.
+  const tiene = typeof Object.getOwnPropertyDescriptor(Object.getPrototypeOf(cuerpo), 'llamaEncendida')?.set === 'function';
+  s.ok(tiene, 'Cuerpo tiene la propiedad llamaEncendida, con setter');
+
+  cuerpo.llamaEncendida = true;
+  const prendida = brillos(modelo(cuerpo, 'antorcha'));
+  s.ok(prendida >= 1, 'premisa: la antorcha prendida muestra su llama', prendida);
+
+  cuerpo.llamaEncendida = false;
+  cuerpo.actualizar(1 / 60, jugador());
+  const apagada = brillos(cuerpo.manos?.[1]?.getObjectByName('mano:antorcha'));
+  s.ok(apagada === 0, 'apagada, la antorcha en la mano no brilla', apagada);
+
+  modelo(cuerpo, 'hacha_piedra');
+  const deVuelta = brillos(modelo(cuerpo, 'antorcha'));
+  s.ok(deVuelta === 0, 'cambiar de objeto y volver a colgarla la deja apagada', deVuelta);
+
+  cuerpo.llamaEncendida = true;
+  cuerpo.actualizar(1 / 60, jugador());
+  s.ok(brillos(cuerpo.manos?.[1]?.getObjectByName('mano:antorcha')) >= 1, 'prenderla la vuelve a mostrar');
+
+  const candilPrendido = brillos(modelo(cuerpo, 'candil_grasa'));
+  s.ok(candilPrendido >= 1, 'premisa: el candil prendido muestra su llama', candilPrendido);
+  cuerpo.llamaEncendida = false;
+  cuerpo.actualizar(1 / 60, jugador());
+  s.ok(brillos(cuerpo.manos?.[1]?.getObjectByName('mano:candil_grasa')) === 0, 'el candil apagado tampoco brilla');
+
+  s.ok(/cuerpo\.llamaEncendida\s*=/.test(leer('main.js')), 'main.js le dice al cuerpo si la llama está prendida');
+  s.feliz = prendida >= 1;
+  s.felizQue = `la antorcha prendida mostró ${prendida} mallas que brillan`;
+  return s;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 6 · SIN REGRESIÓN  ·  7 · ARRANQUE
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function regresion() {
-  const s = seccion(5, 'SIN REGRESIÓN — las fases anteriores siguen verdes');
+  const s = seccion(6, 'SIN REGRESIÓN — las fases anteriores siguen verdes');
   if (process.env.BANCO_SRC) { s.feliz = true; s.nota('salteado: corriendo contra una copia'); return s; }
   const real = { BANCO_SRC: path.join(RAIZ, 'src') };
   const otros = [
@@ -297,7 +353,7 @@ async function regresion() {
 }
 
 async function arranque() {
-  const s = seccion(6, 'ARRANQUE — vite build');
+  const s = seccion(7, 'ARRANQUE — vite build');
   if (process.env.BANCO_SIN_BUILD) { s.feliz = true; s.nota('salteado por BANCO_SIN_BUILD'); return s; }
   const r = spawnSync('npm', ['run', 'build'], { cwd: RAIZ, encoding: 'utf8', shell: true, timeout: 600000 });
   const salida = (r.stdout || '') + (r.stderr || '');
@@ -309,7 +365,7 @@ async function arranque() {
 
 // ── Corrida ─────────────────────────────────────────────────────────────────
 
-const SECCIONES = { cableado, losDoce, siluetas, suelo, regresion, arranque };
+const SECCIONES = { cableado, losDoce, siluetas, suelo, llamaApagada, regresion, arranque };
 const soloEstas = (process.env.BANCO_SECCIONES || '').split(',').filter(Boolean);
 
 const todas = [];
