@@ -472,9 +472,17 @@ eligieron para que el suelo alrededor de un fuego se lea y el borde del campamen
 todavía se vea, y se revisan con el ojo del dueño. Lo que el banco garantiza es el
 piso: que el «da poca luz» no vuelva en silencio.
 
-**B4 · El mediodía no cambia.** A las 12:00 del 15/2, en el mismo lugar, la
-diferencia entre fuego prendido y apagado a 2 m es **≤ 3 de 255**. Una fogata al
-sol casi no alumbra, y un fuego que ilumina el mediodía se ve falso.
+**B4 · El mediodía no se enciende.** A las 12:00 del 15/2, en el mismo lugar, la
+diferencia entre fuego prendido y apagado a 2 m es **≤ 6,5 de 255**.
+
+> **Corregido por el jefe antes de lanzar al agente, y dicho.** Decía «el mediodía
+> no cambia: ≤ 3», y el banco corrido contra la base midió que **hoy la fogata al
+> mediodía ya suma +5,86** a 2 m, sobre un suelo en 44. La aserción estaba roja
+> antes de que nadie tocara nada: no medía «no cambia», pedía un cambio sin decirlo.
+> Lo que hay que cuidar es otra cosa: que al subir la luz de noche el mediodía no
+> suba con ella —multiplicada por diez, la fogata al sol daría +50—. Queda en lo de
+> hoy más un 10 % de margen de medición. Si el agente además la baja, mejor: una
+> fogata al sol casi no alumbra.
 
 **B5 · La hoja amarilla, explicada.** Se dice qué es con una medición, y si es la
 luz del fuego, se arregla.
