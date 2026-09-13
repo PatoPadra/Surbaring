@@ -400,3 +400,94 @@ En la vista previa, con el juego de verdad:
    escrito arriba.
 4. **Una planta que no da nada**, como la taique, sigue diciendo «Recolectar taique»
    sin paréntesis, y está bien: un «()» se leería como un cartel roto.
+
+---
+
+## FASE 2 · `brasa` — que el fuego se vea encendido y alumbre
+
+### Lo que se midió antes de encargar nada
+
+Medido en la vista previa el 12/9/2026, en la HD 4000 a Baja 1024×576, con el
+juego de verdad, una fogata construida por `fundicion.construir()` sobre suelo
+plano y seco a 1,3 km del arranque, a las 23:40 del 15/2. Cámara cenital a 22 m,
+dieciséis muestras por anillo, la noche sin luz restada, y los árboles fuera del
+cuadro para medir el suelo y no la copa. La tabla está en la sección 6 de arriba;
+en una línea: **la fogata deja el suelo en +5 de 255 a 3 m, y la antorcha en +3,4.**
+
+Y la captura `capturas/r7f2-fogata-noche-6m.png`, desde 6 m y mirando la fogata,
+dice lo mismo con los ojos:
+
+1. **El pasto se enciende de naranja** hasta unos 6 a 8 m, y se lee. El suelo entre
+   el pasto queda casi negro.
+2. **La fogata es un aro oscuro con nada adentro.** No hay llama, ni brasa, ni nada
+   que brille (`Hornos.js:49-54`): una fogata prendida se ve igual que una apagada.
+   Es lo que más dice «el fuego no alumbra».
+3. **Una hoja de pasto pegada a la cámara sale como un triángulo amarillo plano**,
+   sin sombreado, abajo a la derecha. Hay que saber si es la luz del fuego
+   saturando una hoja a menos de un metro o es otra cosa.
+
+La cadena de la imagen, leída en `main.js:543-575`: escena → oclusión ambiental →
+resplandor (umbral 0,86, en HDR) → `OutputPass` (ACES y sRGB) → FXAA → `PasoColor`
+(nitidez, techo, curva en S, temperatura, saturación, viñeteado), y de noche la
+exposición queda en 0,78 a propósito (`Tiempo._exposicion`). **Cuánto se come cada
+eslabón no está medido y es lo primero que mide el agente**: subir la intensidad a
+ciegas puede dar un fuego que alumbra y un mediodía que brilla.
+
+### Propiedad exclusiva de archivos
+
+- `src/world/Hornos.js` — la llama, la brasa y sus números
+- `src/engine/Luces.js` — **sólo** `LLAMAS` (color, intensidad, parpadeo de lo que
+  se lleva en la mano). El bloque del sombreador no se toca: su costo está medido y
+  cerrado en la ronda 5.
+
+**No se tocan**: `Posproceso.js`, `Tiempo.js` ni la exposición. La luz del día fue
+aprobada por el dueño en la ronda 3, y arreglar la noche cambiando la cadena de
+color la cambia a toda hora. Lo que necesite `main.js` —precompilar la llama en la
+carga, por ejemplo— va a `.claude/flota/pendiente-r7-brasa.md`. Bitácora:
+`.claude/flota/r7-brasa.md`.
+
+### El contrato
+
+**B1 · La fogata encendida se ve encendida.** Mientras arde tiene llama y brasa
+visibles; apagada, no. Desde 6 m de noche, **el pico de luminancia de la imagen
+sobre la fogata es ≥ 180 de 255 prendida y ≤ 40 apagada**. Pocas piezas, material
+compartido entre todos los hornos, y que se mueva: una llama quieta se lee como un
+cono naranja. Los otros tres hornos muestran que arden donde tengan boca o tiro.
+
+**B2 · Construir y prender no compila nada.** `render.info.programs.length` es el
+mismo antes y después de construir una fogata, prenderla, apagarla y construir la
+segunda. La llama se compila en la carga. **Es el congelamiento de 19 segundos de
+la ronda 5 si se olvida.**
+
+**B3 · El fuego alumbra.** En la imagen final, con la medición de arriba, **con la
+misma cámara y el mismo lugar**:
+
+| | a 2 m | a 3 m | a 8 m | a 1 m |
+|---|---|---|---|---|
+| fogata | ≥ 35 | ≥ 30 | ≥ 8 | ≤ 200 |
+| antorcha | ≥ 25 | — | ≥ 4 a 5 m | ≤ 200 |
+
+**Los números son del jefe, declarados como tales**, igual que en la ronda 5: se
+eligieron para que el suelo alrededor de un fuego se lea y el borde del campamento
+todavía se vea, y se revisan con el ojo del dueño. Lo que el banco garantiza es el
+piso: que el «da poca luz» no vuelva en silencio.
+
+**B4 · El mediodía no cambia.** A las 12:00 del 15/2, en el mismo lugar, la
+diferencia entre fuego prendido y apagado a 2 m es **≤ 3 de 255**. Una fogata al
+sol casi no alumbra, y un fuego que ilumina el mediodía se ve falso.
+
+**B5 · La hoja amarilla, explicada.** Se dice qué es con una medición, y si es la
+luz del fuego, se arregla.
+
+**B6 · Sin regresión de costo.** A Baja 1024×576, alternado A/B/A/B en tandas:
+la llama **≤ +0,3 ms**, y las dos luces juntas siguen dentro del tope de la ronda 5
+(**+1,8 ms**). Si cambia un radio, se vuelve a medir.
+
+**B7 · Sin regresión.** Los bancos de la ronda 5 fase 1 (9/9), la ronda 6 y la
+ronda 7 fase 1 siguen verdes, y `vite build` limpio.
+
+### Lo que NO es de esta fase
+
+El cielo y la luna (fase 6). La exposición nocturna y la cadena de color. El
+incendio forestal, salvo que se rompa. La antorcha dibujada en la mano, que ya
+existe.
