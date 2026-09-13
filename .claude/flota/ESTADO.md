@@ -36,8 +36,10 @@
 >    prendida se ve igual que apagada. **La luna es inventada**: la fase no es la de
 >    la fecha.
 >
-> Seis fases, en este orden: `tecla`, `brasa`, `barro`, `vasija`, `witral`,
-> `cielo`. La 6 pide permiso para descargar un catálogo de estrellas.
+> Siete fases, en este orden: `tecla`, `brasa`, `empuñadura` (2b: el garrote no
+> se veía en la mano, confirmado por el dueño), `barro`, `vasija`, `witral`,
+> `cielo`. **El catálogo de estrellas ya está bajado, con permiso del dueño**:
+> `tools/catalogos/bsc5/`, con su fuente y su cita en `LEEME.md`.
 
 > **12/9/2026 — RONDA 6 TERMINADA. FASE 3 (`estampa`) CERRADA: los 115 iconos.**
 > El bolso dejó de ser una planilla con bordes. **Banco 6/6, falsador 14 de 14

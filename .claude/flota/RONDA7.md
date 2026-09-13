@@ -32,7 +32,13 @@ Y una frase suelta que acompañaba la lista: *«puse lo del garrote porque fue l
 que llegué a probar, la antorcha sí se ve en mano»*. Leída contra el código: el
 garrote es de ranura `arma` y `Herramientas3D.js` modela sólo los 18 objetos de
 ranura `mano`, así que **lo que va en la ranura del arma no se dibuja en ninguna
-parte**. Se le pregunta al dueño si es eso lo que vio antes de abrir nada.
+parte**. Se le preguntó al dueño si era eso lo que vio.
+
+> **Contestó el 12/9/2026: «el garrote no se veía».** Pasa a la fase 2b,
+> `empuñadura`. Son **12 objetos en la ranura del arma** —garrote, honda, lanza de
+> colihue, estólica, bola perdida, las dos boleadoras y el arco, más la línea de
+> mano, la caña de colihue, el arpón de hueso y el equipo de mosca— y ninguno
+> tiene modelo. `main.js:752` pone en la mano sólo lo de la ranura `mano`.
 
 ---
 
@@ -208,6 +214,10 @@ el cielo gire alrededor del polo sur celeste a −41°, la luna con efemérides 
 baja precisión, y la Cruz del Sur con sus punteros para enseñar a encontrar el
 sur. **Descargar el catálogo pide permiso del dueño.**
 
+> **Permiso dado el 12/9/2026, y ya está bajado:** `tools/catalogos/bsc5/`, desde
+> el CDS (catálogo V/50), 9110 objetos en 574 kB comprimidos. La fuente, la cita y
+> lo que hay que saber antes de usarlo están en `tools/catalogos/bsc5/LEEME.md`.
+
 ---
 
 ## El orden, y por qué
@@ -216,6 +226,7 @@ sur. **Descargar el catálogo pide permiso del dueño.**
 |---|---|---|---|
 | **1** | `tecla` | 1, 5 y la C | andar solo, el cartel con el rinde, la tecla marcada en su lugar |
 | 2 | `brasa` | 6 | la luz del fuego, medida en la imagen final |
+| 2b | `empuñadura` | el garrote | lo que va en la ranura del arma también se ve en la mano |
 | 3 | `barro` | 2 | arcilla con gesto propio, arena legal alcanzable, y el juego dice dónde |
 | 4 | `vasija` | 4 · deuda 13 | los líquidos viajan en recipientes con contenido |
 | 5 | `witral` | 3 | el telar como cosa, el hilado, y la lana con fuente suficiente |
@@ -225,6 +236,11 @@ sur. **Descargar el catálogo pide permiso del dueño.**
   con el rinde ya ataca la mitad de la nota 2.
 - **La 2 es chica** pero se mide en el navegador: mejor antes de que las fases de
   datos lo ocupen.
+- **La 2b va pegada a la 2**, con número propio para no renumerar la carta: la
+  pidió el dueño al contestar, es chica, se ve, y sigue el camino de la ronda 5
+  (`Herramientas3D.js`). La regla la decide el jefe y sale de la ficha de la
+  ranura —«se saca sin guardar la herramienta»—: **en la mano va la herramienta si
+  hay una, y si no, el arma**.
 - **La 3 antes que la 4** porque el recipiente más temprano y más local —el cántaro
   de barro cocido— pide arcilla. Y la 3 es la que corta la cadena del metal: sin
   horno de barro no hay carbonera ni fragua.
