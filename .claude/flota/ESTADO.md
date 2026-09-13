@@ -29,9 +29,12 @@
 >    siempre. La arcilla sale desde el **1,06 %** de la tierra como mucho, porque
 >    junto al agua la tecla bebe. `extraer_arcilla` está declarada en el dataset y
 >    no la usa nadie.
-> 3. **La fogata alumbra el suelo menos de la mitad que la antorcha**: su luz está
->    a 0,6 m y le pega al suelo de costado. **Y la luna es inventada**: la fase no
->    es la de la fecha.
+> 3. ~~La fogata alumbra el suelo menos de la mitad que la antorcha~~ — **falso,
+>    y lo escribí yo sin medir.** Salía de una cuenta sobre suelo liso. En la imagen
+>    final la fogata alumbra más que la antorcha, y lo grave es otra cosa: **las
+>    dos dejan el suelo en 5 de 255, o sea negro**. Y la fogata **no tiene llama**:
+>    prendida se ve igual que apagada. **La luna es inventada**: la fase no es la de
+>    la fecha.
 >
 > Seis fases, en este orden: `tecla`, `brasa`, `barro`, `vasija`, `witral`,
 > `cielo`. La 6 pide permiso para descargar un catálogo de estrellas.

@@ -161,13 +161,29 @@ con la caída `(1 − d²/r²)²` y el coseno de incidencia, en luminancia:
 | fogata (2,1 en el valle del latido, 14 m) | 0,0240 | 0,0130 | **0,0084** | 0,0043 | 0,0016 |
 | antorcha (2,0, 12 m) | 0,0394 | 0,0265 | **0,0182** | 0,0090 | 0,0025 |
 
-**La fogata alumbra el suelo menos de la mitad que una antorcha**, siendo el
-fuego grande. La causa principal es la altura: `BRASA_ALTURA_M = 0,6`
-(`Hornos.js:30`). A 3 m la luz le pega al suelo a 11° y el coseno vale 0,20; la
-antorcha, a 1,39 m, da 0,42. Dos causas más chicas: el color `0xff7a2e` es muy
-saturado (luminancia 0,354 por unidad de intensidad), y de noche la exposición
-queda en 0,78 a propósito (`Tiempo._exposicion`). Esto se mide en la imagen final,
-en el navegador: la aritmética dice dónde mirar, no cuánto subir.
+~~**La fogata alumbra el suelo menos de la mitad que una antorcha**~~ — **FALSO
+en la imagen.** La cuenta de arriba supone suelo liso con la normal hacia arriba, y
+así la altura de 0,6 m (`Hornos.js:30`) pesa mucho. Medido en la imagen final el
+mismo día, con la vista previa en la HD 4000 a Baja 1024×576, cámara cenital a
+22 m sobre suelo plano y seco junto a una orilla, a las 23:40, restando la noche
+sin luz, y con los árboles fuera del cuadro para medir el suelo y no la copa:
+
+| luminancia de 0 a 255 | 1 m | 2 m | 3 m | 5 m | 8 m | 12 m |
+|---|---|---|---|---|---|---|
+| noche sin luz | 0 | 0 | 0 | 0,03 | 0,06 | 0,55 |
+| fogata (2,6 · 14 m · a 0,6 m) | +4,12 | +5,27 | **+5,00** | +4,61 | +1,95 | +0,09 |
+| antorcha (1,82 · 12 m · a 1,33 m) | +2,29 | +3,38 | **+3,38** | +2,97 | +0,79 | 0 |
+
+**La fogata alumbra más que la antorcha**, no la mitad. El suelo de verdad tiene
+pasto, con hojas casi verticales que reciben la luz baja de frente, y el coseno del
+suelo liso no dice nada de eso. *Es otra vez el banco sintético que no alcanza, y
+esta vez lo escribí yo en la carta sin medir.*
+
+**Lo que sí dice la imagen es peor que lo que decía la cuenta: las dos luces dejan
+el suelo en 5 de 255, que a la vista es negro.** Coincide con los 3,41 que midió la
+ronda 5 para la antorcha. Ése es el «da poca luz» del dueño, y no es un problema de
+altura sino de nivel: algo entre el bloque de `Luces.js`, el mapeo tonal y el pase
+de color se come casi toda la luz.
 
 **Y hay una segunda mitad que la aritmética no ve: la fogata encendida no se ve
 encendida.** `Hornos.agregar()` dibuja un anillo de piedras con un solo material
