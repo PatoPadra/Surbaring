@@ -1437,3 +1437,32 @@ recursos nuevos tienen icono.
 Mantas, fajas y otras prendas. Teñir. Ovejas o chilihueques. Cazar guanaco. La
 recolección en el Parque, que sigue siendo una licencia sin declarar y la decide el
 dueño.
+
+
+### El banco, contra la base
+
+`banco-r7-fase5.mjs`, nueve secciones, y `banco-r7-fase5.navegador.js`. Contra el
+código de hoy:
+
+- **Premisas verdes:**
+  - el toldo es de campamento y el poncho está en el dataset;
+  - los 56 objetos de la carta, leídos de `99f6300`, se fabrican donde siempre;
+  - con un coirón y un tronco la tecla da el tronco, y con el coirón solo da «Juntar
+    coiron (2 × fibra vegetal · a veces lana)»;
+  - la regresión, 8 de 8.
+- **El contrato, rojo por lo que tiene que ser rojo:** no hay obra de telar, ni huso, ni
+  hilado, ni fuentes, ni iconos, y el poncho pide lana.
+- **La mitad navegador, con el instrumento de la apertura:** la cadena pide 14 de lana.
+  La mediana de los 61 puntos da **84 apretadas y 8,4 kg** de lo que entra de paso; en
+  el arranque, 112 y 11,2. La cuenta de la apertura —93 y 9,3— sumaba todos los puntos
+  juntos; ésta es la mediana por punto, que es lo que pide W4.
+
+**Un defecto mío, encontrado antes de encargar nada.** La premisa «con el coirón solo,
+la tecla ofrece el coirón» daba verde con «Levantar chatarra (1–3 × chatarra)». En el
+origen del mundo falso, la `Mineria` de verdad decide que hay chatarra, y el coirón
+competía contra ella sin que el banco lo supiera. Ahora se busca primero un lugar donde,
+sin matas, la tecla no ofrece nada, y la premisa pide que la tecla ofrezca el coirón.
+
+`banco-r7-fase5.falsar.mjs`: 20 defectos y 3 controles al revés para la mitad Node. Los
+programas de W1 y las apretadas de W4 no se falsan desde ahí. Se corre con el código del
+agente.
