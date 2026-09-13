@@ -27,9 +27,16 @@ const SRC = path.join(RAIZ, 'src');
 const BANCO = path.join(AQUI, 'banco-r7-fase3.mjs');
 const TMP = path.join(AQUI, '.tmp-falsar-r7f3');
 
-/** Lo común a los parches de Recoleccion: qué promete una etiqueta. */
+/**
+ * Lo común a los parches de Recoleccion: qué promete una etiqueta.
+ *
+ * Con `var` y no con `const`: un defecto que junta un envoltorio del cartel y uno de
+ * `actuar` pega esto dos veces, y un `const` repetido es un error de sintaxis que no
+ * deja cargar el módulo. La primera corrida lo contó como «lo vio por otro motivo»,
+ * cuando el defecto no había llegado a existir.
+ */
 const COMUN_REC = String.raw`
-const __prometeNumero = (etq, nombre) => new RegExp('\\d+\\s*(?:[–-]\\s*\\d+)?\\s*×\\s*' + nombre, 'i').test(etq || '');
+var __prometeNumero = (etq, nombre) => new RegExp('\\d+\\s*(?:[–-]\\s*\\d+)?\\s*×\\s*' + nombre, 'i').test(etq || '');
 `;
 
 function cartel(cuerpo) {
@@ -145,11 +152,15 @@ Recoleccion.prototype.quePuedoHacer = function (...args) {
   {
     id: 'cantera-abierta', archivo: 'systems/Mineria.js', que: 'la cantera en la Reserva pasa a estar permitida',
     caeEn: 'la cantera en Reserva sigue negándose',
+    // Con el yacimiento del lugar: el veredicto negado de la Reserva no lo trae, y la
+    // cadena de la tecla lee `v.yacimiento.nombre` cuando está permitido. Sin él, la
+    // primera versión no abría la cantera: rompía `quePuedoHacer` con una excepción.
     anexo: String.raw`
 const __evaluar = Mineria.prototype.evaluar;
 Mineria.prototype.evaluar = function (x, z, ahora) {
   const v = __evaluar.call(this, x, z, ahora);
-  return v.jurisdiccion === 'reserva' ? { ...v, permitido: true } : v;
+  const yac = this.yacimientoEn(x, z);
+  return v.jurisdiccion === 'reserva' && yac ? { ...v, permitido: true, yacimiento: yac, castigo: 0 } : v;
 };
 `,
   },

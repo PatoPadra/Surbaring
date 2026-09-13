@@ -1,5 +1,22 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **13/9/2026 — RONDA 7, FASE 3 (`barro`) CERRADA: la arcilla y la arena se
+> alcanzan, y el juego dice dónde.** Banco 6/6, falsador 18 de 18, y en el juego
+> real **la orilla promete arcilla en 240 de 240 puntos** (antes, «a veces» en 72),
+> con la más cercana a 499 m del arranque y **la arena a puñados a 524 m** (antes, la
+> legal a 8,6 km).
+>
+> La arcilla sale de la barranca con `extraer_arcilla`, que el dataset declaraba y
+> nadie usaba. La arena, a puñados en la Reserva, como **licencia declarada
+> `arenaDePlaya`**; la cantera no cambió. El taller dice de dónde sale lo que falta y
+> hacia dónde queda lo más cercano **que ya se vio**, sin revelar lo no visitado.
+>
+> *La predicción del agente dio exacta —100 % y 524 m—, la primera en la ronda. Y dos
+> de los defectos del falsador y uno del banco fueron míos.*
+>
+> **Queda para el dueño**: la recolección en el Parque —y ahora la barranca— es una
+> licencia sin declarar desde la ronda 1.
+
 > **13/9/2026 — RONDA 7, FASE 2b (`empuñadura`) CERRADA: el garrote se ve en la
 > mano.** Los 12 objetos de la ranura del arma tienen modelo, y la mano lleva la
 > herramienta si hay y si no el arma. Banco 7/7, falsador 14 de 14. En el juego,

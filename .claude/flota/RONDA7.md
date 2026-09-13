@@ -982,3 +982,97 @@ la negativa de la cantera en Parque y en Reserva sin cambios.
 
 Los recipientes (fase 4). Mover la línea de los límites. Sacar la equivalencia
 `madera_dura → tronco`. Recetas nuevas de cerámica.
+
+---
+
+## FASE 3 CERRADA — 13/9/2026
+
+**Banco Node 6/6**, con los bancos de la ronda 7 fases 1, 2 y 2b y `vite build`;
+**falsador 18 de 18** vistos por la aserción declarada; y **mitad navegador 5 de
+5**, corrida por el coordinador en el juego real. El agente tocó `Recoleccion.js`,
+`Hallazgos.js`, `Taller.js` y la licencia nueva, y nada más; no hizo falta
+`pendiente-r7-barro.md`. Se cortó una vez por el límite de uso antes de escribir
+código y **se lo retomó con su contexto**.
+
+### Medido en el juego
+
+Con el mismo instrumento de la apertura —240 puntos de la banda de orilla a menos de
+3 km del arranque, sotobosque y vegetación sembrados de verdad—:
+
+| | apertura | ahora | contrato |
+|---|---|---|---|
+| la tecla promete arcilla con número | 0 de 240 (sólo «a veces», en 72) | **240 de 240** | ≥ 80 % |
+| arcilla más cercana al arranque | 499 m | **499 m** | < 600 m |
+| arena a puñados en las playas de la banda | — | **153 de 153** | — |
+| arena más cercana al arranque | 8,6 km, la legal | **524 m** | < 600 m |
+
+**Y el taller dice dónde, en el juego de verdad**, con el cableado de `main.js`.
+Parado en el arranque, después de que el mapa anotara una orilla a 520 m:
+
+> «Arcilla — Depósitos glacilacustres de las orillas. La barranca de arcilla más
+> cerca que viste queda a 450 m al suroeste.»
+
+Lo mismo para la arena y para la piedra. Antes de pasar por esa orilla decía 1,4 km:
+la partida de desarrollo tenía anotada una barranca más lejos.
+
+**La predicción del agente dio exacta**: dijo 100 % y 524 m, repitiendo en Node el
+muestreo del navegador sobre el DEM real con el `quePuedoHacer()` de verdad. Es la
+primera vez en la ronda que un número de agente coincide con la medición, después de
+cuatro que cayeron del lado optimista. **Se midió igual.**
+
+### Lo que quedó, leído en el código
+
+- **Un solo gesto de orilla.** Donde hay barranca y playa —153 de 240 puntos—, la tecla
+  ofrece «Sacar arcilla de la barranca y arena de la playa (1 × arcilla · 1 × arena)».
+  En fila, por la vara del archivo ganaría la playa, que es más escasa, y dos de cada
+  tres orillas prometerían arena y callarían la arcilla. Cada parte descansa por su
+  lado.
+- **El rinde no vive en el código.** La arcilla sale de `extraer_arcilla` —la rama con
+  herramienta gasta un uso, después del aviso para que no lo tape si la pala se rompe—
+  y la arena del campo `rinde` de la licencia `arenaDePlaya`.
+- **El orden**: arriba del tronco, la chatarra y la planta; abajo de la carroña, el
+  permiso, el animal sin identificar y beber con sed. Con los números que ya usa el
+  archivo: la banda es el 2,5 % de la tierra, un tronco a 5 m está en el 4,0 % de las
+  posiciones y la chatarra en el 13 % de las celdas. La chatarra se sigue levantando
+  con R.
+- **Descansa por tramos de 12 m y 900 s**, como la chatarra y la cantera. A mano, las
+  diez de arcilla del horno de barro son unos 120 m de barranca caminados; con pala,
+  dos tramos.
+- **Una sola regla con el mapa.** `barrancaEn()` y `playaEn()` se exportan de
+  `Recoleccion.js` y `Hallazgos` las importa: la arcilla ya no se anota por la piedra, y
+  la arena ya no se anota en el Parque ni pisando agua. `Hallazgos.masCercanoDe()`
+  contesta sólo con lo anotado, al centro de la celda.
+- **La pista del taller**: el origen sale de `mineria.d.materiales`, la distancia de a
+  50 m y con un decimal en km, y ocho rumbos. Sin nada anotado dice qué buscar: «Buscá
+  una barranca de arcilla: cuando pases por una, queda anotada en el mapa».
+
+### Los defectos del banco y del falsador, que fueron míos
+
+1. **La `mineria` falsa del banco no tenía `d`**, y lo encontró el agente. El taller no
+   tenía de dónde leer el origen salvo importando el JSON en `Taller.js`, que en Node
+   pide una aserción de import que Chrome y Node ya no aceptan. El agente lo demostró
+   con una copia del banco cambiada en una línea —10 de 10— en vez de acomodar su
+   código. **Es el defecto de la ronda 6 otra vez: datos de prueba más pobres que la
+   dependencia real.**
+2. **Dos parches del falsador rompían el módulo en vez de plantar el defecto.**
+   `arena-en-parque` declaraba dos veces el mismo `const`, y `cantera-abierta` devolvía
+   un veredicto permitido sin yacimiento, y la cadena reventaba al leer su nombre. Los
+   dos salieron «por otro motivo». Arreglados, los dos se ven por su aserción.
+
+### Lo que hay que mirar jugando
+
+1. **En la orilla, la primera apretada es barro.** La orilla le gana la tecla al
+   tronco, la chatarra y la planta; lo otro sale cuando la orilla descansa, y la
+   chatarra con R.
+2. **El aviso de la licencia sale una vez por sesión**, no se guarda con la partida.
+3. **Las marcas de arena del Parque** de un guardado viejo siguen en el mapa, aunque
+   ahí la tecla no junte.
+
+### Deuda que queda a la vista, y es del dueño
+
+**La barranca da arcilla también dentro del Parque.** Lo marcó el agente: el artículo
+5 de la Ley 22.351 prohíbe ahí todo aprovechamiento de los recursos naturales, y el
+contrato no lo restringió. Pero no es nuevo: la piedra ya daba arcilla en el Parque, y
+**la recolección entera —fibra, frutos, ramas, piedra— es una licencia sin declarar
+desde la ronda 1**. Declararla o restringirla cambia el juego en todo el oeste del mapa,
+y es una decisión del dueño, no de una fase.

@@ -2573,6 +2573,25 @@
         "queNOSeAfloja": "Lo que la luz alumbra en pantalla es honesto —doce metros la antorcha, seis el candil, ocho la vela, catorce una fogata— y todo se consume contra el reloj del mundo. La licencia es sólo sobre cuánto revela el mapa.",
         "estadoReal": "Se nota en el mapa, y medido. Exploracion.revisar() mide por celdas de 256 m y desde el índice de la celda, así que ningún tope por debajo de 256 m revela una vecina: la primera versión, 120 a oscuras y 220 con luz, daba 1 celda en los dos casos y la luz no cambiaba nada. Con 220 y 300, medido el 11/9/2026 con el revisar() real sobre 3000 posiciones: a oscuras 1 celda; con luz 5, las cuatro vecinas ortogonales con nitidez 104 de 255 —entre la oscuridad y el día—; de día 9, ortogonales a ~151 y diagonales a 75. revisar() no se tocó: el día queda idéntico.",
         "nota": "Es la primera licencia sobre la física y no sobre la norma. La regla de arriba habla de marco legal, y vale igual para lo físico: la licencia se toma a propósito, se declara y se dice."
+      },
+      {
+        "id": "arenaDePlaya",
+        "que": "En una playa de lago de la Reserva Nacional, o fuera del área protegida, la tecla de acción junta arena a puñados: sin permiso, sin herramienta y sin abrir cantera. En el Parque Nacional, ni un puñado.",
+        "laNormaReal": "La Ley 22.351 prohíbe en los Parques Nacionales la exploración y la explotación mineras y todo aprovechamiento de los recursos naturales (artículo 5). En las Reservas Nacionales la misma ley admite actividades productivas reglamentadas, entre ellas la explotación de canteras, pero sólo con autorización de la Administración de Parques Nacionales, y no prevé una excepción para cantidades chicas: el puñado no tiene un permiso propio del que colgarse. Fuera del área protegida los recursos mineros son del dominio de la provincia (Constitución Nacional, artículo 124); la extracción de áridos es legal y la regulan la provincia y el municipio, y el juego tampoco modela ese trámite.",
+        "porQueSeToma": "El horno de barro pide 4 de arena, y sin horno de barro no hay cerámica, ni ladrillo, ni vidrio. Medido el 13/9/2026 sobre el DEM real desde el arranque, que está en la Reserva: el banco de arena más cercano queda a 515 m, y ahí la cantera se niega siempre; la arena que se puede sacar legalmente con cantera queda a 8,6 km, fuera del área protegida, y pide herramienta. Jugada al pie de la letra, la bóveda del primer horno queda a ocho kilómetros y medio de caminata, que es el mismo motivo por el que se tomaron el fuego y el arco. Cuatro puñados para una bóveda no son una cantera.",
+        "comoLoDiceElJuego": "El aviso del primer puñado lo dice: que es una licencia de juego y qué pide la ley en el lugar donde se juntó —en la Reserva, que la cantera sigue sin poder abrirse—. En el Parque la tecla no ofrece la playa, el mapa no la marca, y R sigue explicando el artículo 5 como siempre.",
+        "queNOSeAfloja": "La cantera no cambia: Mineria.evaluar() se sigue negando en el Parque y en la Reserva, con su castigo, y fuera del área protegida sigue pidiendo herramienta. La licencia es sobre el puñado —uno por vez, y el tramo de playa descansa—, no sobre el volumen, y no cruza la línea del Parque.",
+        "rinde": [
+          {
+            "recurso": "arena",
+            "cantidad": 1
+          }
+        ],
+        "aviso": {
+          "reserva": "Es una licencia de juego. En la Reserva Nacional, la Ley 22.351 deja sacar áridos sólo con autorización de Parques Nacionales, y no hace excepción por un puñado: el juego se la toma para que el horno de barro no quede a ocho kilómetros. La cantera acá sigue negada, y en el Parque no se junta ni un puñado.",
+          "fuera": "Es una licencia de juego. Fuera del área protegida la extracción de áridos es legal, pero la regulan la provincia y el municipio, y el juego no modela ese trámite para un puñado. Para sacar volumen está la cantera, con herramienta; en el Parque no se junta ni un puñado."
+        },
+        "nota": "Es la primera licencia que dice cuánto. El campo rinde es el puñado, y Recoleccion.js lo lee de acá: no hay otro número de arena de playa en el código. El aviso va por jurisdicción porque la norma que se afloja no es la misma en la Reserva que fuera del área protegida."
       }
     ]
   },

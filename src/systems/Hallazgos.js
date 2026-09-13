@@ -51,7 +51,22 @@
  * valle; no se ve si esa playa tiene arena o canto rodado. Si los hallazgos
  * usaran el alcance de la exploración, el mapa se llenaría solo y descubrir
  * dejaría de significar algo.
+ *
+ * ── Una sola regla con la tecla (ronda 7) ──────────────────────────────────
+ *
+ * La barranca de arcilla y el banco de arena se anotan con **las mismas
+ * funciones** con que la tecla de acción los da: `barrancaEn()` y `playaEn()`,
+ * importadas de `Recoleccion.js` y no copiadas. Si el mapa dice «acá hay», la
+ * tecla lo da; si la tecla lo da, el mapa lo puede marcar.
+ *
+ * Antes eran dos reglas y ninguna coincidía. La arcilla se anotaba con una
+ * piedra a 22 m en la orilla —o sea, donde a veces salía de levantar una— y la
+ * arena donde `Mineria` decide banco de arena, adentro del Parque incluido y
+ * pisando agua incluido. Con una sola regla, además, el taller puede decir hacia
+ * dónde queda lo que falta sin mandar a nadie a una playa donde no se junta.
  */
+
+import { barrancaEn, playaEn } from './Recoleccion.js';
 
 const CLAVE = 'survibar.hallazgos.v1';
 const METROS_POR_CELDA = 128;
@@ -73,9 +88,9 @@ const RADIO_PLANTA_M = 26;    // hasta dónde se reconoce un cañaveral
  * Doce metros no es un número al azar: la arcilla se deposita en la planicie de
  * inundación y en la barranca, no en la línea del agua.
  *
- * `Recoleccion._orillaCerca()` puede importar esta función y pasarle
- * `jugador.posicion`, y así el criterio queda escrito una sola vez. Ese archivo
- * es del agente `juego`: la propuesta está en `pendiente-r2-carta.md`.
+ * Desde la ronda 7 la marca de arcilla ya no pasa por acá sino por
+ * `barrancaEn()`, que es esta orilla menos el agua a mano: la regla del gesto.
+ * Esta función queda como el criterio de orilla a secas.
  */
 export function orillaCerca(mundo, x, z) {
   return mundo.orillaCerca(x, z);
@@ -84,15 +99,19 @@ export function orillaCerca(mundo, x, z) {
 /**
  * Los tipos, como banderas de bits: una celda puede tener varios y así entra
  * todo en un número.
+ *
+ * `recurso` es lo que se saca de ahí, con el id de `Recursos.js`: es lo que deja
+ * al taller preguntar «¿dónde vi arcilla?» sin saber que la arcilla se anota como
+ * barranca. `articulo` es para decirlo en castellano sin adivinar el género.
  */
 export const TIPOS = {
-  arena:      { bit: 1,  nombre: 'Banco de arena',      glifo: 'puntos' },
+  arena:      { bit: 1,  nombre: 'Banco de arena',      glifo: 'puntos',   recurso: 'arena',     articulo: 'un' },
   // El bit 2 era la pómez y se retiró por medición: 22,8 % del parque. Se deja
   // libre y no se reusa, para que un guardado viejo no se lea como otra cosa.
-  chatarra:   { bit: 4,  nombre: 'Veta de chatarra',    glifo: 'rombo' },
-  arcilla:    { bit: 8,  nombre: 'Barranca de arcilla', glifo: 'barranca' },
-  canaveral:  { bit: 16, nombre: 'Cañaveral',           glifo: 'canas' },
-  obsidiana:  { bit: 32, nombre: 'Pedrero de altura',   glifo: 'lasca' },
+  chatarra:   { bit: 4,  nombre: 'Veta de chatarra',    glifo: 'rombo',    recurso: 'chatarra',  articulo: 'una' },
+  arcilla:    { bit: 8,  nombre: 'Barranca de arcilla', glifo: 'barranca', recurso: 'arcilla',   articulo: 'una' },
+  canaveral:  { bit: 16, nombre: 'Cañaveral',           glifo: 'canas',    recurso: 'cana',      articulo: 'un' },
+  obsidiana:  { bit: 32, nombre: 'Pedrero de altura',   glifo: 'lasca',    recurso: 'obsidiana', articulo: 'un' },
 };
 const LISTA_TIPOS = Object.entries(TIPOS);
 
@@ -218,7 +237,7 @@ export class Hallazgos {
     return (est?.densidadNiebla ?? 0) < 0.0009;
   }
 
-  /** Lo que el terreno dice de un punto: áridos y chatarra. */
+  /** Lo que el terreno dice de un punto: la orilla, la arena y la chatarra. */
   _mirarTerreno(x, z) {
     if (!this.mundo.dentro?.(x, z)) return 0;
     let n = 0;
@@ -226,8 +245,17 @@ export class Hallazgos {
     // De `yacimientoEn` entra sólo la arena. Ripio (16,6 %), tosca (20,0 %) y
     // pómez (22,8 %) salen en casi todos lados: marcarlos sería pintar el mapa
     // entero. La arena es el 0,4 % — eso sí es un lugar al que uno vuelve.
-    const y = this.mineria?.yacimientoEn(x, z);
-    if (y && y.id === 'arena' && this.anotar(x, z, 'arena')) n++;
+    //
+    // Y entra con la regla del puñado, no con la de la geología: en tierra y
+    // fuera del Parque. Un banco de arena del Parque existe, pero ahí la tecla
+    // no junta, y una carta que marca un lugar donde no se consigue lo que marca
+    // manda al jugador a caminar para nada.
+    if (playaEn(this.mundo, this.mineria, x, z) && this.anotar(x, z, 'arena')) n++;
+
+    // La barranca, con la misma función que la tecla. Va acá y no con las
+    // plantas porque es un lugar, no una mata: se ve también en el halo de 90 m
+    // y de día, igual que una playa.
+    if (barrancaEn(this.mundo, x, z) && this.anotar(x, z, 'arcilla')) n++;
 
     if (this.mineria?.hayChatarra(x, z)) {
       if (this.anotar(x, z, 'chatarra')) n++;
@@ -276,13 +304,18 @@ export class Hallazgos {
   }
 
   /**
-   * Lo que hay sembrado alrededor: el cañaveral y las piedras que dan arcilla u
+   * Lo que hay sembrado alrededor: el cañaveral y las piedras que dan
    * obsidiana.
    *
-   * La arcilla y la obsidiana no tienen yacimiento propio: salen de juntar la
-   * mata `piedra` del sotobosque, en la orilla la primera y por encima de los
-   * 1.500 m la segunda (`Recoleccion.js`). Así que «dónde hay arcilla» es «una
-   * orilla con piedras», y eso es exactamente lo que se anota.
+   * La obsidiana no tiene yacimiento propio: sale de juntar la mata `piedra` del
+   * sotobosque por encima de los 1.500 m (`Recoleccion.js`), así que «dónde hay
+   * obsidiana» es «una piedra en altura», y eso es lo que se anota.
+   *
+   * La arcilla se anotaba acá, con una piedra en la orilla, y ya no: desde la
+   * ronda 7 sale de la barranca con gesto propio y se anota en `_mirarTerreno()`
+   * con la regla de ese gesto. La piedra de la orilla la sigue dando a veces,
+   * pero una marca de «Barranca de arcilla» tiene que querer decir que la
+   * barranca está.
    */
   _mirarVegetacion(pos) {
     let n = 0;
@@ -293,12 +326,36 @@ export class Hallazgos {
 
     const piedra = this._masCercanaDe(this.sotobosque?.lotes, pos, RADIO_MATA_M,
       l => l.tipo?.id === 'piedra');
-    if (piedra) {
-      if (piedra.y > 1500 && this.anotar(piedra.x, piedra.z, 'obsidiana')) n++;
-      if (orillaCerca(this.mundo, piedra.x, piedra.z)
-          && this.anotar(piedra.x, piedra.z, 'arcilla')) n++;
-    }
+    if (piedra && piedra.y > 1500 && this.anotar(piedra.x, piedra.z, 'obsidiana')) n++;
     return n;
+  }
+
+  /**
+   * El lugar anotado más cercano donde se vio un recurso, o null.
+   *
+   * Lo pregunta el taller para decir hacia dónde queda lo que falta. Contesta
+   * sólo con lo anotado —celdas que el jugador pisó o vio a noventa metros—, así
+   * que no puede revelar nada que la carta no muestre ya: es la tesis de este
+   * archivo, dicha con otras palabras. Mide al centro de la celda, que es donde
+   * la marca se dibuja; más precisión que eso sería inventada.
+   *
+   * @returns {null|{tipo:string, nombre:string, articulo:string, x:number, z:number, distancia:number, aca:boolean}}
+   */
+  masCercanoDe(recurso, x, z) {
+    const tipos = LISTA_TIPOS.filter(([, t]) => t.recurso === recurso);
+    if (!tipos.length) return null;
+    const aca = this._indice(x, z);
+    let mejor = null;
+    for (const [k, mascara] of this.celdas) {
+      const hallado = tipos.find(([, t]) => mascara & t.bit);
+      if (!hallado) continue;
+      const c = this._centroDe(k);
+      const d = Math.hypot(c.x - x, c.z - z);
+      if (mejor && d >= mejor.distancia) continue;
+      const [tipo, t] = hallado;
+      mejor = { tipo, nombre: t.nombre, articulo: t.articulo, x: c.x, z: c.z, distancia: d, aca: k === aca };
+    }
+    return mejor;
   }
 
   // ── Dibujo ─────────────────────────────────────────────────────────────────

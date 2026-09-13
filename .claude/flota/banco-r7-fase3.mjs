@@ -375,7 +375,12 @@ async function loQueFalta() {
   };
   const deps = (hallazgos) => ({
     fundicion, hallazgos,
-    mineria: { evaluar: () => ({ permitido: false, detalle: '' }) },
+    // Con `d`: la `Mineria` del juego guarda ahí `mineria.json` y ya lo lee así
+    // (`Mineria.js:251`). La primera versión le daba al taller una mineria de sólo
+    // `evaluar`, y el origen del material no tenía de dónde salir salvo importando
+    // el JSON en `Taller.js`, que rompe la carga en Node. Lo encontró el agente: la
+    // aserción pedía un dato que la dependencia de verdad tiene y la falsa no.
+    mineria: { d: MINERIA, evaluar: () => ({ permitido: false, detalle: '' }) },
     construccion: null,
     limites: { etiqueta: () => ({ id: 'reserva', nombre: 'Reserva Nacional Nahuel Huapi' }), jurisdiccion: () => 'reserva' },
     jugador: { posicion: { x: 0, y: 800, z: 0 } },
