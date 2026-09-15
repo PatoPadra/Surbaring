@@ -1542,3 +1542,204 @@ El coordinador verificó que el artículo de Méndez existe (AIBR 4(1): 11-53). 
 - **La misma trampa en la fragua.** Con una fogata más cerca que la fragua, el hierro dice que falta la fragua. Ya estaba antes y no es de esta fase.
 - **El radio de 8 m está escrito dos veces**, en `Fundicion` y en `Fabricacion`.
 - **El vellón por mata, sin fibra**, quedó como propuesta en el pendiente. Pide tocar un caso del banco de la fase 1 y `_delSuelo()`.
+
+
+---
+
+## FASE 6 · `cielo` — la luna de la fecha, las estrellas del catálogo, y la Cruz del Sur que enseña el sur
+
+### Lo que se midió antes de encargar nada
+
+- **La luna del juego no tiene relación con la fecha, confirmado de nuevo.** En la luna
+  nueva real del 10/2/2024, a las 3:30 UTC, el juego la dibuja 52 % iluminada y alta en
+  el cielo. En la luna llena real del 25/2/2024, a la misma hora, la dibuja 45 %.
+- **Las dos noches se ven idénticas.** `capturas/r7f6-base-luna-nueva.png` y
+  `capturas/r7f6-base-luna-llena.png` muestran, mirando al sur a 35°, las mismas
+  estrellas, la misma banda y la misma oscuridad. Las estrellas son ruido pegado al
+  mundo (`Cielo.js`, en el shader) y no giran.
+- **Referencia de la luna, de JPL Horizons**, en diez instantes entre 2024 y 2026. Son
+  las cuatro fases de febrero de 2024, la noche de las capturas de la ronda, la fecha
+  por defecto del juego y cuatro más. Se pidieron dos cosas: la posición geocéntrica
+  aparente con su iluminación, y la altura y el azimut sin refracción vistos desde el
+  arranque (−41,087°, −71,429°, a 800 m).
+- **Una efeméride de veinte líneas alcanza de sobra.** Se probó la de baja precisión
+  del *Astronomical Almanac*, con el tiempo sidéreo de Meeus (12.4), contra esas diez
+  filas:
+
+  | | peor de los diez |
+  |---|---|
+  | posición geocéntrica | 0,14° |
+  | vista desde el arranque, **con** paralaje | 0,14° |
+  | vista desde el arranque, **sin** paralaje | 1,04° |
+  | iluminación | 0,8 puntos |
+
+  **La paralaje no es un detalle**: sin ella la luna queda a un grado, dos veces su
+  tamaño.
+- **La precesión** corre la Cruz del Sur y los punteros entre 0,21° y 0,26° del
+  catálogo J2000 a 2025 (Meeus, 21.2, rigurosa).
+- **Referencia de posición.** A −41,087° y −71,429°, el 12/2/2025 a las 2:00 UTC, Acrux
+  está a 37,6° de altura y 145,5° de azimut, con la precesión. Sin la precesión da 37,7°
+  y 145,2°: la precesión la corre 0,25°.
+- **El método de la Cruz erra por sí solo**, medido con la cuenta del banco sobre el
+  catálogo: prolongar el palo largo cuatro veces y media llega a 2,7° del polo sur
+  celeste, y la mediatriz de los punteros pasa a 3,0°.
+- **El costo del cielo de hoy, con el reloj de la GPU**, de noche, en la HD 4000, con
+  preset Baja y a 1024×576: **23,4 ms** mirando alto al sur y **24,8 ms** mirando al
+  horizonte, en 20 cuadros cada uno.
+- **El catálogo** está en `tools/catalogos/bsc5/`, con su cita en `LEEME.md`. Son 1439
+  estrellas hasta magnitud 5 que alguna vez suben a −41,1°, y 2531 hasta 5,5. La Cruz
+  del Sur y los punteros están verificados por número HR.
+- **El HUD ya tiene brújula** y `HUD.actualizar(dt, cielo)` ya recibe el cielo. El
+  códice tiene lugares y fenómenos, y nada del cielo.
+
+### Las decisiones, del jefe, dichas
+
+1. **La luna se calcula, no se aproxima**: efeméride de baja precisión con paralaje. La
+   medición dice que alcanza con un orden de magnitud de margen.
+2. **Las estrellas salen del catálogo horneado, y se esconden igual que hoy**: detrás de
+   las nubes, la ceniza y el día. Si se dibujan aparte del domo, que no se vean a través
+   de una nube.
+3. **El cielo gira alrededor del polo sur celeste**, a la altura de la latitud y sobre el
+   sur verdadero. Es lo que hace que sirva para orientarse.
+4. **La Cruz del Sur enseña el método, no la respuesta.** Mirándola de noche, el HUD dice
+   cómo se encuentra el sur con ella y con los punteros. El códice lo cuenta con la cita
+   del catálogo.
+
+### Propiedad exclusiva de archivos
+
+- `src/world/Cielo.js`
+- `tools/catalogos/bsc5/hornear.mjs` — nuevo: el que hornea la tabla
+- `src/data/estrellas.json` — nuevo: la tabla horneada, `estrellas: [[ra, dec, v, …], …]`
+- `src/ui/HUD.js` — **sólo** el aviso de la Cruz del Sur
+- `src/ui/Codice.js` — **sólo** el bloque del cielo en la pestaña de geografía
+- `src/data/geografia.json` — **sólo** un bloque nuevo del cielo
+
+Del coordinador: `src/main.js`, el banco, el falsador y esta carta. Si el HUD necesita
+la dirección de la cámara, se pide en `pendiente-r7-cielo.md`. Bitácora:
+`.claude/flota/r7-cielo.md`.
+
+### El contrato
+
+**C1 · La luna es la de la fecha.** Después de `cielo.actualizar(fecha, lat, lon)`:
+- `cielo.direccionLuna` es la dirección de la luna vista desde ese lugar, con la
+  paralaje, a **0,5° o menos** de JPL Horizons en los diez instantes de la apertura;
+- `uniformes.uFaseLunar.value` es la fracción iluminada, de 0 a 1, a **2 puntos o
+  menos**.
+
+**C2 · El cielo gira.** Existe `cielo.direccionDe(ra, dec)`, en grados J2000. Devuelve la
+dirección en el mundo de esa posición en la última `actualizar()`, con la convención de
+`vectorSolar()`: +X este, +Z sur, +Y arriba.
+- Queda a 0,5° o menos de la posición calculada con el tiempo sidéreo de Meeus y la
+  precesión.
+- El eje de giro apunta al azimut 180° y a una altura igual a la latitud.
+
+**C3 · Las estrellas son las del catálogo.**
+- **La tabla.** Se hornea desde el BSC5 con `tools/catalogos/bsc5/hornear.mjs` en
+  `src/data/estrellas.json`, con la forma `estrellas: [[ra, dec, v, …], …]`, en grados
+  J2000. Trae al menos todas las estrellas hasta magnitud 5 que alguna vez suben a
+  −41,1°, y cita el catálogo.
+- **Se ven.** En la imagen final, de noche, el píxel de Acrux, Mimosa, Gacrux y α Cen
+  brilla muy por encima del cielo de alrededor. Las cuatro de la Cruz se ordenan por
+  brillo como por magnitud.
+- **No hay estrellas inventadas**, lejos de las del catálogo.
+- **Se esconden:** con el cielo cubierto o de día, el píxel de Acrux no brilla.
+
+Lo mide el coordinador en el juego.
+
+**C4 · La Vía Láctea gira con el cielo.** La banda sigue al plano galáctico.
+`uniformes.uPoloGalactico.value` es la dirección en el mundo del polo norte galáctico
+(J2000: AR 192,859°, Dec +27,128°), a 1° o menos de `direccionDe()` de ese punto.
+
+**C5 · La luna se ve con su fase.** El disco está iluminado del lado del sol, y la
+fracción de disco iluminado sigue a la iluminación, a 0,15 o menos. Lo mide el
+coordinador en el juego con una luna en cuarto.
+
+**C6 · La noche es la de la luna.** La luz de la noche y la niebla nocturna siguen
+leyendo `direccionLuna` y `uFaseLunar`: con la luna real, una noche de luna llena alta
+alumbra más que una de luna nueva. Lo mide el coordinador.
+
+**C7 · La Cruz del Sur enseña a encontrar el sur.**
+- **La puerta.** `cielo.queMiro(direccion)` devuelve `'cruz_del_sur'` cuando esa dirección
+  está a 12° o menos del centro de la Cruz, la Cruz está sobre el horizonte y es de noche.
+  Si no, devuelve `null`.
+- **El HUD.** Mirándola, el HUD dice el método:
+  - prolongar el palo largo de la Cruz, de Gacrux hacia Acrux, unas cuatro veces y media;
+  - cruzarlo con la mediatriz de los punteros;
+  - bajar a plomo al horizonte: ése es el sur.
+- **El método funciona en el cielo del juego.** Con las direcciones que da
+  `direccionDe()`, el palo largo y la mediatriz de los punteros llegan a 4° o menos del
+  polo sur celeste. El método solo ya erra unos 3°, y se le suman los 0,5° que se le
+  permiten a cada estrella.
+- **El códice.** Tiene una entrada del cielo austral con el método, los nombres de las
+  estrellas y la cita del catálogo. Si hay un nombre mapuche, va con fuente.
+
+**C8 · No cuesta.**
+- Lo que la noche le suma a la GPU, mirando alto al sur, con Baja y a 1024×576, sube
+  **1 ms o menos**. Se mide la noche menos el día en el mismo lugar, en tres pares
+  alternados de 20 cuadros. La base es **5,06 ms**: el promedio de seis pares, en dos
+  corridas de la misma sesión, que fueron de 4,64 a 5,56. Entre corridas hay medio
+  milisegundo de ruido.
+
+  > **Corregido antes de encargar nada.** Decía «1 ms sobre la base», contra los
+  > 23,4 ms de la apertura. Medida otra vez, horas después, la misma noche dio 20,0 ms:
+  > la cifra absoluta cambia de una sesión a otra, y contra un número viejo el tope le
+  > regalaba al agente tres milisegundos. La diferencia con el día, medida en la misma
+  > sesión, no cambia así.
+- El material de las estrellas compila al cargar, no cuando cae la noche: los programas
+  son los mismos de día y de noche.
+
+**C9 · Sin regresión.** Los bancos de la ronda 6 y de la ronda 7 siguen verdes, y
+`vite build` termina limpio.
+
+### Lo que NO es de esta fase
+
+Planetas. Líneas de constelaciones dibujadas en el cielo. Eclipses. El crepúsculo y el
+color del cielo de día. La refracción en el horizonte.
+
+
+### El banco, contra la base
+
+`banco-r7-fase6.mjs`, siete secciones, y `banco-r7-fase6.navegador.js`. Contra el
+código de hoy:
+
+- **Premisas verdes:**
+  - el catálogo trae Acrux, Sirio y Canopo con su magnitud;
+  - sin precesión, la cuenta del banco da a Acrux donde la dio la apertura: 37,71° de
+    altura y 145,23° de azimut;
+  - son 1441 las estrellas hasta magnitud 5 que suben a −41,1°;
+  - con la cuenta del banco, el método de la Cruz llega a 2,69° del polo sur celeste por
+    el palo largo y a 2,95° por la mediatriz;
+  - en el navegador, la Cruz está a 30° y las cinco estrellas caen en la imagen, y hay
+    una noche con la luna en cuarto y alta y otra con la luna llena y alta;
+  - la regresión, 9 de 9.
+- **El contrato, rojo por lo que tiene que ser rojo:**
+  - la luna queda a 162° de JPL y a 58 puntos de iluminación en el peor instante;
+  - no existen `direccionDe`, la tabla, `uPoloGalactico` ni `queMiro`;
+  - en la imagen, Acrux tiene 2 de contraste, y 163 de 193 puntos brillantes no son del
+    catálogo;
+  - el disco en cuarto sale 0,98 iluminado contra 0,35, y los dos lados brillan igual.
+- **Verde, porque no tiene que cambiar:**
+  - los programas: 18 de día y 18 de noche;
+  - lo que la noche le suma a la GPU: 4,93 ms contra la base de 5,06;
+  - la luz de la noche ya sigue a `uFaseLunar`, aunque hoy esa fase es inventada.
+
+**Ocho defectos míos, encontrados antes de encargar nada:**
+
+1. La premisa de Acrux comparaba la cuenta con precesión contra números calculados sin
+   ella.
+2. El método de la Cruz erra 3° por sí solo, y pedirle 3° al cielo del juego habría tirado
+   un cielo correcto. Pasó a 4°.
+3. Las estrellas inventadas se juzgaban a 1°. Con 9096 estrellas, un punto al azar tiene
+   una a menos de 1° la mitad de las veces. Pasó a 0,5°.
+4. La fase se medía dentro de un disco de 0,26°, y el juego dibuja la luna con 1,4° de
+   radio.
+5. Medida por áreas con un umbral, contaba el halo como disco y daba verde contra la base.
+   Ahora se mide en el perfil que cruza el disco sobre el eje del sol.
+6. El costo se comparaba contra un número de otra sesión: la misma noche dio 23,4 ms y
+   20,0. Ahora es la noche menos el día, en pares alternados.
+7. La mitad navegador volvía a descomprimir el catálogo, que Vite ya entrega
+   descomprimido, y explotaba.
+8. La premisa del borde del disco suponía una luna chica.
+
+`banco-r7-fase6.falsar.mjs`: 18 defectos y 3 controles al revés para la mitad Node. Se
+corre con el código del agente, y sus parches ya cargan contra la base.
