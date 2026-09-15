@@ -271,6 +271,47 @@ apunta a los puntos inventados. La fase del disco (0,64 contra 0,62) y el costo
 
 No arranqué Vite ni abrí el navegador, y no hay ningún commit hecho.
 
+## 15/9 · el tamaño del punto vuelve a 6 px
+
+**Mi premisa era falsa y el coordinador la falsó midiendo.** Los puntos inventados que
+contaba su banco no los hacían mis estrellas: apagándolas, los dos píxeles que miró
+valían exactamente lo mismo (33 y 63, con el anillo en 0). Eran bordes de árbol y de
+loma suavizados por el FXAA contra el cielo, y su barrido los recorría todos. Arregló el
+banco restando el mismo cuadro sin estrellas, y la mitad navegador cerró **18 de 18, con
+`inventadas: 0` de 99 puntos**.
+
+**Qué ganó cada cosa, separado.** Su lectura es la correcta y la aritmética la confirma:
+
+- **El orden de brillo lo arregló la meseta, no el tamaño.** Con el perfil viejo el
+  mejor píxel valía entre 50 % y 87 % según dónde cayera el centro de la estrella dentro
+  del píxel; con la meseta (0,25 a 0,95) vale 97 % en un punto de 2,5 px, y **1,00 exacto
+  en cualquier punto de 2,9 px o más**: para r² < 0,25 el perfil es plano, y el píxel más
+  cercano a un centro cualquiera cae a 0,707 px, o sea a r = 0,707/(tamaño/2) < 0,5.
+  **Las cuatro de la Cruz caen en la meseta con cualquiera de los dos topes, así que el
+  tope no tocaba sus picos.** Con los 0,2 de magnitud que les come el aire a 32° de
+  altura (masa de aire 1,99), los puntos miden Mimosa 3,94 px · Acrux 3,88 · Gacrux
+  3,67 · δ Cru 2,85, y el peor píxel de cada una cae en r² = 0,13 · 0,13 · 0,15 ·
+  **0,246**. La meseta termina en 0,25: δ Cru, la más débil y la más chica, entra por
+  cuatro milésimas. Por debajo de 2,83 px de punto empezaría a pagar la lotería del
+  subpíxel —hasta un 3 %—, y aun así le sobran 82 niveles de margen contra Gacrux.
+- **El tamaño sólo compraba margen contra el medio grado**, que era la premisa que se
+  cayó.
+
+**Vuelve `clamp(2.5 + 0.7·(3.5 − m), 2.5, 6.0)`**, con la meseta intacta. Predicción para
+su próxima corrida: los cuatro picos quedan como los midió —Mimosa 195,4 · Acrux 181,1 ·
+Gacrux 170,2 · δ 87,8—, a lo sumo un par de niveles más arriba, porque un punto más
+grande pierde un poco menos con el FXAA. Los márgenes que pide el banco son 25,2 (Mimosa
+sobre Gacrux, pide ≥ −3) y 82,4 (Gacrux sobre δ, pide ≥ +3): no hay forma de que el
+tamaño los mueva.
+
+**Lo único que sí cambia con 6 px** es hasta dónde llega la luz de una estrella: r = 0,975
+del radio, o sea 2,92 px = **0,35°** de su centro, contra los 4,18 px (0,5°) del
+criterio. Quedan 0,15° para el FXAA (1 px = 0,12°) y el medio píxel de la rejilla: entra,
+pero justo. Si alguna vez apareciera un inventado y viniera de una estrella brillante, el
+escalón siguiente es 5,0 px (2,44 px = 0,29°), no volver a 3,6.
+
+Banco Node con el tamaño de vuelta en 6 px: **total 7/7**.
+
 **La Vía Láctea** gira: la banda es `exp(−(dir·uPoloGalactico · ancho)²)`, más ancha y
 más brillante hacia el centro galáctico (Sagitario, que desde acá pasa a 78°), y el
 polvo se evalúa en coordenadas del cielo (`dir * uCieloAMundo` es la transpuesta por

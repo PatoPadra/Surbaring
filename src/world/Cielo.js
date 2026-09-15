@@ -1100,18 +1100,26 @@ void main() {
  * El orden de brillo de la Cruz sale con 60 de margen entre Gacrux y δ, y ninguna
  * de las cuatro satura.
  *
- * ── El tamaño, y por qué es chico ───────────────────────────────────────────
- * De 2,5 a 3,6 px, más grande cuanto más brillante. El tope sale de una cuenta, no
- * del gusto: a 62° de campo y 576 renglones un píxel abarca 2·tan(31°)/576 = 0,1195°,
- * o sea que **medio grado son 4,18 px**, y nada de una estrella puede pintarse más
- * lejos que eso de su lugar del catálogo. El presupuesto:
+ * ── El tamaño ───────────────────────────────────────────────────────────────
+ * De 2,5 a 6 px, más grande cuanto más brillante, que es como se lee de un vistazo
+ * cuál es cuál. El límite de arriba tiene una cuenta detrás, y conviene tenerla a
+ * mano antes de agrandarlos: a 62° de campo y 576 renglones un píxel abarca
+ * 2·tan(31°)/576 = 0,1195°, o sea que **medio grado son 4,18 px**, y el banco cuenta
+ * como estrella inventada cualquier punto brillante a más de medio grado de toda
+ * estrella del catálogo. Con 6 px de punto, la luz de la estrella termina en r = 0,975
+ * del radio —ver el perfil en FRAG_ESTRELLAS—, o sea a 2,92 px = 0,35° de su centro;
+ * quedan 0,15° para lo que agregan el FXAA, que mezcla con un vecino a 1 px, y el
+ * medio píxel de la rejilla con que el banco mide. Entra, pero sin lugar de sobra: si
+ * alguna vez hicieran falta puntos más grandes, hay que achicar antes la cola del
+ * perfil.
  *
- *   radio del punto 1,8 px  +  FXAA, que mezcla con un vecino a 1 px  +  medio píxel
- *   de la rejilla con que se lo mide  =  3,3 px  =  0,40°
- *
- * Con 6 px de punto —lo primero que escribí— el radio solo era 3 px y la suma se iba
- * a 4,5 px: cada estrella brillante desparramaba unos píxeles justo afuera del medio
- * grado, y ésos son los que el banco cuenta como estrellas inventadas.
+ * Los puntos de 3,6 px que estuvieron acá un rato salieron de una premisa equivocada
+ * mía: creí que ese desparramo era el que hacía aparecer puntos inventados en la
+ * imagen. No era. Medido por el coordinador apagando las estrellas, los puntos
+ * inventados valían lo mismo con estrellas y sin ellas: eran bordes de árbol y de
+ * loma suavizados por el FXAA contra el cielo, y su banco los contaba a todos. El
+ * orden de brillo de la Cruz, que era el otro motivo, lo arregla la meseta del
+ * perfil, y ésa no depende del tamaño.
  *
  * ── Lo que la apaga ─────────────────────────────────────────────────────────
  * - El aire: 0,20 magnitudes por masa de aire, lo de un sitio limpio de montaña.
@@ -1199,7 +1207,7 @@ void main() {
   vec4 p = projectionMatrix * modelViewMatrix * vec4(dir * uRadioCielo, 1.0);
   p.z = p.w; // al fondo, como el domo
   gl_Position = p;
-  gl_PointSize = clamp(2.5 + 0.4 * (3.5 - m), 2.5, 3.6) * uPixel;
+  gl_PointSize = clamp(2.5 + 0.7 * (3.5 - m), 2.5, 6.0) * uPixel;
   vColor = aColor * luz * centelleo;
 }
 `;
@@ -1220,9 +1228,9 @@ void main() {
   // encima de Gacrux— dependía de esa lotería. Con la meseta, el mejor píxel de un
   // punto de 2,5 px vale el 97 %.
   //
-  // Y la caída termina en r² = 0,95, o sea a 0,975 del radio: nada se pinta más allá
-  // de 1,75 px del centro ni siquiera en la estrella más brillante, que es lo que
-  // deja el desparramo adentro del medio grado (ver la cuenta en VERT_ESTRELLAS).
+  // Y la caída termina en r² = 0,95, o sea a 0,975 del radio: en la estrella más
+  // brillante, la de 6 px, nada se pinta más allá de 2,92 px de su centro, que a 62°
+  // de campo son 0,35° (la cuenta entera está en VERT_ESTRELLAS).
   gl_FragColor = vec4(vColor * (1.0 - smoothstep(0.25, 0.95, r2)), 1.0);
 }
 `;
