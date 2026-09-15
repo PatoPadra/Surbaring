@@ -1762,13 +1762,13 @@ Lo medido en el juego andando, no en el informe del agente:
   cuatro instantes.
 - **Las estrellas son las del catálogo**: 4484 puntos horneados del Bright Star Catalogue
   (Hoffleit y Warren 1991, CDS V/50), hasta magnitud 6,0. En la imagen, **0 puntos
-  inventados de 99**; la Cruz se ordena por magnitud —Mimosa 195,4 · Acrux 181,1 ·
-  Gacrux 170,2 · δ 87,8— y con el cielo cubierto Acrux baja a 1,3.
+  inventados de 105**; la Cruz se ordena por magnitud —Mimosa 195,4 · Acrux 197,9 ·
+  Gacrux 182,3 · δ 87,8— y con el cielo cubierto Acrux baja a 1,3.
 - **El disco muestra su fase**: fracción iluminada **0,34 contra 0,33** de iluminación
   real, y el lado del sol brilla 2,12 veces el otro.
 - **La noche de luna llena alumbra 0,1035 contra 0,0456** de la de luna nueva.
-- **Cuesta menos que antes.** Lo que la noche le suma a la GPU: **3,58 ms contra los 5,06
-  de la base**, o sea milímetro y medio por debajo. Las 4484 estrellas salen más baratas
+- **Cuesta menos que antes.** Lo que la noche le suma a la GPU: **3,48 ms contra los 5,06
+  de la base**, o sea milisegundo y medio por debajo. Las 4484 estrellas salen más baratas
   que el ruido por píxel que reemplazaron. 19 programas de día y 19 de noche.
 - **La Cruz enseña el sur**: el método llega a 2,69° del polo por el palo largo y 2,95°
   por la mediatriz, dentro de los 4° del contrato, y el HUD dice el método —no la
@@ -1796,8 +1796,10 @@ Lo medido en el juego andando, no en el informe del agente:
 - **El disco de la luna va al doble de su tamaño real** (1° de diámetro en vez de medio),
   para que la fase se lea en pantalla. Es licencia declarada: el códice lo dice. La base
   lo tenía cinco veces más grande.
-- **El tamaño de las estrellas quedó en 3,6 px** y no en 6, por un diagnóstico que después
-  se cayó —los puntos inventados eran mis árboles—. Queda preguntado si vuelve a 6.
+- **Las estrellas se dibujan de 2,5 a 6 px.** Estuvieron un rato en 3,6 por un diagnóstico
+  que después se cayó —los puntos inventados eran mis árboles—: volvieron a 6 y se midió,
+  18/18 con 0 inventados de 105 (commit `8a31294`). El orden de la Cruz lo sostiene la
+  meseta del perfil, no el tope: las cuatro caían dentro de la meseta con los dos.
 - **La luz de la luna es lineal con la fase.** La luna real en cuarto no alumbra la mitad
   que llena: alumbra la décima parte (ley de fase de Allen). No se tocó porque cambia el
   aspecto de todas las noches que no son de luna llena.
