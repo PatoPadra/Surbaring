@@ -184,14 +184,29 @@ export class Fundicion {
   }
 
   /** El horno construido más cercano al jugador, si hay alguno a mano. */
-  cercano(radio = RADIO_HORNO_M) {
+  cercano(radio = RADIO_HORNO_M, filtro = null) {
     const p = this.jugador.posicion;
     let mejor = null, mejorD = radio;
     for (const h of this.hornos) {
+      if (filtro && !filtro(h)) continue;
       const d = Math.hypot(h.x - p.x, h.z - p.z);
       if (d < mejorD) { mejor = h; mejorD = d; }
     }
     return mejor;
+  }
+
+  /**
+   * El horno más cercano que tiene algo para el taller: fuego, recetas o una
+   * hornada adentro.
+   *
+   * Desde la ronda 7 hay estaciones que no son eso: el telar es una obra que
+   * procesa y queda anotada como horno, pero no quema ni cocina —el poncho se teje
+   * desde el bolso, al lado—. Un campamento lo arma junto a la fogata, y con
+   * `cercano()` a secas, parado un paso más cerca del telar, el taller mostraba las
+   * hornadas vacías del telar, escondía el fuego y «encender» apuntaba a un telar.
+   */
+  cercanoConTaller(radio = RADIO_HORNO_M) {
+    return this.cercano(radio, h => this.usaFuego(h) || !!h.trabajo || this.recetasDe(h.def?.id).length > 0);
   }
 
   // ── Construcción ──────────────────────────────────────────────────────────

@@ -80,11 +80,26 @@ const EXTRAS_MATA = {
   // Las dos fuentes que el árbol daba por sentadas y no entregaba nadie.
   // Ninguna de las dos pide matar, que es la condición del lugar.
   //
-  // La lana es fibra de guanaco enganchada en el coirón: el guanaco muda en
-  // primavera y deja el vellón prendido en las matas por donde se rasca. Se
-  // junta del suelo, y es lo que destraba el telar mapuche, que estaba en el
-  // árbol sin producir nada.
-  coiron: [{ recurso: 'lana', cantidad: 1, probabilidad: 0.16 }],
+  // La lana del coirón es una LICENCIA, declarada en `herramientas.json` como
+  // `lanaDelCoiron`. Este comentario decía, como hecho y sin fuente, que el
+  // guanaco muda en primavera y deja el vellón prendido en las matas. No hay
+  // quién lo sostenga, y sí de dónde salía el pelo que se hilaba en la región:
+  // del cuero, y hoy de la esquila (ver la licencia). Además, alrededor del
+  // arranque no hay guanacos: la fauna viva es de bosque.
+  //
+  // El 2/3 sale de un criterio: juntar lana no puede meter en el bolso más peso
+  // de otra cosa que el de la propia lana. La mata trae siempre 2 fibras —100 g,
+  // en `COSECHA_SOTOBOSQUE`— y una lana pesa 150 g, así que va una lana cada
+  // apretada y media. Con el 16 % de antes entraban 667 g de paja por cada lana:
+  // medido en el juego el 13/9/2026 en 61 puntos, la lana de la cadena del
+  // poncho eran 84 apretadas y 8,4 kg de fibra, en un bolso de 38.
+  //
+  // Queda «a veces» en todas las matas, y no fijada por mata como la carroña.
+  // Así cada coirón sigue prometiendo lo que da, y cada apretada que promete
+  // lana es una apretada que el jugador paga de verdad: lo que se mide es lo que
+  // cuesta. `licencia` es lo que hace que la primera lana lo diga (ver el caso
+  // `sotobosque` de `actuar()`).
+  coiron: [{ recurso: 'lana', cantidad: 1, probabilidad: 2 / 3, licencia: 'lanaDelCoiron' }],
   // Las plumas se juntan del pastizal húmedo, que es donde hay aves. Sin ellas
   // no hay flechas: un astil sin emplumar cabecea y no va a ningún lado.
   pasto_humedo: [{ recurso: 'pluma', cantidad: 2, probabilidad: 0.22 }],
@@ -820,16 +835,31 @@ export class Recoleccion {
         // Acá sólo se sortea. Los números y las condiciones de lugar viven en
         // `EXTRAS_MATA`, con el porqué de cada uno.
         for (const e of aVeces) {
-          if (Math.random() < e.probabilidad) cosecha.push({ recurso: e.recurso, cantidad: e.cantidad });
+          if (Math.random() < e.probabilidad) cosecha.push({ recurso: e.recurso, cantidad: e.cantidad, licencia: e.licencia });
         }
 
         const obtenido = [];
+        let licencia = null;
         for (const c of cosecha) {
           const n = this.inventario.agregar(c.recurso, c.cantidad);
           if (n > 0) obtenido.push(`${n} × ${nombreDe(c.recurso)}`);
+          if (n > 0 && c.licencia) licencia ??= c.licencia;
         }
-        this.hud.aviso(acc.mata.tipo.nombre,
-          obtenido.length ? obtenido.join(' · ') : `No entra nada más (${this.inventario.pesoKg.toFixed(1)} kg)`);
+        let dice = obtenido.length ? obtenido.join(' · ') : `No entra nada más (${this.inventario.pesoKg.toFixed(1)} kg)`;
+
+        // La primera vez que entra al bolso algo que es licencia —la lana del
+        // coirón—, el aviso lo dice en el mismo renglón y no en uno aparte, por lo
+        // mismo que el primer puñado de arena: `HUD.aviso()` es una sola ranura, y
+        // un aviso diferido lo pisaría el siguiente. El texto vive en la licencia.
+        // Sin el dataset cableado no se dice nada, porque no hay de dónde leerlo.
+        if (licencia && !this._licenciasDichas?.has(licencia)) {
+          const texto = this.herramientas?.licenciasDeJuego?.licencias?.find(l => l.id === licencia)?.aviso;
+          if (typeof texto === 'string') {
+            (this._licenciasDichas ??= new Set()).add(licencia);
+            dice += ` · ${texto}`;
+          }
+        }
+        this.hud.aviso(acc.mata.tipo.nombre, dice);
         return;
       }
 

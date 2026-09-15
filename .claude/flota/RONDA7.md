@@ -1466,3 +1466,79 @@ sin matas, la tecla no ofrece nada, y la premisa pide que la tecla ofrezca el co
 `banco-r7-fase5.falsar.mjs`: 20 defectos y 3 controles al revés para la mitad Node. Los
 programas de W1 y las apretadas de W4 no se falsan desde ahí. Se corre con el código del
 agente.
+
+
+---
+
+## FASE 5 CERRADA — 15/9/2026
+
+**Resultados:**
+- **Banco Node: 9/9**, con la regresión de ocho bancos y `vite build`.
+- **Falsador: 20 de 20**, y los 3 controles al revés en verde.
+- **Mitad navegador: 8 de 8**, corrida por el coordinador en el juego real.
+
+**El agente:** se cortó una vez por el límite semanal, después de leer y antes de escribir código, y **se lo retomó con su contexto**. Tocó sus ocho archivos y nada más, y dejó seis pedidos en `pendiente-r7-witral.md`.
+
+### Medido en el juego
+
+Con el instrumento de la apertura —61 puntos, parado y apretando—:
+
+| | apertura | ahora | contrato |
+|---|---|---|---|
+| lana de la cadena, de cero al poncho | 14 | 12 | — |
+| apretadas, mediana por punto | 84 | **17,7** | ≤ 60 |
+| lo que entra de paso, mediana por punto | 8,4 kg | **1,8 kg** | ≤ 3 kg |
+| puntos donde sale lana | 58 de 61 | 58 de 61 | — |
+
+- **El telar no compila nada.** Levantado en la Reserva, a unos 20 m del arranque, deja los programas en 15 antes y después.
+- **El telar se lee.** Hay dos capturas desde 6 m, `capturas/r7f5-telar-sur.png` y `capturas/r7f5-telar-norte.png`. Se ven los dos parantes, los travesaños, la urdimbre clara, el tejido y la franja teñida.
+- **La predicción del agente dio exacta otra vez.** Para la cadena de 12 lanas dijo 18 apretadas y 1,8 kg, y se midieron 17,7 y 1,8. Para la de 18 decía 27 y 2,7. **Se midió igual.**
+
+### Lo que quedó, leído en el código
+
+- **El telar es la obra `telar_witral`:** de campamento, con `procesa`, y pide 6 de madera y 4 de cordel. En el mundo tiene dos parantes de 2,1 m, dos travesaños, dos puntales, urdimbre, tejido, franja y tonon, todo con `mat()`.
+- **Se teje al lado del telar.** `Fabricacion._estacionDeObra()` busca por id entre todas las estaciones a menos de 8 m. La fogata y la fragua siguen por `cercano()`, sin cambiar una coma.
+- **Se hila con huso.**
+  - La receta `hilar_lana` hace 3 de hilado con 4 de lana y declara `pideHerramienta: 'huso'`.
+  - Sin huso da `falta_herramienta`: se mira después de los materiales, antes de la estación y sin consumir nada.
+  - El huso lleva madera y piedra, y no tiene ranura ni desgaste.
+  - El poncho pide 9 de hilado, y se sostiene por peso: 1,35 kg de hilo para una prenda de 1,4.
+- **La lana.** El coirón da lana dos de cada tres veces, y la primera vez el aviso nombra la licencia. El 2/3 sale de un criterio dicho: juntar lana no puede meter en el bolso más peso de otra cosa que el de la propia lana. Dos fibras pesan 100 g y una lana 150 g.
+- **El telar se va entero.** `Construccion.actualizar()` saca su estación de `Fundicion.hornos` por id y por lugar.
+
+### Fuentes y licencias
+
+- **La licencia `lanaDelCoiron`** dice que no hay fuente para el vellón en las matas. El pelo que se hilaba salía del cuero, y hoy sale de la esquila (Méndez, 2009; Quispe et al., 2009). Además, alrededor del arranque no hay guanacos.
+- **El huso con tortero se sostiene:** lo describe Méndez (2009, § 3.3), y hay torteros sobre tiesto en Neuquén (Mazzanti y Puente, 2013).
+- **El witral** se tejió con pelo de camélido antes de la conquista, y sobre todo con lana de oveja desde el siglo XVII (Méndez, 2009, § 3.1).
+
+El coordinador verificó que el artículo de Méndez existe (AIBR 4(1): 11-53). Las demás citas no las verificó.
+
+### Lo que puso el coordinador
+
+1. **El taller ya no confunde el telar con la fogata.** Lo encontró el agente.
+   - El problema: `Taller` elegía su horno con `cercano()`. Parado más cerca del telar que de la fogata, escondía el fuego, y «encender» apuntaba al telar.
+   - El arreglo: `Fundicion.cercano()` acepta un filtro, y `cercanoConTaller()` se queda con el horno más cercano que tiene fuego, recetas o una hornada.
+   - En `main.js`, el aviso de frío mira sólo lo que quema.
+   - Medido en Node: con la fogata a 3 m y el telar a 1 m, `cercano()` da el telar y `cercanoConTaller()` da la fogata.
+2. **`historia.json`:**
+   - El nodo del telar deja de cobrar 6 de lana, que no iban a ningún lado: el marco lo paga la obra y el hilo lo paga el poncho.
+   - La descripción deja los «dos lizos», que no se sostuvieron, y cuenta el pelo de camélido y la oveja.
+   - El nodo lista el huso y la receta.
+3. **`fuentesFaltantes.lana`**, en `herramientas.json`, que seguía diciendo que nada la produce.
+
+### Un defecto que fue mío
+
+**Mi arreglo del taller tiró el banco de la fase 3.** Su `Fundicion` falsa tenía `cercano()` y no el método nuevo, así que el taller no se pintaba y la regresión dio 8/9. Es el defecto de la ronda 6 y de la fase 3 otra vez: datos de prueba más pobres que la dependencia real. Esta vez fue al revés, porque el que cambió la dependencia fui yo. A la `Fundicion` falsa se le agregó `cercanoConTaller`.
+
+### Lo que hay que mirar jugando
+
+1. **La lana dejó de ser escasa.** Sale de dos de cada tres coirones, y las moscas, que piden una lana por cada cuatro, quedan casi gratis. Es el criterio dicho, y lo decide el dueño jugando.
+2. **La primera lana nombra la licencia** en el mismo renglón del aviso, una vez por sesión.
+3. **El telar dura 30 días**, como el toldo. El poncho se teje al lado del telar; el hilado, en cualquier lado con el huso.
+
+### Deuda
+
+- **La misma trampa en la fragua.** Con una fogata más cerca que la fragua, el hierro dice que falta la fragua. Ya estaba antes y no es de esta fase.
+- **El radio de 8 m está escrito dos veces**, en `Fundicion` y en `Fabricacion`.
+- **El vellón por mata, sin fibra**, quedó como propuesta en el pendiente. Pide tocar un caso del banco de la fase 1 y `_delSuelo()`.

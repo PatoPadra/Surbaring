@@ -139,6 +139,12 @@ export const RECURSOS = {
   // sin ellos no se fabrica nada. El cordel es el caso puro — sin algo que ate,
   // la piedra y el palo son dos cosas separadas.
   cordel:        { nombre: 'Cordel de fibra', kg: 0.03, cat: 'material' },
+  // Lana torcida en el huso: lo que el witral pide para urdir y tramar. El poncho
+  // ya no se teje con lana cruda, porque nadie teje vellón. Pesa lo mismo por
+  // unidad que la lana y sale de a tres por cada cuatro: se va lo que se escarmena
+  // —tierra, abrojo y la cerda gruesa—. El criterio del 75 % está en la receta
+  // `hilar_lana` de herramientas.json, con su fuente.
+  hilado:        { nombre: 'Hilado de lana', kg: 0.15, cat: 'material' },
   mango:         { nombre: 'Mango labrado', kg: 0.4, cat: 'material' },
   // Tira de cuero crudo cortada en espiral de una sola pieza. Se ata en húmedo y
   // al secar aprieta solo: es el remache de la Patagonia, y pide filo porque el

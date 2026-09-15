@@ -1012,6 +1012,18 @@ const RECETAS_RECURSOS = {
 
   cordel: () => rollo(M.fibra, { cx: 32, cy: 34, r: 15, vueltas: 3 }),
 
+  // Ovillo: una bola con las vueltas cruzadas y la hebra suelta. Es la lana que
+  // ya tiene dirección: el vellón de al lado son bollos sin un solo borde, y el
+  // cordel es un rollo plano visto de frente.
+  hilado: () => [
+    ...bulto([[19, 27], [31, 17], [45, 23], [49, 37], [40, 50], [25, 50], [16, 39]], M.lana),
+    T('M18 33q14 -9 29 -3', M.lana[2], 1.4),
+    T('M17 41q16 -9 32 -2', M.lana[2], 1.4),
+    T('M25 21q-3 15 5 29', M.lana[2], 1.2, ' opacity=".7"'),
+    T('M36 18q6 15 1 32', M.lana[2], 1.2, ' opacity=".7"'),
+    T('M46 45q8 3 10 11', M.lana[1], 1.8),
+  ],
+
   // El giro va afuera y no adentro de cada pieza. Con el leño girado −30° y las
   // ataduras puestas en coordenadas absolutas, las ataduras caían al costado del
   // cabo y el mango labrado quedaba idéntico a un leño de madera blanda.
@@ -1581,6 +1593,18 @@ const RECETAS_OBJETOS = {
     E(32, 12, 6, 3, M.tela[2]),
     ...Array.from({ length: 6 }, (_, i) => L(15 + i * 7, 51, 15 + i * 7, 57, M.tela[2], 1.6)),
   ],
+
+  // Huso con tortero: la varilla de punta a punta, el hilo ya enrollado y el disco
+  // de piedra abajo. Sin el disco sería un astil; sin el hilo, un trompo.
+  huso: () => [gira(-32, 32, 32, [
+    ...varilla(M.madera, { x1: 32, y1: 4, x2: 32, y2: 60, w: 3 }),
+    E(33, 29, 7.5, 12, M.lana[2]),
+    E(32, 28, 7, 11.5, M.lana[1]),
+    ...[21, 27, 33].map((y) => T(`M25.5 ${y}q6.5 3 13 0`, M.lana[2], 1)),
+    E(33, 48, 11, 3.8, M.piedra[2]),
+    E(32, 46.5, 11, 3.8, M.piedra[1]),
+    E(29.5, 45.5, 5, 1.4, M.piedra[0]),
+  ])],
 
   // ── Los contenedores ──────────────────────────────────────────────────────
 

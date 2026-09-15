@@ -164,6 +164,25 @@
       "nota": "La cestería del área usa junco y colihue, y las piezas arqueológicas muestran técnicas que siguen vivas."
     },
     {
+      "id": "telar_witral",
+      "nombre": "Telar mapuche (witral)",
+      "categoria": "campamento",
+      "requiereTecnologia": "telar_witral",
+      "materiales": [
+        {
+          "recurso": "madera",
+          "cantidad": 6
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 4
+        }
+      ],
+      "procesa": true,
+      "descripcion": "Cuatro palos rectos, dos parantes y dos travesaños, atados en los cruces. La urdimbre va tendida de travesaño a travesaño; el separador divide los hilos y el tonon, una caña, levanta los lizos. Es el telar vertical de la tradición mapuche, y en la meseta del Chubut se sigue armando igual. El poncho se teje al lado del telar, no en el bolso.",
+      "nota": "Se arma donde se vive y se desarma al irse, como el toldo: por eso es de campamento, y en el Parque tampoco se levanta. Las tejedoras prefieren palos de laura y de ciprés, pero sirve cualquier palo recto y fuerte que aguante el peso del tejido (Méndez, 2009, AIBR 4(1)). Las amarras de los cruces y los lizos son el cordel."
+    },
+    {
       "id": "galpon",
       "nombre": "Galpón de tablas",
       "categoria": "permanente",

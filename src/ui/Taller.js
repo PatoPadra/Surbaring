@@ -112,14 +112,14 @@ export class Taller {
       if (accion === 'construir') {
         this.fundicion.construir(this.fundicion.hornoPorId(id));
       } else if (accion === 'cocinar') {
-        const horno = this.fundicion.cercano();
+        const horno = this.fundicion.cercanoConTaller();
         const receta = this.fundicion.recetas.find(r => r.id === id);
         if (horno && receta) this.fundicion.iniciar(receta, horno);
       } else if (accion === 'encender') {
-        const horno = this.fundicion.cercano();
+        const horno = this.fundicion.cercanoConTaller();
         if (horno) this.fundicion.encender(horno);
       } else if (accion === 'retirar') {
-        const horno = this.fundicion.cercano();
+        const horno = this.fundicion.cercanoConTaller();
         if (horno) this.fundicion.retirar(horno);
       } else if (accion === 'levantar') {
         const obra = this.construccion.catalogo.find(o => o.id === id);
@@ -149,7 +149,7 @@ export class Taller {
   pintar() {
     const p = this.jugador.posicion;
     const j = this.limites.etiqueta(p.x, p.z);
-    const horno = this.fundicion.cercano();
+    const horno = this.fundicion.cercanoConTaller();
 
     let html = `<div class="tl-jur ${j.id}">${this._textoJurisdiccion(j)}</div>`;
 

@@ -920,7 +920,9 @@ async function iniciar() {
       // Hay tres situaciones distintas y decirle la misma frase a las tres era
       // peor que no decir nada: al que tiene la fogata armada y apagada al lado,
       // «armá una fogata» le suena a que el juego no lo está mirando.
-      const cerca = fundicion.cercano(20);
+      // Sólo lo que quema: con el telar del campamento más cerca que la fogata
+      // apagada, el aviso decía «armá una fogata» teniéndola al lado.
+      const cerca = fundicion.cercano(20, h => fundicion.usaFuego(h));
       const apagado = cerca && fundicion.usaFuego(cerca) && !cerca.ardiendo;
       hud.aviso('Estás perdiendo calor',
         apagado

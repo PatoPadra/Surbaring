@@ -1,5 +1,22 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+> **15/9/2026 — RONDA 7, FASE 5 (`witral`) CERRADA: el telar es una cosa, se hila, y
+> la lana alcanza.** Banco 9/9, falsador 20 de 20 con 3 controles verdes, mitad
+> navegador 8 de 8. En el juego, **la lana de la cadena del poncho cuesta 17,7
+> apretadas y 1,8 kg** en la mediana de 61 puntos; antes eran 84 y 8,4. **Levantar el
+> telar no compila nada** (15 programas antes y después), y el telar se ve en pie con
+> su urdimbre.
+>
+> La lana del coirón es **una licencia dicha**: no hay fuente para el vellón en las
+> matas. El huso con tortero y el witral de pelo de camélido y de oveja tienen fuente.
+>
+> *El agente se cortó por el límite semanal y se lo retomó con su contexto. Su
+> predicción dio exacta. Encontró además que el telar le tapaba el fuego a la fogata
+> en el taller. El arreglo fue del coordinador, y tiró el banco de la fase 3: su
+> `Fundicion` falsa era más pobre que la de verdad.*
+>
+> **Queda para el dueño**: la lana dejó de ser escasa.
+
 > **13/9/2026 — RONDA 7, FASE 4 (`vasija`) CERRADA: el agua viaja en un
 > recipiente.** Banco 10/10 con la regresión de siete bancos, falsador 24 de 24 y los
 > 3 controles al revés verdes. En el juego, **sin recipiente entran 0 medidas**; con

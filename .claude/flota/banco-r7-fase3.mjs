@@ -368,6 +368,10 @@ async function loQueFalta() {
   const inventarioVacio = { disponiblePara: () => 0 };
   const fundicion = {
     cercano: () => null,
+    // Desde la ronda 7, fase 5, el taller elige su horno con `cercanoConTaller()`,
+    // para que el telar del campamento no le tape el fuego a la fogata. Sin esto la
+    // `Fundicion` falsa era más pobre que la de verdad y el taller no se pintaba.
+    cercanoConTaller: () => null,
     definicionesHorno: hornos,
     faltaPara: (def) => (def.materiales || []).map((m) => ({ recurso: R.normalizar(m.recurso), nombre: R.nombreDe(m.recurso), pide: m.cantidad, hay: 0 })),
     tiempo: { segundosTotales: 0 },
