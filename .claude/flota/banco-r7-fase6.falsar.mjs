@@ -190,8 +190,31 @@ const DEFECTOS = [
 
 // ── La corrida ──────────────────────────────────────────────────────────────
 
+/**
+ * Borrar una carpeta recién escrita falla en Windows con ENOTEMPTY cuando el
+ * antivirus o el indexador todavía tienen abierto alguno de sus archivos, y los
+ * reintentos de `rmSync` no siempre alcanzan: una corrida se cayó al limpiar,
+ * después de haber dado el veredicto. Se reintenta con esperas que crecen.
+ *
+ * @returns {boolean} si quedó borrada
+ */
+function borrar(p) {
+  for (let i = 0; i < 6; i++) {
+    try {
+      fs.rmSync(p, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+      return true;
+    } catch {
+      // Espera sincrónica: acá no hay nada más que hacer mientras tanto
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 150 * (i + 1));
+    }
+  }
+  return !fs.existsSync(p);
+}
+
 function copiarSrc(dest) {
-  fs.rmSync(dest, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  // Limpiar al final es optativo, pero esto no: copiar sobre una copia vieja
+  // mezclaría dos parches y el falsador mediría cualquier cosa.
+  if (!borrar(dest)) throw new Error(`no se pudo borrar la copia anterior, ${dest}`);
   fs.cpSync(SRC, dest, { recursive: true });
   fs.writeFileSync(path.join(dest, 'package.json'), '{ "type": "module" }\n');
 }
@@ -241,7 +264,7 @@ const soloIdx = process.argv.indexOf('--solo');
 const solo = soloIdx > 0 ? process.argv[soloIdx + 1] : null;
 
 if (process.argv.includes('--sintaxis')) {
-  fs.rmSync(TMP, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  borrar(TMP);
   fs.mkdirSync(TMP, { recursive: true });
   const ARRANQUE = 'globalThis.addEventListener=()=>{};globalThis.localStorage={getItem:()=>null,setItem(){},removeItem(){}};'
     + 'globalThis.document={addEventListener(){},createElement:()=>({getContext:()=>null,style:{}})};';
@@ -260,11 +283,11 @@ if (process.argv.includes('--sintaxis')) {
     console.log(`  ${ok ? 'carga   ' : 'NO CARGA'}  ${d.id.padEnd(28)} ${d.archivo}${ok ? '' : '  ' + (r.stderr || '').split('\n').filter(Boolean).slice(0, 4).join(' / ')}`);
   }
   console.log(`\n  ${malos ? 'ROJO ' : 'VERDE'}  ${malos} archivos parchados no cargan\n`);
-  fs.rmSync(TMP, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  borrar(TMP);
   process.exit(malos ? 1 : 0);
 }
 
-fs.rmSync(TMP, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+borrar(TMP);
 fs.mkdirSync(TMP, { recursive: true });
 console.log(`\n  FALSADOR R7 · FASE 6, mitad Node   (copias en ${path.relative(RAIZ, TMP)})\n`);
 console.log('  nota: la mitad navegador (la imagen, la fase del disco, la luz de la noche y el costo)');
@@ -331,6 +354,6 @@ console.log(`\n  ${bien ? 'VERDE' : 'ROJO '}  lo vio ${cuenta.vio}/${total}` +
   `  ·  por otro motivo ${cuenta.otro}  ·  NO lo vio ${cuenta.no}  ·  no se pudo plantar ${cuenta.sin}` +
   `  ·  controles ${cuenta.controlOk} verdes, ${cuenta.controlMal} rojos\n`);
 if (bien && cuenta.otro === 0 && cuenta.sin === 0)
-  try { fs.rmSync(TMP, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* no importa */ }
+  try { borrar(TMP); } catch { /* no importa */ }
 else console.log(`  las copias quedan en ${path.relative(RAIZ, TMP)} para mirarlas\n`);
 process.exitCode = bien ? 0 : 1;

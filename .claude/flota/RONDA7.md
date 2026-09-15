@@ -1743,3 +1743,64 @@ código de hoy:
 
 `banco-r7-fase6.falsar.mjs`: 18 defectos y 3 controles al revés para la mitad Node. Se
 corre con el código del agente, y sus parches ya cargan contra la base.
+
+
+### FASE 6 CERRADA
+
+**Banco Node 7/7** (con `vite build`). **Falsador 18/18**, cada defecto en la aserción
+declarada, y los 3 controles verdes. **Mitad navegador 18/18.**
+
+Lo medido en el juego andando, no en el informe del agente:
+
+- **La luna es la de la fecha.** En el peor de los diez instantes de JPL Horizons queda a
+  **0,15°** y a **0,12 puntos** de iluminación. Sin paralaje eran 1,04°; midiendo la fase
+  desde el centro de la Tierra y no desde el lugar, 0,67 puntos. Entré al parque y el
+  juego, con una partida guardada en 2025‑02‑12T13:20 UTC, dibujó la luna **99,92 %**
+  iluminada contra el **99,918 %** de JPL.
+- **El cielo gira** alrededor del polo sur celeste: eje a 41,09° de altura y 180,00° de
+  azimut. `direccionDe()` queda a 0,001° de la cuenta del banco en siete estrellas y
+  cuatro instantes.
+- **Las estrellas son las del catálogo**: 4484 puntos horneados del Bright Star Catalogue
+  (Hoffleit y Warren 1991, CDS V/50), hasta magnitud 6,0. En la imagen, **0 puntos
+  inventados de 99**; la Cruz se ordena por magnitud —Mimosa 195,4 · Acrux 181,1 ·
+  Gacrux 170,2 · δ 87,8— y con el cielo cubierto Acrux baja a 1,3.
+- **El disco muestra su fase**: fracción iluminada **0,34 contra 0,33** de iluminación
+  real, y el lado del sol brilla 2,12 veces el otro.
+- **La noche de luna llena alumbra 0,1035 contra 0,0456** de la de luna nueva.
+- **Cuesta menos que antes.** Lo que la noche le suma a la GPU: **3,58 ms contra los 5,06
+  de la base**, o sea milímetro y medio por debajo. Las 4484 estrellas salen más baratas
+  que el ruido por píxel que reemplazaron. 19 programas de día y 19 de noche.
+- **La Cruz enseña el sur**: el método llega a 2,69° del polo por el palo largo y 2,95°
+  por la mediatriz, dentro de los 4° del contrato, y el HUD dice el método —no la
+  respuesta— con las estrellas nombradas y su error propio.
+
+**Tres defectos míos, de mi propio banco, encontrados midiendo:**
+
+1. **C6 pedía algo astronómicamente imposible.** Buscaba luna llena a más de 40° de altura
+   en 60 días desde el 1/1/2026. La llena está enfrente del sol: en verano austral queda a
+   declinación +16°, y desde los 41° sur su altura máxima es 90 − |−41 − 16| = 33°. La
+   búsqueda pasó a un año, y encontró el 3/3/2026 a 40,1°.
+2. **C5 no discriminaba.** Tomaba como «cuarto» una noche de k = 0,62, que es gibosa: el
+   terminador cae en q.x = −0,24 y dos tercios del lado opuesto al sol están iluminados,
+   así que la razón entre lados no llega a 1,5 ni con el disco perfecto. Ahora busca una
+   creciente fina (k entre 0,15 y 0,35), donde el lado opuesto está oscuro entero.
+3. **C3 medía árboles.** Contaba como estrella inventada cualquier píxel brillante lejos
+   del catálogo, barriendo la imagen entera: los bordes de una silueta contra el cielo,
+   suavizados por el FXAA y con el anillo de fondo en 0, pasaban el umbral. Daban 83 de
+   194, y apagando las estrellas valían exactamente lo mismo. Ahora se mide la luz que
+   ponen las estrellas, restando el mismo cuadro sin ellas: el terreno, la Vía Láctea y la
+   luna se van solos, sin inventar umbrales.
+
+**Para que lo mire el dueño:**
+
+- **El disco de la luna va al doble de su tamaño real** (1° de diámetro en vez de medio),
+  para que la fase se lea en pantalla. Es licencia declarada: el códice lo dice. La base
+  lo tenía cinco veces más grande.
+- **El tamaño de las estrellas quedó en 3,6 px** y no en 6, por un diagnóstico que después
+  se cayó —los puntos inventados eran mis árboles—. Queda preguntado si vuelve a 6.
+- **La luz de la luna es lineal con la fase.** La luna real en cuarto no alumbra la mitad
+  que llena: alumbra la décima parte (ley de fase de Allen). No se tocó porque cambia el
+  aspecto de todas las noches que no son de luna llena.
+- **`precesar()` del banco** tiene los términos cuadráticos de `z` y `zeta` cambiados
+  respecto de Meeus 21.2. En 2025 la diferencia es 0,05″: no mueve ninguna aserción, pero
+  está anotado.

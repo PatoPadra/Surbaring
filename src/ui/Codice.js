@@ -614,7 +614,54 @@ export class Codice {
         </div>
       </article>`;
     }
+
+    // El cielo austral: la otra geografía, la de arriba. Va acá y no en una pestaña
+    // propia porque es lo mismo que los fenómenos —referencia para orientarse, no
+    // colección— y porque lo que enseña es a encontrar el sur, que es geografía.
+    html += this._pintarCielo();
     return html;
+  }
+
+  /** El bloque del cielo: la Cruz, los punteros, el método, la Vía Láctea y la luna. */
+  _pintarCielo() {
+    const cielo = this.geo.cieloAustral;
+    if (!cielo) return '';
+
+    const mag = (v) => v.toFixed(2).replace('.', ',').replace('-', '−');
+    const estrella = (e) => `<p class="cx-uso"><b>${e.nombre}</b> · ${e.designacion} ·
+      magnitud ${mag(e.magnitud)} · HR ${e.hr}<br>${e.nota}</p>`;
+    const grupo = (g, icono) => !g ? '' : `<article class="cx-ficha identificada">
+      <div class="cx-silueta" style="--c:#3d4a6a">${icono}</div>
+      <div class="cx-datos">
+        <h3>${g.nombre}${g.nombreMapuzugun ? ` <em>· ${g.nombreMapuzugun}</em>` : ''}</h3>
+        <p class="cx-cient">${g.subtitulo || ''}</p>
+        <p class="cx-desc">${g.descripcion || ''}</p>
+        ${(g.estrellas || []).map(estrella).join('')}
+        ${g.relato ? `<p class="cx-curioso">${g.relato}</p>` : ''}
+        ${g.fuenteMapuzugun ? `<p class="cx-meta">${g.fuenteMapuzugun}</p>` : ''}
+      </div>
+    </article>`;
+
+    const m = cielo.metodo;
+    return `<article class="cx-bloque" style="--c:#3d4a6a"><h3>${cielo.titulo}</h3>
+        <p class="cx-desc">${cielo.descripcion}</p></article>`
+      + grupo(cielo.cruzDelSur, '✚')
+      + grupo(cielo.punteros, '∴')
+      + (m ? `<article class="cx-ficha identificada">
+          <div class="cx-silueta" style="--c:#c8b45a">↓</div>
+          <div class="cx-datos">
+            <h3>${m.titulo}</h3>
+            <p class="cx-cient">Orientación nocturna · sin instrumentos</p>
+            ${(m.pasos || []).map((p, i) => `<p class="cx-desc"><b>${i + 1}.</b> ${p}</p>`).join('')}
+            ${m.precision ? `<p class="cx-curioso">${m.precision}</p>` : ''}
+          </div>
+        </article>` : '')
+      + grupo(cielo.viaLactea, '≈')
+      + grupo(cielo.luna, '☾')
+      + (cielo.fuentes?.length
+        ? `<article class="cx-bloque"><h3>De dónde sale este cielo</h3>
+           ${cielo.fuentes.map(f => `<p class="cx-meta">${f}</p>`).join('')}</article>`
+        : '');
   }
 
   _pintarHistoria() {

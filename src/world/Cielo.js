@@ -8,6 +8,15 @@
  * La dispersión atmosférica es un Preetham simplificado, evaluado por píxel en
  * la cúpula: da el azul profundo del cielo patagónico al mediodía y los rojos
  * largos del atardecer sobre el lago.
+ *
+ * La noche también es la de la fecha. La luna sale de una efeméride, con su
+ * paralaje y su fase; el cielo gira alrededor del polo sur celeste con el tiempo
+ * sidéreo y la precesión; y las estrellas son las de un catálogo:
+ *
+ *   Hoffleit, D. & Warren Jr., W. H. (1991), The Bright Star Catalogue, 5th
+ *   Revised Ed., NASA ADC; vía CDS, catálogo V/50.
+ *
+ * Horneadas en `src/data/estrellas.json` por `tools/catalogos/bsc5/hornear.mjs`.
  */
 
 import * as THREE from 'three';
@@ -94,16 +103,185 @@ export function vectorSolar(altura, azimut, salida = new THREE.Vector3()) {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// La noche de la fecha: tiempo sidéreo, precesión y luna
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Antes la luna era `vectorSolar(-altura·0,85 + 0,3, …)` con una fase de
+// `fecha mód 29,53 días` sin época: en la luna nueva real del 10/2/2024 el juego
+// la dibujaba 52 % iluminada y alta, y en la llena del 25/2, 45 %. Las estrellas
+// eran ruido pegado al mundo, que no giraba, y la Vía Láctea una banda fija. Un
+// cielo así no sirve para orientarse, que es para lo que se mira el cielo de noche.
+//
+// Todo lo de acá corre en `actualizar()`, una vez por cuadro: son unos cuarenta
+// senos, y dos matrices de 3×3.
+
+const J2000 = 2451545.0;
+const senG = (g) => Math.sin(g * RAD);
+const cosG = (g) => Math.cos(g * RAD);
+
+/** Día juliano. La fecha del juego ya corre en UTC (`Tiempo.js`). */
+const diaJuliano = (fecha) => fecha.getTime() / 86400000 + 2440587.5;
+
+/** Dirección J2000 de una AR y una Dec en grados: +X al equinoccio, +Z al polo norte celeste. */
+function vectorCeleste(ra, dec, salida = new THREE.Vector3()) {
+  const cd = cosG(dec);
+  return salida.set(cd * cosG(ra), cd * senG(ra), senG(dec));
+}
+
+/**
+ * Tiempo sidéreo medio de Greenwich, en grados (Meeus, *Astronomical Algorithms*,
+ * 12.4). Es el ángulo que giró el cielo: una vuelta cada 23 h 56 min.
+ */
+function tiempoSidereo(jd) {
+  const d = jd - J2000, t = d / 36525;
+  const g = 280.46061837 + 360.98564736629 * d + 0.000387933 * t * t - t * t * t / 38710000;
+  return ((g % 360) + 360) % 360;
+}
+
+/**
+ * Precesión rigurosa de J2000 a la fecha (Meeus, 21.2 a 21.4), como matriz.
+ *
+ * Corre la Cruz del Sur y los punteros entre 0,21° y 0,26° en 2025. Cabría en el
+ * medio grado que se le tolera a cada estrella, pero son seis senos por cuadro, y
+ * sin ella el cielo del juego se iría corriendo un grado cada setenta años de fecha.
+ */
+function matrizPrecesion(jd, m) {
+  const t = (jd - J2000) / 36525;
+  const zeta = (2306.2181 * t + 0.30188 * t * t + 0.017998 * t * t * t) / 3600;
+  const z = (2306.2181 * t + 1.09468 * t * t + 0.018203 * t * t * t) / 3600;
+  const th = (2004.3109 * t - 0.42665 * t * t - 0.041833 * t * t * t) / 3600;
+  const cz = cosG(z), sz = senG(z), cZ = cosG(zeta), sZ = senG(zeta), ct = cosG(th), st = senG(th);
+  // Rz(z) · Ry(−θ) · Rz(ζ): sumar ζ a la AR, inclinar el ecuador θ, sumar z
+  return m.set(
+    cz * ct * cZ - sz * sZ, -cz * ct * sZ - sz * cZ, -cz * st,
+    sz * ct * cZ + cz * sZ, -sz * ct * sZ + cz * cZ, -sz * st,
+    st * cZ, -st * sZ, ct);
+}
+
+/**
+ * La luna de baja precisión del *Astronomical Almanac* (sección D): la longitud
+ * eclíptica con seis términos, la latitud con cuatro y la paralaje horizontal con
+ * cuatro. Deja en `salida` la posición geocéntrica, ecuatorial media de la fecha,
+ * en radios terrestres, y devuelve la longitud eclíptica en grados.
+ *
+ * Contra JPL Horizons en los diez instantes del banco, vista desde el arranque: la
+ * peor queda a 0,15°, y la iluminación a 0,12 puntos. Veinte líneas alcanzan con un
+ * orden de magnitud de margen sobre el medio grado que se pide.
+ */
+function lunaGeocentrica(t, salida) {
+  const lon = 218.32 + 481267.881 * t
+    + 6.29 * senG(135.0 + 477198.87 * t) - 1.27 * senG(259.3 - 413335.36 * t)
+    + 0.66 * senG(235.7 + 890534.22 * t) + 0.21 * senG(269.9 + 954397.74 * t)
+    - 0.19 * senG(357.5 + 35999.05 * t) - 0.11 * senG(186.5 + 966404.03 * t);
+  const lat = 5.13 * senG(93.3 + 483202.02 * t) + 0.28 * senG(228.2 + 960400.89 * t)
+    - 0.28 * senG(318.3 + 6003.15 * t) - 0.17 * senG(217.6 - 407332.21 * t);
+  const paralaje = 0.9508
+    + 0.0518 * cosG(135.0 + 477198.87 * t) + 0.0095 * cosG(259.3 - 413335.36 * t)
+    + 0.0078 * cosG(235.7 + 890534.22 * t) + 0.0028 * cosG(269.9 + 954397.74 * t);
+  const r = 1 / senG(paralaje);
+  const cb = cosG(lat), sb = senG(lat), cl = cosG(lon), sl = senG(lon);
+  // De la eclíptica al ecuador con la oblicuidad del Almanac, 23,44°
+  salida.set(r * cb * cl, r * (0.9175 * cb * sl - 0.3978 * sb), r * (0.3978 * cb * sl + 0.9175 * sb));
+  return lon;
+}
+
+/**
+ * El sol de baja precisión del mismo Almanac, ecuatorial de la fecha, en radios
+ * terrestres. Sólo sirve para la fase de la luna: el sol que se dibuja y que alumbra
+ * sigue siendo el de `posicionSolar()`, y los dos difieren en centésimas de grado.
+ */
+function solGeocentrico(d, salida) {
+  const g = 357.528 + 0.9856003 * d;
+  const lon = 280.460 + 0.9856474 * d + 1.915 * senG(g) + 0.020 * senG(2 * g);
+  const r = (1.00014 - 0.01671 * cosG(g) - 0.00014 * cosG(2 * g)) * 23454.8;
+  return salida.set(r * cosG(lon), r * 0.9175 * senG(lon), r * 0.3978 * senG(lon)), lon;
+}
+
+/** Polo norte y centro galácticos, J2000. La banda de la Vía Láctea se dibuja alrededor del polo. */
+const POLO_GALACTICO = vectorCeleste(192.859, 27.128);
+const CENTRO_GALACTICO = vectorCeleste(266.405, -28.936);
+
+/**
+ * La Cruz del Sur, J2000, del catálogo por número HR: Acrux (α¹ Cru, 4730), Mimosa
+ * (β, 4853), Gacrux (γ, 4763) y δ Cru (4656). `queMiro()` mide contra el promedio de
+ * las cuatro direcciones, que queda a menos de 0,1° del promedio de AR y Dec.
+ */
+const CRUZ = [[186.650, -63.099], [191.930, -59.689], [187.791, -57.113], [183.786, -58.749]];
+const CENTRO_CRUZ = CRUZ.reduce((s, [ra, dec]) => s.add(vectorCeleste(ra, dec)), new THREE.Vector3()).normalize();
+const COS_RADIO_CRUZ = Math.cos(12 * RAD);
+
+/**
+ * Hasta dónde es de noche para ver la Cruz: `diurno` —el mismo smoothstep del domo—
+ * en 0,1, que es el sol unos 5° bajo el horizonte. Ahí las cinco estrellas del método,
+ * todas de magnitud 1,63 o más brillantes, ya se ven; δ Cru (2,80) todavía no.
+ */
+const DIURNO_NOCHE = 0.1;
+
+/**
+ * Radio del disco de la luna: 0,52°, el doble del real.
+ *
+ * El de la base era 1,4°, cinco veces el real. Con el real, 0,26°, a 62° de campo y
+ * 576 renglones el disco mide 4 px de diámetro y la fase no se lee, que es lo que
+ * hay que aprender a mirar. Al doble mide 9 px ahí y 16 a 1080 renglones. El códice
+ * lo dice.
+ */
+const RADIO_LUNA = 0.52 * RAD;
+
+/**
+ * Color de una estrella por su B−V, lineal y con luminancia 1: el brillo lo pone la
+ * magnitud, no el color, y así el orden de brillo de la imagen es el del catálogo.
+ *
+ * La rampa es aproximada, por tipo espectral —azuladas las B (B−V ≈ −0,2), blancas
+ * las A y F (0 a 0,4), amarillentas las G (0,6), anaranjadas las K (1,0) y rojizas
+ * las M (1,6)— y va a media saturación: de noche el ojo mira con los bastones y el
+ * color de las estrellas apenas se nota. Alcanza para que Gacrux (+1,59) salga
+ * anaranjada al lado de Acrux (−0,24), que es lo que se ve a ojo en la Cruz.
+ */
+const RAMPA_BV = [
+  [-0.3, 0.64, 0.74, 1.00],
+  [0.0, 0.82, 0.88, 1.00],
+  [0.4, 1.00, 0.98, 0.96],
+  [0.7, 1.00, 0.92, 0.80],
+  [1.1, 1.00, 0.80, 0.60],
+  [1.7, 1.00, 0.66, 0.42],
+];
+function colorEstelar(bv, salida) {
+  let r = 1, g = 1, b = 1;
+  if (bv !== null && Number.isFinite(bv)) {
+    let k = 0;
+    while (k < RAMPA_BV.length - 2 && bv > RAMPA_BV[k + 1][0]) k++;
+    const a = RAMPA_BV[k], z = RAMPA_BV[k + 1];
+    const t = Math.max(0, Math.min(1, (bv - a[0]) / (z[0] - a[0])));
+    r = 0.5 + 0.5 * (a[1] + (z[1] - a[1]) * t);
+    g = 0.5 + 0.5 * (a[2] + (z[2] - a[2]) * t);
+    b = 0.5 + 0.5 * (a[3] + (z[3] - a[3]) * t);
+  }
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  salida[0] = r / lum; salida[1] = g / lum; salida[2] = b / lum;
+  return salida;
+}
+
 export class Cielo {
   constructor(escena, radio = 42000) {
     this.escena = escena;
     this.direccionSol = new THREE.Vector3(0, 1, 0);
     this.direccionLuna = new THREE.Vector3(0, -1, 0);
+    // La edad de la luna en fracción del ciclo: 0 nueva, 0,5 llena. La fracción
+    // iluminada, que es lo que alumbra, está en `uFaseLunar`.
     this.faseLunar = 0.5;
+
+    // Del J2000 al mundo en la última `actualizar()`: precesión, tiempo sidéreo y
+    // horizonte del lugar. Es lo que gira el cielo entero.
+    this._cieloAMundo = new THREE.Matrix3();
+    this._ecuatorialAMundo = new THREE.Matrix3();
+    this._precesion = new THREE.Matrix3();
 
     this.uniformes = {
       uSol: { value: this.direccionSol },
       uLuna: { value: this.direccionLuna },
+      // La fracción iluminada del disco, de 0 a 1. La leen la luz de la noche y la
+      // niebla nocturna, además del disco.
       uFaseLunar: { value: 0.5 },
       uTurbiedad: { value: 2.2 },   // aire muy limpio: es un parque nacional
       // Estaba en 1,6 y encima multiplicado por (1 + 0,15·turbiedad), o sea 2,13
@@ -121,6 +299,16 @@ export class Cielo {
       uNubes: { value: 0.35 },
       uTiempo: { value: 0 },
       uVientoNubes: { value: new THREE.Vector2(0.9, 0.25) },
+      uCieloAMundo: { value: this._cieloAMundo },
+      // Tamaño angular de un píxel, en radianes: con eso se suaviza el borde del
+      // disco de la luna sin `fwidth()`, que en un shader de GLSL ES 1.00 depende de
+      // una extensión. Lo escribe `onBeforeRender` con la cámara que de verdad
+      // dibuja, así que vale igual para el juego, para una captura y para el reflejo.
+      uPixelAngular: { value: 0.002 },
+      // La dirección en el mundo del polo norte galáctico: la Vía Láctea es la banda
+      // a 90° de él, y gira con el cielo.
+      uPoloGalactico: { value: new THREE.Vector3().copy(POLO_GALACTICO) },
+      uCentroGalactico: { value: new THREE.Vector3().copy(CENTRO_GALACTICO) },
     };
 
     const geo = new THREE.SphereGeometry(radio, 64, 40);
@@ -149,7 +337,71 @@ export class Cielo {
     // opacos y lo sigue viendo debajo.
     this.malla.renderOrder = 1000;
     this.malla.frustumCulled = false;
+    // El elemento [5] de la matriz de proyección de una perspectiva es
+    // 1/tan(campo vertical / 2): dos veces su inversa, dividido por los renglones del
+    // búfer, es lo que abarca un píxel. A 62° y 576 renglones da 0,0021 rad (0,12°);
+    // con el campo de 6° del banco, 0,00018 (0,010°).
+    this._tamano = new THREE.Vector2();
+    this.malla.onBeforeRender = (render, escena_, camara) => {
+      const alto = render.getDrawingBufferSize(this._tamano).y || 1;
+      const m5 = camara?.projectionMatrix?.elements[5] || 1;
+      this.uniformes.uPixelAngular.value = 2 / (Math.abs(m5) * alto);
+    };
     escena.add(this.malla);
+
+    // ── Las estrellas ─────────────────────────────────────────────────────────
+    //
+    // Puntos, uno por estrella del catálogo, y no ruido en la cúpula. El ruido
+    // viejo eran dos capas de `ruido3` —dieciséis hashes por píxel de cielo— que
+    // inventaban 163 de cada 193 puntos brillantes; acá son 4484 vértices, y los
+    // píxeles que se pintan son los de las estrellas y nada más.
+    //
+    // Van después del domo (1001) y sumando luz, con la prueba de profundidad:
+    // el relieve las tapa como tapa el cielo. Las nubes, la ceniza y el día no
+    // pueden taparlas desde el domo, que ya se dibujó, así que las apaga el propio
+    // vértice con la MISMA cobertura de nubes (`NUBES_GLSL`).
+    //
+    // Siempre visibles, también de día, y apagadas en el shader: con
+    // `visible = false` el programa compilaría recién al caer la noche, con el
+    // tirón en el peor momento, y los programas de día y de noche no serían los
+    // mismos. Son hijas de la malla, que acompaña a la cámara.
+    this.uniformesEstrellas = {
+      uCieloAMundo: this.uniformes.uCieloAMundo,
+      uSol: this.uniformes.uSol,
+      uLuna: this.uniformes.uLuna,
+      uFaseLunar: this.uniformes.uFaseLunar,
+      uNubes: this.uniformes.uNubes,
+      uCeniza: this.uniformes.uCeniza,
+      uTiempo: this.uniformes.uTiempo,
+      uVientoNubes: this.uniformes.uVientoNubes,
+      // Brillo lineal de una estrella de magnitud 1 en el píxel del centro. Con la
+      // exposición de la noche (1,13) y ACES, 0,8 cae en ~225 de 255; la cuenta
+      // entera está en `VERT_ESTRELLAS`.
+      uBrilloEstrellas: { value: 0.8 },
+      uPixel: { value: 1 },
+      uRadioCielo: { value: radio * 0.95 },
+    };
+    this.estrellas = new THREE.Points(new THREE.BufferGeometry(), new THREE.ShaderMaterial({
+      uniforms: this.uniformesEstrellas,
+      vertexShader: VERT_ESTRELLAS,
+      fragmentShader: FRAG_ESTRELLAS,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      fog: false,
+    }));
+    // Una estrella muda hasta que llega la tabla, para que el programa exista y
+    // compile con el primer cuadro aunque el JSON tarde.
+    this.estrellas.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 1]), 3));
+    this.estrellas.geometry.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array([1, 1, 1]), 3));
+    this.estrellas.geometry.setAttribute('aMagnitud', new THREE.BufferAttribute(new Float32Array([99]), 1));
+    this.estrellas.renderOrder = 1001;
+    this.estrellas.frustumCulled = false;
+    // El tamaño va en píxeles de pantalla: una estrella es un punto, no crece con la
+    // resolución, pero con pixelRatio 2 tiene que ocupar el doble de píxeles.
+    this.estrellas.onBeforeRender = (render) => { this.uniformesEstrellas.uPixel.value = render.getPixelRatio(); };
+    this.malla.add(this.estrellas);
+    this.cantidadEstrellas = 0;
+    this._cargarEstrellas();
 
     // Portador del color y la intensidad del sol. NO se agrega a la escena:
     // la iluminación direccional la aportan las cascadas de CSM, y una luz
@@ -173,10 +425,51 @@ export class Cielo {
     this._tauSol = [0, 0, 0];
     this._mezcla = [0, 0, 0];
     this._niebla = [0, 0, 0];
+    this._luna = new THREE.Vector3();
+    this._sol = new THREE.Vector3();
+    this._observador = new THREE.Vector3();
+    this._hacia = new THREE.Vector3();
+    this._centroCruz = new THREE.Vector3();
+    this._mirada = new THREE.Vector3();
   }
 
   /**
-   * @param {Date} fecha fecha y hora locales simuladas
+   * La tabla va con `import()` y no con un `import` arriba: son 161 KB que no tienen
+   * por qué estar en el paquete principal, y `Tiempo.js` importa este módulo en los
+   * bancos de Node, que no cargan JSON sin atributo. En Node el rechazo se ataja y el
+   * cielo gira igual, sin puntos.
+   */
+  _cargarEstrellas() {
+    import('../data/estrellas.json')
+      .then((m) => this._ponerEstrellas(m.default ?? m))
+      .catch(() => { /* sin tabla: sin puntos */ });
+  }
+
+  /** @param {{estrellas: Array<[number, number, number, number|null, number]>}} tabla */
+  _ponerEstrellas(tabla) {
+    const filas = tabla?.estrellas;
+    if (!Array.isArray(filas) || !filas.length) return;
+    const n = filas.length;
+    const pos = new Float32Array(n * 3), col = new Float32Array(n * 3), mag = new Float32Array(n);
+    const v = new THREE.Vector3(), c = [1, 1, 1];
+    for (let i = 0; i < n; i++) {
+      const [ra, dec, m, bv] = filas[i];
+      vectorCeleste(ra, dec, v);
+      pos[3 * i] = v.x; pos[3 * i + 1] = v.y; pos[3 * i + 2] = v.z;
+      col.set(colorEstelar(bv, c), 3 * i);
+      mag[i] = m;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aColor', new THREE.BufferAttribute(col, 3));
+    geo.setAttribute('aMagnitud', new THREE.BufferAttribute(mag, 1));
+    this.estrellas.geometry.dispose();
+    this.estrellas.geometry = geo;
+    this.cantidadEstrellas = n;
+  }
+
+  /**
+   * @param {Date} fecha fecha y hora simuladas, en UTC
    * @param {number} lat
    * @param {number} lon
    */
@@ -185,20 +478,106 @@ export class Cielo {
     vectorSolar(altura, azimut, this.direccionSol);
     this.alturaSol = altura;
 
-    // La luna va aproximadamente en oposición, desfasada por su fase
-    const faseDias = ((fecha.getTime() / 86400000) % 29.53) / 29.53;
-    this.faseLunar = faseDias;
-    vectorSolar(-altura * 0.85 + 0.3, azimut + Math.PI * (0.6 + faseDias * 0.8), this.direccionLuna);
-    this.uniformes.uFaseLunar.value = 0.5 - 0.5 * Math.cos(faseDias * Math.PI * 2);
+    const jd = diaJuliano(fecha);
+    const local = this._girarCielo(jd, lat, lon);
+    this._lunaDeLaFecha(jd, lat, local);
     this.uniformes.uTiempo.value = tiempo;
 
     const h = Math.max(-0.18, altura);
     this.factorDia = Math.max(0, Math.sin(h));
     this.factorCrepusculo = Math.exp(-Math.pow(Math.max(0, h) / 0.22, 2))
       * (altura > -0.18 ? 1 : 0);
+    // El mismo smoothstep que usa el domo para mezclar el cielo de día con el de noche
+    this.diurno = suave(-0.14, 0.10, this.direccionSol.y);
 
     this._encenderLuces();
     return this;
+  }
+
+  /**
+   * Del J2000 al mundo. Primero la precesión a la fecha; después el ángulo horario
+   * —girar el tiempo sidéreo local sobre el eje del polo—; y por último el horizonte
+   * del lugar, con la convención de `vectorSolar()`: +X este, +Y arriba, +Z sur.
+   *
+   * Con eso el polo sur celeste cae en el azimut 180° y a una altura igual a la
+   * latitud, y todo el cielo gira a su alrededor.
+   *
+   * @returns {number} el tiempo sidéreo local, en grados
+   */
+  _girarCielo(jd, lat, lon) {
+    const local = tiempoSidereo(jd) + lon;
+    const cL = cosG(local), sL = senG(local), cf = cosG(lat), sf = senG(lat);
+    this._ecuatorialAMundo.set(
+      -sL, cL, 0,
+      cf * cL, cf * sL, sf,
+      sf * cL, sf * sL, -cf);
+    matrizPrecesion(jd, this._precesion);
+    this._cieloAMundo.multiplyMatrices(this._ecuatorialAMundo, this._precesion);
+    this.uniformes.uPoloGalactico.value.copy(POLO_GALACTICO).applyMatrix3(this._cieloAMundo);
+    this.uniformes.uCentroGalactico.value.copy(CENTRO_GALACTICO).applyMatrix3(this._cieloAMundo);
+    return local;
+  }
+
+  /**
+   * La luna vista desde el lugar, y su fase.
+   *
+   * La paralaje no es un detalle. La luna está a unos 60 radios terrestres, y
+   * mirarla desde la superficie y no desde el centro de la Tierra la corre hasta un
+   * grado, dos veces su tamaño: sin restar al observador quedaba a 1,04° de JPL, y
+   * restándolo, a 0,15°.
+   *
+   * La fase se mide también desde el lugar, con el ángulo entre el sol y el
+   * observador vistos desde la luna. Medida desde el centro de la Tierra erraba
+   * 0,67 puntos contra la iluminación de JPL; desde el lugar, 0,12.
+   */
+  _lunaDeLaFecha(jd, lat, local) {
+    const d = jd - J2000;
+    const lonLuna = lunaGeocentrica(d / 36525, this._luna);
+    const lonSol = solGeocentrico(d, this._sol);
+
+    // El observador, en radios terrestres, con la latitud geocéntrica. Los 800 m de
+    // altura del arranque lo mueven 1/8000 de radio: no se notan.
+    const u = Math.atan(0.99664719 * Math.tan(lat * RAD));
+    this._observador.set(Math.cos(u) * cosG(local), Math.cos(u) * senG(local), 0.99664719 * Math.sin(u));
+    const luna = this._luna.sub(this._observador);
+    this.direccionLuna.copy(luna).applyMatrix3(this._ecuatorialAMundo).normalize();
+
+    // Ángulo de fase: del sol y del observador, vistos desde la luna
+    const alSol = this._hacia.copy(this._sol).sub(luna);
+    const cosFase = -alSol.dot(luna) / (alSol.length() * luna.length());
+    this.uniformes.uFaseLunar.value = (1 + cosFase) / 2;
+    this.faseLunar = (((lonLuna - lonSol) % 360) + 360) % 360 / 360;
+  }
+
+  /**
+   * Dirección en el mundo de una posición J2000, en la última `actualizar()`.
+   *
+   * @param {number} ra ascensión recta en grados, J2000
+   * @param {number} dec declinación en grados, J2000
+   * @param {THREE.Vector3} [salida]
+   */
+  direccionDe(ra, dec, salida = new THREE.Vector3()) {
+    return vectorCeleste(ra, dec, salida).applyMatrix3(this._cieloAMundo);
+  }
+
+  /**
+   * Qué hay en el cielo en esa dirección, para quien lo quiera contar.
+   *
+   * Por ahora una sola cosa: `'cruz_del_sur'` a 12° o menos del centro de la Cruz,
+   * con la Cruz sobre el horizonte y de noche. Si no, `null`. No mira las nubes: la
+   * Cruz está ahí aunque no se vea, y decidir si decirlo es de quien pregunta.
+   *
+   * @param {{x:number, y:number, z:number}} direccion no hace falta que sea unitaria
+   * @returns {'cruz_del_sur'|null}
+   */
+  queMiro(direccion) {
+    if (!direccion || !(this.diurno <= DIURNO_NOCHE)) return null;
+    const centro = this._centroCruz.copy(CENTRO_CRUZ).applyMatrix3(this._cieloAMundo);
+    if (centro.y <= 0) return null;
+    const d = this._mirada.set(direccion.x, direccion.y, direccion.z);
+    const largo = d.length();
+    if (!(largo > 0)) return null;
+    return centro.dot(d) / largo >= COS_RADIO_CRUZ ? 'cruz_del_sur' : null;
   }
 
   configurarAtmosfera({ turbiedad, nubes, ceniza } = {}) {
@@ -424,6 +803,50 @@ export class Cielo {
 
 const CENIZA = new THREE.Color(0.42, 0.39, 0.36);
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Shaders
+// ═══════════════════════════════════════════════════════════════════════════
+
+const RUIDO_GLSL = /* glsl */`
+float hash(vec3 p) {
+  p = fract(p * 0.3183099 + vec3(0.71, 0.113, 0.419));
+  p *= 17.0;
+  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+float ruido3(vec3 x) {
+  vec3 i = floor(x), f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
+                 mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+                 mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+}
+float fbm3(vec3 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 5; i++) { v += a * ruido3(p); p *= 2.07; a *= 0.5; }
+  return v;
+}
+`;
+
+/**
+ * La cobertura de nubes en una dirección. La usan la cúpula, para dibujarlas, y
+ * las estrellas, para apagarse detrás: si fueran dos cuentas, una estrella se vería
+ * a través de una nube que la cúpula sí dibuja. Necesita `uNubes`, `uTiempo` y
+ * `uVientoNubes` declarados antes.
+ */
+const NUBES_GLSL = /* glsl */`
+float coberturaNubes(vec3 dir, out float d) {
+  // Proyección sobre una capa plana: da perspectiva hacia el horizonte
+  float t = 0.16 / max(dir.y, 0.045);
+  vec3 p = dir * t;
+  vec2 desliz = uVientoNubes * uTiempo * 0.004;
+  d = fbm3(vec3(p.xz * 2.4 + desliz, uTiempo * 0.012));
+  float d2 = fbm3(vec3(p.xz * 5.6 - desliz * 1.7, uTiempo * 0.02 + 4.0));
+  float cobertura = smoothstep(0.62 - uNubes * 0.45, 0.94 - uNubes * 0.30, d * 0.72 + d2 * 0.28);
+  return cobertura * smoothstep(0.0, 0.11, dir.y);
+}
+`;
+
 const VERT = /* glsl */`
 varying vec3 vDir;
 void main() {
@@ -451,38 +874,32 @@ uniform float uCeniza;
 uniform float uNubes;
 uniform float uTiempo;
 uniform vec2 uVientoNubes;
+uniform mat3 uCieloAMundo;
+uniform vec3 uPoloGalactico;
+uniform vec3 uCentroGalactico;
+uniform float uPixelAngular;
 
 const float PI = 3.141592653589793;
 // Coeficientes de dispersión Rayleigh en RGB (longitudes de onda 680/550/440 nm)
 const vec3 BETA_R = vec3(5.8e-6, 13.5e-6, 33.1e-6);
 const vec3 BETA_M = vec3(14.0e-6);
+const vec3 FONDO_NOCHE = vec3(0.008, 0.014, 0.032);
+const float RADIO_LUNA = ${RADIO_LUNA.toFixed(7)};
+const float COS_ZONA_LUNA = ${Math.cos(2 * RADIO_LUNA).toFixed(9)};
 
-float hash(vec3 p) {
-  p = fract(p * 0.3183099 + vec3(0.71, 0.113, 0.419));
-  p *= 17.0;
-  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-}
-float ruido3(vec3 x) {
-  vec3 i = floor(x), f = fract(x);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
-                 mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
-             mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
-                 mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y), f.z);
-}
-float fbm3(vec3 p) {
-  float v = 0.0, a = 0.5;
-  for (int i = 0; i < 5; i++) { v += a * ruido3(p); p *= 2.07; a *= 0.5; }
-  return v;
-}
+${RUIDO_GLSL}
+${NUBES_GLSL}
 
 // Longitud del camino óptico EN METROS, con la aproximación de Kasten-Young
 // para la masa de aire. Los coeficientes BETA están por metro, así que la
 // altura de escala también tiene que ir en metros: 8400 m para Rayleigh y
 // 1250 m para Mie. Mezclar kilómetros con metros hace explotar el exponente
 // y el cielo se vuelve negro.
+// El coseno se acota de los dos lados, como en el gemelo de CPU —que ya hacía
+// Math.min(1, c)—: con un coseno que en float32 valga 1,0000001 mirando al cenit,
+// acos() da NaN y el píxel de cielo sale de cualquier color.
 float caminoOptico(float cosCenit, float alturaEscala) {
-  float c = max(cosCenit, 0.0);
+  float c = clamp(cosCenit, 0.0, 1.0);
   return alturaEscala / (c + 0.15 * pow(93.885 - acos(c) * 180.0 / PI, -1.253));
 }
 
@@ -553,36 +970,67 @@ void main() {
 
   float diurno = smoothstep(-0.14, 0.10, sol.y);
   vec3 color = dispersion * 21.0 * uIntensidad * mix(0.04, 1.0, diurno);
+  vec3 colorDia = color;
 
   // ── Cielo nocturno ────────────────────────────────────────────────────────
+  // Las estrellas ya no están acá: son los puntos del catálogo (VERT_ESTRELLAS),
+  // que se dibujan encima. Acá quedan el fondo, la Vía Láctea y el halo de la luna.
   float noche = 1.0 - diurno;
+  vec3 luna = normalize(uLuna);
+  float cosLuna = dot(dir, luna);
   if (noche > 0.001) {
-    // Campo estelar: tres capas de densidad para que no quede plano
-    vec3 pe = dir * 260.0;
-    float e1 = pow(max(0.0, ruido3(floor(pe) + 0.5) ), 34.0) * 42.0;
-    vec3 pe2 = dir * 520.0;
-    float e2 = pow(max(0.0, ruido3(floor(pe2) + 0.5)), 52.0) * 26.0;
-    float centelleo = 0.82 + 0.18 * sin(uTiempo * 2.6 + hash(floor(pe)) * 90.0);
-    float estrellas = (e1 + e2) * centelleo * smoothstep(-0.02, 0.16, alturaVista);
+    // La Vía Láctea es el plano de la galaxia: la banda a 90° del polo galáctico,
+    // que gira con el cielo. Es más ancha y más brillante hacia el centro, en
+    // Sagitario, que en invierno pasa a 78° de altura sobre el parque. El polvo se
+    // toma en coordenadas del cielo —dir · M es M transpuesta por dir, la dirección
+    // J2000— para que las manchas giren con las estrellas y no queden pegadas.
+    float latGal = dot(dir, uPoloGalactico);
+    float bulbo = smoothstep(-0.3, 1.0, dot(dir, uCentroGalactico));
+    float bandaVL = exp(-pow(latGal * (3.1 - 1.2 * bulbo), 2.0));
+    float polvo = fbm3((dir * uCieloAMundo) * 5.2 + 11.0);
+    vec3 viaLactea = vec3(0.52, 0.56, 0.72) * bandaVL * (0.035 + 0.065 * polvo)
+                   * (0.6 + 0.9 * bulbo) * smoothstep(0.0, 0.2, alturaVista);
 
-    // La Vía Láctea cruza muy alto en el cielo austral
-    float bandaVL = exp(-pow((dot(dir, normalize(vec3(0.42, 0.36, -0.83)))) * 3.1, 2.0));
-    float polvo = fbm3(dir * 5.2 + 11.0);
-    vec3 viaLactea = vec3(0.52, 0.56, 0.72) * bandaVL * (0.055 + 0.075 * polvo)
-                   * smoothstep(0.0, 0.2, alturaVista);
+    color = mix(FONDO_NOCHE + viaLactea, color, diurno);
+  }
 
-    vec3 cielNoche = vec3(0.008, 0.014, 0.032)
-                   + vec3(estrellas) * vec3(0.92, 0.95, 1.0)
-                   + viaLactea;
-
-    // Luna: disco con limbo y brillo alrededor
-    float cosLuna = dot(dir, normalize(uLuna));
-    float discoLuna = smoothstep(0.99955, 0.99985, cosLuna);
+  // ── La luna ───────────────────────────────────────────────────────────────
+  //
+  // Un disco con su fase, y no un círculo que se apaga entero. El de la base se
+  // pesaba con uFaseLunar, que era un brillo: una luna en cuarto salía 0,98
+  // iluminada y los dos lados brillaban igual.
+  //
+  // En el disco, q es la posición en radios de la luna: q.x hacia el sol, q.y de
+  // costado. Una esfera iluminada de lado muestra el limbo del lado del sol y el
+  // terminador, una media elipse con semieje (1 - 2k); sobre el eje del sol, lo
+  // iluminado mide 2k radios, que es la fracción iluminada k. La superficie
+  // iluminada brilla igual en creciente que en llena; lo que cambia con k es
+  // cuánta hay, y el halo.
+  //
+  // La cara oscura tapa lo que hay detrás —la Vía Láctea, las estrellas se apagan
+  // solas en su vértice— y deja lo que hay delante, que es el aire: de noche el
+  // fondo, de día el azul. Por eso de día la luna se ve pálida y sólo la parte
+  // iluminada.
+  if (cosLuna > COS_ZONA_LUNA) {
+    vec3 haciaSol = sol - luna * dot(sol, luna);
+    float largo = length(haciaSol);
+    vec3 eje = largo > 1e-6 ? haciaSol / largo : vec3(1.0, 0.0, 0.0);
+    vec3 costado = cross(luna, eje);
+    vec3 d = dir - luna * cosLuna;
+    vec2 q = vec2(dot(d, eje), dot(d, costado)) / RADIO_LUNA;
+    float aa = uPixelAngular / RADIO_LUNA + 1e-3;
+    float disco = (1.0 - smoothstep(1.0 - aa, 1.0 + aa, length(q)))
+                * smoothstep(-0.015, 0.005, luna.y);
+    float terminador = (1.0 - 2.0 * uFaseLunar) * sqrt(max(0.0, 1.0 - q.y * q.y));
+    float iluminado = smoothstep(terminador - aa, terminador + aa, q.x);
+    color = mix(color, mix(FONDO_NOCHE, colorDia, diurno), disco);
+    // 0,004 en la cara oscura: la luz cenicienta, lo que la Tierra le devuelve
+    color += disco * (iluminado * 2.6 + (1.0 - iluminado) * 0.004 * noche) * vec3(0.95, 0.95, 0.88);
+  }
+  if (noche > 0.001) {
+    // El halo es aire iluminado, delante del disco: va después, y crece con k
     float haloLuna = pow(max(0.0, cosLuna), 320.0) * 0.30;
-    float visibleLuna = smoothstep(-0.06, 0.06, uLuna.y) * uFaseLunar;
-    cielNoche += (discoLuna * 2.6 + haloLuna) * visibleLuna * vec3(0.95, 0.95, 0.88);
-
-    color = mix(cielNoche, color, diurno);
+    color += haloLuna * smoothstep(-0.06, 0.06, luna.y) * uFaseLunar * noche * vec3(0.95, 0.95, 0.88);
   }
 
   // ── Disco solar ───────────────────────────────────────────────────────────
@@ -595,14 +1043,8 @@ void main() {
 
   // ── Nubes ─────────────────────────────────────────────────────────────────
   if (uNubes > 0.01 && alturaVista > 0.0) {
-    // Proyección sobre una capa plana: da perspectiva hacia el horizonte
-    float t = 0.16 / max(alturaVista, 0.045);
-    vec3 p = dir * t;
-    vec2 desliz = uVientoNubes * uTiempo * 0.004;
-    float d = fbm3(vec3(p.xz * 2.4 + desliz, uTiempo * 0.012));
-    float d2 = fbm3(vec3(p.xz * 5.6 - desliz * 1.7, uTiempo * 0.02 + 4.0));
-    float cobertura = smoothstep(0.62 - uNubes * 0.45, 0.94 - uNubes * 0.30, d * 0.72 + d2 * 0.28);
-    cobertura *= smoothstep(0.0, 0.11, alturaVista);
+    float d;
+    float cobertura = coberturaNubes(dir, d);
 
     // Iluminación de la nube: bordes encendidos hacia el sol
     float haciaSol = max(0.0, dot(normalize(vec3(dir.x, 0.0, dir.z)), normalize(vec3(sol.x, 0.0, sol.z))));
@@ -638,5 +1080,149 @@ void main() {
   // Un poco de granulado rompe el bandeado en los degradés del cielo
   float grano = (hash(vec3(gl_FragCoord.xy, uTiempo * 0.1)) - 0.5) * 0.0035;
   gl_FragColor = vec4(max(vec3(0.0), color + grano), 1.0);
+}
+`;
+
+/**
+ * Las estrellas del catálogo, una por vértice.
+ *
+ * ── El brillo ───────────────────────────────────────────────────────────────
+ * Lineal en el píxel del centro: `uBrilloEstrellas · 10^(−0,36·(m − 1))`. El
+ * exponente físico sería 0,4; con 0,36 la escala se comprime un 10 % y una de
+ * magnitud 6 queda a 1/63 de una de magnitud 1 en vez de 1/100, que es lo que
+ * separa «apenas se ve» de «no está» contra un fondo de 0,014. Contado a mano con
+ * la curva ACES de three y la exposición de la noche (1,13), sobre el fondo:
+ *
+ *   magnitud 6 → ~28 de 255 (el fondo, ~16)   ·  magnitud 5 → ~48
+ *   δ Cru, 2,80 → ~140   ·   Gacrux, 1,63 → ~200   ·   Acrux con α², → ~230
+ *   α Cen con α², → ~245
+ *
+ * El orden de brillo de la Cruz sale con 60 de margen entre Gacrux y δ, y ninguna
+ * de las cuatro satura.
+ *
+ * ── El tamaño, y por qué es chico ───────────────────────────────────────────
+ * De 2,5 a 3,6 px, más grande cuanto más brillante. El tope sale de una cuenta, no
+ * del gusto: a 62° de campo y 576 renglones un píxel abarca 2·tan(31°)/576 = 0,1195°,
+ * o sea que **medio grado son 4,18 px**, y nada de una estrella puede pintarse más
+ * lejos que eso de su lugar del catálogo. El presupuesto:
+ *
+ *   radio del punto 1,8 px  +  FXAA, que mezcla con un vecino a 1 px  +  medio píxel
+ *   de la rejilla con que se lo mide  =  3,3 px  =  0,40°
+ *
+ * Con 6 px de punto —lo primero que escribí— el radio solo era 3 px y la suma se iba
+ * a 4,5 px: cada estrella brillante desparramaba unos píxeles justo afuera del medio
+ * grado, y ésos son los que el banco cuenta como estrellas inventadas.
+ *
+ * ── Lo que la apaga ─────────────────────────────────────────────────────────
+ * - El aire: 0,20 magnitudes por masa de aire, lo de un sitio limpio de montaña.
+ *   A 30° de altura se pierden 0,2; a 5°, 1,9; en el horizonte, todas.
+ * - El día: `luz·noche² − 2,5·diurno`. El cielo claro se come primero las débiles:
+ *   con el sol 3° bajo el horizonte sólo quedan las de magnitud 0 o más, a 6° las de
+ *   3, y al sol 8° abajo todas. A pleno día, ninguna.
+ * - La luna alta y llena aclara el cielo y se lleva las de magnitud 5 para abajo.
+ * - Las nubes, con la cobertura del domo en esa dirección, y el cubierto entero.
+ * - La ceniza, dos veces la densidad del domo: la estrella la atraviesa de ida.
+ * - El disco de la luna, que está delante.
+ *
+ * Una estrella apagada se manda fuera del recorte y no pinta ni un píxel.
+ */
+const VERT_ESTRELLAS = /* glsl */`
+precision highp float;
+attribute float aMagnitud;
+attribute vec3 aColor;
+
+uniform mat3 uCieloAMundo;
+uniform vec3 uSol;
+uniform vec3 uLuna;
+uniform float uFaseLunar;
+uniform float uNubes;
+uniform float uCeniza;
+uniform float uTiempo;
+uniform vec2 uVientoNubes;
+uniform float uBrilloEstrellas;
+uniform float uPixel;
+uniform float uRadioCielo;
+
+varying vec3 vColor;
+
+const float COS_RADIO_LUNA = ${Math.cos(RADIO_LUNA).toFixed(9)};
+
+${RUIDO_GLSL}
+${NUBES_GLSL}
+
+void apagar() {
+  gl_Position = vec4(0.0, 0.0, 2.0, 1.0);
+  gl_PointSize = 0.0;
+  vColor = vec3(0.0);
+}
+
+void main() {
+  vec3 dir = uCieloAMundo * position;
+  float diurno = smoothstep(-0.14, 0.10, normalize(uSol).y);
+  if (dir.y < 0.0 || diurno > 0.95) { apagar(); return; }
+
+  // Extinción: la masa de aire de Kasten-Young, la misma del domo.
+  //
+  // El coseno va con min(): dir es una matriz ortonormal por un vector unitario,
+  // pero en float32 el producto puede dar 1,0000001 para una estrella que pase por el
+  // cenit, y ahí acos() devuelve NaN. Un NaN acá se lo come todo —la masa de aire,
+  // la magnitud, el tamaño del punto y la posición— y un punto sin posición se
+  // rasteriza donde el driver quiera: una estrella inventada, lejos de toda estrella
+  // del catálogo. Cuesta una instrucción.
+  float coseno = min(dir.y, 1.0);
+  float masaAire = 1.0 / (coseno + 0.15 * pow(93.885 - acos(coseno) * 57.29578, -1.253));
+  float m = aMagnitud + 0.20 * (masaAire - 1.0);
+  float luz = uBrilloEstrellas * pow(10.0, -0.36 * (m - 1.0));
+
+  float noche = 1.0 - diurno;
+  luz = luz * noche * noche - 2.5 * diurno;
+  luz -= 0.05 * max(uLuna.y, 0.0) * uFaseLunar;
+
+  if (uNubes > 0.01) {
+    float d;
+    float cobertura = coberturaNubes(dir, d);
+    // Una estrella se pierde con mucho menos nube que la que hace falta para verla
+    // gris: con cobertura 0,3 ya no está. Y con el cielo cubierto no hay huecos.
+    luz *= (1.0 - smoothstep(0.03, 0.30, cobertura)) * (1.0 - smoothstep(0.75, 1.0, uNubes));
+  }
+  if (uCeniza > 0.001) {
+    float densidad = clamp(uCeniza * (0.55 + 0.45 * (1.0 - dir.y)), 0.0, 0.93);
+    luz *= (1.0 - densidad) * (1.0 - densidad);
+  }
+  if (dot(dir, normalize(uLuna)) > COS_RADIO_LUNA) luz = 0.0;
+  if (luz < 0.002) { apagar(); return; }
+
+  // Centelleo: más cerca del horizonte, donde la luz cruza más aire revuelto
+  float h = fract(sin(dot(position, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+  float centelleo = 1.0 + 0.12 * (masaAire - 1.0) / (masaAire + 2.0) * sin(uTiempo * (2.6 + 3.0 * h) + h * 90.0);
+
+  vec4 p = projectionMatrix * modelViewMatrix * vec4(dir * uRadioCielo, 1.0);
+  p.z = p.w; // al fondo, como el domo
+  gl_Position = p;
+  gl_PointSize = clamp(2.5 + 0.4 * (3.5 - m), 2.5, 3.6) * uPixel;
+  vColor = aColor * luz * centelleo;
+}
+`;
+
+const FRAG_ESTRELLAS = /* glsl */`
+precision highp float;
+varying vec3 vColor;
+
+void main() {
+  vec2 q = gl_PointCoord * 2.0 - 1.0;
+  float r2 = dot(q, q);
+  if (r2 > 0.95) discard;
+  // Meseta ancha y caída corta, y las dos por el mismo motivo: que el píxel que se
+  // mide no dependa de dónde cayó el centro de la estrella dentro de él.
+  //
+  // Con un gaussiano puro el mejor píxel valía entre la mitad y el total según el
+  // subpíxel, y el orden de brillo de la Cruz —Gacrux por encima de δ, Mimosa por
+  // encima de Gacrux— dependía de esa lotería. Con la meseta, el mejor píxel de un
+  // punto de 2,5 px vale el 97 %.
+  //
+  // Y la caída termina en r² = 0,95, o sea a 0,975 del radio: nada se pinta más allá
+  // de 1,75 px del centro ni siquiera en la estrella más brillante, que es lo que
+  // deja el desparramo adentro del medio grado (ver la cuenta en VERT_ESTRELLAS).
+  gl_FragColor = vec4(vColor * (1.0 - smoothstep(0.25, 0.95, r2)), 1.0);
 }
 `;

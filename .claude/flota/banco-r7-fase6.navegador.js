@@ -193,19 +193,34 @@
       ok(Math.min(contraste.acrux, contraste.mimosa) >= contraste.gacrux - 3 && contraste.gacrux >= contraste.deltaCru + 3,
         'C3 · las de la Cruz se ordenan por brillo como por magnitud', JSON.stringify(contraste));
 
-      // Estrellas inventadas. A 0,5° y no a 1°: con las 9096 del catálogo, un punto al
-      // azar tiene una estrella a menos de 1° la mitad de las veces, y la mitad de las
-      // estrellas falsas pasaban. A 0,5° es una de cada seis, y entra igual una estrella
-      // dibujada sin precesión (0,25°) con su halo.
+      // Estrellas inventadas: se mide LA LUZ QUE PONEN LAS ESTRELLAS, restando el mismo
+      // cuadro con `cielo.estrellas` apagadas. No el brillo absoluto contra un anillo de
+      // fondo, que era lo que hacían las dos primeras versiones y estaba mal de raíz:
+      // barría la imagen entera, y un píxel del borde de un árbol o de una loma contra el
+      // cielo —suavizado por el FXAA, con el fondo del anillo en 0— pasaba el umbral y se
+      // contaba como estrella inventada. Así daba 83 de 194, y apagando las estrellas
+      // esos píxeles valían exactamente lo mismo: no eran estrellas. El filtro de altura
+      // no alcanza, porque un árbol al lado de la cámara tapa medio cuadro.
+      //
+      // Restando, lo que queda es sólo lo que dibujaron los puntos: el terreno, la Vía
+      // Láctea, la niebla y el disco de la luna se van solos, sin inventar umbrales.
+      //
+      // Y a 0,5° y no a 1°: con las 9096 del catálogo, un punto al azar tiene una
+      // estrella a menos de 1° la mitad de las veces, y la mitad de las estrellas falsas
+      // pasaban. A 0,5° es una de cada seis, y entra igual una estrella dibujada sin
+      // precesión (0,25°) con su halo.
+      if (!cielo.estrellas) ok(false, 'C3 · premisa: las estrellas son un objeto que se puede apagar para medirlas', 'no existe cielo.estrellas');
+      cielo.estrellas.visible = false;
+      const pxSin = leer(NOCHE_OSCURA, mirarCruz);
+      cielo.estrellas.visible = true;
       const todas = cat.map((e) => direccion(THREE, e.ra, e.dec, NOCHE_OSCURA, lat, lon));
       const cosRadio = Math.cos(0.5 * RAD);
       const inv = camara.projectionMatrixInverse, mundoCam = camara.matrixWorld;
       let brillantes = 0, inventadas = 0;
       for (let j = 4; j < H - 4; j += 2) {
         for (let i = 4; i < W - 4; i += 2) {
-          const l = lum(px, i, j);
-          if (l < 30) continue;
-          if (l - fondo(px, { i, j }) < 20) continue;
+          const l = lum(px, i, j) - lum(pxSin, i, j);
+          if (l < 20) continue;
           const d = new THREE.Vector3((i / (W - 1)) * 2 - 1, (j / (H - 1)) * 2 - 1, 0.5).applyMatrix4(inv).applyMatrix4(mundoCam).sub(ojo).normalize();
           if (d.y < 0.15) continue;
           brillantes++;
@@ -227,8 +242,13 @@
       ok(contraste.acrux >= 20 && deDia <= 8, 'C3 · de día, Acrux no se ve', deDia);
 
       // ── C5 · la fase del disco ───────────────────────────────────────────────
+      // Un año y pico de búsqueda, no dos meses. Con 60 días desde el 1/1 no aparece
+      // ninguna luna llena alta, y no por el código: en verano austral la llena está
+      // enfrente del sol, o sea a declinación +16°, y desde los 41° sur no pasa de
+      // 90 − |−41 − 16| = 33°. La llena alta es de invierno. La premisa de C6 pedía 40°
+      // en una ventana donde eso es astronómicamente imposible.
       const buscarLuna = (desde, cond) => {
-        for (let h = 0; h < 24 * 60; h++) {
+        for (let h = 0; h < 24 * 400; h++) {
           const f = new Date(desde.getTime() + h * 3600e3);
           cielo.actualizar(f, lat, lon, 0);
           if (cond()) return { f, k: cielo.uniformes.uFaseLunar.value, luz: cielo.luzAmbiente.intensity };
@@ -236,11 +256,18 @@
         return null;
       };
       const noche = () => cielo.alturaSol < -12 * RAD;
-      const cuarto = buscarLuna(new Date('2026-01-16T00:00:00Z'), () => noche() && cielo.direccionLuna.y > Math.sin(25 * RAD)
-        && cielo.uniformes.uFaseLunar.value > 0.35 && cielo.uniformes.uFaseLunar.value < 0.65);
+      // Una creciente fina, y no media luna. Con k = 0,62 el terminador cae en
+      // q.x = 1 − 2k = −0,24: dos tercios del lado opuesto al sol están iluminados, y la
+      // razón entre los dos lados no llega a 1,5 ni con el disco dibujado perfecto —la
+      // primera versión pedía 1,5 contra una luna gibosa y daba rojo por eso—. Con
+      // k ≈ 0,25 el terminador queda en +0,5, el lado opuesto al sol está oscuro entero,
+      // y tanto la fracción como la razón separan de verdad un disco con fase de uno sin
+      // ella. Se baja la altura a 20° porque una creciente fina anda cerca del sol.
+      const cuarto = buscarLuna(new Date('2026-01-16T00:00:00Z'), () => noche() && cielo.direccionLuna.y > Math.sin(20 * RAD)
+        && cielo.uniformes.uFaseLunar.value > 0.15 && cielo.uniformes.uFaseLunar.value < 0.35);
       const llenaAlta = buscarLuna(new Date('2026-01-01T00:00:00Z'), () => noche() && cielo.uniformes.uFaseLunar.value > 0.95
         && cielo.direccionLuna.y > Math.sin(35 * RAD));
-      ok(!!cuarto, 'C5 · premisa: hay una noche con la luna en cuarto y alta', cuarto?.f.toISOString());
+      ok(!!cuarto, 'C5 · premisa: hay una noche con la luna creciente fina y alta', cuarto?.f.toISOString());
       ok(!!llenaAlta, 'C5 · premisa: hay una noche con la luna llena y alta', llenaAlta?.f.toISOString());
 
       // La fase se mide en el perfil que cruza el disco sobre el eje del sol. No por
