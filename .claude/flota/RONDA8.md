@@ -271,3 +271,56 @@ banco por la rueda y el arrastre, sin mirar métodos internos.
 
 Si el minimapa se lee bien de un vistazo mientras se camina, y si 160 px o 180 px es
 «chico». Eso es del ojo del dueño.
+
+---
+
+## FASE 2 · `lazo` — lo que se deja puesto y se vuelve a buscar
+
+### Lo que se midió antes de escribir el contrato
+
+Medido el 18/9/2026 en la vista previa, con los cuatro guardados anulados.
+
+**1 · De qué vive una trampa.** `Fauna._aptitud(esp, altitud, humedad, pendiente,
+estacion, distanciaAgua)` y `Fauna._actividad(esp, hora)` ya dicen qué tan probable
+es cada especie en un lugar y a qué hora anda: es la misma cuenta con la que
+`_reponer()` elige qué animal hace aparecer. La trampa puede sortear su presa con
+eso, sin inventar una tabla aparte. Las especies de hasta 6 kg (`presaMaxKg` del
+lazo) entre mamíferos y aves de más de 100 g, a las 2 de la mañana de verano:
+
+| lugar | fracción de lo que anda que pesa ≤ 6 kg | las primeras |
+|---|---|---|
+| arranque (Reserva, 822 m) | 42 % | zorro gris chico 15 · zorrino 9,5 · **gato huiña 6,9** · cachaña 2,3 |
+| centro (874 m) | 39 % | zorro gris chico 12,3 · zorrino 8,9 · **gato huiña 7,6** |
+| sur (1552 m) | 65 % | zorro gris chico 35 · zorrino 26 |
+
+**2 · Encontrado midiendo: diez especies viven pegadas al agua sin serlo.**
+`Fauna._esAcuatica()` (`Fauna.js:91`) marca como acuática a toda especie que tenga
+en sus biomas algo que case con `/ribera|lacustre|mallin|humedal|acuatic|rio|lago/`,
+y a las acuáticas `_aptitud` les da **cero a más de 70 m del agua**. Pero `mallin`
+es una vega húmeda, no agua, y `costa_lago` casa por `lago`. Caen ahí **el huemul,
+el ciervo colorado, el jabalí, la liebre europea, el perro asilvestrado, el
+tuco-tuco colonial, el aguilucho, el carancho, el chimango y la bandurria**: todos
+tienen el mallín entre varios ambientes secos.
+
+Medido, en proporción de lo que puede aparecer a las 2 de la mañana de verano:
+
+| lugar (agua a) | liebre | ciervo | jabalí | huemul | gato huiña |
+|---|---|---|---|---|---|
+| arranque (543 m) — hoy | **0,0** | **0,0** | **0,0** | 0,0 | 6,9 |
+| arranque — si «acuática» es que *todos* sus biomas son de agua | 10,7 | 3,5 | 27,9 | 0,1 | 2,8 |
+| centro (1786 m) — hoy | 0,0 | 0,0 | 0,0 | 0,0 | 7,6 |
+| centro — con la regla corregida | 9,2 | 3,5 | 27,7 | 0,1 | 3,3 |
+| sur (5540 m) — hoy | 0,0 | 0,0 | 0,0 | 0,0 | 0,0 |
+| sur — con la regla corregida | 27,0 | 10,2 | 11,3 | 0,3 | 0,0 |
+
+O sea: **hoy el ciervo colorado y el jabalí —las dos presas que la caza regulada
+existe para nombrar— sólo aparecen a menos de 70 m de un lago o un arroyo**, y la
+liebre, que es la presa de un lazo en la estepa, lo mismo. Es un defecto de la
+ronda de fauna que nadie trajo porque nadie mira dónde aparece un animal. Entra en
+esta fase porque la trampa sortea su presa con esa misma cuenta: con la regla de
+hoy, un lazo en la estepa nunca agarraría una liebre.
+
+**3 · La trampa no elige.** Con la regla corregida, en el arranque el gato huiña
+—Vulnerable— sigue siendo el 2,8 % de lo que anda de noche. Un lazo no distingue, y
+ésa es exactamente la razón que da `herramientas.json` para que el trampeo esté
+prohibido en todo el Parque. El juego lo tiene que mostrar, no esconder.
