@@ -32,6 +32,16 @@ vuelta.**
 > agente y validados contra una maqueta del jefe que no se le da (21/21 del falsador).
 > Tres defectos del banco encontrados así, antes de que el agente escribiera una línea.
 >
+> **18/9/2026 — FASE 2 (`lazo`) CERRADA** (`187919f`). Banco 10/10, falsador 21/21
+> con 3 controles verdes, navegador 10/10. La trampa se pone, trabaja sola por hora
+> del mundo, queda marcada en el mapa y el minimapa, y poner no compila nada. En el
+> mundo real un lazo agarra algo el 31,3 % de las noches y la liebre es el 24,5 % de lo
+> que cae; lo demás es fauna protegida, que no rinde y lo dice la norma. La tasa es una
+> licencia dicha (41× la fuente). La fauna vive donde vive: diez especies ya no están
+> pegadas al agua. Y al mirar el mapa al tope apareció la costa en escalones de 32 m:
+> arreglada por el coordinador, medida sobre el DEM real. Al agente lo cortó el límite
+> de sesión una vez y se lo retomó con su contexto.
+>
 > **Preparado mientras corre la fase 2**: el contrato, el banco (validado contra la
 > base) y el falsador de la **fase 3** (`suelo`); la medición de apertura de la **fase
 > 4** (`copa`: el problema de las coníferas es el dibujo del atlas, 8 % de cobertura, no
