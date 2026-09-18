@@ -722,7 +722,14 @@ function ctxQueAnota() {
     fillText(t, x, y) { reg.textos.push({ t: String(t), p: T(x, y) }); }, strokeText() {}, measureText: (t) => ({ width: String(t).length * 5.5 }),
     drawImage() {}, setLineDash() {}, clip() {},
   };
-  return new Proxy(props, { get: (t, k) => (k in met ? met[k] : k in t ? t[k] : () => {}), set: (t, k, v) => { t[k] = v; return true; } });
+  // Como en un navegador, se le puede reemplazar un método y borrar el reemplazo:
+  // el falsador lo usa, y sin esto su parche no plantaba nada.
+  const sobre = {};
+  return new Proxy(props, {
+    get: (t, k) => (k in sobre ? sobre[k] : k in met ? met[k] : k in t ? t[k] : () => {}),
+    set: (t, k, v) => { if (k in met) sobre[k] = v; else t[k] = v; return true; },
+    deleteProperty: (t, k) => { if (k in sobre) delete sobre[k]; else delete t[k]; return true; },
+  });
 }
 
 async function mapa() {
