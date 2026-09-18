@@ -635,6 +635,10 @@ entre el primer cuadro y diez segundos después. Y **la física no se toca**:
 
 **S5 · La piedra.** La piedra del sotobosque se viste con la capa de roca del mismo
 horneado, y su tono medio es el de la roca del terreno: se deja de ver verdosa.
+Medido restando la captura del pedregal con sólo la piedra prendida y sin nada: sus
+13.654 píxeles dan (74, 79, 63), un **verdor** —(G − (R+B)/2) / luminancia— de
+**0,129**, contra 0,021 del suelo de alrededor. Tiene que quedar **por debajo de
+0,05**.
 
 **S6 · La repetición no se lee.** Cada capa se lee al menos con dos transformaciones de
 coordenadas distintas (escala, giro o corrimiento) mezcladas, o con otra técnica de
