@@ -743,3 +743,61 @@ no para el color) a 18 m de cada árbol, con su lote prendido y apagado:
 
 `capturas/r8-base-arbol-*.png`. El ciprés se ve como un esqueleto con agujas sueltas;
 el coihue, como un palo con hojas de caricatura: elipses enormes y ramas desnudas.
+
+**4 · Las hojas miden diez veces lo que miden.** Las tarjetas de follaje de una copa
+ancha miden `0,105 × alturaRef` de semilado (`Vegetacion.js:1680`), por un azar de 0,62 a
+1,42: para el coihue (alturaRef 35 m), de 4,6 a 10,4 m de ancho. La ventana del atlas
+que se estira encima son 154 a 225 px de los 512, o sea unos **25 px por metro**. Y la
+hoja del atlas mide de 6 a 21 px de largo (`dibujarLaminas`, radios de 3 a 10,5 px):
+**en el mundo, hojas de 24 a 84 cm**. El coihue real tiene hojas de 2 a 3,5 cm. Es la
+«hoja de caricatura» de la captura, en números: diez a veinte veces.
+
+**5 · El costo de base de los árboles**, alternado en la misma sesión que el resto:
+`bancoDesglose` en el arranque, Baja, 1024×576, al frente: **2,3 ms** (dos corridas
+después del calentamiento; la primera dio −1,3 y se descarta).
+
+### Propiedad exclusiva de archivos
+
+El agente escribe **sólo**:
+
+- `tools/hornear-follaje.mjs` — **nuevo**: el horno de follaje, en Node, determinista
+- `public/tex/follaje/` — **nuevo**: los atlas y su `manifiesto.json`
+- `src/world/Vegetacion.js` — el follaje, las clases de hoja, el tamaño de las
+  tarjetas y lo que haga falta para usar los atlas horneados
+
+Del coordinador: `src/main.js`, los bancos y esta carta.
+
+### El contrato
+
+**C1 · Cuatro clases de follaje, horneadas.** `node tools/hornear-follaje.mjs` escribe
+en `public/tex/follaje/` un atlas por clase —al menos `nothofagus` (coihue, lenga,
+ñire: hoja chica, aserrada, en ramitas), `ancha` (maitén, canelo, laurel y el resto de
+las latifoliadas: hoja elíptica más grande), `escama` (ciprés de la cordillera, alerce:
+ramitas aplanadas de hojas escamosas) y `aguja` (los pinos: fascículos de acículas)—,
+cada uno cuadrado de 512 o 1024, RGBA, con un `manifiesto.json` que diga por clase
+`referencia` (qué hoja y de dónde sale el dato), `hojaCm` (el largo real, [mín, máx]),
+`hojaPx` (lo que mide en el atlas), `pxPorMetro` (a qué escala se estira sobre la
+tarjeta) y `uMax` (la ventana de las tarjetas). Determinista: dos corridas, los mismos
+bytes.
+
+**C2 · Cada especie con su hoja.** `Vegetacion.js` exporta `claseHojaDe(esp)`, y da
+`nothofagus` para el coihue, la lenga y el ñire; `escama` para el ciprés y el alerce;
+`aguja` para el pino murrayana; `ancha` para el maitén, el canelo y el laurel.
+
+**C3 · La hoja de su tamaño.** Con los números del manifiesto, `hojaPx / pxPorMetro` cae
+a menos de **3 veces** el largo real de la hoja (hoy, 10 a 20 veces), y las tarjetas se
+dimensionan con `pxPorMetro` (el banco lo lee en el código).
+
+**C4 · Las coníferas dejan de ser esqueletos.** La cobertura de alfa del atlas, en su
+ventana, es de **0,18 o más** en las cuatro clases (la aguja de hoy, 0,081), y la de cada
+nivel de mipmap que usa el juego queda a ±30 % de la del nivel 0 hasta los 32 px. En el
+juego, restando el árbol con su lote prendido y apagado a 18 m (el mismo instrumento de
+la tabla del punto 3): **el ciprés cubre 0,20 o más** de su recuadro (hoy 0,088) y **el
+pino 0,12 o más** (0,053); **los puntitos sueltos bajan a 5 por mil o menos** en los dos
+(hoy 10,7 y 17,7), y el coihue no pasa de 4,5 (hoy 3,75).
+
+**C5 · Sin costar más.** Los árboles, con `bancoDesglose` alternado con la base en la
+misma sesión, no suben más de un **15 %**. Poner un árbol en pantalla no compila nada
+nuevo (los atlas llegan por el valor del uniforme o están en la carga).
+
+**C6 · Sin regresión.** La ronda 7 y las fases 1 a 3, y `vite build` limpio.
