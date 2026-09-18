@@ -11,6 +11,16 @@
  * cocerlos. Para esas se reusa `Fundicion.cercano()`, que ya resuelve «¿tengo un
  * horno al lado y está prendido?» y ya registra el aserradero como uno más.
  *
+ * El telar es la tercera excepción, y es de otra clase: no pide fuego, pide un
+ * lugar armado. El poncho se teje en un witral en pie, y el witral es una obra de
+ * campamento que `Construccion` anota como estación en `Fundicion`. Esa estación
+ * no se busca con `cercano()` —ver `_estacionDeObra()`—; la fogata y la fragua
+ * sí, igual que antes.
+ *
+ * Y hay una receta que no pide un lugar sino una herramienta encima: hilar pide
+ * el huso. Se hila en cualquier lado, pero no sin huso. Es `pideHerramienta`, y se
+ * mira antes que la estación y antes de consumir nada.
+ *
  * El molde de «pedir materiales, ver qué falta, consumir» ya estaba escrito tres
  * veces en el proyecto —`Saberes.estado()`, `Fundicion.estadoReceta()`,
  * `Construccion.faltaPara()`— y las tres usan `disponiblePara`/`consumirPara`
@@ -18,7 +28,14 @@
  * la madera dura del coihue sirve donde una receta pide madera.
  */
 
-import { pesoDe } from './Recursos.js';
+import { pesoDe, nombreDe } from './Recursos.js';
+
+/**
+ * El radio de una estación de obra. Son los 8 m de `Fundicion.cercano()`, escritos
+ * dos veces porque `Fundicion` no los exporta: está pedido en
+ * `pendiente-r7-witral.md`. Hasta entonces, si cambia uno, cambian los dos.
+ */
+const RADIO_ESTACION_M = 8;
 
 export class Fabricacion {
   /**
@@ -36,6 +53,12 @@ export class Fabricacion {
     const donde = obj.donde || 'bolso';
     if (donde === 'bolso') return { ok: true };
 
+    // Una estación que no es la fogata ni un horno de `mineria.json` es una obra:
+    // hoy, el telar. Ésa se busca aparte. La fogata y la fragua siguen por el
+    // camino de abajo sin cambiar una coma.
+    const esHorno = donde === 'fogata' || !!this.fundicion?.hornoPorId?.(donde);
+    if (!esHorno && this.fundicion) return this._estacionDeObra(donde);
+
     const horno = this.fundicion?.cercano();
     if (donde === 'fogata') {
       if (horno && this.fundicion.arde(horno)) return { ok: true };
@@ -50,11 +73,60 @@ export class Fabricacion {
   }
 
   /**
+   * ¿Hay una obra con este id en pie a menos de 8 m?
+   *
+   * No usa `Fundicion.cercano()`, y ésa es la razón de que este método exista.
+   * `cercano()` devuelve **un solo** horno, el más cercano, y recién después se
+   * pregunta si es el que hace falta. Con la fogata del campamento a un metro y
+   * el telar a cinco —que es como se arma un campamento—, el poncho decía que
+   * faltaba el telar teniéndolo al lado. Acá se pregunta al revés: entre todas
+   * las estaciones a mano, ¿alguna es ésta?
+   */
+  _estacionDeObra(id) {
+    const f = this.fundicion;
+    const p = f.jugador?.posicion;
+    const deEsas = f.hornos.filter(h => h.def?.id === id);
+    // `arde()` da siempre sí a lo que no quema, como el telar; queda por si una
+    // obra que procesa con fuego llega a pedirse como estación.
+    if (p && deEsas.some(h => Math.hypot(h.x - p.x, h.z - p.z) < RADIO_ESTACION_M && f.arde(h))) {
+      return { ok: true };
+    }
+    // El nombre sale de una obra levantada, si hay alguna en el mapa, y si no del
+    // id: `Fabricacion` no conoce el catálogo de obras, y para decirlo no hace falta.
+    const nombre = deEsas[0]?.def?.nombre || nombreDe(id);
+    return {
+      ok: false,
+      motivo: `Esto se hace al lado de: ${nombre}. Tiene que estar en pie y a menos de ${RADIO_ESTACION_M} m.`,
+    };
+  }
+
+  /**
+   * La herramienta que pide la receta y no está, o null si no pide o está.
+   *
+   * Hasta el huso ninguna receta pedía tener algo encima. Lo que hacía falta para
+   * fabricar era un material, que se gasta, o un lugar, que se queda. El huso no es
+   * ninguna de las dos cosas: hilar no lo gasta, y va a donde va uno. Por eso es un
+   * campo propio y no un material de cantidad cero.
+   *
+   * Cuenta tenerlo en el bolso o puesto, que es lo que dice `Equipo.tiene()`. Roto
+   * no cuenta: con un huso partido no se hila.
+   */
+  herramientaQueFalta(obj) {
+    const id = obj.pideHerramienta;
+    if (!id) return null;
+    if (this.equipo?.tiene(id) && !this.equipo.gastado(id)) return null;
+    return this.equipo?.definicion?.(id)
+      || (this.datos.objetos || []).find(o => o.id === id)
+      || { id, nombre: nombreDe(id) };
+  }
+
+  /**
    * Estado de un objeto: si se puede hacer, y si no, exactamente por qué.
    *
-   * Distinguir «te falta juntar» de «todavía no sabés» de «no estás en el lugar»
-   * es la diferencia entre una meta y una pared invisible. Es el mismo criterio
-   * que `Saberes.estado()` y no es casualidad: el jugador ya lo aprendió ahí.
+   * Distinguir «te falta juntar» de «todavía no sabés» de «no tenés con qué» de
+   * «no estás en el lugar» es la diferencia entre una meta y una pared invisible.
+   * Es el mismo criterio que `Saberes.estado()` y no es casualidad: el jugador ya
+   * lo aprendió ahí.
    */
   estado(obj) {
     if (obj.tecnologia && !this.saberes?.desbloqueadas.has(obj.tecnologia)) {
@@ -71,6 +143,17 @@ export class Fabricacion {
       if (hay < m.cantidad) falta.push({ recurso: m.recurso, pide: m.cantidad, hay });
     }
     if (falta.length) return { estado: 'faltan_materiales', falta };
+
+    // Antes que la estación: sin huso no hay nada que ir a buscar a ningún lado,
+    // y el motivo tiene que nombrar lo que falta de verdad. Va después de los
+    // materiales por el mismo orden de siempre: primero lo que se junta.
+    const herramienta = this.herramientaQueFalta(obj);
+    if (herramienta) {
+      return {
+        estado: 'falta_herramienta', herramienta: herramienta.id,
+        motivo: `Hace falta tener encima: ${herramienta.nombre}.`,
+      };
+    }
 
     const est = this.estacion(obj);
     if (!est.ok) return { estado: 'falta_estacion', motivo: est.motivo };

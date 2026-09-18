@@ -246,12 +246,26 @@ export class Mineria {
     }
 
     this.agotados.set(this._clave(x, z), ahora);
-    const n = this.inventario.agregar('chatarra', 1 + Math.floor(Math.random() * 3));
+    const [{ min, max }] = this.rindeChatarra();
+    const n = this.inventario.agregar('chatarra', min + Math.floor(Math.random() * (max - min + 1)));
     const mat = (this.d.materiales || []).find(m => m.id === 'chatarra');
     this.hud.aviso(n > 0 ? `Chatarra recuperada: ${n}` : 'No entra nada más',
       mat?.explicacion || 'Alambre, chapa y flejes tirados. Es el único hierro que hay en esta comarca.');
     if (n > 0) this.saberes.otorgar(1, 'Sacaste basura del bosque');
     return n > 0;
+  }
+
+  /**
+   * Cuánta chatarra rinde una celda, sin sortear: de una a tres piezas.
+   *
+   * Lo leen `recuperarChatarra()`, que sortea dentro del rango, y el cartel de
+   * la tecla, que lo escribe. Así el «1–3» del cartel no es una copia que se
+   * puede quedar vieja.
+   *
+   * @returns {Array<{recurso: string, min: number, max: number}>}
+   */
+  rindeChatarra() {
+    return [{ recurso: 'chatarra', min: 1, max: 3 }];
   }
 
   /**

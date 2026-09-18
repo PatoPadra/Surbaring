@@ -1660,15 +1660,11 @@
       "nivel": 3,
       "ranura": "abrigo",
       "tecnologia": "telar_witral",
-      "donde": "bolso",
+      "donde": "telar_witral",
       "materiales": [
         {
-          "recurso": "lana",
-          "cantidad": 8
-        },
-        {
-          "recurso": "cordel",
-          "cantidad": 3
+          "recurso": "hilado",
+          "cantidad": 9
         }
       ],
       "durabilidad": 250,
@@ -1677,8 +1673,54 @@
         "resistenciaViento": 0.45,
         "resistenciaMojadura": 0.2
       },
-      "nota": "Tejido en witral, el telar vertical mapuche. La lana engrasada repele el agua un buen rato y sigue abrigando mojada, cosa que el cuero no hace. El telar ya estaba en el árbol y no producía nada.",
+      "nota": "Tejido en witral, el telar vertical mapuche, y al lado del telar: la urdimbre se tiende en el marco y la prenda crece ahí, no en el bolso. La lana engrasada repele el agua un buen rato y sigue abrigando mojada, cosa que el cuero no hace.",
+      "criterio": "Nueve de hilado son 1,35 kg de hilo para una prenda de 1,4 kg: el poncho pesa lo que pesa su hilo. El 1,4 kg que ya tenía es verosímil y no se tocó. Como referencia, una lama de telar mapuche de 150 × 55 cm, de tejido grueso y tupido en lana hilada a mano, pesa 1 kg (Chile a Mano, pieza de Wallontu Witral, Nueva Imperial), y un poncho son unos dos paños así. El cordel que pedía antes pasó al telar, que lo necesita para las amarras y los lizos: una prenda de witral es toda de lana. Nueve de hilado son tres tandas de hilar, o sea 12 de lana.",
       "kg": 1.4
+    },
+    {
+      "id": "huso",
+      "nombre": "Huso con tortero",
+      "categoria": "herramienta",
+      "nivel": 1,
+      "tecnologia": "telar_witral",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "madera",
+          "cantidad": 1
+        },
+        {
+          "recurso": "piedra",
+          "cantidad": 1
+        }
+      ],
+      "nota": "Una varilla con un disco de piedra ensartado cerca de la punta. El disco, el tortero, le da peso y giro: la varilla da vueltas y la hebra se tuerce sola. Se lleva encima y se hila en cualquier lado. No va en la mano porque no cambia lo que da la tecla, y no declara durabilidad porque hilar no lo gasta.",
+      "fuente": "Méndez, P. M. (2009). «Herencia textil, identidad indígena y recursos económicos en la Patagonia Argentina». AIBR. Revista de Antropología Iberoamericana 4(1): 11-53, § 3.3. El huso es «una varilla cilíndrica de unos 30 a 40 centímetros terminada en punta en ambas extremidades y atravesada ajustadamente por una piedra discoidal pulida y horadada denominada tortera o tortero» (con Kermes 1893, Joseph 1931, Taullard 1949 y Millán 1960). En Cushamen y Gan Gan, Chubut, sigue siendo el instrumento de hilar más usado, más que la rueca. En el noroeste patagónico hay torteros arqueológicos sobre tiesto de cerámica: cinco en Rincón Chico 2, Neuquén, y uno en Bichara 2, de unos 290 años AP, reseñados por Mazzanti y Puente (2013, Intersecciones en Antropología 16(1)). Vitores Spinetta y Fernández (2016, Anti) discuten tiestos reciclados del Limay medio como pesos de huso.",
+      "kg": 0.1
+    },
+    {
+      "id": "hilar_lana",
+      "nombre": "Hilar lana",
+      "categoria": "insumo",
+      "nivel": 1,
+      "tecnologia": "telar_witral",
+      "donde": "bolso",
+      "pideHerramienta": "huso",
+      "materiales": [
+        {
+          "recurso": "lana",
+          "cantidad": 4
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "hilado",
+          "cantidad": 3
+        }
+      ],
+      "nota": "Se escarmena el vellón con los dedos, se estira y se tuerce en el huso. Después se tuercen dos hebras juntas, al revés, para que aguanten la tensión de la urdimbre. Hilar no gasta el huso, pero sin huso no hay hilo.",
+      "criterio": "Cuatro de lana, 600 g de vellón, dan tres de hilado, 450 g: un 75 %. Lo que se va es lo que se escarmena: tierra, abrojo y la cerda gruesa. En el vellón de guanaco la fibra fina es entre el 35 y el 50 %. Si a mano se le separa parte de la cerda, lo que queda es fibra fina en un 65 a 95 %, según cuánto se separe (Sacchero et al., 2006, citado por Quispe, Rodríguez, Iñiguez y Mueller, 2009, Animal Genetic Resources Information 45, FAO). El 75 % cae adentro de ese rango, del lado bajo: este vellón se junta del monte, sucio, y el hilo de huso es rústico. El torcido de dos hebras (Méndez, 2009, § 3.3) no cambia el peso.",
+      "esReceta": true
     },
     {
       "id": "canasto_junco_obj",
@@ -1761,6 +1803,32 @@
       },
       "nota": "Cuero cosido y sellado con grasa. Seis unidades de agua encima cambian por completo el rango de exploración hacia la estepa seca del este.",
       "kg": 0.8
+    },
+    {
+      "id": "metawe_greda",
+      "nombre": "Metawe de greda",
+      "categoria": "contenedor",
+      "nivel": 3,
+      "tecnologia": "alfareria_bicroma",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "ceramica",
+          "cantidad": 2
+        },
+        {
+          "recurso": "fibra",
+          "cantidad": 3
+        }
+      ],
+      "durabilidad": 60,
+      "efecto": {
+        "guardaAgua": 2
+      },
+      "nota": "Jarro de greda cocida, de cuerpo redondo, boca ancha y asa, colgado en una red de fibra. Es el recipiente de antes del cuero: guarda la tercera parte que el odre y pesa más.",
+      "fuente": "Hajduk, Scartascini, Vargas y Lezcano (2018), «Arqueología de la Isla Victoria, Parque Nacional Nahuel Huapi», Intersecciones en Antropología: hay cerámica desde ca. 640 años AP, «se reconoce, al menos, la presencia de formas de ollas y jarras», y hay recipientes sin cocción que indican producción local. Tesauro Regional Patrimonial, término «metawe», que cita a Joseph (1931): recipiente mapuche de uso doméstico para servir líquidos, de base plana, cuerpo globular, boca ancha y asa vertical. Los hay grandes (fütametawe) y chicos (pichimetawe). SURDOC, registro 67-30: jarro bícromo del Complejo El Vergel, de 13 cm de alto y 13,4 de ancho.",
+      "criterio": "Guarda 2 medidas, o sea 2 litros. No se encontró ninguna capacidad publicada en litros, así que el número sale de la cuenta. El jarro de SURDOC es una esfera de unos 13 cm, poco más de un litro. Un metawe mediano, de 16 cm de cuerpo, llega a dos. El odre guarda el triple en menos peso, y es la mejora. Licencia de juego: la greda cocida a fuego abierto es frágil, y acá no se rompe en el bolso. La red de fibra para colgarla es diseño, no dato. Por qué no un canasto: un tejido en aduja retiene el agua que se le echa adentro (Piñeiro, 1967, p. 26, citada en Carrasco y Cisterna, 2019, Museo Mapuche de Cañete). Pero es una técnica de Arauco y Cautín, tejida con ñocha, y no hay registro de cestos para llevar agua en el Nahuel Huapi. Los que sí la llevaron, los paiute de la Gran Cuenca, los sellaban con resina de pino.",
+      "kg": 0.9
     },
     {
       "id": "rastra",
@@ -2573,6 +2641,35 @@
         "queNOSeAfloja": "Lo que la luz alumbra en pantalla es honesto —doce metros la antorcha, seis el candil, ocho la vela, catorce una fogata— y todo se consume contra el reloj del mundo. La licencia es sólo sobre cuánto revela el mapa.",
         "estadoReal": "Se nota en el mapa, y medido. Exploracion.revisar() mide por celdas de 256 m y desde el índice de la celda, así que ningún tope por debajo de 256 m revela una vecina: la primera versión, 120 a oscuras y 220 con luz, daba 1 celda en los dos casos y la luz no cambiaba nada. Con 220 y 300, medido el 11/9/2026 con el revisar() real sobre 3000 posiciones: a oscuras 1 celda; con luz 5, las cuatro vecinas ortogonales con nitidez 104 de 255 —entre la oscuridad y el día—; de día 9, ortogonales a ~151 y diagonales a 75. revisar() no se tocó: el día queda idéntico.",
         "nota": "Es la primera licencia sobre la física y no sobre la norma. La regla de arriba habla de marco legal, y vale igual para lo físico: la licencia se toma a propósito, se declara y se dice."
+      },
+      {
+        "id": "arenaDePlaya",
+        "que": "En una playa de lago de la Reserva Nacional, o fuera del área protegida, la tecla de acción junta arena a puñados: sin permiso, sin herramienta y sin abrir cantera. En el Parque Nacional, ni un puñado.",
+        "laNormaReal": "La Ley 22.351 prohíbe en los Parques Nacionales la exploración y la explotación mineras y todo aprovechamiento de los recursos naturales (artículo 5). En las Reservas Nacionales la misma ley admite actividades productivas reglamentadas, entre ellas la explotación de canteras, pero sólo con autorización de la Administración de Parques Nacionales, y no prevé una excepción para cantidades chicas: el puñado no tiene un permiso propio del que colgarse. Fuera del área protegida los recursos mineros son del dominio de la provincia (Constitución Nacional, artículo 124); la extracción de áridos es legal y la regulan la provincia y el municipio, y el juego tampoco modela ese trámite.",
+        "porQueSeToma": "El horno de barro pide 4 de arena, y sin horno de barro no hay cerámica, ni ladrillo, ni vidrio. Medido el 13/9/2026 sobre el DEM real desde el arranque, que está en la Reserva: el banco de arena más cercano queda a 515 m, y ahí la cantera se niega siempre; la arena que se puede sacar legalmente con cantera queda a 8,6 km, fuera del área protegida, y pide herramienta. Jugada al pie de la letra, la bóveda del primer horno queda a ocho kilómetros y medio de caminata, que es el mismo motivo por el que se tomaron el fuego y el arco. Cuatro puñados para una bóveda no son una cantera.",
+        "comoLoDiceElJuego": "El aviso del primer puñado lo dice: que es una licencia de juego y qué pide la ley en el lugar donde se juntó —en la Reserva, que la cantera sigue sin poder abrirse—. En el Parque la tecla no ofrece la playa, el mapa no la marca, y R sigue explicando el artículo 5 como siempre.",
+        "queNOSeAfloja": "La cantera no cambia: Mineria.evaluar() se sigue negando en el Parque y en la Reserva, con su castigo, y fuera del área protegida sigue pidiendo herramienta. La licencia es sobre el puñado —uno por vez, y el tramo de playa descansa—, no sobre el volumen, y no cruza la línea del Parque.",
+        "rinde": [
+          {
+            "recurso": "arena",
+            "cantidad": 1
+          }
+        ],
+        "aviso": {
+          "reserva": "Es una licencia de juego. En la Reserva Nacional, la Ley 22.351 deja sacar áridos sólo con autorización de Parques Nacionales, y no hace excepción por un puñado: el juego se la toma para que el horno de barro no quede a ocho kilómetros. La cantera acá sigue negada, y en el Parque no se junta ni un puñado.",
+          "fuera": "Es una licencia de juego. Fuera del área protegida la extracción de áridos es legal, pero la regulan la provincia y el municipio, y el juego no modela ese trámite para un puñado. Para sacar volumen está la cantera, con herramienta; en el Parque no se junta ni un puñado."
+        },
+        "nota": "Es la primera licencia que dice cuánto. El campo rinde es el puñado, y Recoleccion.js lo lee de acá: no hay otro número de arena de playa en el código. El aviso va por jurisdicción porque la norma que se afloja no es la misma en la Reserva que fuera del área protegida."
+      },
+      {
+        "id": "lanaDelCoiron",
+        "que": "La lana sale del coirón. Dos de cada tres veces que se junta una mata, además de su fibra, sale un vellón de guanaco. Pasa en todo el mapa, también en el bosque del arranque, donde no hay guanacos.",
+        "laNormaReal": "Esta licencia no afloja una norma: afloja la realidad. No hay fuente que diga que el guanaco deja vellón en el coirón ni que se juntara de las matas. El pelo de guanaco que se hilaba en la región salía del cuero. En el sur del Neuquén el cuero se enterraba una semana hasta que el pelo se soltaba (Millán, 1960), y en la meseta del Chubut las tejedoras lo esquilan o lo arrancan de cueros enteros (Méndez, 2009, AIBR 4(1), § 3.2). Hoy la fibra sale de guanacos silvestres arreados, esquilados y soltados, entre 300 y 700 g por adulto (Quispe et al., 2009, FAO). El guanaco del juego es de estepa y ecotono, entre 750 y 1800 m, y está protegido. Tampoco el witral de la región se tejió siempre con guanaco. Antes de la conquista se tejía pelo de camélido, llamado weke o chiliweke en el sur de Chile (Museo Regional de Ancud), y en Rebolledo Arriba, Neuquén, hay tejidos de técnica compleja de 1300 a 1350 d. C. (Brugnoli y Hoces de la Guardia, 1995). A comienzos del siglo XVII la cría de ovejas y el tejido se extendieron al noroeste de la Patagonia, y la lana de oveja prevaleció sobre el pelo de camélido (Méndez, 2009, § 3.1, con Onelli 1916 y Palermo 1994). En el juego no hay ovejas.",
+        "porQueSeToma": "Lo decidió el jefe de la ronda: no se agrega fauna, no se caza al guanaco y no se inventa una oveja. Sin una fuente de lana el telar no produce nada, que era el defecto que ya tenía el árbol. La cantidad también es licencia. Medido en el juego real el 13/9/2026, con lana en el 16 % de las matas la lana de la cadena del poncho costaba 84 apretadas y metía 8,4 kg de fibra de paso, la cuarta parte del bolso. El número nuevo sale de un criterio: juntar lana no puede meter en el bolso más peso de otra cosa que el de la propia lana. Cada apretada trae 2 fibras, 100 g, y una lana pesa 150 g, así que va una lana cada apretada y media: dos de cada tres.",
+        "comoLoDiceElJuego": "La primera vez que el coirón da lana, el aviso lo dice en el mismo renglón: que es una licencia, que el guanaco no vive en este bosque y que el pelo que se hilaba salía del cuero y de la esquila. El cartel de la tecla sigue diciendo «a veces lana», que es verdad.",
+        "queNOSeAfloja": "El guanaco sigue protegido y no se caza; no aparece fauna nueva ni ovejas. El coirón sigue dando su fibra de siempre, y el tronco caído le sigue ganando la tecla. La licencia es sobre de dónde sale la lana y cuánta, no sobre lo que se hace con ella: hilar sigue pidiendo el huso, y tejer, el witral en pie.",
+        "aviso": "Es una licencia de juego. El guanaco no vive en este bosque, y el pelo de guanaco que se hilaba salía del cuero o de la esquila, no de las matas. El juego lo pone en el coirón para que el telar exista.",
+        "nota": "El número vive en EXTRAS_MATA.coiron de Recoleccion.js: cantidad 1, probabilidad 2/3. La tecnología del telar dice «lana de oveja hilada», y es verdad para su época. El juego teje con esta lana porque no hay otra, y la licencia lo dice."
       }
     ]
   },
@@ -2605,7 +2702,7 @@
           "poncho_witral",
           "moscas"
         ],
-        "estado": "No lo produce nada en ningún dataset del juego. Sin fuente, el telar sigue sin producir después de esta ronda."
+        "estado": "Resuelto. La da el coirón, con la licencia lanaDelCoiron, que dice que en la realidad el pelo de guanaco salía del cuero y de la esquila y no de las matas. Desde la ronda 7 se hila con el huso, y el poncho se teje con hilado al lado del telar."
       },
       {
         "id": "pluma",

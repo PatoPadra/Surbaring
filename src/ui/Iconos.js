@@ -1012,6 +1012,18 @@ const RECETAS_RECURSOS = {
 
   cordel: () => rollo(M.fibra, { cx: 32, cy: 34, r: 15, vueltas: 3 }),
 
+  // Ovillo: una bola con las vueltas cruzadas y la hebra suelta. Es la lana que
+  // ya tiene dirección: el vellón de al lado son bollos sin un solo borde, y el
+  // cordel es un rollo plano visto de frente.
+  hilado: () => [
+    ...bulto([[19, 27], [31, 17], [45, 23], [49, 37], [40, 50], [25, 50], [16, 39]], M.lana),
+    T('M18 33q14 -9 29 -3', M.lana[2], 1.4),
+    T('M17 41q16 -9 32 -2', M.lana[2], 1.4),
+    T('M25 21q-3 15 5 29', M.lana[2], 1.2, ' opacity=".7"'),
+    T('M36 18q6 15 1 32', M.lana[2], 1.2, ' opacity=".7"'),
+    T('M46 45q8 3 10 11', M.lana[1], 1.8),
+  ],
+
   // El giro va afuera y no adentro de cada pieza. Con el leño girado −30° y las
   // ataduras puestas en coordenadas absolutas, las ataduras caían al costado del
   // cabo y el mango labrado quedaba idéntico a un leño de madera blanda.
@@ -1582,6 +1594,18 @@ const RECETAS_OBJETOS = {
     ...Array.from({ length: 6 }, (_, i) => L(15 + i * 7, 51, 15 + i * 7, 57, M.tela[2], 1.6)),
   ],
 
+  // Huso con tortero: la varilla de punta a punta, el hilo ya enrollado y el disco
+  // de piedra abajo. Sin el disco sería un astil; sin el hilo, un trompo.
+  huso: () => [gira(-32, 32, 32, [
+    ...varilla(M.madera, { x1: 32, y1: 4, x2: 32, y2: 60, w: 3 }),
+    E(33, 29, 7.5, 12, M.lana[2]),
+    E(32, 28, 7, 11.5, M.lana[1]),
+    ...[21, 27, 33].map((y) => T(`M25.5 ${y}q6.5 3 13 0`, M.lana[2], 1)),
+    E(33, 48, 11, 3.8, M.piedra[2]),
+    E(32, 46.5, 11, 3.8, M.piedra[1]),
+    E(29.5, 45.5, 5, 1.4, M.piedra[0]),
+  ])],
+
   // ── Los contenedores ──────────────────────────────────────────────────────
 
   canasto_junco_obj: () => [
@@ -1602,6 +1626,20 @@ const RECETAS_OBJETOS = {
     ...saco(M.cuero2, { cx: 32, cy: 40, w: 15, h: 14, tAta: M.fibra }),
     R(28, 12, 8, 8, M.madera[2], 2), R(27.5, 11, 8, 8, M.madera[1], 2),
     ...gota(M.agua, { cx: 48, cy: 24, r: 5 }),
+  ],
+
+  // Metawe: el jarro de greda de cuerpo redondo, boca ancha y asa, en su red de
+  // fibra. La cerámica suelta es un frasco con una franja, y el odre un saco:
+  // lo que separa a éste de los dos es la panza redonda con la red encima y el
+  // agua a la vista en la boca.
+  metawe_greda: () => [
+    E(33.5, 42, 16, 14, M.ceramica[2]),
+    E(32, 40.5, 16, 14, M.ceramica[1]),
+    E(26.5, 35, 6.5, 4.5, M.ceramica[0]),
+    R(25.5, 18, 14, 10, M.ceramica[2], 2), R(25, 17, 14, 10, M.ceramica[1], 2),
+    E(32, 17.5, 7, 2.6, M.agua[1]),
+    T('M39 20q9 2 6 14', M.ceramica[2], 3.4),
+    ...malla(M.fibra, { x: 18, y: 36, w: 28, h: 13, paso: 9, marco: false }),
   ],
 
   // Rastra: dos varas largas en V y los travesaños. No es un cesto ni una

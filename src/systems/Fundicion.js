@@ -31,6 +31,7 @@
  */
 
 import { normalizar, nombreDe } from './Recursos.js';
+import { LIQUIDOS } from './Inventario.js';
 
 const MS_HORA = 3600 * 1000;
 const RADIO_HORNO_M = 8;
@@ -183,14 +184,29 @@ export class Fundicion {
   }
 
   /** El horno construido más cercano al jugador, si hay alguno a mano. */
-  cercano(radio = RADIO_HORNO_M) {
+  cercano(radio = RADIO_HORNO_M, filtro = null) {
     const p = this.jugador.posicion;
     let mejor = null, mejorD = radio;
     for (const h of this.hornos) {
+      if (filtro && !filtro(h)) continue;
       const d = Math.hypot(h.x - p.x, h.z - p.z);
       if (d < mejorD) { mejor = h; mejorD = d; }
     }
     return mejor;
+  }
+
+  /**
+   * El horno más cercano que tiene algo para el taller: fuego, recetas o una
+   * hornada adentro.
+   *
+   * Desde la ronda 7 hay estaciones que no son eso: el telar es una obra que
+   * procesa y queda anotada como horno, pero no quema ni cocina —el poncho se teje
+   * desde el bolso, al lado—. Un campamento lo arma junto a la fogata, y con
+   * `cercano()` a secas, parado un paso más cerca del telar, el taller mostraba las
+   * hornadas vacías del telar, escondía el fuego y «encender» apuntaba a un telar.
+   */
+  cercanoConTaller(radio = RADIO_HORNO_M) {
+    return this.cercano(radio, h => this.usaFuego(h) || !!h.trabajo || this.recetasDe(h.def?.id).length > 0);
   }
 
   // ── Construcción ──────────────────────────────────────────────────────────
@@ -636,7 +652,7 @@ export class Fundicion {
         t.hasta = Infinity;
         t.esperando = true;
         this.hud.aviso(`${t.receta.nombre}: no entra en el bolso`,
-          'La hornada queda junto al horno hasta que hagas lugar');
+          this._queFalta(quedan, 'La hornada queda junto al horno hasta que hagas lugar'));
         continue;
       }
 
@@ -646,6 +662,24 @@ export class Fundicion {
       this.hud.aviso(t.receta.nombre, obtenido.join(' · '));
       this.alCambiar?.();
     }
+  }
+
+  /**
+   * Qué hace falta para llevarse lo que quedó esperando.
+   *
+   * Desde la ronda 7 el agua hervida y la infusión no viajan sueltas, y «hacé
+   * lugar» a secas manda a vaciar el bolso a quien no tiene en qué llevarlas:
+   * vaciarlo no le sirve. Si lo que espera es sólo líquido, se dice lo que falta
+   * de verdad —un recipiente, o lugar en los que lleva—. Si hay algo más, vale
+   * lo de siempre.
+   */
+  _queFalta(quedan, deSiempre) {
+    const liq = this.inventario.liquido;
+    const soloLiquido = !!liq && quedan.every(q => LIQUIDOS.includes(normalizar(q.recurso)));
+    if (!soloLiquido) return deSiempre;
+    return liq.cabe === 0
+      ? 'Queda junto al horno: el líquido viaja en un recipiente, y no llevás ninguno'
+      : `Queda junto al horno hasta que haya lugar en los recipientes: llevás ${liq.lleva} de ${liq.cabe} medidas`;
   }
 
   /** Retirar lo que quedó esperando junto a un horno lleno. */
@@ -660,7 +694,8 @@ export class Fundicion {
     }
     if (quedan.length) {
       t.sale = quedan;
-      this.hud.aviso('Sigue sin entrar todo', `Cargás ${this.inventario.pesoKg.toFixed(1)} kg`);
+      this.hud.aviso('Sigue sin entrar todo',
+        this._queFalta(quedan, `Cargás ${this.inventario.pesoKg.toFixed(1)} kg`));
       return false;
     }
     horno.trabajo = null;

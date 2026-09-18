@@ -1,5 +1,7 @@
 /**
- * Herramientas3D — los dieciocho objetos que se llevan en la mano, modelados.
+ * Herramientas3D — los treinta objetos que se llevan en la mano, modelados: los
+ * dieciocho de `ranura: "mano"` (ronda 5) y los doce de `ranura: "arma"` (ronda
+ * 7), que la mano lleva cuando no hay herramienta.
  *
  * Mismo criterio que el cuerpo y que los animales de la ronda 3: nada de
  * archivos de modelo, silueta desde medidas reales y pocas piezas. Lo que manda
@@ -31,6 +33,14 @@
  *
  * Las medidas son las de las herramientas de verdad: un hacha de mano tiene un
  * cabo de medio metro, una barreta pasa el metro, un candil entra en la palma.
+ * Las del arma, igual: la lanza de a pie no pasaba de 1,70 m, una caña de mosca
+ * de trucha mide nueve pies, un arco mapuche arrancaba en 1,20. Las fuentes y lo
+ * que es estimación, uno por uno, están en `.claude/flota/r7-empunadura.md`.
+ *
+ * Y una regla más, de la ronda 7: **la llama es una malla aparte, y se esconde**.
+ * Su tinta es emisiva y brilla con fuego o sin él; `construirHerramienta()` la
+ * deja en `grupo.llama` y `Cuerpo.llamaEncendida` la muestra sólo con la luz
+ * prendida. Esconder una malla no compila nada.
  */
 
 import * as THREE from 'three';
@@ -48,11 +58,24 @@ export const IDS_MANO = [
 ];
 
 /**
+ * Los doce de `ranura: "arma"` (ronda 7). La mano los lleva cuando no hay
+ * herramienta: el dueño equipó el garrote y no lo vio.
+ */
+export const IDS_ARMA = [
+  'garrote', 'honda', 'lanza_colihue', 'estolica', 'bola_perdida',
+  'boleadora_dos', 'boleadora_tres', 'arco_colihue_obj', 'linea_mano',
+  'cana_colihue', 'arpon_hueso', 'equipo_mosca',
+];
+
+/**
  * La paleta. El nombre es el material de la ficha; el color y la rugosidad se
  * eligen para que la silueta se lea contra el bosque, que es verde oscuro.
  *
  * `emisivo` sólo lo usa la llama: una llama que sólo recibe luz es una mancha
  * naranja apagada, y la de la antorcha tiene que verse a medianoche.
+ *
+ * Cada tinta es un material más para los treinta modelos, y el tope son doce.
+ * Las dos últimas son de la ronda 7 y quedó una libre.
  */
 export const PALETA = {
   madera:    { color: 0x6b4a2c, rugosidad: 0.93 },
@@ -64,6 +87,13 @@ export const PALETA = {
   ceramica:  { color: 0x9c5c3a, rugosidad: 0.90 },
   cuero:     { color: 0x584029, rugosidad: 0.92 },
   llama:     { color: 0xffa14a, rugosidad: 1.0, emisivo: 0xff7a22, emision: 1.5 },
+  // Cinco de los doce son de colihue: con `madera` la lanza, el arco y las cañas
+  // eran palos pardos. El color es el `colorTronco` de `cana_colihue` en
+  // `flora.json`, el mismo con que el mundo pinta el cañaveral; y es lisa.
+  colihue:   { color: 0xc8b45e, rugosidad: 0.62 },
+  // Fibra de coirón torcida: gris pajizo. La honda es cordel y badana, y con
+  // `cuero` para las dos salía una sola mancha oscura.
+  cordel:    { color: 0x958a6c, rugosidad: 0.96 },
 };
 
 // ── Piezas ────────────────────────────────────────────────────────────────────
@@ -139,6 +169,27 @@ function atadura(radio, y, alto = 0.016) {
   return poner(tubo(radio, radio, alto, 6), { y: y - alto / 2 });
 }
 
+/** Esfera de ocho gajos y seis anillos: lo justo para que una bola no sea un dado. */
+function esfera(radio) {
+  return new THREE.SphereGeometry(radio, 8, 6);
+}
+
+const _arriba = new THREE.Vector3(0, 1, 0);
+const _dir = new THREE.Vector3();
+
+/**
+ * Torneado de un punto `a` a un punto `b`: cordeles, ramales, púas y los tramos
+ * del arco. Con `poner()` habría que sacar los ángulos a mano, y de estas piezas
+ * lo que se sabe es adónde llegan.
+ */
+function tramo(a, b, rA, rB = rA, seg = 6) {
+  _dir.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+  const g = tubo(rA, rB, _dir.length(), seg);
+  _q.setFromUnitVectors(_arriba, _dir.normalize());
+  g.applyMatrix4(_m.compose(_p.set(a[0], a[1], a[2]), _q, _s.set(1, 1, 1)));
+  return g;
+}
+
 // ── Los dieciocho ─────────────────────────────────────────────────────────────
 //
 // Cada entrada devuelve `{ piezas, punta, montaje }`:
@@ -166,6 +217,33 @@ const MONTAJES = {
   cuenco: { rx: -0.20, rz: -0.08, y: 0.005, z: -0.030 },
   // La antorcha va casi vertical: la llama tiene que quedar sobre el puño.
   tea:    { rx: -0.38, rz: -0.14, y: -0.060, z: -0.016 },
+
+  // ── Las familias de la ranura del arma (ronda 7) ──
+  //
+  // Varas de 1,7 a 3 m: lanza, arpón y las dos cañas. Se agarran DEL REGATÓN, a
+  // ocho centímetros de la punta de abajo, y se llevan casi paradas. Medido con
+  // la mano asentada (y 0,943, adelantada 0,218, afuera 0,128): agarrada por el
+  // medio, una vara mete el regatón en la pantorrilla si va parada y cruza el
+  // muslo si va inclinada, y abierta para que no lo toque deja la punta en el
+  // medio de la pantalla en primera persona. Agarrada a 25 cm del regatón ya no
+  // tocaba parado, pero al correr el muslo avanza hasta z −0,33 y se la llevaba
+  // por delante 10 cm; a 8 cm queda libre.
+  vara:     { rx: -0.35, rz: -0.05, y: -0.060, z: -0.016 },
+  // El arco, por el medio y casi vertical. Choca de los dos lados: la pala de
+  // arriba sube pegada al antebrazo, que desde el puño va hacia el codo 0,16 m
+  // arriba y 0,21 m atrás, y la de abajo baja 0,6 m delante del muslo. Barrido
+  // con el cuerpo medido: echarlo atrás (rx +0,20) lo metía 3 cm en el antebrazo
+  // parado; vertical en el centro del puño, 5 cm en el muslo andando. Lo que
+  // separa las dos cosas es correr la caña 5 cm hacia afuera dentro del puño, que
+  // todavía la agarra, y 0,15 rad adelante: parado y andando no toca nada. El rz
+  // positivo compensa el −0,14 que el brazo cargado lleva en Z.
+  arco:     { rx: -0.15, rz: 0.14, x: 0.050, y: -0.060, z: -0.016 },
+  // Lo que cuelga: honda y boleadoras. El +Y del modelo apunta al suelo (rx ≈ π)
+  // con 0,14 rad hacia adelante. Lo que decide es la X: el muslo ocupa x 0,093 ±
+  // 0,10 y avanza al correr, así que lo colgado tiene que quedar afuera de 0,23 a
+  // la altura de las bolas. Tres centímetros de corrimiento en el puño y rz
+  // −0,34, que con el −0,14 del brazo deja 0,2 rad de apertura.
+  colgando: { rx: -3.00, rz: -0.34, x: 0.030, y: -0.070, z: -0.020 },
 };
 
 const MODELOS = {
@@ -393,6 +471,222 @@ const MODELOS = {
         { x: 0.058, y: 0.055, z: 0.040, rz: -0.34, ez: 0.55 })],
     },
   }),
+
+  // ── Los doce de la ranura del arma (ronda 7) ──────────────────────────────
+  //
+  // Mismo molde. De dónde sale cada medida está en `.claude/flota/r7-empunadura.md`;
+  // acá va lo que decide la silueta. Cinco son varas y cuatro cuelgan: dentro de
+  // cada grupo los separa el largo o una pieza que se note de lejos.
+
+  // Garrote: una rama con el nudo en la punta. No es la macana mapuche, que
+  // medía metro y medio y pesaría el doble que los 1,2 kg de la ficha: con cabo
+  // de 4,5 cm y nudo de 11, 1,2 kg de madera dan 0,66 m. El cordel es la
+  // envoltura del puño. Tenía también el fiador colgando del talón, y al correr
+  // el muslo se lo llevaba 8 cm por delante: un aro de cordel no valía el choque.
+  garrote: () => ({
+    montaje: 'cabo',
+    piezas: {
+      madera: [
+        poner(tubo(0.021, 0.024, 0.46), { y: -0.080 }),
+        poner(tubo(0.024, 0.040, 0.10), { y: 0.380 }),
+        poner(esfera(0.055), { y: 0.520, ey: 1.15, ez: 0.92 }),
+        poner(esfera(0.034), { x: 0.030, y: 0.500, z: -0.028 }),
+      ],
+      cordel: [poner(tubo(0.026, 0.026, 0.060), { y: 0.030 })],
+    },
+  }),
+
+  // Honda: dos ramas de cordel de 0,70 m y la badana en el medio, metro y medio
+  // en total. Se lleva con los dos cabos en el puño y la cuna colgando: un hilo
+  // doble con un bulto chato abajo, y nada más.
+  honda: () => ({
+    montaje: 'colgando',
+    piezas: {
+      cordel: [
+        tramo([-0.006, -0.010, 0], [-0.024, 0.700, 0], 0.0035, 0.0035, 4),
+        tramo([0.006, -0.010, 0], [0.024, 0.700, 0], 0.0035, 0.0035, 4),
+      ],
+      cuero: [poner(esfera(0.030), { y: 0.716, ex: 1.05, ey: 0.75, ez: 0.45 })],
+    },
+  }),
+
+  // Lanza de a pie: 1,70 m, el tope de la lanza corta de infantería; la de
+  // caballería llegaba a 3,60 y es otra arma. Astil de colihue de 3 cm y punta de
+  // obsidiana de 12 cm, con el pedúnculo en el enmangue de brea y tiento.
+  lanza_colihue: () => ({
+    montaje: 'vara',
+    piezas: {
+      colihue: [
+        poner(tubo(0.015, 0.0135, 1.580), { y: -0.080 }),
+        poner(tubo(0.017, 0.016, 0.080), { y: 1.425 }),
+      ],
+      obsidiana: [poner(hoja(0.021, 0.001, 0.120, 1, 0.30), { y: 1.500 })],
+    },
+  }),
+
+  // Estólica: una tabla de 0,66 m con el tope de asta arriba, donde apoya el
+  // extremo del dardo, y un botón de asta en el talón. Chata y con un gancho que
+  // sale de la cara: ninguna otra silueta es una tabla. El tiento del puño va con
+  // la madera.
+  estolica: () => ({
+    montaje: 'cabo',
+    piezas: {
+      madera: [
+        poner(prisma(0.040, 0.660, 0.018), { y: -0.060 }),
+        poner(prisma(0.046, 0.060, 0.024), { y: 0.000 }),
+      ],
+      asta: [
+        poner(pico(0.008, 0.032, 5), { y: 0.572, z: -0.008, rx: -1.30 }),
+        poner(pico(0.010, 0.022, 5), { y: -0.058, rx: Math.PI }),
+      ],
+    },
+  }),
+
+  // Bola perdida: una bola forrada de 7,3 cm —la `bola` de la ficha— colgando de
+  // la manija corta. Una sola bola y cerca del puño: la de dos cuelga el doble.
+  bola_perdida: () => ({
+    montaje: 'colgando',
+    piezas: {
+      cuero: [
+        tramo([0, -0.010, 0], [0, 0.300, 0], 0.0045, 0.0045, 4),
+        poner(esfera(0.0365), { y: 0.334 }),
+      ],
+    },
+  }),
+
+  // Boleadora de dos (ñanducera): la chica en el puño y la grande colgando del
+  // ramal, desiguales, de 6,6 y 7,8 cm. El sobrante del ramal va recogido en la
+  // mano: entero, con el puño a 0,94 m, la grande arrastraría.
+  boleadora_dos: () => ({
+    montaje: 'colgando',
+    piezas: {
+      cuero: [
+        poner(esfera(0.033), { y: -0.034 }),
+        tramo([0, 0, 0], [0, 0.660, 0], 0.0045, 0.0045, 4),
+        poner(esfera(0.039), { y: 0.697 }),
+      ],
+    },
+  }),
+
+  // Boleadora de tres (potreadora): la manija en el puño, el nudo a 0,34 m y los
+  // dos ramales largos hasta las bolas grandes, que cuelgan juntas y a distinta
+  // altura. Es la única que se abre abajo; el sobrante, recogido como en la de dos.
+  boleadora_tres: () => ({
+    montaje: 'colgando',
+    piezas: {
+      cuero: [
+        poner(esfera(0.032), { y: -0.032 }),
+        tramo([0, 0, 0], [0, 0.340, 0], 0.0045, 0.0045, 4),
+        poner(canto(0.012), { y: 0.340 }),
+        tramo([0, 0.340, 0], [0.045, 0.622, 0.012], 0.0045, 0.0045, 4),
+        tramo([0, 0.340, 0], [-0.040, 0.580, -0.018], 0.0045, 0.0045, 4),
+        poner(esfera(0.039), { x: 0.051, y: 0.660, z: 0.014 }),
+        poner(esfera(0.039), { x: -0.046, y: 0.618, z: -0.021 }),
+      ],
+    },
+  }),
+
+  // Arco de colihue: 1,20 m, el corto del rango de los arcos mapuches, porque los
+  // tehuelches cazaban con arcos chicos. La caña se afina de 2,8 cm en el puño a
+  // 1,6 en las puntas, que se vuelven 10 cm hacia la cuerda; la cuerda de tendón va
+  // con la tinta del cordel. Es la única silueta curva del conjunto.
+  arco_colihue_obj: () => ({
+    montaje: 'arco',
+    piezas: {
+      colihue: (() => {
+        const p = [];
+        const N = 6;
+        for (const lado of [-1, 1]) {
+          for (let k = 0; k < N; k++) {
+            const t0 = k / N, t1 = (k + 1) / N;
+            p.push(tramo(
+              [0, lado * 0.6 * t0, 0.10 * t0 * t0],
+              [0, lado * 0.6 * t1, 0.10 * t1 * t1],
+              0.014 - 0.006 * t0, 0.014 - 0.006 * t1, 6));
+          }
+        }
+        return p;
+      })(),
+      cordel: [tramo([0, -0.600, 0.100], [0, 0.600, 0.100], 0.0022, 0.0022, 4)],
+    },
+  }),
+
+  // Línea de mano: el cordel enrollado tal como sale de la mano —un aro de 11 cm,
+  // la palma con las vueltas encima— y el cabo con el anzuelo colgando hacia
+  // afuera: derecho hacia abajo, al correr lo barría el muslo. El anzuelo va con
+  // la tinta del cordel, son dos centímetros. El único aro del conjunto.
+  linea_mano: () => ({
+    montaje: 'cuenco',
+    piezas: {
+      cordel: [
+        new THREE.TorusGeometry(0.045, 0.011, 6, 14),
+        tramo([0.030, -0.034, 0], [0.090, -0.140, 0], 0.002, 0.002, 4),
+        poner(pico(0.004, 0.022, 4), { x: 0.091, y: -0.140, rz: Math.PI }),
+      ],
+    },
+  }),
+
+  // Caña de pescar: una vara de colihue de 3 m que se afina de 2,7 a 0,8 cm, con
+  // el cordel enrollado arriba del puño —así se lleva una caña sin carrete— y el
+  // anzuelo clavado en el enrollado. Afinada y sin nada en la punta: la lanza
+  // termina en hoja y el arpón en horqueta.
+  cana_colihue: () => ({
+    montaje: 'vara',
+    piezas: {
+      colihue: [poner(tubo(0.0135, 0.004, 3.000), { y: -0.080 })],
+      cordel: [
+        poner(tubo(0.018, 0.017, 0.220), { y: 0.060 }),
+        poner(pico(0.004, 0.024, 4), { x: 0.018, y: 0.290, rz: -0.5 }),
+      ],
+    },
+  }),
+
+  // Arpón: 2,20 m, astil de colihue de 2,5 cm y dos puntas de hueso con púas hacia
+  // atrás, abiertas en horqueta. Las dos puntas son los dos huesos de la ficha, y
+  // la horqueta es lo que lo separa de la lanza: la lanza termina en una hoja.
+  arpon_hueso: () => ({
+    montaje: 'vara',
+    piezas: {
+      colihue: [
+        poner(tubo(0.0125, 0.0115, 2.030), { y: -0.080 }),
+        poner(tubo(0.016, 0.015, 0.100), { y: 1.870 }),
+      ],
+      hueso: (() => {
+        const p = [];
+        for (const lado of [-1, 1]) {
+          p.push(tramo([lado * 0.006, 1.920, 0], [lado * 0.032, 2.120, 0], 0.0065, 0.0015, 5));
+          // Tres púas por punta, mirando hacia el astil: entran y no salen.
+          for (let k = 0; k < 3; k++) {
+            const t = 0.35 + k * 0.22;
+            const bx = lado * (0.006 + 0.026 * t), by = 1.920 + 0.200 * t;
+            p.push(tramo([bx, by, 0], [bx + lado * 0.012, by - 0.022, 0], 0.003, 0.0008, 3));
+          }
+        }
+        return p;
+      })(),
+    },
+  }),
+
+  // Equipo de mosca: caña de 9 pies (2,74 m), la medida de trucha, con empuñadura
+  // de cuero curtido —con la tinta de la caña, por el presupuesto de dibujos— y
+  // carrete de hierro de 85 mm abajo. El carrete la separa de la caña de colihue,
+  // que mide casi lo mismo: sin él las dos cajas quedan a un 9 % de largo. Va del
+  // lado de adelante de la caña (−Z): del de atrás, la inclinación de la vara lo
+  // bajaba contra el muslo y al correr se metía 9 cm.
+  equipo_mosca: () => ({
+    montaje: 'vara',
+    piezas: {
+      colihue: [
+        poner(tubo(0.008, 0.0025, 2.740), { y: -0.150 }),
+        poner(tubo(0.015, 0.012, 0.200), { y: -0.040 }),
+      ],
+      hierro: [
+        poner(new THREE.CylinderGeometry(0.0425, 0.0425, 0.030, 12, 1),
+          { y: -0.080, z: -0.056, rz: Math.PI / 2 }),
+        poner(prisma(0.010, 0.050, 0.012), { y: -0.105, z: -0.012 }),
+      ],
+    },
+  }),
 };
 
 // ── Armado ────────────────────────────────────────────────────────────────────
@@ -431,7 +725,8 @@ function fusionar(geos) {
  *        la paleta; lo provee `Cuerpo`, que es quien sabe registrarlo en las
  *        cascadas y quien lo va a liberar.
  * @returns {null|THREE.Group} el grupo, ya montado en la pose de la mano, con
- *          `triangulos`, `dibujos` y `punta` (un `Object3D` vacío o `null`).
+ *          `triangulos`, `dibujos`, `punta` (un `Object3D` vacío o `null`) y
+ *          `llama` (la malla emisiva, o `null`).
  */
 export function construirHerramienta(id, tinta) {
   const receta = MODELOS[id];
@@ -446,6 +741,7 @@ export function construirHerramienta(id, tinta) {
 
   let triangulos = 0;
   let dibujos = 0;
+  let llama = null;
   for (const nombre of Object.keys(piezas)) {
     const geo = fusionar(piezas[nombre]);
     const malla = new THREE.Mesh(geo, tinta(nombre));
@@ -453,9 +749,13 @@ export function construirHerramienta(id, tinta) {
     // `receiveShadow` queda en false a propósito: las mallas del cuerpo tampoco
     // lo activan, y es uno de los parámetros que entran en la clave del programa.
     grupo.add(malla);
+    if (nombre === 'llama') llama = malla;
     triangulos += triangulosDe(geo);
     dibujos++;
   }
+  // La malla de la llama, o null. `Cuerpo` la esconde mientras la luz está
+  // apagada: el emisivo brilla aunque no haya fuego (ronda 7, B5).
+  grupo.llama = llama;
 
   const pose = MONTAJES[montaje] ?? MONTAJES.cabo;
   grupo.position.set(pose.x ?? 0, pose.y ?? 0, pose.z ?? 0);

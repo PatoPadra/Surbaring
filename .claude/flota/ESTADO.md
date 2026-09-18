@@ -1,5 +1,145 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+## Ronda 7, fase 6 · `cielo` · CERRADA
+
+Banco Node 7/7 con `vite build`, falsador 18/18 con 3 controles verdes, mitad navegador
+18/18. La luna es la de la fecha (0,15° y 0,12 puntos contra JPL Horizons), el cielo gira
+con el tiempo sidéreo y la precesión, las 4484 estrellas salen del Bright Star Catalogue
+sin ninguna inventada, el disco muestra su fase y la Cruz del Sur enseña el método para
+encontrar el sur. La noche le suma 3,48 ms a la GPU contra los 5,06 de la base: cuesta
+menos que el ruido que reemplazó.
+
+Tres defectos del propio banco, encontrados midiendo: una premisa astronómicamente
+imposible (luna llena alta en verano), una razón que no discriminaba (una luna gibosa
+tomada por cuarto) y un barrido que contaba los bordes de los árboles como estrellas
+inventadas. Los tres arreglados y vueltos a medir.
+
+Con esto **cierra la ronda 7**. El dueño la jugó el 18/9/2026, y la ronda se fusionó a
+`main` y se subió ese mismo día.
+
+> **15/9/2026 — RONDA 7, FASE 5 (`witral`) CERRADA: el telar es una cosa, se hila, y
+> la lana alcanza.** Banco 9/9, falsador 20 de 20 con 3 controles verdes, mitad
+> navegador 8 de 8. En el juego, **la lana de la cadena del poncho cuesta 17,7
+> apretadas y 1,8 kg** en la mediana de 61 puntos; antes eran 84 y 8,4. **Levantar el
+> telar no compila nada** (15 programas antes y después), y el telar se ve en pie con
+> su urdimbre.
+>
+> La lana del coirón es **una licencia dicha**: no hay fuente para el vellón en las
+> matas. El huso con tortero y el witral de pelo de camélido y de oveja tienen fuente.
+>
+> *El agente se cortó por el límite semanal y se lo retomó con su contexto. Su
+> predicción dio exacta. Encontró además que el telar le tapaba el fuego a la fogata
+> en el taller. El arreglo fue del coordinador, y tiró el banco de la fase 3: su
+> `Fundicion` falsa era más pobre que la de verdad.*
+>
+> **Queda para el dueño**: la lana dejó de ser escasa.
+
+> **13/9/2026 — RONDA 7, FASE 4 (`vasija`) CERRADA: el agua viaja en un
+> recipiente.** Banco 10/10 con la regresión de siete bancos, falsador 24 de 24 y los
+> 3 controles al revés verdes. En el juego, **sin recipiente entran 0 medidas**; con
+> el metawe nuevo, **2 de 5**; y soltarlo con un odre y 8 medidas **derrama 2 y lo
+> dice**. El cartel de beber promete la medida sólo si entra, con la misma cuenta que
+> la da.
+>
+> El recipiente de antes del cuero es **un metawe de greda**, con cerámica local de la
+> Isla Victoria como fuente y los 2 litros declarados como criterio. La cestería
+> tupida de `historia.json` era verdad a medias para la región, y se corrigió.
+>
+> *Dos defectos de los bancos fueron míos, y los encontró el agente haciendo la cuenta
+> en vez de esquivarla: el `=== 115` de la ronda 6 y un número en la descripción de una
+> aserción, que le escondía un defecto al falsador.*
+>
+> **Queda para mirar jugando**: el metawe parece un retroceso al lado del odre, y lo
+> es a propósito.
+
+> **13/9/2026 — RONDA 7, FASE 3 (`barro`) CERRADA: la arcilla y la arena se
+> alcanzan, y el juego dice dónde.** Banco 6/6, falsador 18 de 18, y en el juego
+> real **la orilla promete arcilla en 240 de 240 puntos** (antes, «a veces» en 72),
+> con la más cercana a 499 m del arranque y **la arena a puñados a 524 m** (antes, la
+> legal a 8,6 km).
+>
+> La arcilla sale de la barranca con `extraer_arcilla`, que el dataset declaraba y
+> nadie usaba. La arena, a puñados en la Reserva, como **licencia declarada
+> `arenaDePlaya`**; la cantera no cambió. El taller dice de dónde sale lo que falta y
+> hacia dónde queda lo más cercano **que ya se vio**, sin revelar lo no visitado.
+>
+> *La predicción del agente dio exacta —100 % y 524 m—, la primera en la ronda. Y dos
+> de los defectos del falsador y uno del banco fueron míos.*
+>
+> **Queda para el dueño**: la recolección en el Parque —y ahora la barranca— es una
+> licencia sin declarar desde la ronda 1.
+
+> **13/9/2026 — RONDA 7, FASE 2b (`empuñadura`) CERRADA: el garrote se ve en la
+> mano.** Los 12 objetos de la ranura del arma tienen modelo, y la mano lleva la
+> herramienta si hay y si no el arma. Banco 7/7, falsador 14 de 14. En el juego,
+> **equipar cualquiera de los doce no compila nada** (17 programas antes y después),
+> la caña cuesta +0,11 ms en primera persona, y **la antorcha apagada ya no muestra
+> el triángulo amarillo**.
+>
+> El agente se cortó por el límite de uso antes de escribir código y **se lo retomó
+> con su contexto**, no se lo relanzó. Y encontró un defecto del banco leyéndolo
+> antes de escribir una línea: la sección del suelo medía cada objeto contra la
+> matriz vieja de la mano, unos 10 cm más abajo que en el juego.
+>
+> *De espaldas, en tercera persona, el garrote no se ve: lo tapa el cuerpo. Es para
+> mirar jugando.*
+
+> **12/9/2026 — RONDA 7, FASE 2 (`brasa`) CERRADA: el fuego se ve encendido y
+> alumbra.** Mitad Node 4/4, falsador 12 de 12, **mitad navegador 38 de 38**. La
+> fogata tenía el suelo en +5,5 de 255 a 2 m, o sea negro, y ahora en **+45,3**; la
+> antorcha, de +4,5 a **+32,3**. La fogata tiene llama —pico de 241,8 desde 6 m— y
+> **construir sigue sin compilar nada** (17 programas antes y después). Al mediodía
+> el fuego baja solo: +2,7, menos que los +5,9 de antes.
+>
+> **El agente encontró que `conCSM` compilaba programas de más**: el primer horno de
+> barro y la primera fragua ya compilaban uno cada uno en la base. Arreglado de
+> raíz en `main.js`.
+>
+> *Sus predicciones, sin navegador, dieron adentro en tres de cuatro. La fogata
+> midió un 22 % menos que el centro de la suya: la cuarta vez en dos rondas que el
+> número propio de un agente cae del lado optimista.*
+
+> **12/9/2026 — RONDA 7, FASE 1 (`tecla`) CERRADA: andar solo con Z, y el cartel
+> dice qué da.** Banco 6/6 con los cuatro anteriores y `vite build`; **falsador 27
+> de 27** y los dos controles al revés en verde: cambiar el rinde en su fuente no
+> pone rojo al banco, así que el cartel no tiene ningún número copiado.
+>
+> **El número del agente reproduce**, y el informe no redondeó a su favor: dijo
+> 6/6 y dio 6/6. La C ya no cambia la calidad (pasó a F2).
+>
+> Verificado en el juego: 300 posiciones reales alrededor del arranque, todas con
+> su paréntesis, y **en la primera orilla que se miró, a 1,3 km, la piedra dice «a
+> veces arcilla»**. Es la primera vez que el juego cuenta de dónde sale.
+>
+> *Los dos defectos del falsador fueron míos: escribían por un setter que se niega
+> a prender sin puntero, y no plantaban nada.*
+
+> **12/9/2026 — RONDA 7 ABIERTA: lo que vio el dueño.** Las rondas 5 y 6 están
+> en `main` (`96dc0bf`, sin empujar). El dueño jugó un rato y trajo siete
+> anotaciones; la carta las mide una por una antes de encargar nada y está en
+> `RONDA7.md`. Rama `mejoras/ronda7-lo-que-vio`.
+>
+> Tres cosas que salieron de medir y no estaban en las anotaciones:
+>
+> 1. **La C agacha y además cambia la calidad gráfica**, y apaga el ajuste
+>    automático (`Entrada.js:77` y `main.js:267`). Pasa a F2.
+> 2. **La arena legal más cercana está a 8,6 km del arranque** y pide
+>    herramienta; hay arena a 515 m, pero en la Reserva, donde la cantera se niega
+>    siempre. La arcilla sale desde el **1,06 %** de la tierra como mucho, porque
+>    junto al agua la tecla bebe. `extraer_arcilla` está declarada en el dataset y
+>    no la usa nadie.
+> 3. ~~La fogata alumbra el suelo menos de la mitad que la antorcha~~ — **falso,
+>    y lo escribí yo sin medir.** Salía de una cuenta sobre suelo liso. En la imagen
+>    final la fogata alumbra más que la antorcha, y lo grave es otra cosa: **las
+>    dos dejan el suelo en 5 de 255, o sea negro**. Y la fogata **no tiene llama**:
+>    prendida se ve igual que apagada. **La luna es inventada**: la fase no es la de
+>    la fecha.
+>
+> Siete fases, en este orden: `tecla`, `brasa`, `empuñadura` (2b: el garrote no
+> se veía en la mano, confirmado por el dueño), `barro`, `vasija`, `witral`,
+> `cielo`. **El catálogo de estrellas ya está bajado, con permiso del dueño**:
+> `tools/catalogos/bsc5/`, con su fuente y su cita en `LEEME.md`.
+
 > **12/9/2026 — RONDA 6 TERMINADA. FASE 3 (`estampa`) CERRADA: los 115 iconos.**
 > El bolso dejó de ser una planilla con bordes. **Banco 6/6, falsador 14 de 14
 > sin puntos ciegos, compañero de navegador 7/7**, y `vite build` limpio.

@@ -5,7 +5,41 @@
  * parado el jugador —de eso depende si puede encender fuego, abrir cantera o
  * levantar una casa—, qué material hay bajo los pies, qué hornos puede armar,
  * qué se está cociendo y qué obras admite este lugar.
+ *
+ * Y lo que falta dice de dónde sale: el origen del material, leído de
+ * `mineria.json`, y hacia dónde queda el lugar más cercano donde el jugador ya lo
+ * vio. Nunca uno que no vio: ver `_dondeSale()`.
  */
+
+import { nombreDe, normalizar } from '../systems/Recursos.js';
+import { TIPOS } from '../systems/Hallazgos.js';
+
+const RUMBOS = ['norte', 'noreste', 'este', 'sureste', 'sur', 'suroeste', 'oeste', 'noroeste'];
+
+/**
+ * Hacia dónde queda un punto, en los ocho rumbos de una brújula.
+ *
+ * En el mundo +x es el este y +z el sur: `Mundo.aMundo()` hace
+ * z = (latitud del centro − latitud) · metros por grado, así que hacia el norte
+ * la z baja.
+ */
+function rumbo(dx, dz) {
+  const grados = (Math.atan2(dx, -dz) * 180 / Math.PI + 360) % 360;
+  return RUMBOS[Math.round(grados / 45) % 8];
+}
+
+/**
+ * Una distancia como la diría alguien: de a 50 m hasta el kilómetro, con un
+ * decimal hasta los diez, y en kilómetros enteros después. La marca de un
+ * hallazgo es una celda de 128 m, así que decir «a 813 m» sería prometer una
+ * precisión que el mapa no tiene.
+ */
+function distanciaDicha(m) {
+  const redondo = Math.max(50, Math.round(m / 50) * 50);
+  if (redondo < 1000) return `${redondo} m`;
+  if (m < 9950) return `${(m / 1000).toFixed(1).replace('.', ',')} km`;
+  return `${Math.round(m / 1000)} km`;
+}
 
 const CSS = `
   #taller { position: fixed; inset: 0; display: none; z-index: 60;
@@ -28,6 +62,7 @@ const CSS = `
     padding: .5rem 0; border-top: 1px solid rgba(255,255,255,.06); }
   #taller .tl-fila b { font-weight: 500; min-width: 9rem; }
   #taller .tl-fila small { color: var(--tinta-tenue); font-size: .7rem; flex: 1; line-height: 1.45; }
+  #taller .tl-falta { display: block; margin-top: .3rem; color: var(--tinta); opacity: .8; }
   #taller button { background: rgba(255,255,255,.06); color: var(--tinta);
     border: 1px solid rgba(255,255,255,.14); border-radius: 3px;
     padding: .28rem .7rem; font: inherit; font-size: .72rem; cursor: pointer; white-space: nowrap; }
@@ -41,6 +76,10 @@ const CSS = `
 export class Taller {
   /**
    * @param {object} deps {fundicion, mineria, construccion, limites, jugador, inventario}
+   *
+   * `hallazgos` llega después, como propiedad, porque en `main.js` el taller se
+   * arma antes que el mapa: sin él, lo que falta dice de dónde sale pero no hacia
+   * dónde.
    */
   constructor(deps) {
     Object.assign(this, deps);
@@ -73,14 +112,14 @@ export class Taller {
       if (accion === 'construir') {
         this.fundicion.construir(this.fundicion.hornoPorId(id));
       } else if (accion === 'cocinar') {
-        const horno = this.fundicion.cercano();
+        const horno = this.fundicion.cercanoConTaller();
         const receta = this.fundicion.recetas.find(r => r.id === id);
         if (horno && receta) this.fundicion.iniciar(receta, horno);
       } else if (accion === 'encender') {
-        const horno = this.fundicion.cercano();
+        const horno = this.fundicion.cercanoConTaller();
         if (horno) this.fundicion.encender(horno);
       } else if (accion === 'retirar') {
-        const horno = this.fundicion.cercano();
+        const horno = this.fundicion.cercanoConTaller();
         if (horno) this.fundicion.retirar(horno);
       } else if (accion === 'levantar') {
         const obra = this.construccion.catalogo.find(o => o.id === id);
@@ -110,7 +149,7 @@ export class Taller {
   pintar() {
     const p = this.jugador.posicion;
     const j = this.limites.etiqueta(p.x, p.z);
-    const horno = this.fundicion.cercano();
+    const horno = this.fundicion.cercanoConTaller();
 
     let html = `<div class="tl-jur ${j.id}">${this._textoJurisdiccion(j)}</div>`;
 
@@ -128,7 +167,7 @@ export class Taller {
         .map(m => `${m.cantidad} ${m.recurso.replace(/_/g, ' ')}`).join(' · ');
       html += `<div class="tl-fila">
         <b>${def.nombre}</b>
-        <small>${def.descripcion}<br><span style="opacity:.75">${receta} · hasta ${def.temperaturaC} °C</span></small>
+        <small>${def.descripcion}<br><span style="opacity:.75">${receta} · hasta ${def.temperaturaC} °C</span>${this._dondeSale(falta, def.materiales, p)}</small>
         <button data-accion="construir" data-id="${def.id}" ${falta.length ? 'disabled' : ''}>
           ${falta.length ? falta.map(f => `${f.nombre} ${f.hay}/${f.pide}`).join(', ') : 'Levantar'}
         </button></div>`;
@@ -171,7 +210,7 @@ export class Taller {
         const sale = (r.sale || []).map(m => `${m.cantidad} ${m.recurso.replace(/_/g, ' ')}`).join(' · ');
         html += `<div class="tl-fila">
           <b>${r.nombre}</b>
-          <small>${entra} → ${sale} · ${r.horas} h<br><span style="opacity:.75">${r.nota || ''}</span></small>
+          <small>${entra} → ${sale} · ${r.horas} h<br><span style="opacity:.75">${r.nota || ''}</span>${e.estado === 'falta' ? this._dondeSale(e.falta, r.entra, p) : ''}</small>
           <button data-accion="cocinar" data-id="${r.id}" ${e.estado === 'lista' ? '' : 'disabled'}>
             ${e.estado === 'lista' ? 'Cargar' : e.falta.map(f => `${f.nombre} ${f.hay}/${f.pide}`).join(', ')}
           </button></div>`;
@@ -255,7 +294,7 @@ export class Taller {
         <b>${obra.nombre}</b>
         <small>${obra.descripcion}<br>
           <span style="opacity:.75">${receta}${efectos ? ' · ' + efectos : ''} · ${cat.nombre || ''}</span>
-          ${v.permitido ? '' : `<br><span style="opacity:.8;color:#d08a3a">${v.titulo}</span>`}</small>
+          ${v.permitido ? '' : `<br><span style="opacity:.8;color:#d08a3a">${v.titulo}</span>`}${v.falta ? this._dondeSale(v.falta, obra.materiales, p) : ''}</small>
         <button data-accion="levantar" data-id="${obra.id}" ${v.permitido ? '' : 'disabled'}>Levantar</button>
       </div>`;
     }
@@ -274,6 +313,51 @@ export class Taller {
           <small>${n} unidades</small>
           <button data-accion="sacar" data-id="${id}">Sacar</button></div>`;
       }
+    }
+    return html;
+  }
+
+  /**
+   * De dónde sale cada material que falta, y hacia dónde queda el más cercano
+   * que ya se vio.
+   *
+   * Es la mitad que le faltaba a «Arcilla 0/10»: el botón decía cuánto faltaba y
+   * nada decía dónde se consigue, y el dueño no encontraba la arcilla.
+   *
+   * El origen se lee de `mineria.json` —el mismo `origen` que muestra el códice—
+   * a través de la `Mineria` que el taller ya tiene, y no se escribe acá. Y el
+   * lugar sale sólo de `Hallazgos`, o sea de lo que el jugador pisó o vio de
+   * cerca: el taller no sabe dónde hay arcilla, sabe dónde la anotaste. Sin nada
+   * anotado no inventa un lugar: dice qué buscar, con el mismo nombre con que va a
+   * aparecer en el mapa cuando lo encuentre.
+   *
+   * @param {Array<{recurso?:string, nombre:string}>} falta
+   * @param {Array<{recurso:string}>} pedidos lo que pide la obra; las hornadas
+   *   dicen lo que falta sólo por nombre, y con esto se recupera el id
+   * @param {{x:number, z:number}} p
+   */
+  _dondeSale(falta, pedidos, p) {
+    const materiales = this.mineria?.d?.materiales || [];
+    let html = '';
+    for (const f of falta || []) {
+      const id = normalizar(f.recurso ?? (pedidos || []).find(m => nombreDe(m.recurso) === f.nombre)?.recurso);
+      const origen = materiales.find(m => m.id === id)?.origen;
+      const tipo = Object.values(TIPOS).find(t => t.recurso === id);
+      const visto = this.hallazgos?.masCercanoDe?.(id, p.x, p.z);
+
+      const partes = origen ? [`${origen}.`] : [];
+      if (visto) {
+        const el = `${visto.articulo === 'una' ? 'La' : 'El'} ${visto.nombre.toLowerCase()} más cerca que viste`;
+        partes.push(visto.aca
+          ? `${el} está en esta misma zona del mapa.`
+          : `${el} queda a ${distanciaDicha(visto.distancia)} al ${rumbo(visto.x - p.x, visto.z - p.z)}.`);
+      } else if (tipo && this.hallazgos) {
+        // Sólo si hay hallazgos cableados: sin ellos, «queda en el mapa» sería
+        // una promesa que nadie cumple.
+        const uno = tipo.articulo === 'una' ? 'una' : 'uno';
+        partes.push(`Buscá ${tipo.articulo} ${tipo.nombre.toLowerCase()}: cuando pases por ${uno}, queda ${tipo.articulo === 'una' ? 'anotada' : 'anotado'} en el mapa.`);
+      }
+      if (partes.length) html += `<span class="tl-falta">${nombreDe(id)} — ${partes.join(' ')}</span>`;
     }
     return html;
   }

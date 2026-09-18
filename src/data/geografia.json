@@ -789,5 +789,92 @@
       "frecuenciaRelativa": 0.13,
       "senalesPrevias": "Tarde despejada con aire seco, ausencia total de viento al anochecer y escarcha temprana sobre superficies expuestas."
     }
-  ]
+  ],
+  "cieloAustral": {
+    "titulo": "El cielo austral",
+    "descripcion": "Desde el Nahuel Huapi, a 41° de latitud sur, el cielo gira alrededor de un punto vacío: el polo sur celeste, que está sobre el sur verdadero y a una altura igual a la latitud, 41°. Ninguna estrella brillante lo marca, como la Polar marca el norte del otro lado del mundo: hay que encontrarlo, y para eso están la Cruz del Sur y sus punteros. A esta latitud las seis estrellas del método son circumpolares —todas están a más de 49° del ecuador celeste— y no se ponen nunca: cualquier noche despejada del año están en el cielo, más altas o más bajas según la hora y la estación. En la culminación baja, eso sí, la Cruz queda entre 8° y 14° sobre el horizonte sur, y desde un valle los cerros la tapan.",
+    "cruzDelSur": {
+      "nombre": "Cruz del Sur",
+      "subtitulo": "Constelación circumpolar · desde el parque no se pone nunca",
+      "nombreMapuzugun": "Pünon Choyke",
+      "descripcion": "Cuatro estrellas en cruz, con el palo largo apuntando al sur del cielo. Es la constelación más chica de las ochenta y ocho y una de las más fáciles de reconocer, aunque se la confunde con la Falsa Cruz, que está más al oeste, es más grande y tiene las cuatro estrellas más parejas en brillo y en separación.",
+      "relato": "Para el pueblo mapuche la Cruz es Pünon Choyke, la huella del choyke —el ñandú—, y las dos brillantes de al lado, α y β Centauri, son el Lükay, la boleadora lanzada que lo persigue toda la noche. Juntas marcan el sur.",
+      "fuenteMapuzugun": "El relato, en la charla de Margarita Canio Llanquinao y Gabriel Pozo Menares (Universidad Católica de Temuco, autores de «Wenumapu. Astronomía y cosmología mapuche», Ocho Libros, 2014), reseñada por la Universidad de Chile el 11/11/2024. Los nombres Pünon Choyke —«huella de avestruz»— y Lükay —«boleadora»—, en «El We Tripantu y la reconstrucción de la Astronomía Mapuche (Parte II)», blog Millalikan, 16/6/2010, que cita el diario de viaje de Claraz. José Llancafil («Manual de Lenguaje Mapuche», 2004) la registra además como Melipal, «cuatro estrellas».",
+      "estrellas": [
+        {
+          "nombre": "Acrux",
+          "designacion": "α Crucis",
+          "hr": 4730,
+          "magnitud": 1.33,
+          "nota": "El pie de la Cruz, la más austral de las cuatro y el extremo al que apunta el método. A ojo es una sola estrella; el catálogo la trae separada en dos, α¹ (1,33) y α² (1,73, HR 4731), a cuatro segundos de arco. Azulada: tipo B0.5."
+        },
+        {
+          "nombre": "Mimosa",
+          "designacion": "β Crucis",
+          "hr": 4853,
+          "magnitud": 1.25,
+          "nota": "El brazo del lado de los punteros, y por poco la más brillante de la Cruz. También azulada, tipo B0.5."
+        },
+        {
+          "nombre": "Gacrux",
+          "designacion": "γ Crucis",
+          "hr": 4763,
+          "magnitud": 1.63,
+          "nota": "La cabeza de la Cruz, en la otra punta del palo largo. Es la única anaranjada de las cuatro: una gigante roja de tipo M3.5, con índice de color B−V +1,59 contra −0,24 de Acrux. La diferencia se ve a ojo desnudo."
+        },
+        {
+          "nombre": "δ Crucis",
+          "designacion": "δ Crucis",
+          "hr": 4656,
+          "magnitud": 2.8,
+          "nota": "El brazo del oeste y la más débil de las cuatro, casi cuatro veces menos brillante que Mimosa. Es la que se pierde primero cuando hay luna llena o bruma."
+        }
+      ]
+    },
+    "punteros": {
+      "nombre": "Los punteros",
+      "subtitulo": "α y β Centauri · el Lükay, la boleadora",
+      "descripcion": "Las dos estrellas brillantes que están al este de la Cruz y parecen apuntarle. Sirven para no confundir la Cruz del Sur con la Falsa Cruz, que no tiene punteros, y su mediatriz es la segunda línea del método.",
+      "estrellas": [
+        {
+          "nombre": "α Centauri",
+          "designacion": "Rigil Kentaurus",
+          "hr": 5459,
+          "magnitud": -0.01,
+          "nota": "El sistema estelar más cercano que se ve a ojo desnudo: su paralaje en el catálogo es de 0,751 segundos de arco, o sea 1,33 pársecs, unos 4,3 años luz. A ojo es una sola; son dos soles, α¹ (−0,01) y α² (1,33, HR 5460), que juntos suman −0,29: la tercera del cielo nocturno después de Sirio (−1,46) y Canopo (−0,72)."
+        },
+        {
+          "nombre": "β Centauri",
+          "designacion": "Hadar",
+          "hr": 5267,
+          "magnitud": 0.61,
+          "nota": "Azulada, de tipo B1. Parece vecina de α sólo desde acá: su paralaje del catálogo, 0,009 segundos de arco, es más de ochenta veces menor, así que está más de ochenta veces más lejos."
+        }
+      ]
+    },
+    "metodo": {
+      "titulo": "Encontrar el sur con la Cruz",
+      "pasos": [
+        "Reconocé el palo largo de la Cruz: va de Gacrux, la cabeza anaranjada, a Acrux, el pie.",
+        "Prolongá ese palo más allá de Acrux, cuatro veces y media su largo.",
+        "Buscá los punteros, α y β Centauri, y trazá su mediatriz: la línea que corta por la mitad, en ángulo recto, el tramo que los une.",
+        "Donde la prolongación y la mediatriz se cruzan está el polo sur celeste, el punto alrededor del cual gira todo el cielo. A esta latitud queda a 41° de altura.",
+        "Bajá a plomo desde ese punto hasta el horizonte: ahí está el sur verdadero, que no es el sur magnético de una brújula."
+      ],
+      "precision": "El método erra por sí solo, y conviene saber cuánto: medido sobre las posiciones del catálogo, prolongar el palo cuatro veces y media llega a 2,7° del polo, y la mediatriz de los punteros pasa a 3,0°. Alcanza de sobra para caminar de noche; no para trazar un rumbo fino."
+    },
+    "viaLactea": {
+      "nombre": "La Vía Láctea",
+      "nombreMapuzugun": "Wenu Lewfü",
+      "descripcion": "La banda de luz que cruza el cielo es el disco de nuestra galaxia visto de canto, desde adentro. Desde el hemisferio sur se ve su parte más brillante, la del centro galáctico, en Sagitario: en las noches de invierno pasa a casi 80° de altura, casi por el cenit, y ésa es la razón de que la Vía Láctea se vea mucho mejor desde la Patagonia que desde Europa. Gira con las estrellas, porque es parte del mismo cielo. En mapuzugun se la registra como Wenu Lewfü, «el río del cielo» (blog Millalikan, 2010; José Llancafil, 2004)."
+    },
+    "luna": {
+      "nombre": "La luna y su fase",
+      "descripcion": "La luna del juego es la de la fecha: sale y se pone cuando corresponde, y su fase es la fracción de disco iluminado, calculada con el ángulo entre el sol y quien mira, vistos desde la luna. La fase se mira del lado del sol: el borde iluminado siempre apunta hacia donde está el sol, aunque esté abajo del horizonte. En el hemisferio sur la luna no miente: cuando se la ve como una C está creciendo, y cuando se la ve como una D, menguando —al revés que en el hemisferio norte—. En el juego el disco se dibuja al doble de su tamaño real, 1° en vez de medio grado, para que la fase se lea en la pantalla."
+    },
+    "fuentes": [
+      "Estrellas: Hoffleit, D. & Warren Jr., W. H. (1991), «The Bright Star Catalogue, 5th Revised Ed.», NASA Astronomical Data Center; vía CDS, catálogo V/50. Las posiciones, las magnitudes y los colores del cielo del juego salen de ahí, sin inventar ninguna.",
+      "Luna: efeméride de baja precisión del «Astronomical Almanac», con la paralaje del lugar. Tiempo sidéreo y precesión: J. Meeus, «Astronomical Algorithms» (2.ª ed., 1998), capítulos 12 y 21."
+    ]
+  }
 }

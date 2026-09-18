@@ -247,12 +247,29 @@ export class Construccion {
   /**
    * Desarma lo efímero cuando se le cumple el plazo. No es una limpieza técnica:
    * es la condición que lo hacía legal.
+   *
+   * La obra que procesa es además una estación del taller, anotada aparte en
+   * `Fundicion.hornos` por `levantar()` y por `Partida._reponerObras()`. Esa
+   * anotación no se iba con la obra. No se notaba porque todas las que procesaban
+   * eran permanentes y no vencían nunca. El telar es de campamento y vence a los
+   * 30 días: sin esto dejaba un telar invisible, sin obra en el mundo ni en la
+   * lista, al lado del cual se seguía tejiendo.
+   *
+   * Se reconoce por id y por lugar, que es lo que las dos anotaciones copian de
+   * la obra, y se saca del mismo arreglo en vez de reemplazarlo por uno filtrado:
+   * es el arreglo que ya tienen el taller, el guardado y los hornos del mundo.
    */
   actualizar() {
     const ahora = this.tiempo.fecha.getTime();
     const caidas = this.obras.filter(o => o.vence != null && ahora > o.vence);
     if (!caidas.length) return [];
     this.obras = this.obras.filter(o => !caidas.includes(o));
+    const hornos = this.fundicion?.hornos;
+    for (const c of caidas) {
+      if (!c.obra.procesa || !hornos) continue;
+      const i = hornos.findIndex(h => h.def?.id === c.obra.id && h.x === c.x && h.z === c.z);
+      if (i >= 0) hornos.splice(i, 1);
+    }
     for (const c of caidas) {
       this.hud.aviso(`${c.obra.nombre} desarmado`,
         'Lo efímero se levanta y se va sin dejar rastro: ésa es la condición que lo hacía posible acá.');

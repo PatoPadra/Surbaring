@@ -38,7 +38,7 @@ import { Caza } from './systems/Caza.js';
 import { Limites } from './world/Limites.js';
 import { Mineria } from './systems/Mineria.js';
 import { Fundicion } from './systems/Fundicion.js';
-import { Hornos } from './world/Hornos.js';
+import { Hornos, luzDeFuegoSegunSol } from './world/Hornos.js';
 import { Taller } from './ui/Taller.js';
 import { Construccion } from './systems/Construccion.js';
 import { Obras } from './world/Obras.js';
@@ -261,13 +261,14 @@ async function iniciar() {
   entrada.registrar('KeyF', () => { jugador.tercerPersona = !jugador.tercerPersona; });
   entrada.registrar('F3', () => document.getElementById('diag').classList.toggle('visible'));
   entrada.registrar('KeyT', () => tiempo.alternarVelocidad());
-  // Interruptor del posproceso: la oclusión ambiental cuesta, y cuánto depende
-  // mucho de la placa. Que se pueda apagar y comparar es más honesto que elegir
-  // por el jugador.
-  entrada.registrar('KeyC', () => {
+  // La calidad, en F2 y no en C. Estuvo en C, que es también la tecla de
+  // agacharse (`Entrada.agachar`): cada vez que uno se agachaba cambiaba el
+  // preset y se apagaba el ajuste automático. Ctrl no reemplaza a la C, porque
+  // en un navegador Ctrl+W cierra la pestaña.
+  entrada.registrar('F2', () => {
     const p = calidad.siguiente();
     hud.aviso(`Calidad: ${p.nombre}`,
-      `${calidad.resumen} · C para cambiar · el ajuste automático queda apagado`);
+      `${calidad.resumen} · F2 para cambiar · el ajuste automático queda apagado`);
   });
   const ESTADOS_POSPROCESO = ['completo', 'sin oclusión', 'crudo'];
   /** Modo de posproceso, desde la tecla O o desde la pestaña de video. */
@@ -392,6 +393,10 @@ async function iniciar() {
   // se abre a kilómetros desde un mirador, y desde un mirador no se distingue si
   // esa playa tiene arena o canto rodado.
   const hallazgos = new Hallazgos({ mundo, mineria, vegetacion, sotobosque });
+  // El taller dice hacia dónde queda el lugar más cercano que ya se vio de un
+  // material que falta (ronda 7, fase 3). Se le da acá porque el taller se arma
+  // antes que los hallazgos.
+  taller.hallazgos = hallazgos;
   const mapa = new Mapa({
     mundo, jugador, tiempo, exploracion, codice, construccion, hallazgos,
   });
@@ -748,13 +753,26 @@ async function iniciar() {
     // Lo que hay en la mano, ANTES de todo: de acá sale el modelo que se dibuja
     // y el punto del que sale la llama. Va en la primera línea y no dentro del
     // if de la luz, porque si no una captura sin antorcha dibuja la mano vacía.
-    cuerpo.enMano = equipo.enRanura('mano')?.id ?? null;
-    const fuentes = hornos.fuentesDeLuz();
+    // La herramienta si hay, y si no el arma: la ficha de la ranura del arma dice
+    // que «se saca sin guardar la herramienta». Hasta la ronda 7 sólo se miraba la
+    // mano, y el garrote equipado no se veía en ninguna parte.
+    cuerpo.enMano = equipo.enRanura('mano')?.id ?? equipo.enRanura('arma')?.id ?? null;
+    // El fuego sabe la hora: de noche alumbra con 20 y al sol con 1. Es la
+    // adaptación del ojo que la exposición del juego no hace, y sin esto la luz
+    // que hace falta a medianoche encendía el suelo del mediodía (ronda 7, B4).
+    const alSol = cielo.direccionSol.y;
+    const fuentes = hornos.fuentesDeLuz(alSol);
     const incendio = clima.fuenteDeLuz?.();
     if (incendio) fuentes.push(incendio);
     const enMano = fuenteDeMano(equipo.luzActiva(tiempo.fecha.getTime(), est),
       jugador, camara, tiempo.segundosTotales);
+    // Una antorcha apagada en la mano mostraba la llama igual: su material es
+    // emisivo y nadie la escondía (ronda 7: el triángulo amarillo de las capturas).
+    cuerpo.llamaEncendida = !!enMano;
     if (enMano) {
+      // La antorcha también: subió de 2 a 14 para que de noche se vea el suelo,
+      // y al sol, sin esto, sumaría +29 de 255 a dos metros.
+      enMano.intensidad *= luzDeFuegoSegunSol(alSol);
       // La llama sale de la punta del modelo, no de la cuenta aproximada de la
       // fase 1: con la herramienta dibujada, el punto de la mano es el de verdad.
       cuerpo.puntoDeMano(enMano);
@@ -902,7 +920,9 @@ async function iniciar() {
       // Hay tres situaciones distintas y decirle la misma frase a las tres era
       // peor que no decir nada: al que tiene la fogata armada y apagada al lado,
       // «armá una fogata» le suena a que el juego no lo está mirando.
-      const cerca = fundicion.cercano(20);
+      // Sólo lo que quema: con el telar del campamento más cerca que la fogata
+      // apagada, el aviso decía «armá una fogata» teniéndola al lado.
+      const cerca = fundicion.cercano(20, h => fundicion.usaFuego(h));
       const apagado = cerca && fundicion.usaFuego(cerca) && !cerca.ardiendo;
       hud.aviso('Estás perdiendo calor',
         apagado
@@ -1003,7 +1023,21 @@ async function iniciar() {
  * inyecciones desaparecen sin dar ningún error — el terreno se dibuja liso, a
  * cota cero y sin color. Acá se guardan ambas y se ejecutan en orden.
  */
+/**
+ * Lo que ya pasó por `conCSM`.
+ *
+ * Envolver dos veces no es inocuo: la segunda vuelta toma como «propia» la clave
+ * que armó la primera y arma otra encima, así que el material pide un programa
+ * nuevo. Le pasaba a todo material repetido dentro de un nodo que `dibujarHorno`
+ * recorre entero —el primer horno de barro y la primera fragua compilaban uno cada
+ * uno— y le habría pasado a la llama compartida entre fogatas. Lo encontró el
+ * agente `brasa` en la ronda 7.
+ */
+const envueltosCSM = new WeakSet();
+
 function conCSM(csm, material) {
+  if (envueltosCSM.has(material)) return;
+  envueltosCSM.add(material);
   const propio = material.onBeforeCompile;
   const clavePropia = material.customProgramCacheKey;
   csm.setupMaterial(material);

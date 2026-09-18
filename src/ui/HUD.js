@@ -45,8 +45,10 @@ export class HUD {
     this._construirBrujula();
     this._construirVitales();
     this._construirBolso();
+    this._construirCruz();
     this._acumulador = 0;
     this._avisoHasta = 0;
+    this._cruzHasta = 0;
   }
 
   _construirBrujula() {
@@ -109,6 +111,16 @@ export class HUD {
         opacity: 0; transition: opacity .2s ease; text-align: center; }
       #accion.visible { opacity: 1; }
       #accion b { color: var(--acento); }
+      /* Andar solo. Sale de la clase que pone Entrada, sin un elemento ni una
+         línea en el bucle: el estado ya está en el cuerpo del documento. Va
+         debajo del cartel de acción, que es donde se mira mientras se camina, y
+         dice cómo se para, porque quien lo prendió sin querer no sabe con qué. */
+      body.auto-andar #hud::after { content: 'Andando solo  ·  W o S para frenar';
+        position: absolute; bottom: 16.5%; left: 50%; transform: translateX(-50%);
+        white-space: nowrap; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase;
+        color: var(--tinta); padding: .22rem .65rem; border-radius: 2px;
+        background: rgba(12,14,13,.62); border-left: 2px solid var(--acento);
+        text-shadow: 0 1px 2px rgba(0,0,0,.95); }
       #termico { position: absolute; top: 46%; left: 50%; transform: translateX(-50%);
         font-size: .8rem; letter-spacing: .16em; text-transform: uppercase;
         text-shadow: 0 1px 2px rgba(0,0,0,.95), 0 0 10px rgba(0,0,0,.85);
@@ -141,14 +153,95 @@ export class HUD {
     this.elFenomenos = fen;
   }
 
-  /** @param {{tipo:string, etiqueta:string}|null} accion */
+  /**
+   * La Cruz del Sur, y el método para encontrar el sur con ella.
+   *
+   * El método y no la respuesta. La brújula de arriba ya dice dónde está el sur:
+   * un cartel que dijera «el sur está ahí» no enseñaría nada. Lo que sirve el día
+   * que no haya brújula —o el día que uno esté lejos de una pantalla— es saber
+   * sacarlo del cielo, así que el cartel dice los tres pasos y nombra las
+   * estrellas, que es lo que hay que buscar en el cielo de verdad.
+   *
+   * Aparece solo, mirando la Cruz: la puerta es `cielo.queMiro()`.
+   */
+  _construirCruz() {
+    const el = document.createElement('div');
+    el.className = 'panel';
+    el.id = 'cruz-sur';
+    el.innerHTML = `<h4>Cruz del Sur · el sur sin brújula</h4>
+      <p><i>1</i> Prolongá el palo largo, de Gacrux —la anaranjada— hacia Acrux,
+         <b>cuatro veces y media</b> su largo.</p>
+      <p><i>2</i> Cruzalo con la <b>mediatriz</b> de los <b>punteros</b>, α y β Centauri:
+         la línea que corta por la mitad, en ángulo recto, el tramo entre los dos.</p>
+      <p><i>3</i> Ese cruce es el polo sur del cielo. Bajá a plomo hasta el horizonte:
+         ahí está el <b>sur</b>.</p>
+      <p class="fino">El método erra unos 3° por sí solo: alcanza para caminar.</p>`;
+    document.getElementById('hud').appendChild(el);
+    this.elCruz = el;
+
+    const est = document.createElement('style');
+    est.textContent = `
+      #cruz-sur { top: 36%; right: 1rem; width: 17.5rem;
+        opacity: 0; transition: opacity .8s ease; }
+      #cruz-sur.visible { opacity: 1; }
+      #cruz-sur h4 { font-size: .64rem; letter-spacing: .12em; text-transform: uppercase;
+        color: var(--acento); margin-bottom: .4rem; }
+      #cruz-sur p { font-size: .7rem; line-height: 1.5; margin-top: .34rem; }
+      #cruz-sur i { color: var(--tinta-tenue); font-style: normal; margin-right: .3rem;
+        font-variant-numeric: tabular-nums; }
+      #cruz-sur b { color: var(--tinta); font-weight: 600; }
+      #cruz-sur .fino { color: var(--tinta-tenue); font-size: .64rem; font-style: italic; }
+    `;
+    document.head.appendChild(est);
+  }
+
+  /**
+   * ¿Está mirando la Cruz? La dirección sale del jugador y no de la cámara: la
+   * cámara la orienta `Jugador` con `rotation.set(cabeceo, giro, …)` en orden YXZ,
+   * o sea que mira a (−sen giro · cos cabeceo, sen cabeceo, −cos giro · cos
+   * cabeceo). Es el mismo giro con el que se dibuja la cinta de la brújula.
+   *
+   * Con el cielo cubierto no se dice nada: `queMiro` contesta por la Cruz, que está
+   * ahí aunque no se vea, y decidir si hablar es de acá. Y una vez que aparece se
+   * queda un segundo y medio: justo en el borde de los 12° el temblor del paso lo
+   * hacía parpadear.
+   */
+  _pintarCruz(cielo, direccion = null) {
+    if (!this.elCruz || typeof cielo?.queMiro !== 'function') return;
+    const mirada = (this._mirada ??= { x: 0, y: 0, z: 0 });
+    if (direccion) {
+      mirada.x = direccion.x; mirada.y = direccion.y; mirada.z = direccion.z;
+    } else {
+      const g = this.jugador.giro, c = this.jugador.cabeceo;
+      const cosC = Math.cos(c);
+      mirada.x = -Math.sin(g) * cosC;
+      mirada.y = Math.sin(c);
+      mirada.z = -Math.cos(g) * cosC;
+    }
+
+    const u = cielo.uniformes;
+    const tapado = (u?.uNubes?.value ?? 0) > 0.85 || (u?.uCeniza?.value ?? 0) > 0.5;
+    const ahora = performance.now();
+    if (!tapado && cielo.queMiro(mirada) === 'cruz_del_sur') this._cruzHasta = ahora + 1500;
+    this.elCruz.classList.toggle('visible', ahora < this._cruzHasta);
+  }
+
+  /**
+   * La tecla de acción, y la propia si la hay, cada una en su lugar.
+   *
+   * Antes la tecla propia se marcaba con `etiqueta.replace('R', '<b>R</b>')`,
+   * o sea la **primera R mayúscula** que apareciera. Daba bien de casualidad,
+   * porque «(o R)» era la única. Con el rinde entre paréntesis, «Abrir frente de
+   * Roca» habría pintado la letra equivocada. Ahora la etiqueta sale textual y
+   * las marcas van afuera: E adelante, porque la E también lo hace, y la propia
+   * al final.
+   *
+   * @param {{tipo:string, etiqueta:string, tecla?:string}|null} accion
+   */
   mostrarAccion(accion) {
     if (!accion) { this.elAccion.classList.remove('visible'); return; }
-    // Algunas acciones tienen tecla propia: extraer no es recolectar
-    const tecla = accion.tecla || 'E';
-    this.elAccion.innerHTML = accion.tecla
-      ? accion.etiqueta.replace(tecla, `<b>${tecla}</b>`)
-      : `<b>E</b> · ${accion.etiqueta}`;
+    this.elAccion.innerHTML = `<b>E</b> · ${accion.etiqueta}`
+      + (accion.tecla ? ` · o <b>${accion.tecla}</b>` : '');
     this.elAccion.classList.add('visible');
   }
 
@@ -207,7 +300,13 @@ export class HUD {
     this._avisoHasta = performance.now() + duracion;
   }
 
-  actualizar(dt, cielo) {
+  /**
+   * @param {number} dt
+   * @param {import('../world/Cielo.js').Cielo} [cielo]
+   * @param {{x:number, y:number, z:number}} [mirada] adónde apunta la cámara. Sin
+   *   esto se deduce del jugador, que es de donde sale la cámara hoy.
+   */
+  actualizar(dt, cielo, mirada = null) {
     this._acumulador += dt;
     if (this._avisoHasta && performance.now() > this._avisoHasta) {
       this.elAviso.classList.remove('visible');
@@ -221,6 +320,9 @@ export class HUD {
 
     if (this._acumulador < 0.12) return;
     this._acumulador = 0;
+
+    // ── Lo que hay en el cielo adonde se mira
+    this._pintarCruz(cielo, mirada);
 
     const inf = this.jugador.informe();
     const est = this.tiempo.estado();

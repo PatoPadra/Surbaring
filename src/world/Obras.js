@@ -121,6 +121,49 @@ export class Obras {
         nodo.add(torre, rueda);
         break;
       }
+      case 'telar_witral': {
+        // El witral como lo describe Méndez (2009) en la meseta del Chubut: un
+        // marco de cuatro palos, dos parantes y dos travesaños atados en los
+        // cruces. Adentro, la urdimbre tendida de travesaño a travesaño, el tonon
+        // de caña que levanta los lizos y el tejido que crece desde abajo, con su
+        // franja teñida. En el campo el marco se apoya oblicuo contra una pared,
+        // un cerco o un árbol. Acá no hay contra qué, así que lo sostienen dos
+        // puntales por detrás y el marco queda derecho. Eso es lo que lo hace leer
+        // como telar a cincuenta metros: dos palos altos y flacos cruzados por
+        // dos barras.
+        //
+        // Todo es caja y cilindro con `mat()`, el mismo material que el resto de
+        // las obras. Una urdimbre de líneas sería más fiel, pero compilaría un
+        // programa nuevo justo al levantar el telar, y en la ronda 5 un programa
+        // nuevo congeló el juego 19 segundos.
+        const LANA = 0xd8cfbc, TEJIDO = 0x9d8a6c, TENIDO = 0x8a3b2e, COLIHUE = 0xa39a5c;
+        for (const x of [-0.85, 0.85]) {
+          const parante = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.1, 0.12), mat(MADERA));
+          parante.position.set(x, 1.05, 0);
+          // El puntal va inclinado hacia atrás: abajo a 0,8 m del marco y arriba
+          // tocando el parante, a la altura del travesaño de arriba.
+          const puntal = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.9, 0.08), mat(MADERA));
+          puntal.position.set(x, 0.9, -0.42);
+          puntal.rotation.x = 0.45;
+          nodo.add(parante, puntal);
+        }
+        for (const y of [0.3, 1.85]) {
+          const travesano = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.11, 0.11), mat(MADERA));
+          travesano.position.set(0, y, 0.08);
+          nodo.add(travesano);
+        }
+        const urdimbre = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 0.03), mat(LANA));
+        urdimbre.position.set(0, 1.08, 0.05);
+        const tejido = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 0.05), mat(TEJIDO));
+        tejido.position.set(0, 0.62, 0.06);
+        const franja = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.055), mat(TENIDO));
+        franja.position.set(0, 0.74, 0.06);
+        const tonon = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.8, 6), mat(COLIHUE));
+        tonon.rotation.z = Math.PI / 2;
+        tonon.position.set(0, 1.3, 0.12);
+        nodo.add(urdimbre, tejido, franja, tonon);
+        break;
+      }
       default: { // ahumadero y cualquier obra nueva
         const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(1.8, 2.2, 1.8), mat(MADERA));
         cuerpo.position.y = 1.1;

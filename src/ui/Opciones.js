@@ -29,6 +29,7 @@ const CONTROLES = [
       ['Shift', 'Correr (gasta resistencia)'],
       ['Espacio', 'Saltar · nadar hacia arriba'],
       ['Ctrl o C', 'Agacharse'],
+      ['Z', 'Andar solo, sin apretar nada · se dobla, se corre y se salta igual · Z otra vez, W o S lo cortan'],
       ['F', 'Primera o tercera persona'],
     ],
   },
@@ -56,7 +57,7 @@ const CONTROLES = [
     titulo: 'Ajustes rápidos',
     teclas: [
       ['T', 'Acelerar el paso del tiempo'],
-      ['C', 'Cambiar la calidad gráfica'],
+      ['F2', 'Cambiar la calidad gráfica'],
       ['O', 'Posproceso: completo, sin oclusión, crudo'],
       ['F3', 'Panel de diagnóstico'],
     ],
