@@ -372,8 +372,10 @@ es la cuenta que les corresponde.
   Es lo verdadero, y es lo que la ficha prometía.
 - **Lo que no está protegido** (la liebre, el visón) rinde lo mismo que si se lo
   cazara: la misma cuenta de `Caza`, con la misma regla del filo.
-- **El lazo se gasta al agarrar** (durabilidad 1). Vacío, se levanta y vuelve al
-  bolso entero. La nasa y la red gastan un uso por captura, como una herramienta.
+- **El lazo agarra uno solo y se gasta al agarrar** (durabilidad 1): después de la
+  primera presa queda cerrado. Vacío, se levanta y vuelve al bolso entero. **La
+  nasa y la red juntan todo lo que caiga** entre visita y visita (el conteo de
+  Poisson entero, sin tope salvo los usos que les quedan) y gastan un uso por pez.
 - **Lo puesto en el mundo no es del bolso**: con la regla de la muerte nueva
   («se pierde todo», fase 7), las trampas puestas quedan donde están.
 
@@ -416,7 +418,11 @@ objetos}`, donde `objetos` es `herramientas.json` `.objetos` y `tiempo` es el
 - `poner(objetoId)` → `{ ok, motivo, trampa }`: la saca del bolso (la instancia con
   su durabilidad, si la tiene) y la deja en el mundo. Sin la trampa en el bolso, o
   en un lugar que no sirve, no hace nada y dice por qué.
-- `lista`: lo puesto, cada uno con `{ id, objeto, x, z, puestaEn, presa }`.
+- `lista`: lo puesto, cada uno con `{ id, objeto, x, z, puestaEn, presas }`, donde
+  `presas` es la lista de lo que cayó y todavía no se revisó (cada una con al menos
+  `especieId`), y `puestaEn` un número de milisegundos del reloj del mundo.
+- `serializar()` → datos planos; `reponer(datos)` los vuelve a poner, modelos
+  incluidos cuando haya `Trampas3D`.
 
 **L3 · Cae algo, con la cuenta del juego.** `actualizar()` lee `tiempo.fecha` y
 resuelve lo que pasó desde la última vez. La presa se sortea como dice arriba, y la
@@ -441,14 +447,17 @@ Beber con sed y lo que ya tenía prioridad sobre la tecla la conserva.
 **L6 · El bolso.** Los objetos `pasiva: true` y los de pesca que se calan tienen el
 botón «Poner» en el bolso, que llama a `trampas.poner`.
 
-**L7 · En el mapa y el minimapa.** `Hallazgos.dibujar` pinta cada trampa puesta con
+**L7 · En el mapa y el minimapa.** El coordinador le pone a `Hallazgos` la
+propiedad `trampas` (`hallazgos.trampas = trampas`); `Mapa` y `Minimapa` no se
+tocan. `Hallazgos.dibujar` pinta cada trampa puesta con
 un glifo propio por tipo, **a cualquier zoom y aunque el velo tape el lugar** (es
 lo propio, como las obras), y un renglón «Tus trampas» en la leyenda. Una trampa
 con presa se distingue de una vacía **sólo después de revisarla** (el mapa no sabe
 lo que el jugador no vio). El minimapa la muestra solo, porque dibuja por
 `Hallazgos`.
 
-**L8 · Se guarda.** La partida guarda y repone las trampas —con su lugar, su
+**L8 · Se guarda.** `Partida` recibe `trampas` entre sus dependencias y guarda y
+repone las trampas por `serializar()` y `reponer()` —con su lugar, su
 objeto, su durabilidad y lo que tengan adentro— como un campo opcional: `VERSION`
 sigue en 1 y un guardado viejo entra igual.
 
