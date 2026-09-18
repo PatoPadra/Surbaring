@@ -353,7 +353,8 @@ es la cuenta que les corresponde.
   cada hora es **λ(h) = T × Σ aptitud × actividad(h)** sobre las especies que el
   objeto puede sostener, con los mismos argumentos que usa `_reponer` en ese punto
   (altura, humedad, pendiente en grados, distancia al agua, la estación de
-  `tiempo.estado()` y la hora local de cada hora transcurrida). En el agua, **λ = T**
+  `tiempo.estado()` y la hora local de cada momento transcurrido, como la da
+  `Tiempo.horaDecimalLocal`). En el agua, **λ = T**
   constante. `T` es un número por objeto declarado en `herramientas.json` como
   `tasaCapturaPorHora`, al lado de `criterioTasaCaptura`: la fuente, o la palabra
   «licencia» y el criterio a la vista. El resultado no puede depender de cada cuánto se mira: revisar una vez a
