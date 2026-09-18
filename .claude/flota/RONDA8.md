@@ -647,3 +647,42 @@ dueño.
 
 **S7 · Sin regresión.** Los bancos de la ronda 7 y de las fases 1 y 2 de ésta siguen
 verdes, `lint-shader.mjs` sin errores, y `vite build` limpio.
+
+---
+
+## FASE 4 · `copa` — árboles y follaje (medición de apertura, sin contrato todavía)
+
+Medido el 18/9/2026, mientras corría la fase 2, para no abrirla a ciegas.
+
+**1 · La hipótesis del alfa en los mipmaps no se sostiene para las latifoliadas.**
+Armando en el navegador la cadena de mipmaps del atlas real con el mismo promedio de
+2×2 que la GPU, y contando qué fracción pasa el corte de `alphaTest: 0.28` en la
+ventana de las tarjetas (u < 0,86):
+
+| lado del nivel | 512 | 256 | 128 | 64 | 32 | 16 | 8 |
+|---|---|---|---|---|---|---|---|
+| **lámina** | 0,219 | 0,229 | 0,248 | 0,280 | 0,307 | 0,250 | 0,271 |
+| **aguja** | **0,081** | 0,090 | 0,102 | 0,113 | 0,089 | **0,038** | **0** |
+
+La lámina no pierde cobertura con la distancia. **La aguja arranca en el 8 %**: el
+problema de las coníferas no es el mipmap, es el dibujo.
+
+**2 · Los atlas** (`capturas/r8-atlas-lamina.png`, `r8-atlas-aguja.png`): la lámina
+son elipses planas de un solo color, del petróleo al menta casi blanco, sueltas y con
+mucho vacío; la aguja son ramitas de pino de 2 px. **Y el ciprés de la cordillera y el
+alerce no tienen agujas**: tienen ramitas aplanadas de hojas escamosas. Hoy usan el
+mismo atlas que el pino murrayana (`claseHojaDe`: todo lo `columnar` es `aguja`).
+
+**3 · El árbol entero, restando.** Render directo (sin posproceso: sirve para la máscara,
+no para el color) a 18 m de cada árbol, con su lote prendido y apagado:
+
+| especie | cobertura del recuadro | puntitos sueltos (≤ 6 px) por mil píxeles |
+|---|---|---|
+| coihue | 0,323 | 3,75 |
+| ñire | 0,171 | 5,28 |
+| maitén | 0,132 | 3,73 |
+| **ciprés de la cordillera** | **0,088** | **10,73** |
+| **pino murrayana** | **0,053** | **17,73** |
+
+`capturas/r8-base-arbol-*.png`. El ciprés se ve como un esqueleto con agujas sueltas;
+el coihue, como un palo con hojas de caricatura: elipses enormes y ramas desnudas.
