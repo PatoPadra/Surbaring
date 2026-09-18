@@ -477,3 +477,35 @@ prende para restar cuadros.
 
 **L10 · Sin regresión.** Los bancos de la ronda 7 y la fase 1 de ésta siguen
 verdes, y `vite build` limpio.
+
+---
+
+## FASE 3 · `suelo` — el suelo de cerca, por textura
+
+### Lo que se midió antes de escribir el contrato
+
+**1 · Qué es hoy el suelo de cerca.** Es ruido y nada más: no hay una sola textura
+de material. En los últimos metros el fragmento del terreno evalúa unas quince
+funciones de ruido de valor —`macro`, `grano` y `meso` (fbm de 3 octavas), `micro` y
+`gravilla` (fbm de 2), y ocho fbm más para la normal fina, cuatro en `f2` y cuatro en
+`f3` (`Terreno.js:712-730`)—, más cuatro lecturas de `uTexDetalle`. El ruido de
+valor da manchas redondeadas: no hay bordes de piedra, ni hojas, ni ramitas. Es la
+«mancha marrón de ruido borroso» de la captura `r8-medir-suelo.png`.
+
+**2 · Cuánto cuesta.** Medido con `bancoDesglose` (`public/banco.js`, reloj de la
+GPU) en la HD 4000, Baja, 1024×576, en el arranque, tres corridas cada una:
+
+| vista | cuadro entero | el terreno | fracción |
+|---|---|---|---|
+| al frente (cabeceo −4°) | 32,3 · 32,5 · 32,6 ms | **12,8 · 13,1 · 12,8 ms** | 40 % |
+| **al suelo** (cabeceo −35°, 1,7 m) | 30,0 · 30,1 · 29,5 ms | **17,6 · 17,8 · 17,1 ms** | **59 %** |
+
+El instrumento repite a ±0,4 ms. Mirando al suelo, el terreno es más de la mitad
+del cuadro: ahí se paga el ruido del suelo cercano, y es justo lo que se ve mal.
+
+**3 · Por qué por textura.** Es la regla de la ronda 3 (`RONDA3.md`, «Por qué por
+textura y no por shader»), medida en esta máquina: la GT 630M con la que juega el
+dueño pierde 8× en matemática de shader y gana 2,3× en lecturas de textura. Un
+suelo horneado offline a una textura con capas (three 0.169 es WebGL2: hay
+`DataArrayTexture` con mipmaps limpios, sin la costura de un atlas) puede verse
+mejor **y** costar menos que el ruido que reemplaza.
