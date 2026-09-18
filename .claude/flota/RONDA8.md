@@ -468,7 +468,12 @@ sigue en 1 y un guardado viejo entra igual.
 chico y legible (el lazo con su estaca, la nasa como un cono de junco, la red como
 un paño con flotadores). **Poner la primera trampa no compila ningún programa
 nuevo**, medido en el juego como en la ronda 7: los materiales se compilan en la
-carga.
+carga. `Trampas3D` exporta la clase con `constructor(trampas)`, expone
+`grupo` (el `THREE.Group` que el coordinador agrega a la escena), `sincronizar()`
+(que el coordinador llama después de cada cambio de `trampas.lista`, o en el
+bucle, a elección del agente mientras sea barato) y `modeloDe(trampa)`, que
+devuelve el objeto 3D de esa trampa. Así el banco del navegador lo apaga y lo
+prende para restar cuadros.
 
 **L10 · Sin regresión.** Los bancos de la ronda 7 y la fase 1 de ésta siguen
 verdes, y `vite build` limpio.
