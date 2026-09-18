@@ -5,7 +5,11 @@
  *
  *   T1 · el costo: `bancoDesglose` (reloj de la GPU, `public/banco.js`), Baja,
  *        1024×576, en el arranque, tres corridas mirando al frente y tres mirando
- *        al suelo. Se devuelve la mediana del «Terreno» de cada vista.
+ *        al suelo. Se devuelve la mediana del «Terreno» de cada vista, y se compara
+ *        con la de la base medida en la misma sesión (`op.base`), porque entre
+ *        sesiones la placa derivó un milisegundo.
+ *        Para la base: poner el Terreno.js de la base, correr con
+ *        `bancoR8F3({ soloCosto: true })`, y volver.
  *   T2 · compilar: los programas no cambian entre ahora (con las texturas ya
  *        cargadas o a punto) y después de dibujar varias veces con tres segundos
  *        de por medio.
@@ -36,7 +40,7 @@
     if (S.norma) S.norma._guardar = () => {};
   }
 
-  async function bancoR8F3() {
+  async function bancoR8F3(op = {}) {
     const S = window.SurviBar;
     const out = { costo: {}, programas: {}, capturas: {}, notas: [] };
     if (!S) return { error: 'no hay SurviBar' };
@@ -67,6 +71,7 @@
         suelo.push(b.cuestaCadaPieza?.Terreno);
       }
       out.costo = { frente, suelo, medianaFrente: mediana(frente), medianaSuelo: mediana(suelo) };
+      if (op.soloCosto) { marcar({ paso: 'listo', ...out }); return out; }
 
       // ── T3 · las capturas ─────────────────────────────────────────────────
       marcar({ paso: 'T3' });
@@ -90,8 +95,16 @@
     const checks = [];
     const ok = (c, desc, det) => checks.push({ ok: !!c, desc, detalle: String(det) });
     ok(Number.isFinite(out.programas.antes) && out.programas.despues === out.programas.antes, 'T2 · con las texturas cargadas, dibujar no compila programas nuevos', `${out.programas.antes} → ${out.programas.despues}`);
-    ok(out.costo.medianaSuelo <= 16.0, 'T1 · mirando al suelo, el terreno cuesta 16,0 ms o menos (base 17,1–17,8)', `${out.costo.suelo.join(' · ')} ms, mediana ${out.costo.medianaSuelo}`);
-    ok(out.costo.medianaFrente <= 13.4, 'T1 · al frente, el terreno no sube de 13,4 ms (base 12,8–13,1)', `${out.costo.frente.join(' · ')} ms, mediana ${out.costo.medianaFrente}`);
+    // La base, medida en la misma sesión con el Terreno.js de la base puesto un rato
+    // (`window.bancoR8F3({ base: { suelo, frente } })`): la misma base midió 12,8 a 13,1
+    // una mañana y 13,7 a 14,1 esa noche, y un umbral fijo medía la placa.
+    const b = op.base;
+    if (b) {
+      ok(out.costo.medianaSuelo <= b.suelo - 1.0, 'T1 · mirando al suelo, el terreno baja al menos 1,0 ms contra la base de la sesión', `${out.costo.suelo.join(' · ')} ms, mediana ${out.costo.medianaSuelo} contra ${b.suelo}`);
+      ok(out.costo.medianaFrente <= b.frente + 0.3, 'T1 · al frente, el terreno no sube más de 0,3 ms contra la base de la sesión', `${out.costo.frente.join(' · ')} ms, mediana ${out.costo.medianaFrente} contra ${b.frente}`);
+    } else {
+      out.notas.push('T1: sin base de la sesión, sólo se informa (bancoR8F3({ base: { suelo, frente } }))');
+    }
     ok(Object.values(out.capturas).every(Boolean) && Object.keys(out.capturas).length === 8, 'T3 · las ocho capturas salieron', JSON.stringify(out.capturas));
     out.checks = checks;
     out.total = `${checks.filter((c) => c.ok).length}/${checks.length}`;

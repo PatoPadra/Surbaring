@@ -674,8 +674,12 @@ textura la modula), y **el detalle a 10–40 m no pasa de 1,6 veces** el de la b
 (≤ 4,91 · 18,29 · 10,27): sin mipmaps esa franja se llena de ruido.
 
 **S3 · Y cuesta menos.** Con `bancoDesglose` (reloj de la GPU, Baja, 1024×576, el
-arranque), mediana de tres corridas: **mirando al suelo, el terreno baja a 16,0 ms o
-menos** (hoy 17,1 a 17,8), y **al frente no sube de 13,4 ms** (hoy 12,8 a 13,1). La
+arranque), mediana de tres corridas, **alternado con la base en la misma sesión** (el
+coordinador pone un rato el `Terreno.js` de la base y vuelve): **mirando al suelo, el
+terreno baja al menos 1,0 ms** (esta mañana 17,1 a 17,8), y **al frente no sube más de
+0,3 ms** (esta mañana 12,8 a 13,1). *Corregido el 18/9 a la noche: la misma base midió
+13,7 y 14,1 al frente en otra sesión; con esa deriva, un umbral absoluto medía la
+placa y no el código.* La
 textura reemplaza al ruido de los últimos metros, no se le suma: donde la textura
 manda, el fragmento no evalúa el `micro`, la `gravilla` ni la normal fina de ruido
 de `f2` y `f3`.
