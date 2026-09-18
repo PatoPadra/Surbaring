@@ -31,6 +31,16 @@
   const SUELO = { id: 'suelo', lat: -41.0870, lon: -71.4290, altura: 1.7, rumbo: 200, cabeceo: -35 };
   const marcar = (o) => { document.body.dataset.bancoR8F3 = JSON.stringify(o); };
   const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+  /**
+   * `public/banco.js` por una etiqueta y no por `import()`: Vite no transforma un
+   * módulo que importa un JS de `public` (lo sirve con un 500), así que el banco
+   * entero no cargaba.
+   */
+  const cargarBanco = () => new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = '/banco.js'; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
   const mediana = (xs) => { const s = [...xs].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; };
 
   function anularGuardados(S) {
@@ -44,7 +54,7 @@
     const S = window.SurviBar;
     const out = { costo: {}, programas: {}, capturas: {}, notas: [] };
     if (!S) return { error: 'no hay SurviBar' };
-    if (!window.bancoDesglose) await import('/banco.js');
+    if (!window.bancoDesglose) await cargarBanco();
     anularGuardados(S);
     const j = S.jugador;
     const e0 = { p: j.posicion.clone(), g: j.giro, c: j.cabeceo, t3: j.tercerPersona, f: new Date(S.tiempo.fecha.getTime()) };

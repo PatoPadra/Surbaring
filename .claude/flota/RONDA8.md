@@ -741,6 +741,12 @@ no para el color) a 18 m de cada árbol, con su lote prendido y apagado:
 | **ciprés de la cordillera** | **0,088** | **10,73** |
 | **pino murrayana** | **0,053** | **17,73** |
 
+Medido otra vez esa noche con el banco (`banco-r8-fase4.navegador.js`, lienzo fijo de
+819×614): ciprés 0,127 y 10,97 · pino 0,079 y 21,63 · coihue 0,342 y 2,59 · maitén 0,203 y
+4,31 · ñire 0,147 y 3,85. **No repite exacto porque `Vegetacion` arma cada árbol con
+`Math.random()` en la carga**: cada sesión tiene árboles distintos. Los umbrales del
+contrato quedan lejos de las dos mediciones.
+
 `capturas/r8-base-arbol-*.png`. El ciprés se ve como un esqueleto con agujas sueltas;
 el coihue, como un palo con hojas de caricatura: elipses enormes y ramas desnudas.
 
@@ -795,6 +801,10 @@ juego, restando el árbol con su lote prendido y apagado a 18 m (el mismo instru
 la tabla del punto 3): **el ciprés cubre 0,20 o más** de su recuadro (hoy 0,088) y **el
 pino 0,12 o más** (0,053); **los puntitos sueltos bajan a 5 por mil o menos** en los dos
 (hoy 10,7 y 17,7), y el coihue no pasa de 4,5 (hoy 3,75).
+
+*La guarda de los mipmaps es simétrica a propósito: medida sobre el atlas de hoy, la
+lámina **sube** de 0,241 a 0,348 a 32 px (+44 %). Una copa que se espesa de lejos cambia
+de aspecto igual que una que se ralea.*
 
 **C5 · Sin costar más.** Los árboles, con `bancoDesglose` alternado con la base en la
 misma sesión, no suben más de un **15 %**. Poner un árbol en pantalla no compila nada
