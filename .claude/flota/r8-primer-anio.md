@@ -30,11 +30,11 @@ año.
 |---|---|---|
 | velocidad del mundo por defecto | **72×**: un día de juego = **20 minutos reales** | `Tiempo.js:62`, `VELOCIDADES = [24, 72, 900, 7200]` |
 | el cuerpo envejece a | **24×** (aparte del reloj): la sed llena dura ~50 min caminando, el hambre más de 1 h | `main.js:711`, `ESCALA_METABOLISMO` |
-| la primera hora real | **3 días de juego** | |
+| la primera hora real | **3 días de juego**, con **tres noches** de ~8 minutos cada una | |
 | un año a 72× | **121,7 horas reales** | 365 × 20 min |
 | un año a 900× | 9,7 horas reales | |
 | hoy se arranca | **12 de febrero, 10:20** (verano) | `Tiempo.js:69` |
-| la primera noche llega | a los **~29 minutos** de juego (20:00) | |
+| la primera noche llega | a los **~8 minutos** de juego (de las 10:20 a las 20:00 son 9,67 h de juego: 9,67 × 3600 / 72 = 483 s) | |
 
 ## 3 · El clima de Bariloche que ya simula el juego
 
@@ -58,7 +58,7 @@ Con arranque en verano, a 72×:
 
 1. **Minuto 0.** Se puede fabricar, sin tecnología, **cordel, garrote y antorcha**
    (`herramientas.json`, nivel 0). Todo lo demás pide una tecnología.
-2. **Minuto ~29: la primera noche.** Incluso en febrero, a 822 m y con 22 km/h de
+2. **Minuto ~8: la primera noche.** Incluso en febrero, a 822 m y con 22 km/h de
    viento, la mínima de 6,3 °C da una sensación cercana a 0 °C: sin fuego ni abrigo,
    el cuerpo tiende a unos 34,9 °C, debajo del umbral de daño. **La primera noche ya
    pide fuego o parapeto**, y el juego no lo dice antes de que pase.
@@ -76,7 +76,7 @@ primeros desafíos». Tres maneras de acercarlo, con sus números:
 |---|---|---|
 | **A · Arrancar en primavera y dejar el reloj** | día 253 · 84 h reales | la primavera es fría de noche (0 °C en septiembre): el primer desafío real es la primera noche, y el invierno es el final |
 | **B · Arrancar en otoño (21 de marzo)** | día 72 · **24 h reales** | el año arranca con el frío acercándose: juntar, abrigarse y guardar comida tiene apuro desde el día uno. El año cierra en otoño otra vez |
-| **C · Primavera, con un reloj más rápido** | día 253 · **21 h** a 288× (un día = 5 min) | todo pasa cuatro veces más rápido: las noches duran 2,5 minutos. Afecta a todo el juego, no sólo al año |
+| **C · Primavera, con un reloj más rápido** | día 253 · **21 h** a 288× (un día = 5 min) | todo pasa cuatro veces más rápido: una noche de 10 h dura unos 2 minutos (36.000 s / 288 = 125 s). Afecta a todo el juego, no sólo al año |
 
 Y una cuarta que no es de reloj: **D · dormir.** Con un refugio y fuego, poder pasar la
 noche durmiendo (adelantar el reloj) acorta el año sin apurar el día. Es lo que hacen
