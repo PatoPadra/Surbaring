@@ -349,10 +349,20 @@ es la cuenta que les corresponde.
   (`presaMaxKg`, mamíferos y aves de 100 g o más) **con el mismo peso que usa
   `Fauna._reponer`**: `_aptitud × _actividad` en ese lugar y a esa hora. En el agua,
   la nasa y la red sortean con `Pesca._loQuePica`.
-- **Cuándo cae**: un proceso de Poisson por hora de mundo, con una tasa declarada
-  en `herramientas.json` junto a su fuente o como licencia dicha. El resultado no
-  puede depender de cada cuánto se mira: revisar una vez a las diez horas o cada
-  diez minutos da la misma distribución.
+- **Cuándo cae**: un proceso de Poisson por hora de mundo. En tierra, la tasa en
+  cada hora es **λ(h) = T × Σ aptitud × actividad(h)** sobre las especies que el
+  objeto puede sostener, con los mismos argumentos que usa `_reponer` en ese punto
+  (altura, humedad, pendiente en grados, distancia al agua, la estación de
+  `tiempo.estado()` y la hora local de cada hora transcurrida). En el agua, **λ = T**
+  constante. `T` es un número por objeto declarado en `herramientas.json`
+  (`tasaCapturaPorHora`) con su fuente o como licencia dicha, con el criterio a la
+  vista. El resultado no puede depender de cada cuánto se mira: revisar una vez a
+  las diez horas o cada diez minutos da la misma distribución.
+- **Los peces de la nasa y la red están vivos**, así que siguen las reglas que ya
+  tiene la caña en `Pesca.intentar`: el nativo se devuelve (y enseña), el salmónido
+  de más de 40 cm se devuelve, el resto da pescado. La nasa y la red están
+  prohibidas en toda la Patagonia (`notaLegal`): el juego las deja usar bajo la
+  misma licencia y lo dice al ponerlas.
 - **Lo protegido**: si cae una especie protegida, **no se aprovecha nada** —la ley
   que prohíbe cazarla no cambia porque el animal ya esté muerto— y el juego lo dice
   con la norma del trampeo: la primera vez por especie en el panel que espera
@@ -379,6 +389,8 @@ El agente escribe **sólo**:
   `quePuedoHacer()` y en `actuar()`
 - `src/systems/Partida.js` — **sólo** guardar y reponer las trampas
 - `src/entities/Fauna.js` — **sólo** `_esAcuatica()`
+- `src/systems/Pesca.js` — **sólo** sacar a un método la resolución de un pez ya
+  capturado (devolver o guardar), para que la caña y la trampa usen la misma
 - `src/data/herramientas.json` — **sólo** la tasa de captura, con su fuente o
   criterio, en `trampa_lazo`, `nasa_junco` y `red_fibra`
 
@@ -394,8 +406,9 @@ dejan de serlo; el huillín, el coipo, el visón, los macás, el biguá, el mart
 pescador, el pato de los torrentes, el cauquén y todos los peces siguen siéndolo.
 
 **L2 · Poner.** `Trampas` exporta la clase con `constructor(deps)` —`{mundo,
-fauna, peces, pesca, inventario, equipo, caza, norma, tiempo, jugador, objetos}`,
-donde `objetos` es `herramientas.json` `.objetos`— y:
+fauna, peces, pesca, inventario, equipo, caza, norma, hud, tiempo, jugador,
+objetos}`, donde `objetos` es `herramientas.json` `.objetos` y `tiempo` es el
+`Tiempo` de verdad— y:
 
 - `evaluarPoner(objetoId, x, z)` → `{ ok, motivo, x, z }`: dónde iría y si puede. El
   lazo va en tierra firme, fuera del agua; la nasa y la red, **en el agua**, a no más
