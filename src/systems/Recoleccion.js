@@ -410,6 +410,15 @@ export class Recoleccion {
     const aguaAMano = this.jugador.enAgua || this._aguaCerca();
     if (aguaAMano && this.jugador.sed < 92) return this._beber();
 
+    // La trampa propia, a menos de 2,5 m: revisarla si cayó algo, levantarla si
+    // está vacía. Va debajo de la sed —la sed mata, y una nasa se cala justo al
+    // lado del agua— y arriba de todo lo que se junta caminando, por la vara de
+    // siempre: la planta y la piedra están en cualquier lado; la trampa es una
+    // sola y el jugador vino hasta acá a buscarla. El cartel lo arma `Trampas`,
+    // que es quien sabe qué hay adentro.
+    const trampa = this.trampas?.cerca(p.x, p.z);
+    if (trampa) return { tipo: 'trampa', trampa, etiqueta: this.trampas.etiqueta(trampa) };
+
     // La orilla: la arcilla de la barranca y la arena de la playa, en un gesto.
     //
     // Va acá, arriba del tronco, de la chatarra y de la planta, por la vara de
@@ -896,6 +905,15 @@ export class Recoleccion {
         // rompe en esta palada, el aviso de que se rompió es el que tiene que
         // quedar a la vista.
         if (acc.partes.some(q => q.conHerramienta)) this._gastarHerramienta();
+        return;
+      }
+
+      case 'trampa': {
+        // Con algo adentro se revisa; vacía se levanta y vuelve al bolso. Los
+        // avisos los da `Trampas`: la norma, el rinde o por qué no se pudo.
+        const t = acc.trampa;
+        if (t.presas?.length) this.trampas.revisar(t);
+        else this.trampas.levantar(t);
         return;
       }
 

@@ -873,7 +873,7 @@ async function regresion() {
   const otros = [
     ['banco-r7-fase1.mjs', '6/6'], ['banco-r7-fase2.mjs', '4/4'], ['banco-r7-fase2b.mjs', '7/7'],
     ['banco-r7-fase3.mjs', '6/6'], ['banco-r7-fase4.mjs', '10/10'], ['banco-r7-fase5.mjs', '9/9'],
-    ['banco-r7-fase6.mjs', '7/7'], ['banco-r8-fase1.mjs', '7/7'],
+    ['banco-r7-fase6.mjs', '7/7'], ['banco-r8-fase1.mjs', '8/8'],
   ];
   let corrio = 0;
   for (const [archivo, esperado] of otros) {

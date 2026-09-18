@@ -54,6 +54,8 @@ import { Exploracion } from './systems/Exploracion.js';
 import { Hallazgos } from './systems/Hallazgos.js';
 import { Mapa } from './ui/Mapa.js';
 import { Minimapa } from './ui/Minimapa.js';
+import { Trampas } from './systems/Trampas.js';
+import { Trampas3D } from './world/Trampas3D.js';
 import { Opciones } from './ui/Opciones.js';
 import { Bolso } from './ui/Bolso.js';
 import { Fin } from './ui/Fin.js';
@@ -409,6 +411,22 @@ async function iniciar() {
   const bolso = new Bolso({ inventario, jugador, hud, recoleccion, equipo, fabricacion, tiempo });
   const fin = new Fin({ jugador, mundo, tiempo, hud, codice, saberes, construccion });
 
+  // Lo que se deja puesto en el mundo y trabaja solo: el lazo, la nasa, la red.
+  // Sortea su presa con la misma cuenta con que la fauna decide qué aparece, y
+  // lo marcan el mapa y el minimapa, porque el que la puso tiene que poder volver.
+  const trampas = new Trampas({
+    mundo, fauna: bichos, peces, pesca, inventario, equipo, caza, norma, hud, tiempo, jugador,
+    objetos: herramientas.objetos,
+  });
+  const trampas3D = new Trampas3D(trampas);
+  // Antes del primer cuadro, como el terreno y las obras: el programa de la
+  // muestra se compila en la carga, y poner la primera trampa no compila nada.
+  for (const m of trampas3D.materiales) conCSM(csm, m);
+  escena.add(trampas3D.grupo);
+  recoleccion.trampas = trampas;
+  bolso.trampas = trampas;
+  hallazgos.trampas = trampas;
+
   // El arco del juego: un año con un cuaderno. No es una trama pegada encima —el
   // motor ya simula estaciones, vedas y cota de nieve—, es el objetivo que el
   // propio paisaje le impone a cualquiera que quiera describirlo.
@@ -435,7 +453,7 @@ async function iniciar() {
   // tecnologías, mapa— no se pierde nunca: ésa es la tesis del juego.
   const partida = new Partida({
     jugador, inventario, saberes, codice, construccion, fundicion, tiempo,
-    mundo, hud, exploracion, recoleccion, equipo,
+    mundo, hud, exploracion, recoleccion, equipo, trampas,
     obras: { agregar: dibujarObra },
     hornos: { agregar: dibujarHorno },
   });
@@ -826,6 +844,9 @@ async function iniciar() {
       acumulador -= PASO;
       pasos++;
     }
+    // Las trampas cuentan con el reloj del mundo, que ya avanzó en este cuadro.
+    trampas.actualizar();
+    trampas3D.sincronizar();
     // Lo que los eventos hacen por su cuenta: quemar, golpear, voltear.
     //
     // Las horas que se les pasan son las del CUERPO, no las del mundo. Acá
@@ -1012,7 +1033,7 @@ async function iniciar() {
     inventario, saberes, recoleccion, caza, audio, equipo, fabricacion, bolso,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima, oclusion, color, calidad,
-    exploracion, hallazgos, mapa, minimapa, bolso, opciones, fin, partida, norma, relevamiento, cierre,
+    exploracion, hallazgos, mapa, minimapa, trampas, trampas3D, bolso, opciones, fin, partida, norma, relevamiento, cierre,
     luces, juntarLuces,
   };
 

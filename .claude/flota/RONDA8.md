@@ -526,6 +526,59 @@ prende para restar cuadros.
 **L10 · Sin regresión.** Los bancos de la ronda 7 y la fase 1 de ésta siguen
 verdes, y `vite build` limpio.
 
+### CERRADA el 18/9/2026
+
+**Banco 10/10** con la regresión (ronda 7 y fase 1) y `vite build`, corrido por el
+coordinador sobre el código final; **falsador 21 de 21** con los 3 controles verdes;
+**mitad navegador 10/10**.
+
+- **La fauna vive donde vive.** Las diez especies con el mallín entre ambientes secos
+  dejaron de ser acuáticas: el ciervo, el jabalí y la liebre aparecen lejos del agua.
+- **La trampa se pone, trabaja sola y se marca.** El lazo va en tierra, un paso
+  adelante; la nasa y la red, en el agua a 3 m o menos. Caen presas por un proceso de
+  Poisson contra el reloj del mundo, integrado minuto a minuto con la misma cuenta de
+  `Fauna`. En el mapa y el minimapa, un glifo propio por tipo, bajo el velo, y «Tus
+  trampas» en la leyenda. En el juego, a 3 m el lazo cambia el 0,44 % de la pantalla
+  (la caña doblada, las estacas, el ojal) y en el minimapa 35 píxeles.
+- **Poner no compila nada**: 26 programas antes y después. `Trampas3D` dibuja siempre
+  una muestra a 100 km bajo el suelo para que el programa exista desde la carga: cuesta
+  una llamada de dibujo por pase, sin píxeles. No medido en la placa.
+- **En el mundo real** —60 lugares a menos de 3 km del arranque, 300 noches de verano—
+  **un lazo agarra algo el 31,3 % de las noches**, y de lo que cae **la liebre es el
+  24,5 %**; el zorro gris chico el 24 %, el zorrino el 14 % y el gato huiña el 12 %.
+  El agente había predicho 33,7 % y 26 %: su número cayó apenas del lado favorable.
+
+**La tasa es una licencia, y está dicha.** Las fuentes que encontró el agente dan
+0,85 liebres cada 100 lazos-noche (Short et al. 2012) y 3,2 capturas cada 100 con el 73 %
+de otra especie (Defra 2012): llevado al juego, T ≈ 0,0012, o sea algo en el 0,9 % de las
+noches. **Se usa T = 0,05, 41 veces la fuente**, con el criterio escrito en
+`criterioTasaCaptura`. La nasa, con fuente (Merilä 2015: 0,66 peces por nasa y por
+día); la red, derivada de la nasa. **Para que lo mire el dueño**: ¿es mucho, poco?
+
+**Un defecto más del banco, el tercero de esta ronda encontrado por un agente**: la
+aserción de la segunda norma prohibía cualquier llamada 'grave', incluida `anotar()`, que
+nunca abre el panel, y empujaba a registrar como leve lo que no lo es. Corregido; el
+código anota el veredicto grave de verdad. **Y un límite del banco que dice el agente con
+la cuenta**: con una tasa realista el banco estadístico no alcanzaría a decidir (54 lazos
+con presa de 6000, un error del 13,5 % contra un tope del 15 %). La tasa se eligió por el
+juego, no por el banco, pero el banco no la dejaba ser realista.
+
+**Encontrado al mirar el mapa al tope, y arreglado por el coordinador**: la costa salía en
+escalones de 32 m, la grilla de la máscara de agua (el mapa preguntaba `esAgua`, el texel
+más cercano). Pasado el techo del DEM, la máscara ahora se interpola como la altura.
+Medido sobre el DEM real en ocho costas: la fracción del borde en tramos rectos de 8 px o
+más baja de 0,995 a 0,565, el agua ocupa lo mismo (+0,3 %), y **hasta 32 m/px el dibujo
+sigue siendo el de la base, byte a byte** (3 de 3 recortes, 0 canales distintos: lo había
+afirmado el agente de la fase 1 y nadie lo había medido). Es la sección 8 nueva del banco
+de la fase 1, que pasa a 8/8.
+
+**Para que lo mire el dueño**: agarrar fauna protegida no descuenta saber (el contrato
+no lo pedía), y los peces que la nasa devuelve no suman saber, para no premiar un arte
+de pesca prohibido. Y una que es del contrato, no del agente: **con la trampa
+vacía a menos de 2,5 m, la E la levanta**, antes que la planta o la piedra de al lado.
+Recién puesto el lazo, apretar E para juntar algo cerca lo devuelve al bolso. El cartel
+lo dice («Levantar la trampa de lazo · vacía»), pero jugando puede molestar.
+
 ---
 
 ## FASE 3 · `suelo` — el suelo de cerca, por textura

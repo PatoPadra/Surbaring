@@ -922,6 +922,8 @@
       "danio": 10,
       "sigilo": 1,
       "presaMaxKg": 6,
+      "tasaCapturaPorHora": 0.05,
+      "criterioTasaCaptura": "licencia. No se encontró una tasa medida del lazo de liebre en la Patagonia. Lo más cercano que está medido son lazos de cuello para zorro en Inglaterra: un trampero de la GWCT con veinte años de oficio agarró 62 animales en 1915 lazos-noche, 3,2 cada 100 y el 73 % de otra especie que la buscada (Defra 2012, proyecto WM0315, «Determining the extent of use and humaneness of snares in England and Wales», citado por S. Harris 2022, «A review of the use of snares in the UK»), y la mediana de 34 guardas de caza fue de 0,85 liebres cada 100 lazos-noche (Short, Weldon, Richardson y Reynolds 2012, Wildlife Society Bulletin 36: 208-219). Llevado al juego, 3,2 % por lazo y por día da T = 0,0012: medido sobre el DEM en 60 lugares de tierra a menos de 3 km del arranque, en verano, la suma de aptitud × actividad de lo que el lazo sostiene es 27,0 por día entero y 7,06 por noche de 20 a 6, así que un lazo agarraría algo en el 0,9 % de las noches y una liebre cada unas 350. Con un día de veinte minutos reales eso es una trampa que no agarra nunca. Se toma T = 0,05, unas 41 veces la fuente: en esos mismos 60 lugares un lazo agarra algo en el 29,7 % de las noches de verano y en el 74 % de los días enteros, y la liebre es el 33 % de lo que cae de noche; casi todo lo demás es fauna nativa protegida, que no se aprovecha. Es la misma clase de licencia que el arco (licenciasDeJuego.armaTradicional): sobre lo que rinde el instrumento, no sobre la presa ni sobre la norma.",
       "pasiva": true,
       "kg": 0.4
     },
@@ -1488,6 +1490,8 @@
         }
       ],
       "durabilidad": 20,
+      "tasaCapturaPorHora": 0.0275,
+      "criterioTasaCaptura": "Merilä 2015, «Baiting improves CPUE in nine-spined stickleback (Pungitius pungitius) minnow trap fishery», Ecology and Evolution 5(17): 3737-3742: nasas sin cebo caladas 24 h desde la orilla, a 1-2 m de hondo, en un lago de Finlandia, sacaron 0,66 peces por nasa y por día (1,24 con cebo). 0,66 / 24 = 0,0275 peces por hora, sin cebo porque la nasa del juego no lo lleva. Es otra agua y otro pez —espinosos de 5 cm, no truchas—: es la tasa medida más cercana a una nasa de orilla que se encontró, no una del Nahuel Huapi. Qué pez cae lo decide Pesca._loQuePica, como en la caña.",
       "habilita": [
         "trampear_pez"
       ],
@@ -1517,6 +1521,8 @@
         }
       ],
       "durabilidad": 50,
+      "tasaCapturaPorHora": 0.06875,
+      "criterioTasaCaptura": "licencia. No se encontró una tasa medida por hora para una red de orilla en los lagos andino-patagónicos. Se toma la de la nasa (0,0275 por hora, Merilä 2015) por 50/20, la razón entre las durabilidades de la red y de la nasa: así las dos se gastan en los mismos ~30 días de mundo, unas diez horas de juego, y la red rinde más por puesta porque dura más, no porque pesque distinto. Es un criterio de juego, no un dato: una red de verdad no pesca a la par de una nasa, y el juego no lo modela.",
       "habilita": [
         "pescar",
         "trampear_pez"

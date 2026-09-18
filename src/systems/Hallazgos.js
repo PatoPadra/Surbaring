@@ -127,6 +127,15 @@ const TINTA = 'rgba(232,220,186,.86)';
 const TINTA_BORDE = 'rgba(10,12,11,.75)';
 const TINTA_OBRA = '#d8a13f';
 
+/**
+ * Qué glifo lleva cada trampa. Las trampas van con el acento de las obras
+ * porque también son lo propio, y se distinguen de ellas y entre sí por forma.
+ * Una trampa que no está acá se dibuja como lazo, que es lo que se deja en
+ * tierra.
+ */
+const GLIFO_TRAMPA = { trampa_lazo: 'lazo', nasa_junco: 'nasa', red_fibra: 'red' };
+const ORDEN_GLIFOS = ['lazo', 'nasa', 'red'];
+
 export class Hallazgos {
   /**
    * @param {object} deps {mundo, mineria, vegetacion, sotobosque}
@@ -365,7 +374,9 @@ export class Hallazgos {
    *
    * @param {CanvasRenderingContext2D} c
    * @param {(x:number,z:number)=>{px:number,py:number}} proy
-   * @param {object} op {mpp, lado, construccion, exploracion}
+   * @param {object} op {mpp, lado, construccion, exploracion, leyenda}; con
+   *   `leyenda: false` no se pinta el recuadro de la leyenda. Las trampas salen
+   *   de `this.trampas`, que cablea `main.js`.
    */
   dibujar(c, proy, op) {
     const lado = op?.lado ?? 640;
@@ -381,9 +392,72 @@ export class Hallazgos {
 
     const vistos = this._pintarHallazgos(c, proy, op, lado, detalladas);
     this._pintarObras(c, proy, op, lado, detalladas);
-    if (vistos.size) this._pintarLeyenda(c, lado, vistos, detalladas);
+    const trampas = this._pintarTrampas(c, proy, lado);
+    // El minimapa pide la carta sin leyenda: 132 px de recuadro en un lienzo de
+    // 180 lo taparían entero.
+    if ((vistos.size || trampas.size) && op?.leyenda !== false) {
+      this._pintarLeyenda(c, lado, vistos, detalladas, trampas);
+    }
 
     c.restore();
+  }
+
+  /**
+   * Las trampas puestas, cada una con su forma: el lazo, el embudo de la nasa y
+   * el paño de la red. Como las obras, se dibujan **a cualquier zoom y aunque el
+   * velo tape el lugar**: son lo propio, y el dueño las pidió en el mapa para
+   * saber adónde volver.
+   *
+   * La forma depende del tipo y de nada más, salvo una trampa que el jugador ya
+   * revisó y dejó con la presa adentro porque no le entraba: ésa lleva un punto.
+   * El mapa no sabe lo que el jugador no vio, así que una presa sin revisar no
+   * se delata.
+   *
+   * Lee sólo `trampas.lista` y los campos planos de cada una, y el glifo sale
+   * del objeto por una tabla de acá: la carta no le pregunta nada más a
+   * `Trampas`.
+   *
+   * @returns {Set<string>} los glifos que se dibujaron, para la leyenda
+   */
+  _pintarTrampas(c, proy, lado) {
+    const dibujados = new Set();
+    for (const t of this.trampas?.lista || []) {
+      const p = proy(t.x, t.z);
+      if (p.px < -12 || p.py < -12 || p.px > lado + 12 || p.py > lado + 12) continue;
+      const glifo = GLIFO_TRAMPA[t.objeto] || 'lazo';
+      this._glifoTrampa(c, glifo, p.px, p.py, !!t.revisada && t.presas?.length > 0);
+      dibujados.add(glifo);
+    }
+    return dibujados;
+  }
+
+  /** Los glifos de las trampas: trazo oscuro ancho y encima el acento de lo propio. */
+  _glifoTrampa(c, forma, x, y, conPresa = false) {
+    const trazar = () => {
+      c.beginPath();
+      switch (forma) {
+        case 'lazo':                         // el lazo: el ojal y el cordel a la estaca
+          c.moveTo(x + 3.2, y - 1); c.arc(x, y - 1, 3.2, 0, 6.283);
+          c.moveTo(x + 2.2, y + 1.4); c.lineTo(x + 4.4, y + 4.4);
+          break;
+        case 'nasa':                         // la nasa: el embudo tumbado, con la boca
+          c.moveTo(x - 4.4, y - 3.4); c.lineTo(x + 4.4, y); c.lineTo(x - 4.4, y + 3.4);
+          c.moveTo(x - 4.4, y - 3.4); c.lineTo(x - 1.6, y); c.lineTo(x - 4.4, y + 3.4);
+          break;
+        case 'red':                          // la red: el paño con su malla
+          c.rect(x - 4.6, y - 3, 9.2, 6);
+          c.moveTo(x - 1.5, y - 3); c.lineTo(x - 1.5, y + 3);
+          c.moveTo(x + 1.5, y - 3); c.lineTo(x + 1.5, y + 3);
+          c.moveTo(x - 4.6, y); c.lineTo(x + 4.6, y);
+          break;
+      }
+    };
+    c.lineWidth = 3.2; c.strokeStyle = TINTA_BORDE; trazar(); c.stroke();
+    c.lineWidth = 1.5; c.strokeStyle = TINTA_OBRA; trazar(); c.stroke();
+    if (conPresa) {
+      c.fillStyle = TINTA_OBRA;
+      c.beginPath(); c.arc(x, y - (forma === 'lazo' ? 1 : 0), 1.5, 0, 6.283); c.fill();
+    }
   }
 
   _pintarHallazgos(c, proy, op, lado, detalladas) {
@@ -504,11 +578,15 @@ export class Hallazgos {
    * descubre, la leyenda misma es un registro de lo aprendido: en un juego que
    * trata de relevar, el índice de símbolos se gana igual que las fichas.
    */
-  _pintarLeyenda(c, lado, vistos, detalladas) {
+  _pintarLeyenda(c, lado, vistos, detalladas, trampas = new Set()) {
     const filas = LISTA_TIPOS.filter(([id]) => vistos.has(id));
-    if (!filas.length) return;
+    // Las trampas, en un renglón aparte al pie, con el glifo de cada tipo que
+    // haya puesto: son lo propio y no un hallazgo.
+    const glifos = ORDEN_GLIFOS.filter(g => trampas.has(g));
+    const renglones = filas.length + (glifos.length ? 1 : 0);
+    if (!renglones) return;
 
-    const ancho = 132, alto = filas.length * 15 + 12;
+    const ancho = 132, alto = renglones * 15 + 12;
     const x0 = lado - ancho - 10, y0 = 10;
 
     c.fillStyle = 'rgba(8,10,9,.62)';
@@ -529,6 +607,12 @@ export class Hallazgos {
       c.fillStyle = 'rgba(226,214,180,.82)';
       c.fillText(t.nombre, x0 + 26, y);
     });
+    if (glifos.length) {
+      const y = y0 + 12 + filas.length * 15;
+      glifos.forEach((g, k) => this._glifoTrampa(c, g, x0 + 14 + k * 11, y));
+      c.fillStyle = 'rgba(226,214,180,.82)';
+      c.fillText('Tus trampas', x0 + 26 + (glifos.length - 1) * 11, y);
+    }
   }
 
   // ── Persistencia ───────────────────────────────────────────────────────────

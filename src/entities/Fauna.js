@@ -87,12 +87,29 @@ export class Fauna {
     }).catch(() => { /* el cargador no rechaza; si algún día lo hiciera, colores planos */ });
   }
 
-  /** ¿La especie depende del agua para vivir? */
+  /**
+   * ¿La especie depende del agua para vivir?
+   *
+   * Lo es la que vive **sólo** en ambientes de agua, la que come peces, y las de
+   * la lista de nombres. Antes alcanzaba con que el agua apareciera una vez entre
+   * sus biomas, y como `_aptitud` no deja aparecer a una acuática a más de 70 m
+   * de la orilla, diez especies con el mallín entre varios ambientes secos —el
+   * huemul, el ciervo colorado, el jabalí, la liebre europea, el perro
+   * asilvestrado, el tuco-tuco colonial, el aguilucho, el carancho, el chimango y
+   * la bandurria— vivían pegadas a los lagos: medido a las 2 de la mañana de
+   * verano en el arranque, a 543 m del agua, la liebre, el ciervo y el jabalí eran
+   * el 0,0 % de lo que podía aparecer, y con esta regla son el 10,7, el 3,5 y el
+   * 27,9 % (RONDA8.md, fase 2). El mallín es una vega húmeda y es agua para
+   * esta cuenta, pero una especie que además anda por la estepa o el bosque no
+   * depende de él.
+   */
   _esAcuatica(esp) {
     if (this._cacheAcuatica?.has(esp.id)) return this._cacheAcuatica.get(esp.id);
     this._cacheAcuatica ??= new Map();
-    const biomas = (esp.biomas || []).join(' ');
-    const v = /ribera|lacustre|mallin|humedal|acuatic|rio|lago/.test(biomas)
+    // Los biomas de `fauna.json` que son agua o viven del agua.
+    const deAgua = ['lago', 'rio', 'arroyo', 'costa_lago', 'humedal', 'mallin'];
+    const biomas = esp.biomas || [];
+    const v = (biomas.length > 0 && biomas.every(b => deAgua.includes(b)))
       || esp.dieta === 'piscivoro'
       || /maca|huillin|coipo|pato|cauquen|biguá|bigua|gaviota|martin_pescador|torrente/.test(esp.id);
     this._cacheAcuatica.set(esp.id, v);

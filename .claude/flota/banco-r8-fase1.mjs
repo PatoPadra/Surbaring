@@ -906,6 +906,32 @@ async function minimapa() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// 8 · LA COSTA Y EL DIBUJO DE SIEMPRE, sobre el DEM de verdad
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Agregada al cerrar la fase 2, mirando el mapa al tope: la costa salía en
+ * escalones de 32 m, la grilla de la máscara de agua. Y se verifica acá lo que el
+ * agente afirmó y nadie había medido: que hasta 32 m/px el dibujo es el de la base,
+ * byte a byte. Corre en un proceso aparte, porque carga el DEM de verdad.
+ */
+async function costa() {
+  const s = seccion(8, 'LA COSTA — sin escalones al tope, y el dibujo de siempre hasta 32 m/px');
+  const guion = path.join(AQUI, 'r8-costa-banco.mjs');
+  const r = spawnSync(process.execPath, ['--max-old-space-size=6144', guion, SRC], { cwd: RAIZ, encoding: 'utf8', timeout: 600000 });
+  const m = ((r.stdout || '') + (r.stderr || '')).match(/@@COSTA (.+)/);
+  if (!s.ok(!!m, 'el guion corrió sobre el DEM', (r.stderr || r.stdout || '').slice(-400))) return s;
+  const d = JSON.parse(m[1]);
+  s.ok(d.costas === 8, 'premisa: ocho costas cerca del arranque', d.costas);
+  s.ok(d.mediana <= 0.75, 'a 2 m/px la costa no es una escalera: mediana de borde en tramos rectos ≤ 0,75', `${d.mediana} (base 0,995) · ${d.tramos.join(' · ')}`);
+  s.ok(Math.abs(d.pixelesDeAgua / 60112 - 1) <= 0.05, 'y el agua ocupa lo mismo (±5 % de la base)', `${d.pixelesDeAgua} contra 60112`);
+  s.ok(d.iguales === d.comparados && d.comparados >= 2, 'hasta 32 m/px el dibujo es el de la base, byte a byte', `${d.iguales} de ${d.comparados} recortes iguales · ${d.distintos} canales distintos`);
+  s.feliz = d.costas === 8;
+  s.felizQue = `${d.costas} costas`;
+  return s;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // 6 · SIN REGRESIÓN  ·  7 · ARRANQUE
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -953,7 +979,7 @@ async function arranque() {
 instalarReloj();
 instalarDOM();
 
-const SECCIONES = { flecha, brujula, zoom, abrirCentrado, minimapa, regresion, arranque };
+const SECCIONES = { flecha, brujula, zoom, abrirCentrado, minimapa, regresion, arranque, costa };
 const soloEstas = (process.env.BANCO_SECCIONES || '').split(',').filter(Boolean);
 
 const todas = [];

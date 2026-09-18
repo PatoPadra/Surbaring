@@ -74,14 +74,6 @@ const GIRO_UMBRAL = 2 * Math.PI / 180;
 /** Celdas de exploración de lado del velo local. La ventana abarca 3,5. */
 const CELDAS_VELO = 12;
 
-/**
- * Hallazgos pinta su leyenda en la esquina de arriba a la derecha de `op.lado`:
- * 132 px de ancho, que en un lienzo de 180 taparían el minimapa entero. Con
- * `lado` corrido esto a la derecha, la leyenda cae afuera del lienzo y las
- * marcas no cambian —el recorte de lo que queda fuera es sólo más generoso—.
- */
-const LEYENDA_AFUERA = 150;
-
 function difAngular(a, b) {
   let d = (a - b) % (2 * Math.PI);
   if (d > Math.PI) d -= 2 * Math.PI;
@@ -255,10 +247,12 @@ export class Minimapa {
     }
     this._veloDibujado = ex?.version ?? 0;
 
-    // 3) Las marcas: hallazgos y obras, con la misma proyección que aPixel.
+    // 3) Las marcas: hallazgos, obras y trampas, con la misma proyección que
+    //    aPixel. Sin leyenda: su recuadro de 132 px taparía el lienzo entero.
     this.hallazgos?.dibujar(c, (x, z) => this.aPixel(x, z), {
       mpp: MPP,
-      lado: LADO + LEYENDA_AFUERA,
+      lado: LADO,
+      leyenda: false,
       construccion: this.construccion,
       exploracion: ex,
     });

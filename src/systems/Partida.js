@@ -43,7 +43,7 @@ export class Partida {
   /**
    * @param {object} deps {jugador, inventario, saberes, codice, construccion,
    *                       fundicion, mineria, tiempo, mundo, hud, obras, hornos,
-   *                       equipo}
+   *                       equipo, trampas}
    */
   constructor(deps) {
     Object.assign(this, deps);
@@ -233,6 +233,10 @@ export class Partida {
       // guardaba: el hacha no sobrevivía a cerrar la pestaña. La llama va con su
       // `hasta` en fecha del mundo, igual que el fuego de los hornos.
       equipo: this._equipo?.serializar?.() ?? null,
+      // Lo puesto en el mundo: cada trampa con su lugar, sus usos, su hora y lo
+      // que tiene adentro. Es un campo opcional más, como el equipo: una partida
+      // de antes de la ronda 8 no lo trae y carga igual, sin trampas.
+      trampas: this.trampas?.serializar?.() ?? null,
       muerte: this.ultimaMuerte,
     };
   }
@@ -349,6 +353,7 @@ export class Partida {
       this._reponerObras(d.obras || []);
       this._reponerHornos(d.hornos || []);
       this._reponerEquipo(d.equipo);
+      this._reponerTrampas(d.trampas);
       this.ultimaMuerte = d.muerte || null;
       this.ultimoGuardado = d.fecha || Date.now();
       return true;
@@ -373,6 +378,21 @@ export class Partida {
       this._equipo?.reponer?.(g);
     } catch (e) {
       console.warn('Equipo guardado ilegible, se sigue sin él:', e);
+    }
+  }
+
+  /**
+   * Las trampas van después del reloj del mundo, por lo mismo que el equipo:
+   * cada una trae hasta qué hora del mundo ya se resolvió, y el primer
+   * `actualizar()` sigue desde ahí. Sin el campo —una partida vieja— quedan sin
+   * trampas; ilegible, se avisa y se sigue con lo demás.
+   */
+  _reponerTrampas(g) {
+    if (!this.trampas?.reponer) return;
+    try {
+      this.trampas.reponer(g ?? []);
+    } catch (e) {
+      console.warn('Trampas guardadas ilegibles, se sigue sin ellas:', e);
     }
   }
 

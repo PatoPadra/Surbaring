@@ -266,10 +266,32 @@ function leerAlturas(m, H, L, r, lado, mpp, cx, cz, j0, j1) {
   }
 }
 
+/**
+ * ¿Es agua? Hasta el techo del DEM, el texel más cercano de la máscara: el mismo
+ * `esAgua` que usa el resto del juego, y el dibujo sale idéntico al de antes.
+ * Pasado el techo, la máscara interpolada igual que la altura en `alturaBaseEn`:
+ * a 2 m/px el texel más cercano dibujaba la costa en escalones de 32 m, que
+ * tampoco es el dato —es su grilla—. El umbral, 127,5, es el de `esAgua` (> 127).
+ */
+function esAguaEn(m, x, z, suave) {
+  if (!suave || !m.agua || !m._texelDe) return m.esAgua(x, z);
+  if (!m.dentro(x, z)) return false;
+  const N = m.N;
+  const fx = m._texelDe(x), fz = m._texelDe(z);
+  const i0 = Math.floor(fx), j0 = Math.floor(fz);
+  const i1 = Math.min(N - 1, i0 + 1), j1 = Math.min(N - 1, j0 + 1);
+  const sx = fx - i0, sz = fz - j0;
+  const A = m.agua;
+  const v = (A[j0 * N + i0] * (1 - sx) + A[j0 * N + i1] * sx) * (1 - sz)
+          + (A[j1 * N + i0] * (1 - sx) + A[j1 * N + i1] * sx) * sz;
+  return v > 127.5;
+}
+
 /** El color de las filas [py0, py1) del dibujo, con las alturas ya leídas. */
 function pintarRelieve(m, H, L, r, d, lado, mpp, cx, cz, py0, py1) {
   const mitadPx = lado / 2;
   const eq = equidistancia(mpp);
+  const suave = mpp < (m.metrosPorTexel || 32);
   // Con r = 1 las dos cuentas son exactamente las de siempre: la resta entre
   // vecinos abarca 2 px, y la pendiente por píxel es la mitad de la resta.
   const base = r * mpp * 1.6;
@@ -281,7 +303,7 @@ function pintarRelieve(m, H, L, r, d, lado, mpp, cx, cz, py0, py1) {
       const x = cx + (px - mitadPx + 0.5) * mpp;
       const k = (py * lado + px) * 4;
 
-      if (m.esAgua(x, z)) {
+      if (esAguaEn(m, x, z, suave)) {
         // Lagos: azul de agua glaciaria
         d[k] = 38; d[k + 1] = 62; d[k + 2] = 84; d[k + 3] = 255;
         continue;

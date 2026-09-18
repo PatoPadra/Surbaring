@@ -360,6 +360,14 @@ export class Bolso {
           this.hud?.aviso(this.equipo?.definicion(cosa.id)?.nombre || cosa.id,
             'No se pudo sacar.');
         }
+      } else if (accion === 'poner') {
+        // La del casillero señalado, con sus usos: con dos nasas, «poner la
+        // nasa» tiene que poner la que el jugador está mirando. El aviso de que
+        // quedó puesta, con la norma la primera vez, lo da `Trampas`; acá sólo
+        // se dice por qué no.
+        const cosa = this.inventario.casillas[+b.dataset.i];
+        const r = this.trampas?.poner(cosa?.id ?? id, cosa ?? null);
+        if (r && !r.ok) this.hud?.aviso(this.equipo?.definicion(cosa?.id ?? id)?.nombre || id, r.motivo || 'No se pudo poner.');
       } else if (accion === 'desequipar') {
         const ranura = b.dataset.ranura;
         const puesto = this.equipo?.enRanura(ranura);
@@ -688,6 +696,12 @@ export class Bolso {
     // número por el que se decide qué soltar, y el que explica el aviso de
     // derrame antes de que pase.
     const guarda = Number(def?.efecto?.guardaAgua) || 0;
+    // Lo que se deja puesto: la trampa de lazo (`pasiva`, habilita trampear) y
+    // lo que se cala en el agua (habilita `trampear_pez`: la nasa y la red). Sin
+    // ranura, «Sacar» no les toca, y hasta la ronda 8 el único botón que tenían
+    // era «Tirar».
+    const sePone = !!this.trampas && !rota && (def?.pasiva === true
+      || (def?.habilita || []).some(h => h === 'trampear' || h === 'trampear_pez'));
     return `<div class="bp-it" style="border-top:none;padding-top:0">
         <b class="bp-det-ic ${claseDe(c.id)}"></b>
         <span>${nombre}<small style="color:var(--tinta-tenue)"> · nivel ${def?.nivel ?? 0}${
@@ -697,6 +711,7 @@ export class Bolso {
         ${finito ? this._durabilidadHTML(it) : '<span class="bp-kg">no se gasta</span>'}
         <span class="bp-kg">${this.inventario.kgDe(c.id).toFixed(1)} kg</span>
         ${def?.ranura && !rota ? `<button data-accion="equipar" data-i="${i}">Sacar</button>` : ''}
+        ${sePone ? `<button data-accion="poner" data-i="${i}" data-id="${c.id}">Poner</button>` : ''}
         ${alumbra && !rota ? `<button data-accion="encender" data-id="${c.id}">Encender</button>` : ''}
         ${rota ? `<button data-accion="reparar" data-i="${i}">Reparar</button>` : ''}
         <button data-accion="tirar_obj" data-i="${i}">Tirar</button>
