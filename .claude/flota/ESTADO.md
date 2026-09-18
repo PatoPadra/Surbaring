@@ -6,7 +6,7 @@ Banco Node 7/7 con `vite build`, falsador 18/18 con 3 controles verdes, mitad na
 18/18. La luna es la de la fecha (0,15° y 0,12 puntos contra JPL Horizons), el cielo gira
 con el tiempo sidéreo y la precesión, las 4484 estrellas salen del Bright Star Catalogue
 sin ninguna inventada, el disco muestra su fase y la Cruz del Sur enseña el método para
-encontrar el sur. La noche le suma 3,58 ms a la GPU contra los 5,06 de la base: cuesta
+encontrar el sur. La noche le suma 3,48 ms a la GPU contra los 5,06 de la base: cuesta
 menos que el ruido que reemplazó.
 
 Tres defectos del propio banco, encontrados midiendo: una premisa astronómicamente
@@ -14,8 +14,8 @@ imposible (luna llena alta en verano), una razón que no discriminaba (una luna 
 tomada por cuarto) y un barrido que contaba los bordes de los árboles como estrellas
 inventadas. Los tres arreglados y vueltos a medir.
 
-Con esto **cierra la ronda 7**. Falta que el dueño lo vea en el juego; no se fusiona a
-`main` ni se sube hasta entonces.
+Con esto **cierra la ronda 7**. El dueño la jugó el 18/9/2026, y la ronda se fusionó a
+`main` y se subió ese mismo día.
 
 > **15/9/2026 — RONDA 7, FASE 5 (`witral`) CERRADA: el telar es una cosa, se hila, y
 > la lana alcanza.** Banco 9/9, falsador 20 de 20 con 3 controles verdes, mitad
