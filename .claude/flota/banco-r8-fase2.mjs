@@ -525,7 +525,12 @@ async function revisar() {
     const r2 = t2?.presas?.length ? w2.trampas.revisar(t2) : null;
     const nuevas = w2.norma.llamadas.slice(n0);
     s.ok(r2?.protegida === true, 'premisa: cayó un segundo huiña', JSON.stringify(r2 && { protegida: r2.protegida }));
-    s.ok(nuevas.length >= 1 && nuevas.every((l) => l.v?.gravedad !== 'grave'), 'la segunda vez se anota, sin frenar el juego con el panel', nuevas.map((l) => `${l.via}:${l.v?.gravedad}`).join(', ') || 'sin llamadas');
+    // Lo que frena el juego es el panel, y el panel lo abre sólo `mostrar()` con
+    // gravedad 'grave'. `anotar()` con la gravedad de verdad es lo correcto: el banco
+    // pedía antes que ninguna llamada fuera 'grave', y eso empujaba a anotar como
+    // 'leve' algo que no lo es. Lo encontró el agente.
+    const panel = nuevas.filter((l) => l.via === 'mostrar' && l.v?.gravedad === 'grave');
+    s.ok(nuevas.length >= 1 && panel.length === 0, 'la segunda vez se anota, sin frenar el juego con el panel', nuevas.map((l) => `${l.via}:${l.v?.gravedad}`).join(', ') || 'sin llamadas');
   }
 
   // Levantar vacío
