@@ -1,5 +1,28 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+## Ronda 8 · ABIERTA el 18/9/2026 · rama `mejoras/ronda8-lo-que-vio`
+
+El dueño jugó la ronda 7 y trajo cinco notas. **Se fue a Chile el 18/9 y vuelve el
+lunes 21 a la noche**: pidió que la ronda siga sin él, con más peso en los
+gráficos. Antes de irse contestó todas las decisiones pendientes, esta vez como
+preguntas con opciones. La carta, con las respuestas y lo medido, está en
+`RONDA8.md`.
+
+Medido antes de encargar nada: **la trampa de lazo no se puede poner** (`pasiva`
+no lo lee nadie, y la nasa y la red tienen el mismo problema), **la flecha del
+mapa apunta a 180° justos**, el zoom termina en 8 m/px, el minimapa no existe, y
+**la brújula de arriba nunca estuvo centrada**: le falta `position` desde el
+prototipo. El hacha de piedra sale de un solo paso, y el único martillo es de
+hierro.
+
+Siete fases: `rumbo`, `lazo`, `suelo`, `copa`, `piedra`, `luz`, `reglas`. Más la
+propuesta escrita del primer año, sin código.
+
+**La «otra cosa» de gráficos que marcó el dueño no llegó escrita: preguntarle a la
+vuelta.**
+
+---
+
 ## Ronda 7, fase 6 · `cielo` · CERRADA
 
 Banco Node 7/7 con `vite build`, falsador 18/18 con 3 controles verdes, mitad navegador
