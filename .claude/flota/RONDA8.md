@@ -324,3 +324,126 @@ hoy, un lazo en la estepa nunca agarraría una liebre.
 —Vulnerable— sigue siendo el 2,8 % de lo que anda de noche. Un lazo no distingue, y
 ésa es exactamente la razón que da `herramientas.json` para que el trampeo esté
 prohibido en todo el Parque. El juego lo tiene que mostrar, no esconder.
+
+**4 · Todo lo nativo está protegido.** En `fauna.json`, de las 25 especies de hasta
+6 kg entre mamíferos y aves de más de 100 g, **23 tienen `protegida: true`**: son
+nativas de un Parque Nacional. Sólo la liebre europea y el visón americano no lo
+están. Así que casi todo lo que agarre un lazo va a ser fauna protegida, y ése es
+exactamente el argumento de la ficha (`herramientas.json:919`): *«En el juego
+funciona, bajo la misma licencia que el arco, y el aviso explica por qué un método
+que no elige a quién agarra no entra en ningún reglamento del mundo real»*.
+
+**5 · El reloj.** `tiempo.segundosTotales` son segundos **reales**
+(`Tiempo.avanzar(dt)`); el tiempo del mundo es `tiempo.fecha`, que corre a
+`velocidad` × —72 por defecto, 24, 900 o 7200 con la tecla—. Una noche de diez
+horas son ~8 minutos de juego. La trampa trabaja con **`tiempo.fecha`**.
+
+**6 · La nasa y la red.** `nasa_junco` (durabilidad 20, 1,8 kg) y `red_fibra` (50,
+3,2 kg) son de categoría `pesca`, sin ranura, y tampoco tienen gesto. `Pesca`
+elige qué pica con `_loQuePica(ambiente)`, que cruza `peces._aptitud` con `PICA`:
+es la cuenta que les corresponde.
+
+### Decisiones del jefe, tomadas midiendo
+
+- **Qué cae**: una especie sorteada entre las que el lazo puede sostener
+  (`presaMaxKg`, mamíferos y aves de 100 g o más) **con el mismo peso que usa
+  `Fauna._reponer`**: `_aptitud × _actividad` en ese lugar y a esa hora. En el agua,
+  la nasa y la red sortean con `Pesca._loQuePica`.
+- **Cuándo cae**: un proceso de Poisson por hora de mundo, con una tasa declarada
+  en `herramientas.json` junto a su fuente o como licencia dicha. El resultado no
+  puede depender de cada cuánto se mira: revisar una vez a las diez horas o cada
+  diez minutos da la misma distribución.
+- **Lo protegido**: si cae una especie protegida, **no se aprovecha nada** —la ley
+  que prohíbe cazarla no cambia porque el animal ya esté muerto— y el juego lo dice
+  con la norma del trampeo: la primera vez por especie en el panel que espera
+  (`Norma`), las siguientes en el cartel. Se registra igual. Es la tesis del juego
+  —*la negativa es el contenido*— aplicada a la trampa. **Para que lo mire el
+  dueño**: puede ser frustrante que la mayoría de lo que cae no se pueda usar.
+  Es lo verdadero, y es lo que la ficha prometía.
+- **Lo que no está protegido** (la liebre, el visón) rinde lo mismo que si se lo
+  cazara: la misma cuenta de `Caza`, con la misma regla del filo.
+- **El lazo se gasta al agarrar** (durabilidad 1). Vacío, se levanta y vuelve al
+  bolso entero. La nasa y la red gastan un uso por captura, como una herramienta.
+- **Lo puesto en el mundo no es del bolso**: con la regla de la muerte nueva
+  («se pierde todo», fase 7), las trampas puestas quedan donde están.
+
+### Propiedad exclusiva de archivos
+
+El agente escribe **sólo**:
+
+- `src/systems/Trampas.js` — **nuevo**: el modelo de lo puesto
+- `src/world/Trampas3D.js` — **nuevo**: lo que se ve en el mundo
+- `src/systems/Hallazgos.js` — **sólo** dibujar las trampas y su renglón de leyenda
+- `src/ui/Bolso.js` — **sólo** el botón «Poner» y su manejador
+- `src/systems/Recoleccion.js` — **sólo** la rama de la trampa en
+  `quePuedoHacer()` y en `actuar()`
+- `src/systems/Partida.js` — **sólo** guardar y reponer las trampas
+- `src/entities/Fauna.js` — **sólo** `_esAcuatica()`
+- `src/data/herramientas.json` — **sólo** la tasa de captura, con su fuente o
+  criterio, en `trampa_lazo`, `nasa_junco` y `red_fibra`
+
+Del coordinador: `src/main.js` (crear `Trampas` y `Trampas3D`, pasarlas a quien las
+pida, llamar `actualizar()` en el bucle), los bancos, el falsador y esta carta.
+
+### El contrato
+
+**L1 · La fauna vive donde vive.** Una especie es acuática si **todos** sus biomas
+son de agua (`lago`, `rio`, `arroyo`, `costa_lago`, `humedal`, `mallin`), si es
+piscívora, o si está en la lista de nombres de hoy. Las diez especies del punto 2
+dejan de serlo; el huillín, el coipo, el visón, los macás, el biguá, el martín
+pescador, el pato de los torrentes, el cauquén y todos los peces siguen siéndolo.
+
+**L2 · Poner.** `Trampas` exporta la clase con `constructor(deps)` —`{mundo,
+fauna, peces, pesca, inventario, equipo, caza, norma, tiempo, jugador, objetos}`,
+donde `objetos` es `herramientas.json` `.objetos`— y:
+
+- `evaluarPoner(objetoId, x, z)` → `{ ok, motivo, x, z }`: dónde iría y si puede. El
+  lazo va en tierra firme, fuera del agua; la nasa y la red, **en el agua**, a no más
+  de 3 m de donde está parado el jugador (el punto de agua más cercano).
+- `poner(objetoId)` → `{ ok, motivo, trampa }`: la saca del bolso (la instancia con
+  su durabilidad, si la tiene) y la deja en el mundo. Sin la trampa en el bolso, o
+  en un lugar que no sirve, no hace nada y dice por qué.
+- `lista`: lo puesto, cada uno con `{ id, objeto, x, z, puestaEn, presa }`.
+
+**L3 · Cae algo, con la cuenta del juego.** `actualizar()` lee `tiempo.fecha` y
+resuelve lo que pasó desde la última vez. La presa se sortea como dice arriba, y la
+cantidad de capturas por noche en un lugar sigue la tasa declarada: medido sobre
+muchas noches, la media cae a menos del 15 % de la que da la fórmula, y la
+composición por especie a menos de 3 puntos de los pesos de `_aptitud × _actividad`.
+**Sólo especies que el objeto puede sostener.** Mirar cada diez minutos o una sola
+vez a las diez horas da la misma distribución.
+
+**L4 · Revisar y levantar.** `cerca(x, z)` devuelve la trampa a menos de 2,5 m.
+`revisar(trampa)` → `{ ok, presa, rinde, protegida, motivo }`: con presa no
+protegida, el rinde de `Caza` entra al bolso; con presa protegida, nada entra, la
+norma se muestra y se registra; el lazo se gasta. `levantar(trampa)` devuelve la
+trampa vacía al bolso con su durabilidad; si el bolso no tiene lugar, no la levanta
+y lo dice.
+
+**L5 · La tecla.** A menos de 2,5 m de una trampa, `recoleccion.quePuedoHacer()`
+ofrece `tipo: 'trampa'` con una etiqueta que dice qué hay («Revisar la trampa ·
+cayó una liebre europea», «Levantar la trampa · vacía»), y `actuar()` la resuelve.
+Beber con sed y lo que ya tenía prioridad sobre la tecla la conserva.
+
+**L6 · El bolso.** Los objetos `pasiva: true` y los de pesca que se calan tienen el
+botón «Poner» en el bolso, que llama a `trampas.poner`.
+
+**L7 · En el mapa y el minimapa.** `Hallazgos.dibujar` pinta cada trampa puesta con
+un glifo propio por tipo, **a cualquier zoom y aunque el velo tape el lugar** (es
+lo propio, como las obras), y un renglón «Tus trampas» en la leyenda. Una trampa
+con presa se distingue de una vacía **sólo después de revisarla** (el mapa no sabe
+lo que el jugador no vio). El minimapa la muestra solo, porque dibuja por
+`Hallazgos`.
+
+**L8 · Se guarda.** La partida guarda y repone las trampas —con su lugar, su
+objeto, su durabilidad y lo que tengan adentro— como un campo opcional: `VERSION`
+sigue en 1 y un guardado viejo entra igual.
+
+**L9 · Se ve, sin compilar nada.** Cada trampa puesta tiene un modelo en el mundo,
+chico y legible (el lazo con su estaca, la nasa como un cono de junco, la red como
+un paño con flotadores). **Poner la primera trampa no compila ningún programa
+nuevo**, medido en el juego como en la ronda 7: los materiales se compilan en la
+carga.
+
+**L10 · Sin regresión.** Los bancos de la ronda 7 y la fase 1 de ésta siguen
+verdes, y `vite build` limpio.
