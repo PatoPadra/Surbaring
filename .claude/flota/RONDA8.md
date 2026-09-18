@@ -432,7 +432,10 @@ El agente escribe **sólo**:
 
 - `src/systems/Trampas.js` — **nuevo**: el modelo de lo puesto
 - `src/world/Trampas3D.js` — **nuevo**: lo que se ve en el mundo
-- `src/systems/Hallazgos.js` — **sólo** dibujar las trampas y su renglón de leyenda
+- `src/systems/Hallazgos.js` — **sólo** dibujar las trampas y su renglón de leyenda,
+  y aceptar `op.leyenda === false` para no pintar la leyenda (lo pidió la fase 1)
+- `src/ui/Minimapa.js` — **sólo** pasar `leyenda: false` y `lado: LADO` a
+  `hallazgos.dibujar`, y borrar `LEYENDA_AFUERA`, que era el truco para esconderla
 - `src/ui/Bolso.js` — **sólo** el botón «Poner» y su manejador
 - `src/systems/Recoleccion.js` — **sólo** la rama de la trampa en
   `quePuedoHacer()` y en `actuar()`

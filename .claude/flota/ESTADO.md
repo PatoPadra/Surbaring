@@ -21,6 +21,17 @@ propuesta escrita del primer año, sin código.
 **La «otra cosa» de gráficos que marcó el dueño no llegó escrita: preguntarle a la
 vuelta.**
 
+> **18/9/2026 — FASE 1 (`rumbo`) CERRADA** (`f9d8746`). Banco 7/7, falsador 16/16 con
+> 3 controles verdes, navegador 29/29. La flecha apunta bien en el mapa y el minimapa
+> (una sola función), la brújula está centrada (y los fenómenos bajaron para no
+> taparla), el zoom llega a 2 m/px sin dibujar la grilla del DEM, el mapa abre centrado
+> en el jugador, y hay minimapa: 900 m, velo como el mapa, 0,007 ms por cuadro. Dos
+> defectos del banco, encontrados por el agente; los dos, míos.
+>
+> **Fase 2 (`lazo`)**: contrato, banco, falsador y mitad navegador escritos antes del
+> agente y validados contra una maqueta del jefe que no se le da (21/21 del falsador).
+> Tres defectos del banco encontrados así, antes de que el agente escribiera una línea.
+
 ---
 
 ## Ronda 7, fase 6 · `cielo` · CERRADA
