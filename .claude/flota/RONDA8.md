@@ -195,7 +195,11 @@ pide en `pendiente-r8-rumbo.md`.
 minimapa, la punta de la flecha va en la dirección de avance `(−sin giro, −cos
 giro)` proyectada al lienzo, **a menos de 1°**, para cualquier giro. Una sola
 función decide el rumbo de las dos flechas: no puede pasar que se arregle una y la
-otra quede al revés.
+otra quede al revés, así que `Minimapa.js` la importa de `Mapa.js`.
+
+La flecha sigue siendo **un polígono relleno de 3 a 6 vértices, sin curvas**,
+centrado en el jugador: es lo que el banco reconoce en el lienzo. La forma, el color
+y el tamaño los elige el agente.
 
 **R2 · La brújula centrada.** `#brujula` queda centrada arriba: el centro de su caja
 a menos de 1 px del centro de la ventana, y sin pisar `#geo` ni `#reloj`.
@@ -212,18 +216,26 @@ menos), sin quitar ninguno de los peldaños de hoy. Lo que sigue valiendo:
 
 Cómo se ve el relieve pasado el techo —estirado como hoy o reconstruido desde el
 DEM— lo decide el agente, con dos condiciones: **no inventa filos** (el mapa sigue
-leyendo `alturaBaseEn`) y abrir el mapa al zoom máximo no cuesta más de lo que
-cuesta hoy al máximo actual, medido en el juego.
+leyendo `alturaBaseEn`) y abrir el mapa y llevarlo al zoom máximo no cuesta más de
+lo que cuesta hoy llevarlo al máximo actual. Se mide en el juego de dos maneras:
+**las alturas leídas del terreno** —la base lee 412.164, un recorte de 642²— con
+25 % de margen, y **el tiempo alternado** con una copia del `Mapa.js` de la base en
+la misma sesión, con 50 % de margen.
+
+`Mapa` conserva su superficie pública: `alternar()`, `dibujar()`, `verTodo()`,
+`aPixel(x, z)`, `aMundo(px, py)`, `nivel`, `vista`, `abierto`, `lienzo`, `ctx`, `el`.
+La rueda y el arrastre siguen en el lienzo.
 
 **R4 · Al abrir, el mapa mira al jugador.** Abrir el mapa conserva el nivel de zoom
 y centra la vista en el jugador (con el límite de siempre: la vista no se sale del
 mundo). Al nivel 0 no cambia nada, porque la ventana es el mundo.
 
 **R5 · El minimapa.** Un módulo nuevo, `src/ui/Minimapa.js`, que exporta
-`class Minimapa` con `constructor(deps)` —las mismas dependencias que `Mapa`:
-`{mundo, jugador, exploracion, hallazgos, construccion, codice}`— y
+`class Minimapa` con `constructor(deps)` —las mismas dependencias que `Mapa` más el
+mapa: `{mundo, jugador, exploracion, hallazgos, construccion, codice, mapa}`— y
 `actualizar(dt)`, que el coordinador llama una vez por cuadro. Crea su propio
-elemento, `#minimapa`, dentro de `#hud`.
+elemento, `#minimapa`, dentro de `#hud`, y expone como `Mapa`: `el` (el
+`#minimapa`), `lienzo`, `ctx`, `aPixel(x, z)` y `dibujar()`, que redibuja ya.
 
 - **Dónde**: abajo a la derecha, con al menos 12 px de margen a los dos bordes,
   entre **110 y 200 px CSS** de lado a 1024×768, **sin pisar ningún otro elemento
@@ -241,12 +253,19 @@ elemento, `#minimapa`, dentro de `#hud`.
   caminando 10 s en Baja: **promedio menor a 0,25 ms por cuadro y ninguna llamada
   mayor a 6 ms**. El relieve se reconstruye sólo cuando el jugador se acerca al
   borde de lo ya dibujado, no por metro caminado.
-- **Se esconde** cuando el mapa grande está abierto (no suma nada debajo de un velo
-  que lo tapa) y cuando el HUD está escondido.
+- **Se esconde** cuando el mapa grande está abierto: `#minimapa` lleva la clase
+  `oculto` y no dibuja nada mientras tanto. Con el HUD escondido se esconde solo,
+  porque vive adentro.
+- **Las marcas** salen de `hallazgos.dibujar(c, proy, op)`, con la misma proyección
+  que `aPixel` y `op.construccion`, como en el mapa.
 
-**R6 · Sin regresión.** Los bancos de la ronda 7 siguen verdes, y `vite build`
-limpio. `r2-carta-mapa.mjs` sigue verde salvo la aserción que fija la escalera
-vieja, que el coordinador actualiza al contrato nuevo.
+**R6 · Sin regresión.** Los siete bancos de la ronda 7 siguen verdes (6/6, 4/4,
+7/7, 6/6, 10/10, 9/9, 7/7 contra la base), y `vite build` limpio.
+`r2-carta-mapa.mjs` mira métodos internos del mapa y fija la escalera vieja: se
+corre y se informa, pero no manda, porque el contrato nuevo permite construir el
+relieve pasado el techo. Lo que medía de comportamiento —el zoom hacia el cursor,
+la vista dentro del mundo, la proyección de ida y vuelta— lo vuelve a medir este
+banco por la rueda y el arrastre, sin mirar métodos internos.
 
 ### Lo que el banco no mide
 
