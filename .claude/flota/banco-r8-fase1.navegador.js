@@ -14,8 +14,9 @@
  *        fuera del centro es velo; con la exploración entera en 255, es relieve. Se
  *        lee el lienzo con `getImageData`, y la exploración se restaura byte a byte.
  *   N5 · se esconde con el mapa abierto.
- *   N6 · el costo: `minimapa.actualizar()` envuelto con `performance.now()`
- *        durante 10 s caminando solo (Z). Promedio < 0,25 ms y ninguna > 6 ms.
+ *   N6 · el costo: 300 cuadros de 1/30 s manejados a mano, caminando a 1,4 m/s,
+ *        cronometrando cada `minimapa.actualizar()`. Promedio < 0,25 ms y ninguna
+ *        > 6 ms. Y un tramo de 3 km que obliga a reconstruir: ninguna > 6 ms.
  *   N7 · el costo del zoom: se abre el mapa y se lleva al nivel máximo con la
  *        rueda, sobre el jugador, hasta que queda quieto. Se cuentan las alturas
  *        leídas del terreno —sin ruido— y el tiempo dentro de los métodos del mapa,
@@ -137,8 +138,12 @@
       const leer = async (valor) => {
         ex.conocido.fill(valor);
         ex.version = (ex.version ?? 0) + 1000;
-        // Que redibuje: varios cuadros y lo que haga falta de ocio
-        for (let i = 0; i < 6; i++) { mm.actualizar?.(0.5); await esperar(120); }
+        // Que redibuje. El relieve se arma de a partes, un cuadro por vez (32 en
+        // el código del agente): con el panel oculto el bucle no corre, así que
+        // se le dan cien cuadros a mano antes de leer.
+        for (let i = 0; i < 100; i++) mm.actualizar?.(1 / 30);
+        mm.dibujar?.();
+        await esperar(50);
         const c2 = lienzo.getContext('2d');
         const W = lienzo.width, H = lienzo.height;
         const d = c2.getImageData(0, 0, W, H).data;
@@ -180,29 +185,49 @@
     }
 
     // ── N6 · el costo ─────────────────────────────────────────────────────
+    // Diez segundos de juego a 30 cuadros, manejados a mano: 300 llamadas a
+    // actualizar(1/30) con el jugador caminando a 1,4 m/s hacia el norte. Con el
+    // panel oculto el bucle del juego no corre (requestAnimationFrame no dispara),
+    // y así además se aísla el minimapa del resto del cuadro. El lienzo y la CPU
+    // son los de verdad.
     if (mm) {
-      const orig = mm.actualizar;
+      const j = S.jugador;
+      const p0 = j.posicion.clone();
       const tiempos = [];
-      mm.actualizar = function (...a) { const t0 = performance.now(); const r = orig.apply(this, a); tiempos.push(performance.now() - t0); return r; };
-      const e = S.entrada;
-      const antes = e.autoAndar;
-      const p0 = { x: S.jugador.posicion.x, z: S.jugador.posicion.z };
       try {
-        if ('autoAndar' in e) e.autoAndar = true;
+        // Que el primer relieve ya esté: es lo que pasa en el primer segundo de juego
+        for (let i = 0; i < 100; i++) mm.actualizar(1 / 30);
         marcar({ paso: 'N6 caminando 10 s' });
-        await esperar(10000);
+        for (let i = 0; i < 300; i++) {
+          j.posicion.z -= 1.4 / 30;
+          const t0 = performance.now();
+          mm.actualizar(1 / 30);
+          tiempos.push(performance.now() - t0);
+          if (i % 30 === 29) await esperar(0);
+        }
+        // Y un tramo largo, que obliga a reconstruir: 3 km en 300 cuadros
+        const largos = [];
+        for (let i = 0; i < 300; i++) {
+          j.posicion.x += 10;
+          const t0 = performance.now();
+          mm.actualizar(1 / 30);
+          largos.push(performance.now() - t0);
+          if (i % 30 === 29) await esperar(0);
+        }
+        const mL = largos.reduce((a, b) => a + b, 0) / largos.length;
+        notas.push(`N6 tramo largo (3 km en 300 cuadros): media ${mL.toFixed(3)} ms, máx ${Math.max(...largos).toFixed(2)} ms`);
+        ok(Math.max(...largos) < 6, 'N6 · reconstruyendo el relieve, ninguna llamada pasa de 6 ms', `${Math.max(...largos).toFixed(2)} ms`);
       } finally {
-        if ('autoAndar' in e) e.autoAndar = antes;
-        mm.actualizar = orig;
+        j.posicion.copy(p0);
+        for (let i = 0; i < 100; i++) mm.actualizar(1 / 30);
       }
-      const recorrido = Math.hypot(S.jugador.posicion.x - p0.x, S.jugador.posicion.z - p0.z);
       const n = tiempos.length;
-      const media = n ? tiempos.reduce((a, b) => a + b, 0) / n : NaN;
-      const max = n ? Math.max(...tiempos) : NaN;
-      ok(n > 20, 'N6 · premisa: el bucle llamó a actualizar() mientras se caminaba', `${n} llamadas en 10 s · ${recorrido.toFixed(1)} m recorridos`);
-      ok(media < 0.25, 'N6 · el minimapa cuesta menos de 0,25 ms por cuadro en promedio', `${media.toFixed(3)} ms`);
+      const media = tiempos.reduce((a, b) => a + b, 0) / n;
+      const max = Math.max(...tiempos);
+      ok(n === 300, 'N6 · premisa: 300 cuadros', n);
+      ok(media < 0.25, 'N6 · caminando, el minimapa cuesta menos de 0,25 ms por cuadro en promedio', `${media.toFixed(3)} ms`);
       ok(max < 6, 'N6 · ninguna llamada pasa de 6 ms', `${max.toFixed(2)} ms`);
-      notas.push(`N6: ${n} cuadros, media ${media.toFixed(3)} ms, máx ${max.toFixed(2)} ms, ${recorrido.toFixed(1)} m`);
+      notas.push(`N6: 300 cuadros caminando, media ${media.toFixed(3)} ms, máx ${max.toFixed(2)} ms`);
     }
 
     // ── N7 · el costo del zoom al máximo ──────────────────────────────────

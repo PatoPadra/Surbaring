@@ -90,8 +90,11 @@
   .vital.critico .pista i { animation: vitalCritico 1.15s ease-in-out infinite; }
   @keyframes vitalCritico { 0%, 100% { opacity: 1; filter: brightness(1); } 50% { opacity: .5; filter: brightness(1.4); } }
 
+  /* Sin position quedaba static: left y el translate la corrían media caja a
+     la izquierda del borde, y se veía media brújula debajo de #geo. Absoluta
+     respecto de #hud, que ocupa la pantalla entera, queda centrada arriba. */
   #brujula {
-    top: 0; left: 50%; transform: translateX(-50%);
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: min(440px, 52vw); height: 30px;
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
     mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);

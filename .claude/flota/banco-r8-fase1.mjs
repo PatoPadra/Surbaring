@@ -600,8 +600,12 @@ async function zoom() {
   if (!m.abierto) m.alternar();
   s.ok(Math.abs(m.vista.mpp - TAMANO / LADO) < 1e-9, 'premisa: arranca en el parque entero', m.vista.mpp);
 
-  // La escalera, por la rueda en el centro
-  const mpps = subirHastaElTope(m, 320, 320);
+  // La escalera, por la rueda sobre la obra. Sobre el centro del lienzo —que al
+  // nivel 0 es el centro del mundo— la obra, a 1230 m, queda afuera de la ventana
+  // de ±640 m del tope: el banco lo pedía así y validó contra la base sólo porque
+  // la escalera vieja paraba en ±2560 m. Lo encontró el agente haciendo la cuenta.
+  const po0 = m.aPixel(obra.x, obra.z);
+  const mpps = subirHastaElTope(m, po0.px, po0.py);
   s.nota(`escalera: ${mpps.map((x) => +x.toFixed(3)).join(' · ')} m/px`);
   const tiene = (v) => mpps.some((x) => Math.abs(x - v) < 1e-6);
   s.ok([102.4, 51.2, 32, 16, 8].every(tiene), 'la escalera conserva los cinco peldaños de antes', [102.4, 51.2, 32, 16, 8].filter((v) => !tiene(v)).join(', ') || 'todos');

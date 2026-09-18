@@ -272,6 +272,51 @@ banco por la rueda y el arrastre, sin mirar métodos internos.
 Si el minimapa se lee bien de un vistazo mientras se camina, y si 160 px o 180 px es
 «chico». Eso es del ojo del dueño.
 
+### CERRADA el 18/9/2026
+
+**Banco 7/7** con la regresión de los siete bancos de la ronda 7 y `vite build`;
+**falsador 16 de 16** con los 3 controles verdes; **mitad navegador 29/29**.
+
+- **La flecha** apunta a 0,0° de la dirección de avance en los ocho giros, en el mapa
+  y en el minimapa: una sola función, `rumboEnLienzo(giro) = −giro`, exportada de
+  `Mapa.js`. En el juego, con giro 2,89 (rumbo 194°, la brújula en la S), la punta de
+  la flecha del minimapa se midió en los píxeles del lienzo a 105,8° contra 104,4°.
+- **La brújula** quedó centrada (292–732 a 1024 px). **Y destapó otra superposición**:
+  con un fenómeno activo, sus etiquetas (y 16–38) tapaban los rumbos (y 0–30). El
+  coordinador bajó `#fenomenos` a `top: 2.6rem` (`HUD.js`): medido, y 42–64, sin
+  pisarse.
+- **El zoom** llega a 2 m/px en siete peldaños. El relieve se reconstruye en cada uno
+  leyendo `alturaBaseEn` y mide la pendiente sobre dos texels: medirla entre píxeles
+  vecinos a 2 m dibujaba la grilla de 32 m del DEM (la luz saltaba 6,94 veces más en
+  los bordes de texel). Hasta 32 m/px el dibujo es idéntico al de la base, canal por
+  canal. Al tope se leen **451.584 alturas contra 412.164** de la base (1,10; el
+  agente predijo el número exacto), y alternado con la base tarda 182,0 ms contra
+  191,4.
+- **Al abrir**, el mapa se centra en el jugador y conserva el zoom.
+- **El minimapa**: 180 px, 5 m/px, una ventana de 900 m, abajo a la derecha con 16 px
+  de margen. Con la exploración en cero es 99,9 % velo; entera, 0,0 % oscuro. Se
+  esconde con el mapa abierto. **Cuesta 0,007 ms por cuadro caminando** (máximo
+  0,20) y **1,20 ms como máximo** reconstruyendo el relieve, que se arma de a 12 filas
+  por cuadro. El agente había predicho 0,03–0,06: esta vez su número cayó del lado
+  pesimista.
+
+**Dos defectos del banco, los dos míos y los dos encontrados por el agente haciendo la
+cuenta**: la X de la obra se medía ampliando hacia el centro del mundo, y a 2 m/px la
+obra (a 1230 m) quedaba fuera de la ventana de ±640 m —con la escalera vieja cabía—; y
+el parche `flecha-mini-al-reves` sumaba π en `actualizar` y otra vez en `dibujar`, que
+se llaman uno al otro: 2π, nada plantado. Y dos más que encontré yo midiendo: con el
+panel oculto el bucle no corre, así que N4 y N6 manejan los cuadros a mano; y N7 medido
+suelto variaba de 50,5 a 72,4 ms entre sesiones, así que cuenta alturas y alterna con
+una copia de la base.
+
+**Para que lo mire el dueño**: la flecha es de 12 px con una muesca atrás; agrandada y
+borrosa, a mí me pareció apuntar al revés y la medida dijo que no. Si a él también le
+confunde, es cambiar la forma en `pintarFlecha`.
+
+**Queda anotado** (`pendiente-r8-rumbo.md`): que `Hallazgos.dibujar` acepte
+`op.leyenda === false`, para sacar el truco del `lado` corrido con que el minimapa
+esconde la leyenda. Va con la fase 2, que es dueña de `Hallazgos.js`.
+
 ---
 
 ## FASE 2 · `lazo` — lo que se deja puesto y se vuelve a buscar

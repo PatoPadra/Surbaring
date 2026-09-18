@@ -53,6 +53,7 @@ import { instalarLuces, fuenteDeMano, radioDeLuzEn } from './engine/Luces.js';
 import { Exploracion } from './systems/Exploracion.js';
 import { Hallazgos } from './systems/Hallazgos.js';
 import { Mapa } from './ui/Mapa.js';
+import { Minimapa } from './ui/Minimapa.js';
 import { Opciones } from './ui/Opciones.js';
 import { Bolso } from './ui/Bolso.js';
 import { Fin } from './ui/Fin.js';
@@ -399,6 +400,11 @@ async function iniciar() {
   taller.hallazgos = hallazgos;
   const mapa = new Mapa({
     mundo, jugador, tiempo, exploracion, codice, construccion, hallazgos,
+  });
+  // La misma carta en chico, abajo a la derecha. Se arma después del mapa porque
+  // se esconde mientras el grande está abierto.
+  const minimapa = new Minimapa({
+    mundo, jugador, exploracion, hallazgos, construccion, codice, mapa,
   });
   const bolso = new Bolso({ inventario, jugador, hud, recoleccion, equipo, fabricacion, tiempo });
   const fin = new Fin({ jugador, mundo, tiempo, hud, codice, saberes, construccion });
@@ -984,6 +990,7 @@ async function iniciar() {
 
     // ── Interfaz
     hud.actualizar(dt, cielo);
+    minimapa.actualizar(dt);
     if (performance.now() - ultimoDiag > 250) {
       ultimoDiag = performance.now();
       const inf = render.info;
@@ -1005,7 +1012,7 @@ async function iniciar() {
     inventario, saberes, recoleccion, caza, audio, equipo, fabricacion, bolso,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima, oclusion, color, calidad,
-    exploracion, hallazgos, mapa, bolso, opciones, fin, partida, norma, relevamiento, cierre,
+    exploracion, hallazgos, mapa, minimapa, bolso, opciones, fin, partida, norma, relevamiento, cierre,
     luces, juntarLuces,
   };
 

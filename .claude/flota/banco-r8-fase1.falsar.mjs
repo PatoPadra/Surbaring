@@ -50,13 +50,21 @@ var __orig_` + nombre + ' = ' + clase + '.prototype.' + metodo + String.raw`;
 `;
 }
 
-/** Con el giro cambiado sólo mientras dibuja: la flecha sale mal y nada más. */
+/**
+ * Con el giro cambiado sólo mientras dibuja: la flecha sale mal y nada más. El giro
+ * se cambia sólo en la llamada de más afuera (`__hondoGiro`, compartido): si se
+ * envuelven `actualizar` y `dibujar` y uno llama al otro, sumar π dos veces da 2π y
+ * no planta nada. Lo encontró el agente midiendo 0,0° con el parche puesto.
+ */
 const conGiro = (clase, metodo, nombre, expr) => String.raw`
 var __orig_` + nombre + ' = ' + clase + '.prototype.' + metodo + String.raw`;
+globalThis.__hondoGiro = globalThis.__hondoGiro || 0;
 ` + clase + '.prototype.' + metodo + String.raw` = function (...a) {
+  if (globalThis.__hondoGiro > 0) return __orig_` + nombre + String.raw`.apply(this, a);
   const j = this.jugador; const g = j.giro;
   j.giro = ` + expr + String.raw`;
-  try { return __orig_` + nombre + String.raw`.apply(this, a); } finally { j.giro = g; }
+  globalThis.__hondoGiro++;
+  try { return __orig_` + nombre + String.raw`.apply(this, a); } finally { globalThis.__hondoGiro--; j.giro = g; }
 };
 `;
 
