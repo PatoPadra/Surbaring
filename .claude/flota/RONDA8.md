@@ -811,3 +811,37 @@ misma sesión, no suben más de un **15 %**. Poner un árbol en pantalla no comp
 nuevo (los atlas llegan por el valor del uniforme o están en la carga).
 
 **C6 · Sin regresión.** La ronda 7 y las fases 1 a 3, y `vite build` limpio.
+
+---
+
+## FASE 5 · `piedra` — trabajar la piedra paso a paso (medición de apertura)
+
+Medido el 18/9/2026 sobre los datos (`herramientas.json`, `historia.json`).
+
+**1 · El primer hacha, hoy.** Expandida la receta hasta lo crudo:
+
+```
+hacha_piedra [tec hacha_pulida] = 2 piedra, 1 mango, 4 tiento
+  mango_labrado [tec lasca_obsidiana] = 2 madera, 1 cordel
+    cordel_fibra = 3 fibra
+  tiento_cuero = 1 cuero
+crudo: 2 piedra · 2 madera · 3 fibra · 1 cuero
+```
+
+y las tecnologías: `hacha_pulida` (16 de saber, 3 piedras, 2 cordeles) pide
+`lasca_obsidiana` (8 de saber, **2 obsidianas**, 1 piedra). La obsidiana sale en el 28 %
+de las piedras **por encima de los 1500 m** (ronda 7), y el arranque está a 822. Y el
+tiento sale del cuero, o sea de **cazar**. El primer hacha pide subir 700 m y cazar, y
+no tiene un solo paso de pulido: «pulida» está en el nombre y en ningún lado más.
+
+**2 · El único martillo es de hierro** (`martillo`, nivel 4, en la fragua). No hay
+percutor, ni maza de piedra enmangada. `maza_cuna` (nivel 3) pide asta y la tecnología
+de cantería.
+
+**3 · Lo que ya existe y sirve de base**: `lasca_rodado` (2 piedras, pide
+`lasca_obsidiana`), `boleadora` (la bola se hace por picado y pulido, una técnica real
+de la estepa), la arena a puñados (ronda 7) y el agua con recipiente (ronda 7).
+
+El contrato sale de acá cuando se abra la fase, con el pedido del dueño a la vista:
+*«trabajar piedra para después hacer un hacha, un martillo, etc.»* y *«enfocarse en la
+primera hora real de vida»*.
