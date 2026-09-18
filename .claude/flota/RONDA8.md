@@ -354,9 +354,9 @@ es la cuenta que les corresponde.
   objeto puede sostener, con los mismos argumentos que usa `_reponer` en ese punto
   (altura, humedad, pendiente en grados, distancia al agua, la estación de
   `tiempo.estado()` y la hora local de cada hora transcurrida). En el agua, **λ = T**
-  constante. `T` es un número por objeto declarado en `herramientas.json`
-  (`tasaCapturaPorHora`) con su fuente o como licencia dicha, con el criterio a la
-  vista. El resultado no puede depender de cada cuánto se mira: revisar una vez a
+  constante. `T` es un número por objeto declarado en `herramientas.json` como
+  `tasaCapturaPorHora`, al lado de `criterioTasaCaptura`: la fuente, o la palabra
+  «licencia» y el criterio a la vista. El resultado no puede depender de cada cuánto se mira: revisar una vez a
   las diez horas o cada diez minutos da la misma distribución.
 - **Los peces de la nasa y la red están vivos**, así que siguen las reglas que ya
   tiene la caña en `Pesca.intentar`: el nativo se devuelve (y enseña), el salmónido
@@ -371,7 +371,8 @@ es la cuenta que les corresponde.
   dueño**: puede ser frustrante que la mayoría de lo que cae no se pueda usar.
   Es lo verdadero, y es lo que la ficha prometía.
 - **Lo que no está protegido** (la liebre, el visón) rinde lo mismo que si se lo
-  cazara: la misma cuenta de `Caza`, con la misma regla del filo.
+  cazara: `Caza._faena(esp)`, entero, como en `Caza.intentar` (la caza no pide
+  filo; el filo es regla de la carroña).
 - **El lazo agarra uno solo y se gasta al agarrar** (durabilidad 1): después de la
   primera presa queda cerrado. Vacío, se levanta y vuelve al bolso entero. **La
   nasa y la red juntan todo lo que caiga** entre visita y visita (el conteo de
@@ -393,8 +394,8 @@ El agente escribe **sólo**:
 - `src/entities/Fauna.js` — **sólo** `_esAcuatica()`
 - `src/systems/Pesca.js` — **sólo** sacar a un método la resolución de un pez ya
   capturado (devolver o guardar), para que la caña y la trampa usen la misma
-- `src/data/herramientas.json` — **sólo** la tasa de captura, con su fuente o
-  criterio, en `trampa_lazo`, `nasa_junco` y `red_fibra`
+- `src/data/herramientas.json` — **sólo** `tasaCapturaPorHora` y
+  `criterioTasaCaptura` en `trampa_lazo`, `nasa_junco` y `red_fibra`
 
 Del coordinador: `src/main.js` (crear `Trampas` y `Trampas3D`, pasarlas a quien las
 pida, llamar `actualizar()` en el bucle), los bancos, el falsador y esta carta.
@@ -439,7 +440,8 @@ norma se muestra y se registra; el lazo se gasta. `levantar(trampa)` devuelve la
 trampa vacía al bolso con su durabilidad; si el bolso no tiene lugar, no la levanta
 y lo dice.
 
-**L5 · La tecla.** A menos de 2,5 m de una trampa, `recoleccion.quePuedoHacer()`
+**L5 · La tecla.** El coordinador le pone a `Recoleccion` y a `Bolso` la propiedad
+`trampas`. A menos de 2,5 m de una trampa, `recoleccion.quePuedoHacer()`
 ofrece `tipo: 'trampa'` con una etiqueta que dice qué hay («Revisar la trampa ·
 cayó una liebre europea», «Levantar la trampa · vacía»), y `actuar()` la resuelve.
 Beber con sed y lo que ya tenía prioridad sobre la tecla la conserva.
