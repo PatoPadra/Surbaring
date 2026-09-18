@@ -602,13 +602,16 @@ Del coordinador: `src/main.js`, los bancos y esta carta.
 en `public/tex/suelo/` al menos **cuatro capas** de suelo —la hojarasca del bosque
 húmedo (coihue, lenga), el andisol pardo con lapilli de pómez, la estepa (arena
 volcánica con coirón seco y gravilla) y el acarreo granítico de altura—, cada una
-cuadrada, de lado potencia de dos entre 256 y 1024, con **albedo y altura** y con
-**normal, oclusión y rugosidad**, más un `manifiesto.json` que diga por capa `id`,
-`nombre`, `referencia` (qué suelo real retrata y de dónde sale el dato), `periodoM`
-(cuántos metros abarca) y `albedoMedio` lineal. Correrlo dos veces da los mismos
-bytes. Cada capa **calza consigo misma**: la diferencia media entre la primera y la
-última columna (y fila) no supera 1,25 veces la media entre columnas vecinas de
-adentro. Todo junto, con mipmaps, entra en **8 MB** de memoria de video.
+cuadrada, de lado potencia de dos entre 256 y 1024, en dos PNG: el de **albedo**
+(RGB en sRGB, y la **altura** en A) y el de **normal** (la normal en R y G, la z se
+reconstruye; la **oclusión** en B y la **rugosidad** en A). Más un `manifiesto.json`
+que diga por capa `id`, `nombre`, `referencia` (qué suelo real retrata y de dónde sale
+el dato), `periodoM` (cuántos metros abarca), `albedoMedio` lineal y
+`archivos: { albedo, normal }`. Correrlo dos veces da los mismos bytes. Cada capa
+**calza consigo misma**: la diferencia media entre la primera y la última columna (y
+fila) no supera 1,25 veces la media entre columnas vecinas de adentro. Todo junto, con
+mipmaps, entra en **12 MB** de memoria de video (cuatro capas de 512² con los dos
+archivos son 10,7; los atlas de la fauna, 16,8).
 
 **S2 · El suelo de cerca se lee.** En las mismas tres capturas de la tabla, con el
 sotobosque apagado, el **detalle cercano sube al menos 1,5 veces** en los tres
