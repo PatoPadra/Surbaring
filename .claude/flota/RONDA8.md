@@ -557,3 +557,86 @@ dueño pierde 8× en matemática de shader y gana 2,3× en lecturas de textura. 
 suelo horneado offline a una textura con capas (three 0.169 es WebGL2: hay
 `DataArrayTexture` con mipmaps limpios, sin la costura de un atlas) puede verse
 mejor **y** costar menos que el ruido que reemplaza.
+
+**4 · Cómo se ve, en números.** Capturas de 1024×576 en tres suelos distintos, el
+12/2/2025 a las 12:00 hora local, a 1,7 m, **con el sotobosque apagado** para medir
+el suelo y no el pasto (`r8-suelo-metricas.mjs`, prefijo `r8-base-sinpasto`):
+
+| lugar (lat · lon) | detalle cercano¹ | brillo cercano² | detalle a 10–40 m³ |
+|---|---|---|---|
+| bosque húmedo (−41,05186 · −71,60042, 774 m, humedad 0,76) | **1,87** | 32,63 | 3,07 |
+| estepa (−41,05534 · −71,26063, 850 m, humedad 0,27) | **2,09** | 44,61 | 11,43 |
+| pedregal (−41,18125 · −71,54561, 1901 m) | **2,33** | 83,69 | 6,42 |
+
+¹ media de |laplaciano| de la luminancia en el 43 % de abajo, mirando a −35°.
+² luminancia media de esa franja, de 0 a 255. ³ lo mismo en la franja del 40 al 62 %,
+mirando a −8°: es la guarda contra el aliasing.
+
+La franja cercana repite exacto entre corridas (1,87 y 32,63 dos veces). Se descartó
+medir el titileo con dos capturas corridas 2 cm: `capturar` vuelve a prender los
+árboles según la distancia y el pasto se mueve con el reloj real, así que el par no
+difería sólo en los 2 cm (42,8 de diferencia media en la estepa).
+
+**5 · La piedra del suelo.** En la captura del pedregal, la piedra del sotobosque
+es un poliedro de caras planas y **verdoso** (`r8-base-suelo-pedregal.png`), que no
+es el gris de la granodiorita del terreno (`rocaBase` 0,222 · 0,212 · 0,200 lineal).
+
+### Propiedad exclusiva de archivos
+
+El agente escribe **sólo**:
+
+- `tools/hornear-suelo.mjs` — **nuevo**: el horno, en Node, determinista
+- `public/tex/suelo/` — **nuevo**: lo que hornea y su `manifiesto.json`
+- `src/util/suelo.js` — **nuevo**: el cargador en tiempo de ejecución, con la misma
+  degradación que `src/util/atlas.js` (sin archivos, el juego arranca igual)
+- `src/world/Terreno.js` — el fragmento del terreno y lo que haga falta para darle
+  las texturas
+- `src/world/Sotobosque.js` — **sólo** el material de la piedra
+- `src/engine/Calidad.js` — **sólo** si hace falta un alcance por preset
+
+Del coordinador: `src/main.js`, los bancos y esta carta.
+
+### El contrato
+
+**S1 · Se hornea, no se inventa por píxel.** `node tools/hornear-suelo.mjs` escribe
+en `public/tex/suelo/` al menos **cuatro capas** de suelo —la hojarasca del bosque
+húmedo (coihue, lenga), el andisol pardo con lapilli de pómez, la estepa (arena
+volcánica con coirón seco y gravilla) y el acarreo granítico de altura—, cada una
+cuadrada, de lado potencia de dos entre 256 y 1024, con **albedo y altura** y con
+**normal, oclusión y rugosidad**, más un `manifiesto.json` que diga por capa `id`,
+`nombre`, `referencia` (qué suelo real retrata y de dónde sale el dato), `periodoM`
+(cuántos metros abarca) y `albedoMedio` lineal. Correrlo dos veces da los mismos
+bytes. Cada capa **calza consigo misma**: la diferencia media entre la primera y la
+última columna (y fila) no supera 1,25 veces la media entre columnas vecinas de
+adentro. Todo junto, con mipmaps, entra en **8 MB** de memoria de video.
+
+**S2 · El suelo de cerca se lee.** En las mismas tres capturas de la tabla, con el
+sotobosque apagado, el **detalle cercano sube al menos 1,5 veces** en los tres
+lugares (≥ 2,81 · 3,14 · 3,50), **el brillo cercano queda a ±10 %** (el suelo no se
+aclara ni se oscurece: la paleta calibrada de `Terreno.js` sigue mandando, y la
+textura la modula), y **el detalle a 10–40 m no pasa de 1,6 veces** el de la base
+(≤ 4,91 · 18,29 · 10,27): sin mipmaps esa franja se llena de ruido.
+
+**S3 · Y cuesta menos.** Con `bancoDesglose` (reloj de la GPU, Baja, 1024×576, el
+arranque), mediana de tres corridas: **mirando al suelo, el terreno baja a 16,0 ms o
+menos** (hoy 17,1 a 17,8), y **al frente no sube de 13,4 ms** (hoy 12,8 a 13,1). La
+textura reemplaza al ruido de los últimos metros, no se le suma: donde la textura
+manda, el fragmento no evalúa el `micro`, la `gravilla` ni la normal fina de ruido
+de `f2` y `f3`.
+
+**S4 · Sin compilar de más y sin mover el piso.** Cargar las texturas no recompila el
+programa del terreno (se compila en la carga con un reemplazo del mismo tipo y la
+textura llega por el valor del uniforme): medido en el juego, los programas no cambian
+entre el primer cuadro y diez segundos después. Y **la física no se toca**:
+`Mundo.alturaEn` da los mismos números en mil puntos al azar antes y después.
+
+**S5 · La piedra.** La piedra del sotobosque se viste con la capa de roca del mismo
+horneado, y su tono medio es el de la roca del terreno: se deja de ver verdosa.
+
+**S6 · La repetición no se lee.** Cada capa se lee al menos con dos transformaciones de
+coordenadas distintas (escala, giro o corrimiento) mezcladas, o con otra técnica de
+anti-repetición que el agente declare en el comentario. Lo último lo decide el ojo del
+dueño.
+
+**S7 · Sin regresión.** Los bancos de la ronda 7 y de las fases 1 y 2 de ésta siguen
+verdes, `lint-shader.mjs` sin errores, y `vite build` limpio.
