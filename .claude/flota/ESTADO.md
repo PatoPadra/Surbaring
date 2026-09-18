@@ -31,6 +31,12 @@ vuelta.**
 > **Fase 2 (`lazo`)**: contrato, banco, falsador y mitad navegador escritos antes del
 > agente y validados contra una maqueta del jefe que no se le da (21/21 del falsador).
 > Tres defectos del banco encontrados así, antes de que el agente escribiera una línea.
+>
+> **Preparado mientras corre la fase 2**: el contrato, el banco (validado contra la
+> base) y el falsador de la **fase 3** (`suelo`); la medición de apertura de la **fase
+> 4** (`copa`: el problema de las coníferas es el dibujo del atlas, 8 % de cobertura, no
+> el mipmap); y **la propuesta del primer año**, escrita y sin código, en
+> `r8-primer-anio.md`, con cinco preguntas para el dueño.
 
 ---
 
