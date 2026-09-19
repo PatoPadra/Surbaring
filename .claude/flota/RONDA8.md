@@ -1459,3 +1459,32 @@ de aplicados, con la fecha), y ninguna nota dice algo que hoy no es cierto.
 **G5 · La cestería suma una vez** (agregado el 19/9): el bono de capacidad lo da el canasto
 puesto, no la tecnología. Aprender la cestería sin canasto deja el bolso en 38 kg; con el
 canasto puesto, 44.
+
+**Cómo lo mide el banco** (escrito el 19/9, antes de encargar; `banco-r8-fase7.mjs`):
+
+- G1, en Node con `Partida`, `Inventario` y `Equipo` de verdad: con el bolso lleno, las
+  cuatro ranuras ocupadas y una antorcha encendida, `registrarMuerte()` deja el bolso vacío,
+  **las cuatro ranuras vacías y la llama apagada**; `ultimaMuerte.perdido` nombra lo que
+  estaba puesto; las trampas puestas siguen; y un guardado de antes del cambio carga.
+- G2, con `Recoleccion` y un coirón de juguete junto al jugador, 4000 apretadas con el azar
+  sembrado: la lana sale en el **25 % ± 2** de las apretadas; y la cuenta del poncho (9 de
+  hilado, a 3 por cada 4 lanas: 12 lanas) da **47 ± 15 %** apretadas.
+- G3: `licenciasDeJuego` tiene la de la recolección, con «22.351» y «art. 5»; la pestaña
+  Normativa del códice muestra las licencias de juego (hoy no muestra ninguna); y con
+  `Recoleccion` en jurisdicción de Parque, la primera apretada dice la licencia y la segunda
+  no; en la Reserva, ninguna la dice.
+- G4: con una fogata encendida a 2 m y una fragua encendida a 6 m, una receta de fragua dice
+  que está lista; con el telar a 1 m y la fogata a 5, una de fogata también; `Fabricacion.js`
+  no declara su propio radio (lo importa de `Fundicion.js`); ni `Iconos.js` ni `Bolso.js`
+  dicen «115», y donde dicen un número de dibujos es el que hay; y en `efectosAAgregar` no
+  queda ninguna entrada ya aplicada en `historia.json`.
+- G5: con `Saberes` y `Equipo`: la cestería aprendida sin canasto no suma capacidad; el
+  canasto puesto suma 6.
+
+**Propiedad exclusiva:** `src/systems/Partida.js`, `src/systems/Recoleccion.js`,
+`src/systems/Fabricacion.js` (sólo la estación y el radio), `src/systems/Fundicion.js` (sólo
+exportar el radio), `src/ui/Codice.js` (sólo la pestaña Normativa), `src/ui/Iconos.js` y
+`src/ui/Bolso.js` (sólo los comentarios del número), `src/data/herramientas.json` (la
+licencia y `efectosAAgregar`), `src/data/historia.json` (sólo la cestería). Si hace falta
+cablear algo en `main.js` (los límites para `Recoleccion`, las licencias para el códice), lo
+pide en su pendiente y lo hace el jefe.
