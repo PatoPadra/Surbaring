@@ -1121,10 +1121,23 @@ dimensionan con `pxPorMetro` (el banco lo lee en el código).
 **C4 · Las coníferas dejan de ser esqueletos.** La cobertura de alfa del atlas, en su
 ventana, es de **0,18 o más** en las cuatro clases (la aguja de hoy, 0,081), y la de cada
 nivel de mipmap que usa el juego queda a ±30 % de la del nivel 0 hasta los 32 px. En el
-juego, restando el árbol con su lote prendido y apagado a 18 m (el mismo instrumento de
-la tabla del punto 3): **el ciprés cubre 0,20 o más** de su recuadro (hoy 0,088) y **el
-pino 0,12 o más** (0,053); **los puntitos sueltos bajan a 5 por mil o menos** en los dos
-(hoy 10,7 y 17,7), y el coihue no pasa de 4,5 (hoy 3,75).
+juego, con el instrumento rehecho (tres árboles por especie, cada uno solo, clima fijo)
+y la base de **cinco cargas** (reescrito el 19/9, antes de encargar; ver abajo):
+
+| especie | relleno de la silueta, base | umbral | puntitos por mil, base | umbral |
+|---|---|---|---|---|
+| ciprés | 0,380 (0,352–0,439) | **≥ 0,50** | 5,35 | **≤ 3,4** |
+| pino | 0,386 (0,327–0,449) | **≥ 0,50** | 9,41 | **≤ 3,4** |
+| coihue | 0,550 (0,526–0,567) | ≥ 0,506 | 0,67 (0,49–0,89) | ≤ 1,39 |
+| ñire | 0,533 (0,504–0,564) | ≥ 0,484 | 1,68 (1,37–2,05) | ≤ 2,55 |
+| maitén | 0,564 (0,501–0,616) | ≥ 0,481 | 1,58 (1,48–1,70) | ≤ 2,20 |
+
+La regla, en una frase: **las coníferas, tan llenas como la carga más rala de una
+latifoliada (0,501), y con no más puntitos que el doble de la peor latifoliada (ñire,
+1,68 → 3,4)**; las latifoliadas no bajan de su mínimo medido (menos 0,02) ni suben más de
+medio puntito sobre su máximo. Validado contra la base: 4/8, rojo en las cuatro de las
+coníferas y verde en las guardas y en la compilación. La cobertura del recuadro de la
+versión anterior de C4 se dejó de usar: castiga la forma y no los huecos.
 
 *La guarda de los mipmaps es simétrica a propósito: medida sobre el atlas de hoy, la
 lámina **sube** de 0,241 a 0,348 a 32 px (+44 %). Una copa que se espesa de lejos cambia

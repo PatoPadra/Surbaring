@@ -200,13 +200,15 @@
     const ok = (c, desc, det) => checks.push({ ok: !!c, desc, detalle: String(det) });
     try {
       // A2 · el costo
-      marcar({ paso: 'A2' });
-      const arb = [];
-      await window.bancoDesglose({ ancho: 1024, alto: 576, cuadros: 8 });      // calentamiento
-      for (let i = 0; i < 3; i++) arb.push((await window.bancoDesglose({ ancho: 1024, alto: 576, cuadros: 12 })).cuestaCadaPieza?.Arboles);
-      out.costo = { corridas: arb, mediana: mediana(arb) };
-      j.posicion.copy(e0.p); S.tiempo.fecha = new Date(e0.f.getTime());
-      if (op.soloCosto) { marcar({ paso: 'listo', ...out }); return out; }
+      if (!op.sinCosto) {
+        marcar({ paso: 'A2' });
+        const arb = [];
+        await window.bancoDesglose({ ancho: 1024, alto: 576, cuadros: 8 });      // calentamiento
+        for (let i = 0; i < 3; i++) arb.push((await window.bancoDesglose({ ancho: 1024, alto: 576, cuadros: 12 })).cuestaCadaPieza?.Arboles);
+        out.costo = { corridas: arb, mediana: mediana(arb) };
+        j.posicion.copy(e0.p); S.tiempo.fecha = new Date(e0.f.getTime());
+        if (op.soloCosto) { marcar({ paso: 'listo', ...out }); return out; }
+      }
 
       // A1 · los árboles, y A3 · compilar. Dos pasadas: la primera compila lo que
       // haga falta (con el panel oculto el bucle nunca corrió y la base también compila
@@ -260,14 +262,24 @@
       S.vegetacion.actualizar(j.posicion, S.tiempo.segundosTotales, S.tiempo.estado(), cam);
       anular(S);
     }
+    // Los umbrales, reescritos el 19/9 sobre el RELLENO de la silueta con la base de
+    // cinco cargas (RONDA8.md, fase 4): las coníferas, tan llenas como la carga más rala
+    // de una latifoliada (0,50), y con no más puntitos que el doble de la peor latifoliada
+    // (ñire, 1,68 → 3,4). Las latifoliadas no bajan de su mínimo medido ni suben más de
+    // medio puntito por mil sobre su máximo.
     const A = out.arboles;
-    ok(A.cipres_cordillera && A.cipres_cordillera.cobertura >= 0.20, 'A1 · el ciprés cubre 0,20 o más de su recuadro (base 0,088)', JSON.stringify(A.cipres_cordillera));
-    ok(A.pino_murrayana && A.pino_murrayana.cobertura >= 0.12, 'A1 · el pino cubre 0,12 o más (base 0,053)', JSON.stringify(A.pino_murrayana));
-    ok(A.cipres_cordillera && A.cipres_cordillera.confetiPorMil <= 5, 'A1 · el ciprés tiene 5 puntitos sueltos por mil o menos (base 10,73)', A.cipres_cordillera?.confetiPorMil);
-    ok(A.pino_murrayana && A.pino_murrayana.confetiPorMil <= 5, 'A1 · el pino tiene 5 por mil o menos (base 17,73)', A.pino_murrayana?.confetiPorMil);
-    ok(A.coihue && A.coihue.confetiPorMil <= 4.5, 'A1 · el coihue no pasa de 4,5 por mil (base 3,75)', A.coihue?.confetiPorMil);
+    const BASE = { cipres_cordillera: [0.380, 5.35], pino_murrayana: [0.386, 9.41], coihue: [0.550, 0.67], nire: [0.533, 1.68], maiten: [0.564, 1.58] };
+    const det = (id) => `${JSON.stringify(A[id])} (base de cinco cargas: relleno ${BASE[id][0]}, puntitos ${BASE[id][1]})`;
+    ok(A.cipres_cordillera && A.cipres_cordillera.relleno >= 0.50, 'A1 · el ciprés rellena 0,50 o más de su silueta (base 0,380)', det('cipres_cordillera'));
+    ok(A.pino_murrayana && A.pino_murrayana.relleno >= 0.50, 'A1 · el pino rellena 0,50 o más (base 0,386)', det('pino_murrayana'));
+    ok(A.cipres_cordillera && A.cipres_cordillera.confetiPorMil <= 3.4, 'A1 · el ciprés tiene 3,4 puntitos sueltos por mil o menos (base 5,35)', det('cipres_cordillera'));
+    ok(A.pino_murrayana && A.pino_murrayana.confetiPorMil <= 3.4, 'A1 · el pino tiene 3,4 por mil o menos (base 9,41)', det('pino_murrayana'));
+    for (const [id, minimo, maximo] of [['coihue', 0.526, 0.89], ['nire', 0.504, 2.05], ['maiten', 0.501, 1.70]]) {
+      ok(A[id] && A[id].relleno >= minimo - 0.02 && A[id].confetiPorMil <= maximo + 0.5,
+        `A1 · el ${id} no empeora: relleno ≥ ${(minimo - 0.02).toFixed(3)} y puntitos ≤ ${(maximo + 0.5).toFixed(2)} (su rango de cinco cargas, con margen)`, det(id));
+    }
     ok(out.programas && out.programas.despues === out.programas.antes, 'A3 · una segunda pasada por los árboles no compila programas nuevos', JSON.stringify(out.programas));
-    if (op.base?.arboles != null) ok(out.costo.mediana <= op.base.arboles * 1.15, 'A2 · los árboles no cuestan más de un 15 % que la base de la sesión', `${out.costo.corridas.join(' · ')} ms, mediana ${out.costo.mediana} contra ${op.base.arboles}`);
+    if (op.base?.arboles != null && out.costo) ok(out.costo.mediana <= op.base.arboles * 1.15, 'A2 · los árboles no cuestan más de un 15 % que la base de la sesión', `${out.costo.corridas.join(' · ')} ms, mediana ${out.costo.mediana} contra ${op.base.arboles}`);
     else out.notas.push('A2: sin base de la sesión, sólo se informa');
     out.checks = checks;
     out.total = `${checks.filter((c) => c.ok).length}/${checks.length}`;
