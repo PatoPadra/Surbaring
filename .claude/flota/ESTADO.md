@@ -78,6 +78,12 @@ vuelta.**
 > motivo correcto, maqueta 15/15, falsador 4/4. La sospecha de acné del jefe se refutó
 > midiendo antes de encargar. Después viene la **fase 4** (copa), con el contrato C4
 > reescrito sobre el relleno de la silueta y C7 (modelo de árbol determinista) primero.
+>
+> **19/9/2026 — FASE 3c CERRADA.** El atributo `normal` del terreno en (0, 1, 0): el suelo
+> recibe la sombra de los árboles, las obras y (en Media y Alta) el relieve. Navegador
+> 17/17 con la base en la misma carga, banco 4/4, falsador 4/4. Cuesta +0,95 ms al frente y
+> +0,6 al suelo; sin acné (0 de 16.384 contra el DEM). En la sombra queda el 11 % de la
+> luz del sol. En Baja el relieve no proyecta (decisión del preset, anotada).
 
 ---
 

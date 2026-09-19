@@ -274,3 +274,116 @@ regresión da **9 de 10**: la ronda 7 y las fases 1 y 2 de ésta, verdes, y la f
 `BANCO_F3_PREFIJO=r8-f3b` para ver qué cae, y cae **sólo** la sección 3, la imagen, por
 «están las dos capturas (r8-f3b)» en los tres lugares y en la piedra. El horno (31), el
 terreno (6), el piso (la huella de `Mundo.alturaEn`, intacta) y el shader dan verde.
+
+---
+
+# Fase 3c — que el terreno reciba sombras
+
+## Primero, dónde le erré en la 3b, porque decide cómo predigo ahora
+
+Al frente predije +4 a +5 % y midió +13,6 y +14,2 en el bosque. Mirando al suelo
+predije +31 a +34 y midió +48 / +37 / +32. Las dos predicciones venían de calibrar el
+ambiente de mi modelo en 0,8 del sol contra tu +35 a +40 %: lo que falló fue esa
+calibración, y el modelo no tiene especular. La vuelta (predije 9 a 13 en el bosque y
+dio 14,4) y la guarda del pedregal (−8,4 a −8,9, dio −7,4) cayeron cerca.
+
+Por eso, en esta fase **no predigo con mi modelo**. El arreglo que hice es, byte por
+byte, tu maqueta: el atributo `normal` en (0, 1, 0) en todos los vértices. La maqueta
+está medida en el juego, y predigo con eso.
+
+## Lo que hice
+
+En `Terreno.js`, en `_construirMalla`, el atributo `normal` pasa de cero a (0, 1, 0) en
+los 1221 vértices de la malla base (los del tablero y los de la falda), con un comentario
+que dice por qué. Es un solo bloque, en las líneas 164 a 189. Nada más cambia: ni el
+shader, ni la inyección del vértice, ni `Calidad.js`.
+
+**Por qué en el dato y no en el vértice.** El defecto era el dato: una geometría que
+declara normales de largo cero. Arreglándolo ahí:
+
+- el vértice de three queda como es, y todo lo que lee `objectNormal` recibe algo
+  válido: la sombra, y también `vNormal`, que hoy es NaN aunque el fragmento no lo use;
+- el texto del programa no cambia, así que la clave de caché es la misma de la 3b y no
+  hay nada nuevo que compilar;
+- no cuesta nada: el atributo ya se subía y se leía; antes era cero, ahora es arriba.
+
+**Por qué la vertical y no la normal del DEM, con la cuenta.** En el plano del sol, con
+e la altura del sol, θ la pendiente de una ladera de cara al sol y b el sesgo normal
+(0,22 · 2^i m en la cascada i; `main.js:179`), el punto que se busca en el mapa de sombra
+es P + b·v:
+
+- Lo que protege del acné es la distancia de ese punto al suelo medida hacia el sol:
+  s = b·(n·v)/sen(e+θ). Con la vertical, b·cos θ/sen(e+θ); con la normal del DEM,
+  b/sen(e+θ). **La vertical da cos θ de la protección: 0,91 a 25°, 0,87 a 30°.**
+- Cuánto se corre la sombra sobre el suelo: la parte del corrimiento perpendicular al
+  sol, dividida por sen(e+θ). Con la vertical, b·cos e/sen(e+θ); con la normal,
+  b·cot(e+θ). Con el sol a 30° y una ladera de 25°: 1,06·b contra 0,70·b, o sea **23 cm
+  contra 15 cm en la primera cascada** y 1,9 m contra 1,2 m en la cuarta, que cubre
+  cientos de metros.
+- La normal del DEM cuesta una lectura de textura por vértice, y además hay que saber
+  dónde está el vértice antes de `<begin_vertex>`, que es donde hoy se calcula. Todo
+  para ganar un 10 % de un margen que tu medición ya mostró de sobra (0 de 16.384).
+
+**Corrido acá:**
+
+- `BANCO_SECCIONES=vertice,shader`: **2/2**, con el atributo unitario en 1221 de 1221
+  vértices.
+- El falsador: **lo vio 4/4, controles 2 verdes**.
+- `lint-shader` sobre los seis módulos: sin errores. `vite build`: limpio.
+- La regresión: ver al final.
+
+## Lo que predigo para S1 a S3
+
+- **S1 · recibe: pasa.** La maqueta dio el terreno en 0,297 del cuadro contra 0,320 del
+  plano (0,93, dentro del ±25 %), y 58 niveles de oscurecimiento contra 81 (0,72, sobre
+  el mínimo de la mitad). Predigo esos mismos números, con el ruido de una carga a otra.
+  Que el terreno se oscurezca menos niveles que el plano es de esperar: el oscurecimiento
+  se mide en niveles de pantalla, y el terreno en el bosque es más oscuro que el plano
+  de control, así que perder la misma fracción de luz directa le baja menos niveles.
+- **S2 · sin acné: pasa.** La cuenta de arriba es la de la maqueta, y la maqueta midió 0
+  de 16.384 al sol, con el sol a 14,7° y a 31,6° y desde 40 y 200 m.
+- **S2b · el relieve: pasa.** Ojo con una cosa (ver abajo, punto 1): el instrumento
+  prende el `castShadow` del terreno para medir, así que S2b mide lo que se vería en un
+  preset donde el terreno proyecta.
+- **S3 · costo: pasa, pero justo al frente.** El cambio es el mismo que la maqueta, que
+  midió +0,9 ms al frente y +0,6 al suelo en la misma carga, contra un tope de +1,2.
+  - Es el filtrado de las cascadas que el NaN se salteaba: cada píxel de terreno dentro
+    del alcance de sombra paga ahora las muestras del PCF, y en la franja de fundido del
+    CSM, las de dos cascadas.
+  - Nada del vértice cambia de costo: el atributo se leía igual.
+  - **El margen al frente es de 0,3 ms**, del mismo tamaño que la deriva que viste en
+    la 3b (+0,6, +0,3, 0,0 en tres pares). Si el primer par da de más, van a hacer falta
+    los pares alternados otra vez.
+
+## Lo que anoté, sin arreglar
+
+**1 · En Baja el relieve sigue sin dar sombra, y es a propósito.** `Calidad.js` pone
+`terrenoProyecta: false` en Baja y en Mínima (el terreno no dibuja en el pase de
+sombras: 7,7 ms según el comentario de `Calidad.js`). Con este arreglo, en Baja el suelo
+recibe la sombra de los árboles y de las obras, pero no la de los cerros. S2b pasa
+porque `r8-sombra.navegador.js` prende el `castShadow` del terreno mientras mide (líneas
+63 y 64). No es un defecto; es una decisión de preset que ahora se va a notar, porque
+antes el terreno no recibía nada y daba igual si proyectaba.
+
+**2 · Las sombras de los árboles van a salir blandas en Baja.** El mapa de sombra de
+Baja es de 512 píxeles y alcanza 240 m. La cuarta cascada, que cubre lo más lejano de
+ese alcance, tiene texeles de decenas de centímetros, del orden del sesgo de esa
+cascada (1,76 m), y la sombra de un árbol lejano va a verse como una mancha corrida. Es
+lo que cuesta el preset; lo cuento para que no sorprenda al mirarlo.
+
+**3 · Lo que arrastraba el NaN: nada más que la sombra.** Revisé en el vértice del
+material de color qué más lee `objectNormal` o `transformedNormal`: el mismo
+`shadowmap_vertex` y `vNormal`, que el fragmento reemplaza entero y no usa. El material
+de profundidad (`_crearMaterialProfundidad`, el terreno cuando proyecta) no lee
+normales.
+
+## La regresión
+
+`BANCO_SIN_BUILD=1 node --max-old-space-size=6144 .claude/flota/banco-r8-fase3c.mjs`:
+**total 4/4**.
+
+- El vértice: 1221 de 1221 unitarios.
+- La regresión: **11 de 11**. La ronda 7, las fases 1 y 2, la 3 en 4/4 (horno, terreno,
+  piso y shader) y la 3b en 2/2 (el marco sigue en su lugar).
+- El shader: sin errores.
+- `vite build` lo corrí aparte: limpio.

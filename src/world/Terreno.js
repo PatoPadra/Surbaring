@@ -161,7 +161,32 @@ export class Terreno {
 
     const geo = new THREE.InstancedBufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(total * 3).fill(0), 3));
+    // La normal del atributo no la usa la luz —el fragmento arma la suya desde el
+    // DEM—, pero three sí la usa en el vértice para correr la sombra: el sesgo
+    // normal de las cascadas (shadowmap_vertex) desplaza el punto que se busca en
+    // el mapa de sombra a lo largo de ESTA normal. Estuvo en cero desde el
+    // prototipo, y three la normaliza: en ANGLE sobre D3D11 eso es 0 × rsqrt(0) =
+    // NaN, las coordenadas de sombra salen NaN, la prueba de frustum da falso y la
+    // sombra vale 1. El terreno no recibía ninguna sombra —ni de los árboles, ni
+    // del relieve, ni de las obras—, y encima se ahorraba el filtrado (RONDA8.md,
+    // fase 3c: un plano de control se oscurecía en el 40 % del cuadro y el
+    // terreno en nada).
+    //
+    // Hacia arriba, y no la normal del DEM. Con el sesgo b a lo largo de v, lo que
+    // protege del acné es la distancia al suelo medida hacia el sol,
+    // b·(n·v)/sen(e+θ) —con e la altura del sol y θ la pendiente—: la vertical da
+    // cos θ de lo que daría la normal verdadera, 0,91 a 25°. Y corre la sombra
+    // sobre el suelo b·cos e/sen(e+θ) contra b·cot(e+θ): con el sol a 30° en una
+    // ladera de 25° de cara a él, 23 cm contra 15 en la primera cascada. Medido
+    // sobre el DEM con la vertical, 0 de 16.384 puntos al sol se oscurecen; la
+    // normal del DEM costaría una lectura de textura por vértice, antes de saber
+    // dónde está el vértice, para ganar un 10 % de un margen que ya sobra.
+    //
+    // En el dato y no en el shader: el defecto era el dato, y así el vértice de
+    // three queda como es y el programa no cambia.
+    const arriba = new Float32Array(total * 3);
+    for (let i = 1; i < arriba.length; i += 3) arriba[i] = 1;
+    geo.setAttribute('normal', new THREE.BufferAttribute(arriba, 3));
     geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(total * 2), 2));
     geo.setAttribute('aFalda', new THREE.BufferAttribute(falda, 1));
     geo.setIndex(idx);

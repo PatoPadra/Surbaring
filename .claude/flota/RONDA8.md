@@ -989,7 +989,45 @@ La decisión de pagarlo es del jefe por medición (3 % del cuadro en Baja por qu
 árboles, las obras y el relieve den sombra en el suelo); si al dueño le pesa, se apaga
 por preset.
 
-<!-- CIERRE-F3C -->
+### CERRADA el 19/9/2026
+
+El agente arregló **el dato**, no el vértice: el atributo `normal` de la malla vale
+(0, 1, 0) en los 1221 vértices (tablero y falda). El programa no cambia, no hay nada nuevo
+que compilar, y es exactamente la maqueta con que se validó el banco. Eligió la vertical
+y no la normal del DEM con la cuenta: la vertical da cos θ de la protección contra el
+acné (0,91 a 25°) y la del DEM costaría una lectura de textura por vértice, para un
+margen que ya medía 0 de 16.384.
+
+**Mitad navegador 17/17**, con la base medida **en la misma carga** (el dato en cero, que
+es la 3b), sin deriva posible:
+
+| | resultado | umbral |
+|---|---|---|
+| S1 · recibe | terreno 0,326 del cuadro contra 0,344 del plano; 59 contra 79,6 niveles | ±25 %; ≥ la mitad |
+| S2 · acné | 0 de 16.384 (sol 14,7°, 40 m), 0 de 16.044 (200 m), 0 de 16.384 (sol 31,6°); rasantes 0 de 101 | ≤ 1 %; ≤ 5 % |
+| S2b · el relieve | 100 % de 1763 (40 m), 94,2 % de 3852 (200 m) | ≥ 90 % |
+| S3 · costo | frente 9,1 · 9,4 → **10,2 ms (+0,95)**; suelo 4,7 · 5,1 → **5,5 (+0,6)** | ≤ +1,2 |
+| S4 · compilar | 28 → 28 | igual |
+
+El agente, escarmentado por la 3b, no predijo con su modelo sino con lo que midió la
+maqueta, y acertó.
+
+**A la vista** (`r8-f3c-antes.png` y `r8-f3c-despues.png`, el mismo cuadro con el dato en
+cero y arreglado): la sombra del coihue cae ahora sobre el suelo; antes el piso quedaba
+al sol debajo del árbol. En la sombra queda el **11 %** de la luz del sol (en lineal, sobre
+la imagen ya con la curva tonal), que es el rango de la luz del cielo sola un día
+despejado (10 a 20 %): se ve muy oscura, pero es así.
+
+**Anotado por el agente, sin tocar:** en Baja y en Mínima el terreno **no proyecta**
+(`Calidad.js`, `terrenoProyecta: false`, 7,7 ms), así que en Baja el suelo recibe la sombra
+de los árboles y las obras pero **no la de los cerros**; S2b pasa porque el instrumento
+prende la proyección mientras mide. Y en Baja las sombras lejanas salen blandas (mapa de
+512 para 240 m). Las dos son decisiones de preset que antes no se notaban.
+
+**Para que mire el dueño:** los árboles y las obras ahora dan sombra en el suelo; cuesta
+casi 1 ms (3 % del cuadro en Baja) y se puede apagar en ese preset si pesa. La sombra es
+oscura de verdad. Y en el andisol de cerca, los puntitos claros de pómez se ven mucho al
+sol (`r8-f3c-antes.png`): si le parecen ruido, es un ajuste del horno de la fase 3.
 
 ---
 
