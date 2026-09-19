@@ -1263,6 +1263,50 @@ tierra, el **Cerro Campanario, a 2,2 km**; el tercero, la Laguna El Trébol, a 4
 La talla de obsidiana pide 8: tres lugares. Una tecnología que abra la cadena de la
 piedra tiene que costar lo que da la primera hora, o no pedir saber.
 
+**7 · La primera hora, en el mapa** (medido en el juego el 19/9). El jugador arranca sin
+nada. Alrededor del arranque hay piedra suelta, fibra y leña; el banco de arena más cercano
+está a **500 m** (x 7235, z −1145, 767 m, en la Reserva: la arena no se junta en el Parque).
+Con la cadena de abajo, todo lo del primer hacha se junta a menos de 1 km.
+
+**8 · Lo que hoy se fabrica, congelado** (`r8-fabricables.mjs`, con un bolso lleno de todo):
+sin ninguna tecnología, 9 objetos; con todas, 48. Es la base de «nadie queda peor».
+
+### El contrato (19/9; reemplaza al borrador de abajo)
+
+- **P1 · El percutor.** Objeto `percutor`, nivel 0, sin tecnología, una piedra, herramienta
+  que se lleva.
+- **P2 · La primera lasca sin obsidiana.** `lasca_rodado` sin tecnología, **una** piedra, y
+  pide el percutor.
+- **P3 · La preforma.** Una receta produce el recurso `preforma` con dos piedras, y pide el
+  percutor (desbaste y picado).
+- **P4 · El pulido.** Una receta produce el recurso `hoja_hacha` con la preforma y arena (y
+  agua, si el agente lo justifica).
+- **P5 · El mango sin obsidiana.** `mango_labrado` sin la tecnología de la obsidiana, y pide
+  algo que corte: cualquier lasca o el cuchillo (`Fabricacion` acepta una lista).
+- **P6 · El hacha.** `hacha_piedra` con la hoja, el mango y **cordel** (sin tiento ni cuero).
+  Si pide una tecnología, ésta no pide obsidiana y cuesta **3 de saber o menos** (lo que da
+  el primer lugar descubierto).
+- **P7 · El martillo de piedra**, de la misma cadena (un canto con garganta picada, mango y
+  cordel), con **un uso real**: al menos una receta lo pide, con su fuente, y se puede hacer
+  en la primera semana sin obsidiana (partir un tronco con cuñas, quebrar hueso para la
+  médula: lo elige el agente y lo justifica).
+- **P8 · La primera hora, simulada.** Desde un bolso vacío, con sólo piedra, fibra, madera
+  y arena, y 3 de saber, el banco recorre la cadena con `Fabricacion` y `Saberes` de verdad
+  y termina con el hacha. **Sin obsidiana, sin cuero, sin cazar.**
+- **P9 · Nadie queda peor.** Los 9 objetos que hoy se fabrican sin saber y los 48 con todo
+  (bolso lleno) se siguen fabricando.
+- **P10 · Iconos y nombres** para cada objeto y recurso nuevo (el banco de la ronda 6,
+  fase 3, verde; nombre y peso en `Recursos.js`).
+- **P11 · Las notas.** Cada objeto nuevo o cambiado dice qué es y cómo se hacía, con su
+  fuente: Salas 1942 para el hacha enmangada del Neuquén, Fenton 1984 para los tiempos del
+  picado y el pulido, y la que corresponda al martillo.
+- **P12 · Sin regresión**, y `vite build`.
+
+**Propiedad exclusiva:** `src/data/herramientas.json`; `src/data/historia.json` (sólo las
+tecnologías de la cadena); `src/systems/Fabricacion.js` (sólo para que pida herramienta de
+una lista); `src/systems/Recursos.js` (los recursos nuevos); `src/ui/Iconos.js` (los iconos
+nuevos). Nada de `main.js`.
+
 ### Borrador del contrato (19/9, mientras corre la 3b; se ajusta al abrir)
 
 La cadena, toda sin obsidiana y sin cazar, cada paso con su nota y su fuente:
