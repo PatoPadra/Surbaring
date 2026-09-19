@@ -1096,7 +1096,16 @@ de aspecto igual que una que se ralea.*
 misma sesión, no suben más de un **15 %**. Poner un árbol en pantalla no compila nada
 nuevo (los atlas llegan por el valor del uniforme o están en la carga).
 
-**C6 · Sin regresión.** La ronda 7 y las fases 1 a 3, y `vite build` limpio.
+**C6 · Sin regresión.** La ronda 7 y las fases 1 a 3 (con la 3b y la 3c), y `vite build`
+limpio.
+
+**C7 · El mismo árbol en cada carga** (agregado el 19/9). `Vegetacion.js` exporta
+`construirPlanta` (o `modeloDe`), y armar el modelo de una especie dos veces —con
+`Math.random` movido entre medio— da la misma geometría byte a byte; cada especie, la
+suya. Banco Node, sección 6, validada: la base da rojo (no la exporta), una maqueta que
+la exporta con `Math.random` da rojo (las dos llamadas difieren) y una con semilla por
+especie da verde. El banco precalienta las cinco especies antes de comparar, porque la
+primera de cada clase arma además el atlas de hojas.
 
 **Pendiente del jefe antes de abrirla (anotado el 19/9, cerrando la fase 3).** Los
 números de C4 en el juego se midieron en UNA carga, y dos cosas cambian de carga a carga:

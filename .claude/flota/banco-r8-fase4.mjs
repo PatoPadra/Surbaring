@@ -156,6 +156,68 @@ async function clases() {
   return s;
 }
 
+/**
+ * C7 · el modelo de cada especie sale de una semilla propia. Hoy `construirPlanta` usa
+ * Math.random al cargar, y el mismo pino medido en dos cargas dio 0,238 y 0,178 de
+ * cobertura (RONDA8.md, fase 4): un umbral medía la suerte de la carga. Se arma el
+ * modelo dos veces, con Math.random movido entre medio, y la geometría tiene que dar
+ * los mismos bytes; y dos especies distintas, distinta.
+ */
+async function modelo() {
+  const s = seccion(6, 'EL MODELO — cada especie, el mismo árbol en cada carga (C7)');
+  // El armado dibuja el atlas de hojas en un lienzo: un contexto 2D que acepta todo y
+  // no dibuja nada alcanza, porque la huella es de la geometría y no de los píxeles.
+  const imagen = (w = 1, h = 1) => ({ width: w, height: h, data: new Uint8ClampedArray(Math.max(1, w * h) * 4) });
+  const contexto = () => new Proxy({}, {
+    get(o, k) {
+      if (k in o) return o[k];
+      if (k === 'getImageData' || k === 'createImageData') return (a, b, w, h) => (typeof a === 'object' ? imagen(a.width, a.height) : imagen(w ?? a, h ?? b));
+      if (k === 'measureText') return () => ({ width: 0 });
+      if (k === 'createLinearGradient' || k === 'createRadialGradient' || k === 'createPattern') return () => ({ addColorStop() {} });
+      if (k === 'canvas') return { width: 1, height: 1 };
+      return () => {};
+    },
+    set(o, k, v) { o[k] = v; return true; },
+  });
+  const lienzo = () => ({ width: 1, height: 1, style: {}, getContext: () => contexto(), toDataURL: () => '', addEventListener() {} });
+  globalThis.document = { createElement: lienzo, addEventListener() {}, body: { appendChild() {} } };
+  globalThis.OffscreenCanvas ??= class { constructor(w, h) { Object.assign(this, lienzo(), { width: w, height: h }); } };
+  let mod = null;
+  try { mod = await import(pathToFileURL(path.join(SRC, 'world', 'Vegetacion.js')).href); } catch (e) { s.ok(false, 'Vegetacion.js carga en Node', e.message); return s; }
+  const armar = mod.construirPlanta || mod.modeloDe;
+  if (!s.ok(typeof armar === 'function', 'Vegetacion.js exporta construirPlanta (o modeloDe)')) return s;
+  const flora = JSON.parse(fs.readFileSync(path.join(SRC, 'data', 'flora.json'), 'utf8')).especies;
+  const huella = (geo) => {
+    const h = crypto.createHash('sha256');
+    for (const n of ['position', 'normal', 'uv', 'color']) { const a = geo.getAttribute?.(n) || geo.attributes?.[n]; if (a) h.update(Buffer.from(a.array.buffer, a.array.byteOffset, a.array.byteLength)); }
+    if (geo.index) h.update(Buffer.from(geo.index.array.buffer, geo.index.array.byteOffset, geo.index.array.byteLength));
+    return h.digest('hex');
+  };
+  const huellas = {};
+  const IDS = ['coihue', 'cipres_cordillera', 'pino_murrayana', 'nire', 'maiten'];
+  // Precalentar: la primera llamada de cada clase arma además su atlas de hojas (una vez,
+  // memorizado), y eso puede consumir azar. En el juego pasa siempre en el mismo orden,
+  // así que no rompe «el mismo árbol en cada carga»; acá no tiene que contar.
+  for (const id of IDS) { const e = flora.find((x) => x.id === id); try { if (e) armar(e); } catch { /* lo dice abajo */ } }
+  for (const id of IDS) {
+    const e = flora.find((x) => x.id === id);
+    if (!s.ok(!!e, `premisa: ${id} está en flora.json`)) continue;
+    let a, b;
+    try {
+      a = huella(armar(e));
+      for (let k = 0; k < 137; k++) Math.random();   // mover el azar entre las dos llamadas
+      b = huella(armar(e));
+    } catch (err) { s.ok(false, `${id}: el modelo se arma en Node`, err.message); continue; }
+    s.ok(a === b, `${id}: dos llamadas, la misma geometría byte a byte`, `${a.slice(0, 12)} · ${b.slice(0, 12)}`);
+    huellas[id] = a;
+  }
+  const distintas = new Set(Object.values(huellas)).size;
+  s.ok(distintas === Object.keys(huellas).length, 'y cada especie tiene la suya', `${distintas} distintas de ${Object.keys(huellas).length}`);
+  s.feliz = Object.keys(huellas).length === 5;
+  s.felizQue = `${Object.keys(huellas).length} de 5 especies armadas`;
+  return s;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // 4 · SIN REGRESIÓN  ·  5 · ARRANQUE
 // ═══════════════════════════════════════════════════════════════════════════
@@ -168,6 +230,12 @@ async function regresion() {
     ['banco-r7-fase3.mjs', '6/6'], ['banco-r7-fase4.mjs', '10/10'], ['banco-r7-fase5.mjs', '9/9'],
     ['banco-r7-fase6.mjs', '7/7'], ['banco-r8-fase1.mjs', '8/8'], ['banco-r8-fase2.mjs', '10/10'],
   ];
+  // La 3b y la 3c, en lo que se mide sin navegador
+  for (const [archivo, secciones] of [['banco-r8-fase3b.mjs', 'marco,shader'], ['banco-r8-fase3c.mjs', 'vertice,shader']]) {
+    const r = spawnSync(process.execPath, ['--max-old-space-size=6144', path.join(AQUI, archivo)], { cwd: RAIZ, encoding: 'utf8', timeout: 600000, env: { ...process.env, BANCO_SIN_BUILD: '1', BANCO_DETALLE: '', BANCO_JSON: '', BANCO_SECCIONES: secciones } });
+    const m = ((r.stdout || '') + (r.stderr || '')).match(/total (\d+)\/(\d+)/);
+    s.ok(!!m && m[1] === m[2], `${archivo} (${secciones}) sigue verde`, m ? `${m[1]}/${m[2]}` : '');
+  }
   // La fase 3 mide capturas que saca el navegador: se corre sin la sección de imagen
   const f3 = spawnSync(process.execPath, ['--max-old-space-size=6144', path.join(AQUI, 'banco-r8-fase3.mjs')], { cwd: RAIZ, encoding: 'utf8', timeout: 1800000, env: { ...process.env, BANCO_SIN_BUILD: '1', BANCO_DETALLE: '', BANCO_JSON: '', BANCO_SECCIONES: 'horno,terreno,piso,shader' } });
   const m3 = ((f3.stdout || '') + (f3.stderr || '')).match(/total (\d+)\/(\d+)/);
@@ -194,7 +262,7 @@ async function arranque() {
   return s;
 }
 
-const SECCIONES = { horno, hoja, clases, regresion, arranque };
+const SECCIONES = { horno, hoja, clases, modelo, regresion, arranque };
 const soloEstas = (process.env.BANCO_SECCIONES || '').split(',').filter(Boolean);
 const todas = [];
 for (const [nombre, fn] of Object.entries(SECCIONES)) {

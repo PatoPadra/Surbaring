@@ -71,6 +71,13 @@ vuelta.**
 > Preparado también: el instrumento de la fase 4 rehecho (un árbol solo, clima fijo), y
 > con él se vio que la cobertura de apertura estaba sesgada, que los modelos de árbol
 > cambian en cada carga, y que el problema de las coníferas es real igual.
+>
+> **19/9/2026 — FASE 3c (`suelo`, las sombras) ENCARGADA** (banco `6a56ade`). Banco
+> escrito antes: recibe contra un plano de control, sin acné contra una verdad de campo
+> sobre el DEM, las sombras del relieve aparecen, y el costo. Base 11/15 roja por el
+> motivo correcto, maqueta 15/15, falsador 4/4. La sospecha de acné del jefe se refutó
+> midiendo antes de encargar. Después viene la **fase 4** (copa), con el contrato C4
+> reescrito sobre el relleno de la silueta y C7 (modelo de árbol determinista) primero.
 
 ---
 
