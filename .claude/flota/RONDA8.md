@@ -845,3 +845,48 @@ de la estepa), la arena a puñados (ronda 7) y el agua con recipiente (ronda 7).
 El contrato sale de acá cuando se abra la fase, con el pedido del dueño a la vista:
 *«trabajar piedra para después hacer un hacha, un martillo, etc.»* y *«enfocarse en la
 primera hora real de vida»*.
+
+---
+
+## FASE 7 · `reglas` — las decisiones del dueño y las deudas anotadas
+
+### Lo que se midió
+
+- **La muerte, hoy** (`Partida.registrarMuerte`, `Partida.js:101`): vacía el bolso
+  —herramientas incluidas, y la pantalla de fin las nombra— y **deja las cuatro
+  ranuras**. La llama encendida sigue encendida. El dueño eligió **«se pierde todo»**.
+- **La lana, hoy**: 2 de cada 3 coirones (`Recoleccion.js:83-99`, licencia
+  `lanaDelCoiron`); el poncho cuesta 17,7 apretadas en la mediana de 61 puntos (ronda
+  7). El dueño eligió **bajarla**; el jefe, **1 de cada 4**: con la cuenta de la ronda 7,
+  17,7 × (2/3) / (1/4) ≈ 47 apretadas.
+- **La recolección en el Parque** es ilegal en la vida real (Ley 22.351, art. 5) y el
+  juego la permite sin decirlo. El dueño eligió **licencia dicha**.
+- **La trampa de la fragua** (`Fabricacion.estacion`, `:62-72`): pregunta por **un solo**
+  horno, el más cercano, y recién después si es el que hace falta. Con una fogata más
+  cerca que la fragua, las recetas de fragua dicen «hace falta estar al lado de:
+  Fragua» teniéndola al lado. Es el mismo defecto que la ronda 7 le arregló al telar
+  con `_estacionDeObra`, y también le pasa a `'fogata'` cuando lo más cercano es el
+  telar o un horno apagado.
+- **El radio de 8 m, dos veces**: `RADIO_ESTACION_M` (`Fabricacion.js:38`) y
+  `RADIO_HORNO_M` (`Fundicion.js:37`).
+- **«115»** en nueve comentarios de `Iconos.js` y `Bolso.js`: desde la ronda 7 los
+  dibujos son más.
+- **`efectosAAgregar`** (`herramientas.json`): diez entradas que dicen «hoy tiene efecto
+  null» y cosas que ya no son ciertas.
+
+### El contrato (se escribe entero al abrir la fase)
+
+**G1 · Se pierde todo.** Morir vacía el bolso **y las cuatro ranuras**, apaga la llama,
+y la pantalla de fin nombra lo que estaba puesto. Las trampas puestas quedan donde están
+(no son del bolso). El guardado viejo entra igual.
+
+**G2 · La lana, 1 de cada 4**, con el criterio reescrito y la cuenta del poncho medida
+otra vez en el juego (≈ 47 apretadas, ±15 %).
+
+**G3 · La licencia de recolección, dicha**: declarada en `licenciasDeJuego` con la ley y
+el artículo, en el códice, y **una vez** en el cartel la primera vez que se junta algo
+dentro del Parque.
+
+**G4 · Las deudas**: la estación se busca entre todas las que están a mano (fragua y
+fogata, como el telar); un solo radio; el número de dibujos dicho bien donde se dice; y
+`efectosAAgregar` al día, recontado desde `src/`.
