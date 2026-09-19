@@ -840,7 +840,8 @@ export class Terreno {
         `
       );
 
-      // Normal geométrica desde el mapa precalculado, más relieve fino de ruido
+      // Normal geométrica desde el mapa precalculado, más relieve fino, armada en
+      // el marco del mundo y entregada a three en el de la cámara
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <normal_fragment_begin>',
         `
@@ -850,6 +851,9 @@ export class Terreno {
         // acá rompe el enlace del programa.
         float faceDirection = gl_FrontFacing ? 1.0 : -1.0;
         // Ya la leyó <map_fragment>, que corre antes. Misma UV, misma muestra.
+        // Está en el marco del MUNDO, y en ese marco se le suma todo el relieve
+        // de abajo: el fbm triplanar de f2 y f3 elige sus planos con ella, y el
+        // DEM fino y la normal horneada están escritos en x y z del mundo.
         vec3 normal = gNormalDEM;
 
         // Relieve fino en dos escalas, atenuado con la distancia para que no
@@ -911,6 +915,26 @@ export class Terreno {
           float nz = sqrt(max(1.0 - dot(incl, incl), 0.0));
           normal = normalize(normal * nz + vec3(incl.x, 0.0, incl.y));
         }
+
+        // Y recién ahora, una sola vez, al marco de la cámara, que es donde
+        // ilumina three: las direcciones de las luces llegan multiplicadas por
+        // viewMatrix (WebGLLights.setupView), y las del fuego y la antorcha
+        // también (Luces.js, escribir). Desde el prototipo esta normal pasaba en
+        // el marco del mundo, y la luz del suelo dependía de hacia dónde miraba
+        // la cámara: mirando derecho abajo en el bosque y girando la cámara
+        // sobre su eje, el mismo suelo daba 45,8 · 47,3 · 8,7 · 8,7, y en la
+        // estepa, el mismo punto visto desde cuatro rumbos cambiaba un 61 %
+        // (RONDA8.md, fase 3b). Mirando al frente el error era chico, del orden
+        // del seno del cabeceo, y por eso no se vio mientras se calibraba la
+        // paleta.
+        //
+        // Con la parte de giro de viewMatrix: el terreno no tiene transformación
+        // propia (su modelMatrix es la identidad), así que es la matriz de las
+        // normales, y como es un giro, su inversa traspuesta es ella misma. La
+        // traspuesta sola, o vector por matriz, giraría para el otro lado.
+        // Después de esta línea nadie la vuelve a inclinar: todo el relieve ya
+        // está sumado arriba, en el marco del mundo.
+        normal = normalize(mat3(viewMatrix) * normal);
         vec3 nonPerturbedNormal = normal;
         `
       );

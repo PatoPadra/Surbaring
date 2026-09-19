@@ -59,6 +59,18 @@ vuelta.**
 > banco, falsador (9/9, 3 controles) y mitad navegador escritos y validados antes de
 > encargarla. Para el dueño: el suelo del bosque queda un 13 % más claro mirando abajo,
 > porque el ruido viejo lo oscurecía por debajo de la paleta calibrada.
+>
+> **19/9/2026 — FASE 3b (`suelo`, la luz) CERRADA.** Una línea: la normal del terreno pasa
+> al marco de la cámara. Girar la cámara sobre su eje ya no cambia la luz del suelo (antes
+> hasta +446 %; ahora 0,1 %), el mismo punto visto desde cuatro rumbos cambia sólo por el
+> especular (≤ 14,4 %), y el costo no se distingue de la deriva (tres pares alternados).
+> Banco 5/5, falsador 10/10, navegador verde. El agente encontró además que **el terreno
+> no recibe ninguna sombra** (normal del vértice en cero → NaN en ANGLE): confirmado
+> restando y con la causa probada (poner la normal en (0,1,0) la devuelve). Cuesta +0,9
+> ms al frente, medido en la misma carga. Es la **fase 3c**, abierta con su medición.
+> Preparado también: el instrumento de la fase 4 rehecho (un árbol solo, clima fijo), y
+> con él se vio que la cobertura de apertura estaba sesgada, que los modelos de árbol
+> cambian en cada carga, y que el problema de las coníferas es real igual.
 
 ---
 

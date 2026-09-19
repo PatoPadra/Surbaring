@@ -53,10 +53,14 @@ const DEFECTOS = [
     (t) => uno(reemplazarLinea(t, ''), 'gNormalDEM = nrm;', 'gNormalDEM = normalize((viewMatrix * vec4(nrm, 0.0)).xyz);'), ['una sola vez', 'ningún otro trozo']],
   ['algo-entre-medio', 'después del pasaje se la inclina otra vez, en el marco del mundo',
     (t) => t.replace(LINEA, (m) => `${m}${IND}normal = normalize(normal + vec3(0.0, 0.0, 0.2));\n`), ['sin nada entre medio']],
+  // Era un control y el banco la aceptaba: normalMatrix no existe en el fragmento
+  // (WebGLProgram.js:666 contra :828) y el terreno no compilaría. Lo vio el agente.
+  ['normalMatrix-en-fragmento', 'normalMatrix × normal, que en el fragmento no está declarada',
+    (t) => reemplazarLinea(t, `${IND}normal = normalize(normalMatrix * normal);\n`), ['una sola vez']],
 ];
 const CONTROLES = [
   ['forma-mat3', 'mat3(viewMatrix) × normal, que es lo mismo', (t) => reemplazarLinea(t, `${IND}normal = normalize(mat3(viewMatrix) * normal);\n`)],
-  ['forma-normalMatrix', 'normalMatrix × normal (el terreno no tiene transformación propia)', (t) => reemplazarLinea(t, `${IND}normal = normalize(normalMatrix * normal);\n`)],
+  ['forma-vec4', '(viewMatrix × vec4(normal, 0)).xyz, que es lo mismo', (t) => reemplazarLinea(t, `${IND}normal = normalize((viewMatrix * vec4(normal, 0.0)).xyz);\n`)],
   ['comentario-de-mas', 'un comentario que nombra la cuenta', (t) => t.replace(LINEA, (m) => `${IND}// (viewMatrix * vec4(normal, 0.0)).xyz: al marco de la cámara\n${m}`)],
 ];
 

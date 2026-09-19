@@ -857,9 +857,114 @@ programas nuevos.
 **B6 · Sin regresión.** La ronda 7, las fases 1, 2 y 3, `lint-shader` y `vite build`.
 
 Bancos: `banco-r8-fase3b.mjs` (B1, B4, B6), `banco-r8-fase3b.navegador.js` (B2, B3, B4,
-B5), falsador `banco-r8-fase3b.falsar.mjs` (nueve arreglos mal hechos y tres controles).
+B5), falsador `banco-r8-fase3b.falsar.mjs` (diez arreglos mal hechos y tres controles).
 
-<!-- CIERRE-F3B -->
+### CERRADA el 19/9/2026
+
+Una línea del agente, dentro de su reemplazo y en su lugar:
+`normal = normalize(mat3(viewMatrix) * normal);`. Leída: correcta, y todo el relieve
+queda arriba, en el marco del mundo.
+
+**Mitad navegador**, con el programa compilado verificado en la placa (el texto del
+shader del terreno trae la línea):
+
+| | resultado | umbral |
+|---|---|---|
+| B2 · el giro, brillo del centro | bosque 0,1 %, estepa 0,0, pedregal 0,0, ladera 0,0 | ≤ 2 % |
+| B2 · la imagen girada de vuelta | ≤ 0,97 niveles (bosque); ≤ 0,47 los demás | ≤ 1,5 |
+| B3 · la vuelta, punto llano | bosque 14,4 %, estepa 2,6, pedregal 1,8 | ≤ 20 % |
+| B5 · compilar | 24 → 24 | igual |
+
+(Son idénticos, al centésimo, a los de la maqueta del jefe con que se validó el banco.)
+
+**B5 · el costo necesitó tres pares.** El primero, contra la fase 3 en la misma sesión,
+dio rojo: al frente 9,7 contra 9,1 ms, al suelo 5,1 contra 4,6. Una matriz por píxel no
+cuesta medio milisegundo, así que se alternó dos veces más, recargando:
+
+| par | fase 3, frente · suelo | 3b, frente · suelo | diferencia |
+|---|---|---|---|
+| 1 | 9,1 · 4,6 | 9,7 · 5,1 | +0,6 · +0,5 |
+| 2 | 9,1 · 4,9 | 9,4 · 4,8 | +0,3 · −0,1 |
+| 3 | 9,0 · 4,4 | 9,0 · 4,4 | 0,0 · 0,0 |
+
+Mediana de las diferencias: **+0,3 al frente y 0,0 al suelo**, dentro del umbral; lo del
+primer par es deriva de la placa entre cargas, que baja a cero en el tercero.
+
+**Banco Node 5/5** (marco, imagen, regresión de diez bancos, lint, `vite build`) y
+**falsador 10/10** con 3 controles verdes. La imagen, con las semillas fijas:
+
+| lugar | al frente, cercana · del medio | textura contra la paleta sola | mirando al suelo |
+|---|---|---|---|
+| bosque | **+13,6 % · +14,2 %** | +3,6 % | +47,7 % |
+| estepa | +4,1 % · +1,8 % | −3,1 % | +36,9 % |
+| pedregal | +7,4 % · +6,8 % | −7,4 % | +31,6 % |
+
+El agente predijo al frente +4 a +5 % (cayó del lado favorable: el bosque quedó a 1,4
+puntos del tope), el pedregal contra la paleta en −8,4 a −8,9 % (salió −7,4, mejor) y
+mirando al suelo +31 a +34 % en bosque y estepa y +21 % en el pedregal (salió más).
+
+**Un defecto del banco, encontrado por el agente:** aceptaba `normalMatrix × normal`, y
+`normalMatrix` no existe en el fragmento (three la declara sólo en el vértice,
+`WebGLProgram.js:666` contra `:828`). Con esa línea el terreno no compilaría y la mitad
+Node daba verde. Corregido: la forma dejó de aceptarse y el control pasó a ser el décimo
+defecto plantado.
+
+**Y un hallazgo del agente, confirmado midiendo: el terreno no recibe ninguna sombra.**
+Es la fase 3c.
+
+**Del agente, una falta a las reglas, dicha por él:** abrió una vez el panel del
+navegador para una captura de pantalla, sin tocar nada. No cambió la partida ni se usó
+como dato.
+
+**Para que mire el dueño:** el suelo mirando hacia abajo con el sol a la espalda queda
+bastante más claro (+32 a +48 %), y de cara al sol, más oscuro: es la luz de verdad. La
+antorcha y el fuego también se ven distinto en el piso (su círculo de luz ya no cambia al
+girar la cabeza).
+
+---
+
+## FASE 3c · `suelo`, retomado — el terreno no recibe ninguna sombra
+
+### Lo que se midió antes de escribir el contrato
+
+**1 · Lo sospechó el agente `suelo` cerrando la 3b** (pendiente, «Fase 3b», punto 1): la
+geometría del terreno lleva el atributo `normal` entero en cero (`_construirMalla`,
+`new Float32Array(total * 3).fill(0)`), y three arma con él la corrección de la sombra en
+el vértice (`shadowmap_vertex`: `normalize` de un vector cero). En ANGLE sobre D3D11 eso
+da NaN, las coordenadas de sombra salen NaN, la prueba de frustum da falso y la sombra
+vale 1.
+
+**2 · Confirmado en el juego, restando** (`r8-sombra.navegador.js`, 19/9). Un coihue
+invisible para la cámara pero que sigue proyectando sombra, mirado derecho abajo desde
+30 m, con su sombra prendida y apagada: **el terreno no se oscurece ni un píxel**. Un plano
+de prueba de three puesto 0,6 m sobre el mismo suelo, en el mismo cuadro: **el 40 % del
+cuadro se oscurece 81 niveles**. Nadie proyecta sombra sobre el terreno: ni los árboles,
+ni las montañas, ni las obras.
+
+**3 · La causa, confirmada y no sólo el síntoma.** Con el atributo `normal` puesto en
+(0, 1, 0) —un dato, no recompila: los programas no cambian— el terreno recibe la misma
+sombra: el 41 % del cuadro, 58 niveles más oscuro.
+
+**4 · Lo que cuesta, medido en la misma carga** alternando el dato tres veces (sin
+recargar, así que sin deriva): al frente 9,3 · 8,9 · 9,1 → **10,0 · 10,0 · 9,8 ms
+(+0,9)**; mirando al suelo 4,7 · 4,9 · 5,0 → **5,5 · 5,4 · 5,8 (+0,6)**. Hoy la sombra
+sale NaN y el terreno se saltea el filtrado de las cascadas; recibirla lo paga. Es un 3 %
+del cuadro en Baja.
+
+### El contrato (se escribe entero al abrir la fase, después de cerrar la 3b)
+
+- **S1 · Recibe.** Con el instrumento de arriba, el terreno se oscurece bajo la sombra del
+  árbol en una fracción del cuadro a ±25 % de la del plano de control, y el oscurecimiento
+  medio no es menos de la mitad del del plano.
+- **S2 · Sin acné ni sombras sueltas en laderas**: el terreno sin nada que le haga sombra,
+  con el sol bajo, no cambia al prender la recepción de sombra más allá de las sombras que
+  proyecta el propio relieve (a medir: la ladera de 25° de la 3b, con el sol a 15° y a 45°).
+- **S3 · Costo**: ≤ +1,2 ms al frente y al suelo contra la 3b, en la misma carga si se
+  puede alternar el dato, o alternando cargas.
+- **S4 · Sin compilar de más, sin regresión.**
+
+La decisión de pagarlo es del jefe por medición (3 % del cuadro por que los árboles den
+sombra en el suelo); si al dueño le pesa en Baja, se apaga por preset.
 
 ---
 
@@ -978,6 +1083,39 @@ por especie en vez de uno, y la base se vuelve a medir así, en la misma sesión
 arreglo. Si con eso la base cambia, los umbrales de C4 se reescriben con la misma
 proporción antes de encargar, no después.
 
+*Hecho en el banco el 19/9:* la mitad navegador mide ahora tres árboles por especie,
+cada uno **solo** (su instancia sola en el lote, las otras especies y los impostores
+apagados, sin su sombra: la sombra en el suelo también cambia al restar y contaba como
+copa, y los vecinos de la misma especie agrandaban el recuadro), con el clima fijo. Las
+posiciones de los árboles son deterministas (semilla por celda); **el modelo de cada
+especie no**: `construirPlanta` usa `Math.random` al cargar. La base se promedia sobre
+varias cargas, y el contrato suma **C7 · el modelo de cada especie sale de una semilla
+propia** (derivada de su id): dos cargas, el mismo árbol, para que el banco mida el
+cambio y no la suerte de la carga.
+
+*Primeras dos cargas con el instrumento nuevo (19/9, base):*
+
+| especie | cobertura del recuadro | relleno de la silueta | puntitos por mil |
+|---|---|---|---|
+| ciprés | 0,280 · 0,251 | — · 0,33 | 6,6 · 8,1 |
+| pino | 0,238 · 0,178 | — · 0,25 | 11,9 · 17,7 |
+| coihue | 0,356 · 0,336 | — · 0,52 | 0,8 · 0,9 |
+| ñire | 0,340 · 0,364 | — · 0,56 | 1,4 · 1,1 |
+| maitén | 0,353 · 0,365 | — · 0,55 | 1,5 · 1,1 |
+
+Dos cosas cambian el contrato C4. **Una:** medidos solos, el ciprés y el pino ya pasan
+los umbrales de cobertura (0,20 y 0,12): los 0,088 y 0,053 de la apertura eran en buena
+parte el instrumento —vecinos de la misma especie que agrandaban el recuadro, y la
+sombra—. Pero **las imágenes siguen mostrando esqueletos** de palitos con el cielo
+atravesándolos (`r8-f4-base1-arbol-*.png`): el problema es real y la medida era la
+equivocada. La cobertura del recuadro castiga la forma (un cono macizo llena la mitad
+de su recuadro); lo que se ve como esqueleto son los huecos, y eso lo mide el **relleno:
+píxeles del árbol sobre el área de su envolvente convexa**. Las latifoliadas dan 0,52 a
+0,56; el ciprés 0,33 y el pino 0,25. **Dos:** de una carga a otra el pino pasó de 0,238 a
+0,178 y sus puntitos de 11,9 a 17,7: con modelos al azar, un umbral mide la suerte. C4 se
+reescribe al abrir la fase sobre el relleno, con la base promediada en cinco cargas, y
+C7 va primero.
+
 ---
 
 ## FASE 5 · `piedra` — trabajar la piedra paso a paso (medición de apertura)
@@ -1022,6 +1160,55 @@ la carta: con la primera lasca.
 El contrato sale de acá cuando se abra la fase, con el pedido del dueño a la vista:
 *«trabajar piedra para después hacer un hacha, un martillo, etc.»* y *«enfocarse en la
 primera hora real de vida»*.
+
+**5 · Fuentes para el paso a paso** (buscadas el 19/9). Salas, A. M. (1942), «Hachas de
+piedra pulida y enmangadas del territorio del Neuquén», *Relaciones de la Sociedad
+Argentina de Antropología* 3: 67-72 (dos hachas pulidas **con su mango**, de una mina de
+sal cerca de Chos Malal; lo pulido es raro en Patagonia). Fenton, M. B. (1984), «The
+nature of the source and the manufacture of Scottish battle-axes and axe-hammers»,
+*Proceedings of the Prehistoric Society* 50: 217-243, experimental: el desbaste por
+lascado lleva minutos, el **picado 3 a 5 horas**, el **desgaste 1 a 3** y el **pulido
+3**. El pulido se hace frotando contra una laja o una roca fija con arena y agua.
+
+**6 · El saber de la primera hora** (medido en el juego el 19/9, desde el arranque, 822
+m). El saber se gana descubriendo lugares (3 por lugar), levantando obras (3 o 4),
+aprovechando restos (1), el permiso de pesca (5) y los fenómenos (2 o más). El lugar
+descubrible más cercano es la **Isla Huemul, a 1,4 km y en el agua**; el primero en
+tierra, el **Cerro Campanario, a 2,2 km**; el tercero, la Laguna El Trébol, a 4,8 km.
+La talla de obsidiana pide 8: tres lugares. Una tecnología que abra la cadena de la
+piedra tiene que costar lo que da la primera hora, o no pedir saber.
+
+### Borrador del contrato (19/9, mientras corre la 3b; se ajusta al abrir)
+
+La cadena, toda sin obsidiana y sin cazar, cada paso con su nota y su fuente:
+
+1. **El percutor** (nivel 0, sin tecnología): un rodado del tamaño de la mano, elegido
+   de una piedra. Es herramienta: lo piden los pasos que siguen (`pideHerramienta`).
+2. **La primera lasca**: `lasca_rodado` deja de pedir `lasca_obsidiana` y pide el
+   percutor; cuesta **una** piedra (la segunda de hoy *era* el percutor). Con esto el
+   `porQueExiste` que ya tiene se vuelve cierto.
+3. **La preforma**: desbastar y **picar** un canto alargado con el percutor → recurso
+   `preforma` (dos piedras: el canto y lo que se va).
+4. **El pulido**: la preforma frotada con **arena y agua** (los dos existen desde la
+   ronda 7) → recurso `hoja_hacha`.
+5. **El mango**: `mango_labrado` deja de pedir obsidiana; pide algo que corte (cualquier
+   lasca o cuchillo: hace falta que `Fabricacion` acepte «algo que haga X» y no un id
+   solo).
+6. **El hacha**: `hacha_piedra` = hoja + mango + **cordel** (el tiento pide cuero, o sea
+   cazar; el cordel sale de fibra). La nota dice que el tiento mojado encoge y ata mejor.
+7. **El martillo de piedra**: un canto con garganta picada, enmangado; con un **uso
+   real** en la primera semana (a decidir al abrir, midiendo qué pide hoy el juego: partir
+   hueso para la médula —grasa, documentado en la región— o clavar las estacas de un
+   refugio).
+8. **La tecnología `hacha_pulida`** deja de pedir `lasca_obsidiana`, o se reemplaza por
+   una de talla y pulido que se pueda aprender con el saber de la primera hora (medir
+   antes cuánto saber junta el arranque).
+9. **Iconos** para cada objeto y recurso nuevo (regla de la ronda 7), y el banco de la
+   ronda 6, fase 3, verde.
+
+Guardas: al arrancar, con piedras, fibra, madera, arena y agua a mano, el primer hacha
+sale **sin subir de 1000 m y sin cazar**; y **ninguno de los 57 objetos de hoy queda
+peor** (lo que hoy se fabrica se sigue fabricando).
 
 ---
 

@@ -50,14 +50,16 @@ function seccion(num, nombre) {
 const sinComentarios = (g) => g.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, '');
 
 /**
- * Las formas aceptadas de pasar la normal al marco de la cámara. Todas son la misma
- * cuenta: la parte de giro de viewMatrix por la normal. `normalMatrix` también vale,
- * porque el terreno no tiene transformación propia (su modelMatrix es la identidad).
+ * Las formas aceptadas de pasar la normal al marco de la cámara. Las dos son la misma
+ * cuenta: la parte de giro de viewMatrix por la normal. `normalMatrix` NO vale, aunque
+ * con la modelMatrix del terreno en la identidad sería la misma matriz: three la
+ * declara sólo en el prefijo del vértice (WebGLProgram.js:666; el del fragmento, :828,
+ * trae viewMatrix y cameraPosition), y en el fragmento no compila. La aceptaba la
+ * primera versión de este banco; lo vio el agente `suelo` (pendiente, fase 3b).
  */
 const A_VISTA = new RegExp([
   String.raw`normal\s*=\s*normalize\s*\(\s*\(\s*viewMatrix\s*\*\s*vec4\s*\(\s*normal\s*,\s*0(?:\.0*)?\s*\)\s*\)\s*\.xyz\s*\)\s*;`,
   String.raw`normal\s*=\s*normalize\s*\(\s*mat3\s*\(\s*viewMatrix\s*\)\s*\*\s*normal\s*\)\s*;`,
-  String.raw`normal\s*=\s*normalize\s*\(\s*normalMatrix\s*\*\s*normal\s*\)\s*;`,
 ].join('|'), 'g');
 
 // ═══════════════════════════════════════════════════════════════════════════
