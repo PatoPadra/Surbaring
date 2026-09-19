@@ -47,6 +47,18 @@ vuelta.**
 > 4** (`copa`: el problema de las coníferas es el dibujo del atlas, 8 % de cobertura, no
 > el mipmap); y **la propuesta del primer año**, escrita y sin código, en
 > `r8-primer-anio.md`, con cinco preguntas para el dueño.
+>
+> **19/9/2026 — FASE 3 (`suelo`) CERRADA.** Navegador 6/6, banco 7/7, falsador 10/10 con
+> sus controles. El suelo de cerca es una textura de capas horneada (hojarasca, andisol
+> con pómez, estepa, acarreo): el detalle cercano sube ×8 a ×12, y el terreno mirando al
+> suelo baja de 13,4 a 4,6 ms (al frente, de 13,3 a 9,3), medido contra la base en la
+> misma sesión. La piedra dejó de ser verde. Siete defectos del banco, todos del jefe; el
+> más caro: **el clima de cada carga sale de dos semillas al azar**, y comparar capturas
+> de dos cargas medía el cielo (ahora se fijan). El agente encontró que **la normal del
+> terreno se ilumina en el marco equivocado** desde el prototipo: es la fase 3b, con
+> banco, falsador (9/9, 3 controles) y mitad navegador escritos y validados antes de
+> encargarla. Para el dueño: el suelo del bosque queda un 13 % más claro mirando abajo,
+> porque el ruido viejo lo oscurecía por debajo de la paleta calibrada.
 
 ---
 

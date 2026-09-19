@@ -153,6 +153,7 @@ abrir su fase**, midiendo: un argumento que cierra no es una causa.
 | **1** | `rumbo` | 2, 3, 4 y la brújula | la flecha, la brújula, más zoom, centrar al abrir, y el minimapa |
 | 2 | `lazo` | 1 | poner la trampa, la nasa y la red; que trabajen solas; marcadas en el mapa y el minimapa |
 | 3 | `suelo` | gráficos | el suelo de cerca |
+| 3b | `suelo` | encontrado en la 3 | la luz del terreno en el marco de la cámara |
 | 4 | `copa` | gráficos | árboles y follaje |
 | 5 | `piedra` | 5 | trabajar la piedra paso a paso: percutor, preforma, pulido; el hacha y el martillo de piedra salen de ahí |
 | 6 | `luz` | decisiones | la fogata menos naranja; la luna con la ley de Allen |
@@ -705,6 +706,161 @@ dueño.
 **S7 · Sin regresión.** Los bancos de la ronda 7 y de las fases 1 y 2 de ésta siguen
 verdes, `lint-shader.mjs` sin errores, y `vite build` limpio.
 
+### CERRADA el 19/9/2026
+
+**Medido por el jefe, no por el informe.** Mitad navegador, con la base (el `Terreno.js` y
+el `Sotobosque.js` de `HEAD`) medida en la misma sesión: **6/6**.
+
+| | base de la sesión | fase 3 |
+|---|---|---|
+| terreno mirando al suelo (−35°) | 13,5 · 13,4 · 13,3 → **13,4 ms** | 4,6 · 4,6 · 4,6 → **4,6 ms** (−8,8) |
+| terreno al frente | 13,1 · 13,3 · 13,3 → **13,3 ms** | 10,2 · 9,0 · 9,3 → **9,3 ms** (−4,0) |
+| programas, dibujando y al cambiar la textura | | 31 → 31 · 31 → 31 |
+
+Banco Node **7/7**, con las capturas de semilla fija contra la base sacada con el mismo
+instrumento:
+
+| lugar | detalle cercano | brillo contra la paleta sola | brillo contra la imagen de la base |
+|---|---|---|---|
+| bosque | 1,88 → **17,09** (×9,1) | **+2,1 %** | +13,4 % |
+| estepa | 2,14 → **17,84** (×8,3) | **−0,4 %** | +5,3 % |
+| pedregal | 2,61 → **30,43** (×11,7) | **−4,8 %** | +0,3 % |
+
+La piedra: verdor **0,003** (base 0,129), color (90, 88, 86). El piso: la huella de mil
+puntos, igual. Falsador: **10/10**, con sus controles.
+
+El agente predijo el brillo en +3,9 / +4,9 / −0,7 % y el costo entre 12 y 14,5 ms: el
+brillo cayó del lado favorable (el bosque salió +13,4 % contra la imagen de antes) y el
+costo del desfavorable (4,6 ms). Las dos cosas se midieron de nuevo acá.
+
+**Del coordinador.** `main.js` espera las capas en la pantalla de carga y las sube con
+`render.initTexture` (el punto 2 del pendiente del agente), así el primer paso no paga la
+subida ni los mipmaps. Y el comentario del sesgo de LOD en `Terreno.js` citaba una guarda
+que ya no existe: se reescribió con lo medido (el sesgo no cambia nada distinguible del
+ruido de una recarga en el error contra el supermuestreo 2×; queda por el movimiento).
+
+**Siete defectos del banco, todos del jefe:**
+
+1. Los umbrales absolutos de costo medían la placa (la misma base dio 12,8 y 14,1 ms en
+   dos sesiones) → alternar con la base en la misma sesión.
+2. La guarda de «a 10–40 m el detalle no pasa de ×1,6» contaba detalle de verdad como
+   aliasing y empujó al agente a desenfocar → se sacó; los mipmaps y el LOD por derivadas
+   se miran en el código (sección 2), y el filtrado con `r8-filtrado.navegador.js`.
+3. T2 no podía ver una recompilación: para cuando corre, las capas ya llegaron → T2b
+   cambia la textura por su reemplazo y vuelve.
+4. `import('/banco.js')` desde un módulo servido por Vite da 500 → etiqueta `<script>`.
+5. **El clima es al azar en cada carga** (`Tiempo._semillaA/_semillaB`): la misma vista
+   dio −1 % en una sesión y +26 % en otra contra la misma constante. → T3 fija las
+   semillas, vacía los eventos y apaga lo que se siembra al azar; la base se saca con el
+   mismo instrumento. Dos cargas dan ahora capturas idénticas bit a bit
+   (`r8-repetible.mjs`).
+6. **El brillo contra la imagen de la base castigaba sacar el ruido viejo.** Con el suelo
+   horneado totalmente plano —módulo 1 exacto, normal plana: la paleta sola— el bosque ya
+   sale +11 %, la estepa +5,7 % y el pedregal +5,4 % (`r8-suelo-aislar.navegador.js`): el
+   ruido viejo no era neutro, dejaba el suelo por debajo de sus albedos calibrados. La
+   hipótesis anterior —que era la luz torcida del punto de abajo— se probó y se descartó:
+   con la luz corregida en las dos, el bosque sale +20 %, no menos. → La referencia es la
+   paleta sola, sacada en la misma tanda (`r8-f3-plano-*`), y el cambio contra la imagen
+   de antes queda informado.
+7. La sección del horno reescribía `public/tex/suelo/` con los mismos bytes y fecha nueva:
+   las capturas quedaban «viejas» en la misma corrida, y Vite recargaba la página. → Lo
+   que el horno reescribe idéntico recupera su fecha; la frescura se mide sólo contra lo
+   que lee el cargador; y el control del período del falsador mira las secciones 1 y 2,
+   porque el período de la capa 0 sí cambia la imagen.
+
+**Encontrado por el agente y confirmado midiendo:** la normal del terreno se ilumina en
+el marco equivocado desde el prototipo. Es la fase 3b.
+
+**Para que mire el dueño:** el suelo de cerca en los tres ambientes (y si el mosaico de
+2 m se lee como repetido, que es S6 y lo decide el ojo); y que el suelo del bosque, mirando
+abajo, queda **un 13 % más claro que antes**: no es la textura, es que el ruido viejo lo
+oscurecía por debajo de la paleta calibrada.
+
+---
+
+## FASE 3b · `suelo`, retomado — la luz del terreno, en el marco de la cámara
+
+### Lo que se midió antes de escribir el contrato
+
+**1 · El defecto, encontrado por el agente `suelo` en la fase 3** (`pendiente-r8-suelo.md`,
+punto 3). En el reemplazo de `<normal_fragment_begin>` el terreno arma `normal` desde
+`gNormalDEM`, que es la normal del DEM **en el marco del mundo**, le suma el relieve fino
+(el DEM fino, `f2`, `f3` y ahora la normal horneada) en ese mismo marco, y se la pasa así
+a three, que ilumina **en el marco de la cámara** (las luces vienen multiplicadas por
+`viewMatrix`). Así desde el prototipo (`6035732`). La luz del suelo depende de hacia dónde
+mira la cámara. Nadie lo vio porque la paleta se calibró mirando al frente, donde el error
+es chico: con el cabeceo de −8°, el sol directo se equivoca a lo sumo en sen 8° ≈ ±14 %
+de su componente horizontal.
+
+**2 · Medido en el juego, con el código de la fase 3** (`banco-r8-fase3b.navegador.js`,
+semillas del clima fijas, sólo terreno y cielo). Mirando derecho abajo desde 4 m y
+**girando la cámara sobre su propio eje** —la vista no cambia, sólo gira la imagen—, el
+brillo del mismo pedazo de suelo:
+
+| lugar | 0° | 90° | 180° | 270° | cambio |
+|---|---|---|---|---|---|
+| bosque (15°) | 45,8 | 47,3 | 8,7 | 8,7 | **+446 %** |
+| estepa (3°) | 62,0 | 60,7 | 14,9 | 14,9 | +315 % |
+| pedregal (15°) | 96,0 | 100,0 | 41,3 | 39,7 | +152 % |
+| ladera de 25° | 51,4 | 75,7 | 21,0 | 21,0 | +261 % |
+
+Y desde 10 m, bajando 35°, mirando el mismo punto llano de la estepa desde cuatro rumbos:
+92,4 · 60,2 · 57,5 · 92,0, un **61 %**.
+
+**3 · Qué va a cambiar a la vista, medido antes de encargar** (experimento del jefe, no
+el arreglo: la línea que propuso el agente, puesta en una copia de la base y en otra de
+la fase 3, sólo para saber qué esperar). Mirando al suelo a −35° con el sol a la espalda
+—el caso de las capturas de la fase 3—, el suelo se aclara **un 35 a 40 %**: el sol entraba
+como si estuviera a 20° sobre el horizonte. Mirando al frente, entre +2 y +11 %. De cara al
+sol, mirando abajo, se va a oscurecer: ahí el defecto le daba de más.
+
+### Decisiones del jefe
+
+- **Es física, no gusto:** la paleta de `Terreno.js` son albedos lineales medidos, y la luz
+  les llegaba torcida. No se recalibra nada para compensar: si algo queda claro u oscuro de
+  más con la luz derecha, es otra fase y la decide el ojo del dueño.
+- **La hace el mismo agente que la encontró**, retomado con `SendMessage`: ya tiene el
+  terreno en la cabeza y el arreglo escrito en su pendiente. El banco lo escribió el jefe
+  sin mirar el arreglo: mide invariancias que tiene que cumplir cualquier luz bien puesta.
+
+### Propiedad exclusiva de archivos
+
+El agente escribe **sólo** `src/world/Terreno.js`, y en él sólo el reemplazo de
+`<normal_fragment_begin>` (y sus comentarios). Del coordinador: los bancos y esta carta.
+
+### El contrato
+
+**B1 · El marco.** En el reemplazo de `<normal_fragment_begin>` la normal sale de
+`gNormalDEM`, recibe todo su relieve en el marco del mundo y **pasa al de la cámara una
+sola vez**, con la parte de giro de `viewMatrix` (no su traspuesta), después del último
+relieve y justo antes de `nonPerturbedNormal`. Ningún otro trozo del shader la pasa por
+su cuenta.
+
+**B2 · El giro.** Mirando derecho abajo desde 4 m en el bosque, la estepa, el pedregal y
+una ladera de 25°, girar la cámara sobre su eje no cambia el brillo del centro más de un
+**2 %**, y la imagen girada de vuelta calza con la del giro 0 a menos de **1,5** niveles de
+diferencia media.
+
+**B3 · La vuelta.** El mismo punto llano (menos de 2,5°), visto desde cuatro rumbos a 10 m
+bajando 35°, no cambia más de un **20 %**: lo que queda es el brillo especular, que sí
+depende de desde dónde se mira (calculado ≲ 15 % con la rugosidad 0,94 del terreno).
+
+**B4 · Lo que se ve.** Con las semillas fijas: mirando al frente (−8°), el brillo de la
+franja cercana y de la del medio queda a **±15 %** del de antes; mirando al suelo se
+informa. Y la guarda de la fase 3 sigue en pie con la luz derecha: la textura a ±10 % de la
+paleta calibrada sola.
+
+**B5 · Sin costo y sin compilar de más.** El terreno no sube más de **0,3 ms** al frente
+ni al suelo contra la fase 3 medida en la misma sesión, y una segunda pasada no compila
+programas nuevos.
+
+**B6 · Sin regresión.** La ronda 7, las fases 1, 2 y 3, `lint-shader` y `vite build`.
+
+Bancos: `banco-r8-fase3b.mjs` (B1, B4, B6), `banco-r8-fase3b.navegador.js` (B2, B3, B4,
+B5), falsador `banco-r8-fase3b.falsar.mjs` (nueve arreglos mal hechos y tres controles).
+
+<!-- CIERRE-F3B -->
+
 ---
 
 ## FASE 4 · `copa` — árboles y follaje (medición de apertura, sin contrato todavía)
@@ -812,6 +968,16 @@ nuevo (los atlas llegan por el valor del uniforme o están en la carga).
 
 **C6 · Sin regresión.** La ronda 7 y las fases 1 a 3, y `vite build` limpio.
 
+**Pendiente del jefe antes de abrirla (anotado el 19/9, cerrando la fase 3).** Los
+números de C4 en el juego se midieron en UNA carga, y dos cosas cambian de carga a carga:
+el clima (dos semillas al azar en `Tiempo`: la misma vista cambió un 25 % de brillo, y el
+umbral de la resta, 24, depende del brillo) y los árboles mismos (`Vegetacion` siembra
+con `Math.random`: el árbol «más cercano» es otro). Antes de encargar: la mitad navegador
+fija las semillas y vacía los eventos como la T3 de la fase 3, promedia varios árboles
+por especie en vez de uno, y la base se vuelve a medir así, en la misma sesión que el
+arreglo. Si con eso la base cambia, los umbrales de C4 se reescriben con la misma
+proporción antes de encargar, no después.
+
 ---
 
 ## FASE 5 · `piedra` — trabajar la piedra paso a paso (medición de apertura)
@@ -841,6 +1007,17 @@ de cantería.
 **3 · Lo que ya existe y sirve de base**: `lasca_rodado` (2 piedras, pide
 `lasca_obsidiana`), `boleadora` (la bola se hace por picado y pulido, una técnica real
 de la estepa), la arena a puñados (ronda 7) y el agua con recipiente (ronda 7).
+
+**4 · La lasca de rodado no se puede hacer al arrancar** (medido en el juego el 19/9,
+`fabricacion.estado`). Su propia nota dice que «se hace con dos piedras del suelo en el
+primer minuto de juego» y su `porQueExiste`, que existe para que el arranque no sea una
+caminata de 30 a 37 minutos hasta la obsidiana. Pero pide la tecnología
+`lasca_obsidiana`, que cuesta **2 obsidianas** (por encima de 1500 m) y 8 de saber, con el
+saber en 0 al arrancar. Así desde que el árbol se escribió (`38c69e4`, 7/9). Al arrancar,
+lo único que se fabrica sin tecnología es cordel, garrote, antorcha, anzuelo de hueso,
+tiento, honda, trampa de lazo, línea de mano y caña: **ninguna herramienta de piedra**. El
+paso a paso que pidió el dueño tiene que empezar, entonces, un paso antes de lo que decía
+la carta: con la primera lasca.
 
 El contrato sale de acá cuando se abra la fase, con el pedido del dueño a la vista:
 *«trabajar piedra para después hacer un hacha, un martillo, etc.»* y *«enfocarse en la

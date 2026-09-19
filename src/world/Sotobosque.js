@@ -16,6 +16,7 @@
 
 import * as THREE from 'three';
 import { luzCielo } from './Vegetacion.js';
+import { uniformesSuelo } from '../util/suelo.js';
 
 const TAM_CELDA = 16;         // metros por celda de siembra
 const RADIO_CERCA = 4;         // celdas para pasto y helechos (64 m)
@@ -221,8 +222,12 @@ export class Sotobosque {
   _inyectar(mat, tipo) {
     const flexible = tipo.flexible ? 1 : 0;
     const lamina = !!tipo.flexible;   // hoja, fronda, ramita: lámina fina
+    // La piedra se viste con la capa de acarreo granítico del suelo horneado
+    // (la 3 de `uniformesSuelo`), la misma roca que el pedregal del terreno.
+    const esPiedra = tipo.id === 'piedra';
     mat.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, this.uniformes);
+      if (esPiedra) Object.assign(shader.uniforms, uniformesSuelo);
       shader.uniforms.uFlexible = { value: flexible };
 
       shader.vertexShader = `
@@ -234,6 +239,7 @@ export class Sotobosque {
         varying vec3 vTinte;
         varying float vAlturaMundo;
         ${lamina ? '' : 'varying float vArriba;'}
+        ${esPiedra ? PIEDRA_VERT_CABECERA : ''}
       ` + shader.vertexShader;
 
       shader.vertexShader = shader.vertexShader.replace(
@@ -255,6 +261,7 @@ export class Sotobosque {
         transformed.z += uViento.y * (sin(t) * 0.75 + sin(t * 2.7 + 1.3) * 0.25) * amp;
 
         vAlturaMundo = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).y;
+        ${esPiedra ? PIEDRA_VERT : ''}
         `
       );
 
@@ -279,13 +286,14 @@ export class Sotobosque {
         varying vec3 vTinte;
         varying float vAlturaMundo;
         ${lamina ? '' : 'varying float vArriba;'}
+        ${esPiedra ? PIEDRA_FRAG_CABECERA : ''}
       ` + shader.fragmentShader;
 
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <color_fragment>',
         `
         #include <color_fragment>
-        diffuseColor.rgb *= vTinte;
+        ${esPiedra ? PIEDRA_COLOR : 'diffuseColor.rgb *= vTinte;'}
         ${lamina ? `
         // Otoño e invierno secan el pastizal
         float seco = clamp(1.0 - abs(uEstacion - 1.6), 0.0, 1.0);
@@ -334,7 +342,9 @@ export class Sotobosque {
     // sin esto la carroña —doble cara y no flexible, como el pasto— se llevaría
     // el shader del pasto y se quedaría sin `vArriba`. Es la trampa 3 del
     // contexto: no lanza excepción, sólo sale mal.
-    mat.customProgramCacheKey = () => `sotobosque-${lamina ? 'lamina' : 'solido'}`;
+    // La piedra, desde que se viste con el suelo horneado, compila otra fuente
+    // más: su propia clave, o se llevaría puesto al tronco.
+    mat.customProgramCacheKey = () => `sotobosque-${esPiedra ? 'piedra' : lamina ? 'lamina' : 'solido'}`;
   }
 
   actualizar(posicion, tiempo, estado) {
@@ -548,6 +558,61 @@ export class Sotobosque {
     for (const l of this.lotes) { l.malla.geometry.dispose(); l.malla.material.dispose(); }
   }
 }
+
+// ── La piedra, vestida con el suelo horneado ────────────────────────────────
+//
+// La piedra salía verdosa —(74, 79, 63) en la captura del pedregal, un verdor de
+// 0,129 contra 0,021 del suelo de al lado— y no por su color propio, que es
+// gris: el tinte de cada instancia se mezcla un tercio con el color de la
+// cubierta vegetal del lugar (ver _sembrarCelda), que está bien para el pasto y
+// no para un canto de granodiorita. De ese tinte la piedra se queda sólo con el
+// brillo, que es lo que distingue una piedra de otra, y el tono es el de
+// rocaBase del terreno (0,222 · 0,212 · 0,200 lineal, dividido por su
+// luminancia, 0,213). Encima va la capa de acarreo granítico del suelo horneado,
+// la misma roca del pedregal, con su oclusión: una sola lectura, proyectada
+// sobre el plano al que más mira cada cara, que en una piedra facetada es la
+// cara entera. Sin texturas cargadas queda el gris liso, ya sin verde.
+//
+// Son constantes aparte y no plantillas anidadas dentro de las de arriba para
+// que lint-shader las lea: su separador de literales no entiende el anidado.
+
+/** La piedra no tiene UV: se la viste en metros, con la escala de la instancia. */
+const PIEDRA_VERT_CABECERA = `
+  uniform float uSueloPeriodo;
+  varying vec3 vPiedra;
+  varying vec3 vPiedraN;
+`;
+/** Y con un corrimiento por instancia, para que no muestren todas el mismo pedazo. */
+const PIEDRA_VERT = `
+  vec3 escalaInst = vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz), length(instanceMatrix[2].xyz));
+  vPiedra = (transformed * escalaInst + fract(origen * 0.1731) * 17.0) / uSueloPeriodo;
+  vPiedraN = objectNormal;
+`;
+const PIEDRA_FRAG_CABECERA = `
+  uniform sampler2DArray uSueloAlbedo;
+  uniform sampler2DArray uSueloNormal;
+  uniform vec3 uSueloNorma[4];
+  uniform vec3 uSueloLuz[4];
+  uniform float uSueloListo;
+  uniform float uSueloLado;
+  varying vec3 vPiedra;
+  varying vec3 vPiedraN;
+`;
+/** Mismo módulo que el terreno (moduloCapa en Terreno.js), con la capa 3. */
+const PIEDRA_COLOR = `
+  vec3 colorPiedra = vec3(1.041, 0.994, 0.938) * dot(vTinte, vec3(0.2126, 0.7152, 0.0722));
+  vec3 dPx = dFdx(vPiedra), dPy = dFdy(vPiedra);
+  float lodPiedra = 0.5 * log2(max(max(dot(dPx, dPx), dot(dPy, dPy)) * uSueloLado * uSueloLado, 1e-8));
+  if (uSueloListo > 0.5) {
+    vec3 an = abs(vPiedraN);
+    vec2 uvP = an.y >= max(an.x, an.z) ? vPiedra.xz : (an.x >= an.z ? vPiedra.zy : vPiedra.xy);
+    vec4 roca = textureLod(uSueloAlbedo, vec3(uvP, 3.0), lodPiedra);
+    float oclusion = textureLod(uSueloNormal, vec3(uvP, 3.0), lodPiedra).b;
+    vec3 m = roca.rgb * oclusion * uSueloNorma[3];
+    colorPiedra *= mix(vec3(dot(m, uSueloLuz[3])), m, 0.35);
+  }
+  diffuseColor.rgb *= colorPiedra;
+`;
 
 // ── Geometrías ──────────────────────────────────────────────────────────────
 

@@ -1,0 +1,128 @@
+{
+  "generador": "tools/hornear-suelo.mjs",
+  "lado": 512,
+  "periodoM": 2,
+  "mmPorTexel": 3.9063,
+  "canales": {
+    "albedo": "RGB = albedo en sRGB; A = altura normalizada entre los percentiles 1 y 99 de la capa",
+    "normal": "R, G = normal en el plano (x por columnas = +X del mundo, y por filas = +Z), la z se reconstruye; B = oclusión; A = rugosidad"
+  },
+  "mezcla": {
+    "pesoMascara": 5,
+    "pesoAltura": 0.6
+  },
+  "capas": [
+    {
+      "id": "hojarasca",
+      "nombre": "Hojarasca del bosque húmedo (coihue y lenga)",
+      "referencia": "Mantillo del coihual y el lengal húmedo del oeste del Parque (Puerto Blest, Llao Llao). Hojas de Nothofagus dombeyi de 2 a 3,5 cm, aovado-lanceoladas y aserradas, pardo amarillentas al caer; de N. pumilio de 2 a 3,5 cm, elípticas y doblemente crenadas, pardo rojizas; algo de N. antarctica (1,5 a 3 cm) y de caña colihue (Chusquea culeou, 5 a 10 cm). Medidas de Donoso Zegers, C. (2006), Las especies arbóreas de los bosques templados de Chile y Argentina. Ramitas de 2 a 6 mm sobre humus pardo muy oscuro.",
+      "periodoM": 2,
+      "albedoMedio": 0.08,
+      "albedoMedioRGB": [
+        0.1372,
+        0.0755,
+        0.0273
+      ],
+      "oclusionMedia": 0.9129,
+      "alturaMedia": 0.5119,
+      "normaModulo": [
+        7.3604,
+        13.4172,
+        37.9156
+      ],
+      "pesoLuz": [
+        0.3435,
+        0.6339,
+        0.0226
+      ],
+      "archivos": {
+        "albedo": "hojarasca_albedo.png",
+        "normal": "hojarasca_normal.png"
+      }
+    },
+    {
+      "id": "andisol",
+      "nombre": "Andisol pardo con lapilli de pómez",
+      "referencia": "Andisol sobre ceniza volcánica, horizonte A pardo muy oscuro (Munsell 10YR 2/2 a 3/3) de estructura migajosa, con lapilli de pómez riolítica blanca a gris clara del Puyehue-Cordón Caulle: la erupción de 2011 dejó en Villa La Angostura clastos de 1 a 3 cm (Pistolesi et al. 2015, Bulletin of Volcanology 77:3). Lapilli: de 2 a 64 mm, angulosos a subredondeados y vesiculares; 12 % de la superficie. Hojas sueltas de ñire.",
+      "periodoM": 2,
+      "albedoMedio": 0.0699,
+      "albedoMedioRGB": [
+        0.0936,
+        0.0682,
+        0.048
+      ],
+      "oclusionMedia": 0.9623,
+      "alturaMedia": 0.1393,
+      "normaModulo": [
+        10.5202,
+        14.2473,
+        20.029
+      ],
+      "pesoLuz": [
+        0.273,
+        0.6782,
+        0.0487
+      ],
+      "archivos": {
+        "albedo": "andisol_albedo.png",
+        "normal": "andisol_normal.png"
+      }
+    },
+    {
+      "id": "estepa",
+      "nombre": "Estepa: arena volcánica con coirón seco y gravilla",
+      "referencia": "Estepa graminosa del este del Parque (Pampa de Huenuleo, Dina Huapi): arena volcánica gris parda con pavimento de gravilla de 4 a 30 mm (basalto, andesita, escoria, toba) y hojas secas de coirón (Festuca pallescens, Pappostipa speciosa; León et al. 1998, Ecología Austral 8:125-144), filiformes, de 10 a 30 cm y color paja. Las pajas se dibujan de un texel (3,9 mm) aunque midan cerca de 1 mm: es lo mínimo que se resuelve.",
+      "periodoM": 2,
+      "albedoMedio": 0.1781,
+      "albedoMedioRGB": [
+        0.2242,
+        0.1828,
+        0.1273
+      ],
+      "oclusionMedia": 0.9598,
+      "alturaMedia": 0.1966,
+      "normaModulo": [
+        4.6154,
+        5.6634,
+        8.1422
+      ],
+      "pesoLuz": [
+        0.2542,
+        0.6969,
+        0.0489
+      ],
+      "archivos": {
+        "albedo": "estepa_albedo.png",
+        "normal": "estepa_normal.png"
+      }
+    },
+    {
+      "id": "acarreo",
+      "nombre": "Acarreo granítico de altura",
+      "referencia": "Pedregal sobre la línea de bosque en la granodiorita del Batolito Patagónico (cerros Catedral y López): bloques angulosos de gelifracción de 1 a 25 cm sobre maicillo, roca gris clara moteada de plagioclasa y cuarzo con biotita y hornblenda negras, óxido en las caras viejas y líquenes costrosos grises con algún Rhizocarpon geographicum. Es también la capa que viste la piedra suelta del sotobosque.",
+      "periodoM": 2,
+      "albedoMedio": 0.2246,
+      "albedoMedioRGB": [
+        0.249,
+        0.2274,
+        0.1973
+      ],
+      "oclusionMedia": 0.9034,
+      "alturaMedia": 0.3469,
+      "normaModulo": [
+        4.343,
+        4.7309,
+        5.4071
+      ],
+      "pesoLuz": [
+        0.2293,
+        0.7081,
+        0.0625
+      ],
+      "archivos": {
+        "albedo": "acarreo_albedo.png",
+        "normal": "acarreo_normal.png"
+      }
+    }
+  ]
+}

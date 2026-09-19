@@ -13,6 +13,7 @@
 
 import * as THREE from 'three';
 import { DETALLE } from './Mundo.js';
+import { cargarSuelo, uniformesSuelo } from '../util/suelo.js';
 
 const RES = 32;              // quads por lado en la malla base
 // Nodo más fino de 64 m: con RES=32 da 2 m por cuadro. Antes eran 256 m (8 m
@@ -36,6 +37,10 @@ export class Terreno {
 
     this._construirMinMax();
     this._construirMalla();
+    // Las capas de suelo horneadas se piden acá y no se esperan: el programa ya
+    // se compiló con el reemplazo de 1×1 y, cuando llegan, sólo cambia el valor
+    // de los uniformes. Si no llegan, el suelo de cerca sigue siendo el ruido.
+    cargarSuelo();
 
     this._nodos = new Float32Array(MAX_NODOS * 4); // offsetX, offsetZ, escala, rango
     this._frustum = new THREE.Frustum();
@@ -262,6 +267,18 @@ export class Terreno {
       uEstacion: { value: 0 },          // 0 verano … 1 otoño … 2 invierno … 3 primavera
       uCeniza: { value: 0 },            // cobertura de ceniza volcánica 0..1
       uHumedadGlobal: { value: 0 },     // lluvia reciente: oscurece y satura
+      // Origen de las coordenadas del suelo horneado, cerca de la cámara. Leer
+      // la textura con la posición del mundo no alcanza: a 20 km del centro un
+      // float tiene 2 mm de paso, medio texel del mosaico, y el suelo tiembla.
+      // Se corre de a cinco mosaicos (10 m) para que las dos lecturas —la
+      // derecha y la girada 3-4-5— salten un número entero de mosaicos y no se
+      // note.
+      uSueloOrigen: { value: new THREE.Vector2() },
+      // Las texturas de capas y lo que las acompaña —uSueloAlbedo, uSueloNormal,
+      // uSueloNorma, uSueloLuz, uSueloListo, uSueloLado, uSueloPeriodo—: son los
+      // mismos objetos que usa la piedra del sotobosque, y los llena
+      // `src/util/suelo.js` cuando termina de cargar.
+      ...uniformesSuelo,
     };
 
     mat.onBeforeCompile = (shader) => {
@@ -278,8 +295,11 @@ export class Terreno {
         uniform float uDetallePeriodo;
         uniform float uDetalleAmplitud;
         uniform vec3 uCam;
+        uniform vec2 uSueloOrigen;
+        uniform float uSueloPeriodo;
         varying vec3 vMundo;
         varying float vMorph;
+        varying vec2 vSuelo;             // coordenadas del suelo horneado, en mosaicos
 
         float leerAltura(vec2 xz) {
           vec2 uv = xz / uTamanoMundo + 0.5;
@@ -336,6 +356,8 @@ export class Terreno {
         h -= aFalda * nodoEscala * 0.05;
         vec3 transformed = vec3(mundoXZ.x, h, mundoXZ.y);
         vMundo = transformed;
+        // Relativas a un origen cerca de la cámara: ver uSueloOrigen.
+        vSuelo = (transformed.xz - uSueloOrigen) / uSueloPeriodo;
         `
       );
 
@@ -353,8 +375,75 @@ export class Terreno {
         uniform float uEstacion;
         uniform float uCeniza;
         uniform float uHumedadGlobal;
+        uniform sampler2DArray uSueloAlbedo;   // RGB albedo sRGB, A altura
+        uniform sampler2DArray uSueloNormal;   // RG normal, B oclusión, A rugosidad
+        uniform vec3 uSueloNorma[4];
+        uniform vec3 uSueloLuz[4];
+        uniform float uSueloListo;
+        uniform float uSueloLado;
         varying vec3 vMundo;
         varying float vMorph;
+        varying vec2 vSuelo;
+
+        // Lo que la sección del color le deja a la de la normal y a la de la
+        // rugosidad, que son otros trozos del mismo shader (ver gNormalDEM).
+        float gSueloPeso;         // cuánto manda la textura en la normal
+        float gSueloSinRuido;     // lo que le queda al ruido fino de antes
+        vec2 gSueloRelieve;       // la normal horneada, en el plano xz del mundo
+        float gSueloRugosidad;
+
+        /**
+         * Cómo se funden dos lecturas del suelo, o dos capas: manda la máscara,
+         * y la altura horneada corre el borde para que siga el contorno de la
+         * piedrita o de la hoja en vez de cruzarla en un fundido, que dejaría dos
+         * dibujos a media tinta uno encima del otro. Es la misma regla con que
+         * el horno calcula uSueloNorma (PESO_MASCARA y PESO_ALTURA).
+         */
+        float fundirPorAltura(float mascara, float hA, float hB) {
+          return clamp((mascara - 0.5) * 5.0 + (hB - hA) * 0.6 + 0.5, 0.0, 1.0);
+        }
+
+        /**
+         * Una capa del suelo leída dos veces: derecha y girada 53,13° con un
+         * corrimiento. El ángulo es el del triángulo 3-4-5, y no uno cualquiera,
+         * porque así la rotación lleva la grilla de enteros a sí misma cada cinco
+         * mosaicos: uSueloOrigen puede correrse de a 10 m sin que la lectura
+         * girada salte. Juntas, las dos lecturas no se repiten antes de √5
+         * mosaicos (4,5 m: el (1, 2) es el entero más corto que el giro lleva a
+         * otro entero), y la máscara que elige entre ellas cambia en esos mismos
+         * pocos metros, así que el mosaico de 2 m no se ve repetirse.
+         *
+         * LOD explícito: estas lecturas van dentro de ramas que dependen del
+         * píxel (qué capa, cuánta roca), y ahí las derivadas implícitas no
+         * están definidas. El LOD se calcula una vez afuera, con la misma cuenta
+         * que haría la placa, y vale para las dos lecturas porque girar no cambia
+         * el tamaño del paso.
+         */
+        void leerCapa(float capa, vec2 uv1, vec2 uv2, float lod, float mascara, out vec4 alb, out vec4 nor) {
+          vec4 a1 = textureLod(uSueloAlbedo, vec3(uv1, capa), lod);
+          vec4 a2 = textureLod(uSueloAlbedo, vec3(uv2, capa), lod);
+          vec4 n1 = textureLod(uSueloNormal, vec3(uv1, capa), lod);
+          vec4 n2 = textureLod(uSueloNormal, vec3(uv2, capa), lod);
+          // La normal de la lectura girada vuelve al marco del mundo con el giro inverso
+          n2.xy = (mat2(0.6, -0.8, 0.8, 0.6) * (n2.xy * 2.0 - 1.0)) * 0.5 + 0.5;
+          float w = fundirPorAltura(mascara, a1.a, a2.a);
+          alb = mix(a1, a2, w);
+          nor = mix(n1, n2, w);
+        }
+
+        /**
+         * Lo que la textura le hace al color calibrado: albedo × oclusión,
+         * llevado a media 1 con uSueloNorma. Y del color propio de la textura
+         * queda un tercio: el tono medio lo pone la paleta de abajo, que está
+         * calibrada, y la textura trae la forma, la luz y algo de su color —la
+         * hoja de lenga más roja que la de coihue—. Dividir canal por canal sin
+         * más amplifica el azul de un suelo pardo por treinta y ocho, y una hoja
+         * color paja salía celeste.
+         */
+        vec3 moduloCapa(vec4 alb, vec4 nor, int capa) {
+          vec3 m = alb.rgb * nor.b * uSueloNorma[capa];
+          return mix(vec3(dot(m, uSueloLuz[capa])), m, 0.35);
+        }
 
         // Dos lecturas que se hacían DOS VECES por fragmento, con la misma UV.
         //
@@ -506,6 +595,40 @@ export class Terreno {
         float cercania = 1.0 - smoothstep(30.0 * alcance, 420.0 * alcance, distVista);
         float muyCerca = 1.0 - smoothstep(4.0 * alcance, 45.0 * alcance, distVista);
 
+        // ── El suelo de cerca, por textura ──────────────────────────────────
+        // Hasta dónde manda el suelo horneado. El piso de 16 m y los 45 × alcance
+        // no son un gusto: son hasta dónde llega el ruido fino que la textura
+        // reemplaza —el micro muere a 45 × alcance (15,75 m en Baja), la normal
+        // f2 a 40 × alcance, f3 a 11 m y la gravilla a 16 × max(alcance; 0,69),
+        // 11 m en Baja y 16 en Alta—. Con la textura entera hasta ahí, esos
+        // cuatro no se evalúan nunca, en ningún preset: la textura los
+        // reemplaza, no se les suma. Más allá se desvanece hasta 1,5 veces el
+        // alcance, donde el mipmap ya la llevó a su color medio.
+        //
+        // En las paredes se apaga: la textura se proyecta en planta y a más de
+        // 60° de pendiente se estira el doble. Ahí vuelve el ruido triplanar de
+        // antes, que es lo que había.
+        gSueloPeso = 0.0; gSueloRelieve = vec2(0.0); gSueloRugosidad = roughness;
+        float alcanceSuelo = max(16.0, 45.0 * alcance);
+        float pesoSuelo = uSueloListo
+          * (1.0 - smoothstep(alcanceSuelo, alcanceSuelo * 1.5, distVista))
+          * smoothstep(0.45, 0.62, nrm.y);
+        float sinSuelo = 1.0 - pesoSuelo;
+        gSueloSinRuido = sinSuelo;
+        // El LOD de las lecturas del suelo, afuera de toda rama: ver leerCapa.
+        //
+        // Y un nivel y medio de más entre los 4 y los 16 m. El mipmap ya evita
+        // el hormigueo, pero un bloque de acarreo de 20 cm conserva su canto en
+        // el nivel 3, y a diez metros eso es un borde vivo por píxel en toda la
+        // franja media, que puede parpadear al caminar. Medido quieto con el
+        // error contra el supermuestreo 2× (r8-filtrado.navegador.js), el sesgo
+        // no cambia nada que se pueda distinguir del ruido de una recarga: se
+        // queda por el movimiento, que ese instrumento no ve, y porque los
+        // primeros cuatro metros no cambian.
+        vec2 dSx = dFdx(vSuelo), dSy = dFdy(vSuelo);
+        float lodSuelo = 0.5 * log2(max(max(dot(dSx, dSx), dot(dSy, dSy)) * uSueloLado * uSueloLado, 1e-8))
+                       + 1.5 * smoothstep(4.0, 16.0, distVista);
+
         // Cada escala se calcula SÓLO si su factor de desvanecimiento la va a
         // usar. Antes se calculaban todas siempre y después se multiplicaban por
         // cero: eran unas 180 octavas de ruido por píxel, y el terreno se comía
@@ -525,7 +648,10 @@ export class Terreno {
         if (lejania < 0.996) grano = mix(fbmTri(vMundo, nrm, 0.42), 0.5, lejania);
         float meso = 0.5, micro = 0.5, gravilla = 0.5;
         if (cercania > 0.004) meso = fbmTri(vMundo, nrm, 0.28);        // matas de ~3,5 m
-        if (muyCerca > 0.004) micro = fbmTriCorto(vMundo, nrm, 2.6);   // grano de ~0,4 m
+        // El micro y la gravilla son lo que la textura reemplaza: donde manda
+        // entera (sinSuelo = 0) no se evalúan, y en el borde de las paredes se
+        // funden con ella en vez de sumarse.
+        if (muyCerca * sinSuelo > 0.004) micro = mix(fbmTriCorto(vMundo, nrm, 2.6), 0.5, pesoSuelo);   // grano de ~0,4 m
         // Cuarta escala, la de los últimos metros: gravilla, hojarasca y grumos
         // de ~12 cm. Sin ella el suelo bajo los pies es un manchón marrón
         // desenfocado, que era el peor defecto visual que quedaba: todo el
@@ -549,7 +675,7 @@ export class Terreno {
         // franja de abajo de la pantalla, no la pantalla.
         float alcanceCerca = max(alcance, 0.69);   // 16 × 0,69 = 11,0 m, igual que f3
         float pasoCorto = 1.0 - smoothstep(1.2 * alcanceCerca, 16.0 * alcanceCerca, distVista);
-        if (pasoCorto > 0.004) gravilla = fbmTriCorto(vMundo, nrm, 8.2);   // ~12 cm
+        if (pasoCorto * sinSuelo > 0.004) gravilla = mix(fbmTriCorto(vMundo, nrm, 8.2), 0.5, pesoSuelo);   // ~12 cm
 
         float detalle = macro;
         detalle = mix(detalle, mix(detalle, meso, 0.55), cercania);
@@ -665,6 +791,48 @@ export class Terreno {
         // moteado vale 0,5 y 0,82 + 0,36·0,5 = 1,0 exacto.
         tierra *= 0.82 + 0.36 * moteado;
 
+        // El suelo horneado: hojas con contorno, piedritas con canto, bloques
+        // con grietas, en vez de manchas de ruido. Modula el color calibrado de
+        // arriba —no lo reemplaza—, así que el suelo no se aclara ni se oscurece:
+        // cambia de qué está hecho.
+        //
+        // Cuatro capas en una textura de capas: 0 hojarasca, 1 andisol con pómez,
+        // 2 estepa, 3 acarreo granítico. Se leen a lo sumo dos por píxel. La
+        // humedad las ordena en fila —estepa, andisol, hojarasca, que es el
+        // gradiente de lluvia de la paleta, de este a oeste— y la roca, sea por pendiente o por
+        // estar sobre la línea de bosque, toma el lugar de la segunda. La ceniza
+        // del Cordón Caulle lleva todo al andisol con pómez, que es lo que dejó.
+        // En casi toda la pantalla manda una sola capa y la otra rama no corre:
+        // son cuatro lecturas por píxel, ocho en las transiciones.
+        if (pesoSuelo > 0.004) {
+          float cv = 2.0 - smoothstep(0.22, 0.48, humedad) - smoothstep(0.45, 0.78, humedad);
+          cv = mix(cv, 1.0, uCeniza);
+          float pesoRoca = max(roca, sobreBosque);
+          float conRoca = step(0.004, pesoRoca);
+          float capaA = mix(floor(cv), floor(cv + 0.5), conRoca);
+          float capaB = mix(min(floor(cv) + 1.0, 2.0), 3.0, conRoca);
+          float tCapa = mix(cv - floor(cv), pesoRoca, conRoca);
+          vec2 uvGirada = mat2(0.6, 0.8, -0.8, 0.6) * vSuelo + vec2(0.37, 0.71);
+          // Qué lectura manda: los mismos campos que ya se leyeron para el
+          // parche, sin una lectura más. Cambian en pocos metros.
+          float mascara = clamp(0.5 + 1.8 * relieveFino * finoCerca + 1.2 * relieve, 0.0, 1.0);
+          // fundirPorAltura ya da 0 o 1 fuera de (0,28; 0,72): la rampa ocupa de
+          // 0,4 a 0,6, y la altura, entre 0 y 1, la corre a lo sumo 0,6 / 5 = 0,12
+          // para cada lado. Afuera de eso la otra capa no se ve y no se lee.
+          vec4 albA = vec4(0.0), norA = vec4(0.5, 0.5, 1.0, roughness);
+          vec4 albB = albA, norB = norA;
+          if (tCapa < 0.72) leerCapa(capaA, vSuelo, uvGirada, lodSuelo, mascara, albA, norA);
+          if (tCapa > 0.28) leerCapa(capaB, vSuelo, uvGirada, lodSuelo, mascara, albB, norB);
+          float wB = tCapa <= 0.28 ? 0.0 : (tCapa >= 0.72 ? 1.0 : fundirPorAltura(tCapa, albA.a, albB.a));
+          vec3 moduloT = mix(moduloCapa(albA, norA, int(capaA)), moduloCapa(albB, norB, int(capaB)), wB);
+          vec4 norT = mix(norA, norB, wB);
+          // La nieve tapa el dibujo del suelo pero no del todo su relieve
+          tierra *= mix(vec3(1.0), moduloT, pesoSuelo * (1.0 - mascaraNieve));
+          gSueloPeso = pesoSuelo * (1.0 - 0.7 * mascaraNieve);
+          gSueloRelieve = norT.xy * 2.0 - 1.0;
+          gSueloRugosidad = norT.a;
+        }
+
         // La lluvia reciente oscurece y satura el suelo
         tierra = mix(tierra, tierra * 0.72, uHumedadGlobal * (1.0 - mascaraNieve) * 0.55);
 
@@ -708,20 +876,23 @@ export class Terreno {
           normal = normalize(normal + vec3(-dx * k, 0.0, -dz * k));
         }
 
-        // Rugosidad por debajo del relieve fino: grava, matas, grumos de suelo
-        if (f2 > 0.004) {
+        // Rugosidad por debajo del relieve fino: grava, matas, grumos de suelo.
+        // Es ruido, y donde manda el suelo horneado no corre: gSueloSinRuido es
+        // lo que la textura le deja (1 sin texturas, 0 en los últimos metros).
+        float f2s = f2 * gSueloSinRuido;
+        if (f2s > 0.004) {
           vec3 d2 = vec3(0.14, 0.0, 0.0), d4 = vec3(0.0, 0.0, 0.14);
           vec2 e2 = vec2(
             fbmTriCorto(vMundo + d2, normal, 3.4) - fbmTriCorto(vMundo - d2, normal, 3.4),
             fbmTriCorto(vMundo + d4, normal, 3.4) - fbmTriCorto(vMundo - d4, normal, 3.4)
           );
-          normal = normalize(normal + vec3(e2.x, 0.0, e2.y) * 0.85 * f2);
+          normal = normalize(normal + vec3(e2.x, 0.0, e2.y) * 0.85 * f2s);
         }
 
         // Y una escala más, la de los últimos metros: es la que hace que la luz
         // rasante de la mañana enganche en el grano del suelo en vez de resbalar
-        // sobre una superficie lisa.
-        float f3 = 1.0 - smoothstep(1.0, 11.0, dv);
+        // sobre una superficie lisa. Idem: la reemplaza la textura.
+        float f3 = (1.0 - smoothstep(1.0, 11.0, dv)) * gSueloSinRuido;
         if (f3 > 0.001) {
           vec3 d5 = vec3(0.045, 0.0, 0.0), d6 = vec3(0.0, 0.0, 0.045);
           vec2 e3 = vec2(
@@ -729,6 +900,16 @@ export class Terreno {
             fbmTriCorto(vMundo + d6, normal, 9.0) - fbmTriCorto(vMundo - d6, normal, 9.0)
           );
           normal = normalize(normal + vec3(e3.x, 0.0, e3.y) * 1.5 * f3);
+        }
+
+        // La normal horneada del suelo: el canto de cada piedrita y el borde de
+        // cada hoja, con su pendiente real en milímetros. Se inclina la normal
+        // que ya hay (la del DEM con su relieve fino) y no se la reemplaza, así
+        // que en una ladera las piedritas siguen la ladera.
+        if (gSueloPeso > 0.004) {
+          vec2 incl = gSueloRelieve * gSueloPeso;
+          float nz = sqrt(max(1.0 - dot(incl, incl), 0.0));
+          normal = normalize(normal * nz + vec3(incl.x, 0.0, incl.y));
         }
         vec3 nonPerturbedNormal = normal;
         `
@@ -738,7 +919,9 @@ export class Terreno {
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <roughnessmap_fragment>',
         `
-        float roughnessFactor = roughness;
+        // La del suelo horneado donde manda: la hoja de coihue brilla algo, la
+        // tierra y la arena no.
+        float roughnessFactor = mix(roughness, gSueloRugosidad, gSueloPeso);
         {
           // Acá había una lectura de uTexCobertura cuyo resultado NO se usaba:
           // se pedía una textura de punto flotante por fragmento de terreno para
@@ -766,6 +949,10 @@ export class Terreno {
     this._frustum.setFromProjectionMatrix(this._matriz);
     camara.getWorldPosition(this._camPos);
     this.uniformes.uCam.value.copy(this._camPos);
+    // De a cinco mosaicos: ver uSueloOrigen y leerCapa.
+    const paso = this.uniformes.uSueloPeriodo.value * 5;
+    this.uniformes.uSueloOrigen.value.set(
+      Math.floor(this._camPos.x / paso) * paso, Math.floor(this._camPos.z / paso) * paso);
 
     this._n = 0;
     const raiz = this.mundo.tamano;

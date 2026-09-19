@@ -102,6 +102,10 @@ const DEFECTOS = [
   {
     id: 'control-periodo', archivo: 'tools/hornear-suelo.mjs', control: true, que: 'otro período declarado en una capa',
     anexo: alFinalDelHorno("__man.capas[0].periodoM = +(__man.capas[0].periodoM * 1.5).toFixed(3); __fs.writeFileSync(__path.join(__dir, 'manifiesto.json'), JSON.stringify(__man, null, 2));"),
+    // Sólo las secciones del horno y del terreno: el período de la capa 0 es el que usa
+    // el juego (uSueloPeriodo), así que la imagen cambia de verdad y la sección 3 hace
+    // bien en pedir capturas nuevas. El control mira que el horno no fije el número.
+    secciones: [1, 2],
   },
 ];
 
@@ -196,7 +200,8 @@ for (const d of DEFECTOS) {
   const r = correrBanco(destSrc);
   if (r.error) { console.log(`  NO SE PUDO PLANTAR  ${d.id.padEnd(22)} el banco no arrancó: ${r.error.split('\n').slice(-3).join(' / ')}`); cuenta.sin++; continue; }
   const mapa = aplanar(r.secciones);
-  const caidas = [...mapa].filter(([k, ok]) => !ok && baseMapa.get(k) === true).map(([k]) => k);
+  const caidas = [...mapa].filter(([k, ok]) => !ok && baseMapa.get(k) === true).map(([k]) => k)
+    .filter((k) => !d.secciones || d.secciones.some((n) => k.startsWith(`${n}·`)));
   if (d.control) {
     if (caidas.length) { console.log(`  CONTROL ROJO        ${d.id.padEnd(22)} ${d.que}\n                      cayó: ${caidas.slice(0, 3).join(' · ')}`); cuenta.controlMal++; }
     else { console.log(`  CONTROL VERDE       ${d.id.padEnd(22)} ${d.que}`); cuenta.controlOk++; }

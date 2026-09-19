@@ -11,9 +11,14 @@
  *   2. EL TERRENO LA USA — `Terreno.js` declara una textura de capas; el cargador
  *      `src/util/suelo.js` existe y sin archivos no tira: devuelve que no hay.
  *   3. LA IMAGEN — las capturas que saca la mitad navegador (`r8-f3-*`), más nuevas
- *      que el código, medidas con la cuenta de la base (`r8-suelo-metricas.mjs`):
- *      detalle cercano ×1,5, brillo ±10 %, detalle a 10–40 m ≤ ×1,6, y la piedra
- *      con un verdor menor a 0,05.
+ *      que el código, medidas con la cuenta de la base (`r8-suelo-metricas.mjs`)
+ *      contra las de la base sacadas con el mismo instrumento (`r8-base-f3-*`):
+ *      detalle cercano ×1,5 contra la base, brillo ±10 % contra la paleta calibrada
+ *      sola (`r8-f3-plano-*`), y la piedra con un verdor menor a 0,05.
+ *      Las dos tandas salen con las semillas del clima fijas (ver la mitad
+ *      navegador): con semillas al azar el brillo de la misma vista cambiaba un
+ *      25 % de una carga a otra, y comparar contra números de otra carga no medía
+ *      el suelo sino el cielo de ese día.
  *   4. EL PISO — `Mundo.alturaEn` en mil puntos da la huella de la base.
  *   5. EL SHADER — `lint-shader.mjs` sin errores.
  *   6. SIN REGRESIÓN — la ronda 7 y las fases 1 y 2.
@@ -25,6 +30,7 @@
  * Uso: node --max-old-space-size=6144 .claude/flota/banco-r8-fase3.mjs
  *      BANCO_SRC, BANCO_SIN_BUILD, BANCO_DETALLE, BANCO_JSON, BANCO_SECCIONES,
  *      BANCO_F3_PREFIJO (las capturas a medir; por omisión r8-f3)
+ *      BANCO_F3_BASE (las de la base, de la misma semilla; por omisión r8-base-f3)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -38,6 +44,7 @@ const SRC = process.env.BANCO_SRC ? path.resolve(process.env.BANCO_SRC) : path.j
 const HORNO = path.join(SRC, '..', 'tools', 'hornear-suelo.mjs');
 const SALIDA = path.join(SRC, '..', 'public', 'tex', 'suelo');
 const PREFIJO = process.env.BANCO_F3_PREFIJO || 'r8-f3';
+const PREFIJO_BASE = process.env.BANCO_F3_BASE || 'r8-base-f3';
 const { PNG } = (await import('pngjs')).default;
 
 function seccion(num, nombre) {
@@ -47,7 +54,11 @@ function seccion(num, nombre) {
   return s;
 }
 
-/** Lo que midió la base el 18/9/2026 (RONDA8.md, fase 3, punto 4 y 5). */
+/**
+ * Lo que midió la base el 18/9/2026 (RONDA8.md, fase 3, punto 4 y 5), con el clima
+ * al azar de esa carga. Ya no es la referencia —lo es la tanda `r8-base-f3`, de la
+ * misma semilla que la que se mide—; queda para nombrar los lugares y como dato.
+ */
 const BASE = {
   bosque: { detalle: 1.87, brillo: 32.63, medio: 3.07 },
   estepa: { detalle: 2.09, brillo: 44.61, medio: 11.43 },
@@ -72,11 +83,18 @@ async function horno() {
   const s = seccion(1, 'EL HORNO — capas que calzan, bytes que repiten, y dentro de 12 MB');
   if (!s.ok(fs.existsSync(HORNO), 'tools/hornear-suelo.mjs existe')) { s.felizQue = 'no hay horno'; return s; }
   const correr = () => spawnSync(process.execPath, [HORNO], { cwd: path.join(SRC, '..'), encoding: 'utf8', timeout: 900000 });
+  // El horno escribe en public/tex/suelo aunque dé los mismos bytes, y eso dejaba las
+  // capturas «más viejas que el horneado» en la sección 3 de esta misma corrida. Lo
+  // que el horno reescribe idéntico recupera su fecha; lo que cambia, no.
+  const huella = (f) => crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex');
+  const antes = fs.existsSync(SALIDA) ? fs.readdirSync(SALIDA).map((n) => path.join(SALIDA, n)).filter((f) => fs.statSync(f).isFile())
+    .map((f) => ({ f, h: huella(f), st: fs.statSync(f) })) : [];
   const r1 = correr();
   s.ok(r1.status === 0, 'el horno corre y termina bien', r1.status === 0 ? '' : ((r1.stderr || '') + (r1.stdout || '')).slice(-600));
   const h1 = hashCarpeta(SALIDA);
   const r2 = correr();
   const h2 = hashCarpeta(SALIDA);
+  for (const a of antes) if (fs.existsSync(a.f) && huella(a.f) === a.h) fs.utimesSync(a.f, a.st.atime, a.st.mtime);
   s.ok(r2.status === 0 && !!h1 && h1 === h2, 'correrlo dos veces da los mismos bytes', `${h1?.slice(0, 12)} · ${h2?.slice(0, 12)}`);
   const fMan = path.join(SALIDA, 'manifiesto.json');
   if (!s.ok(fs.existsSync(fMan), 'escribió public/tex/suelo/manifiesto.json')) return s;
@@ -131,6 +149,11 @@ async function terreno() {
   const s = seccion(2, 'EL TERRENO LA USA — textura de capas, y un cargador que no tira');
   const t = fs.readFileSync(path.join(SRC, 'world', 'Terreno.js'), 'utf8');
   s.ok(/sampler2DArray/.test(t), 'Terreno.js declara una textura de capas (sampler2DArray)');
+  // Sin aliasing: la textura tiene mipmaps y se lee con el nivel que dan las derivadas
+  const fcS = path.join(SRC, 'util', 'suelo.js');
+  const cs = fs.existsSync(fcS) ? fs.readFileSync(fcS, 'utf8') : '';
+  s.ok(/generateMipmaps\s*=\s*(true|filtrada)/.test(cs) && /LinearMipmapLinearFilter/.test(cs), 'las capas tienen mipmaps y filtro trilineal (suelo.js)');
+  s.ok(/dFdx\s*\(/.test(t) && /dFdy\s*\(/.test(t), 'el terreno elige el nivel de mipmap por las derivadas de pantalla');
   const fc = path.join(SRC, 'util', 'suelo.js');
   if (!s.ok(fs.existsSync(fc), 'src/util/suelo.js existe')) { s.felizQue = 'no hay cargador'; return s; }
   // Sin archivos: fetch que falla. No puede tirar: tiene que decir que no hay.
@@ -165,8 +188,12 @@ async function imagen() {
     return { W: png.width, H: png.height, L, png, mtime: fs.statSync(f).mtimeMs };
   };
   // Más nuevas que el código: si no, se mide una imagen de antes del cambio
-  const codigo = [path.join(SRC, 'world', 'Terreno.js'), path.join(SRC, 'world', 'Sotobosque.js')]
-    .concat(fs.existsSync(SALIDA) ? fs.readdirSync(SALIDA).map((f) => path.join(SALIDA, f)) : [])
+  // Del horneado cuenta lo que lee el cargador —el manifiesto y los PNG que nombra—, no
+  // cualquier archivo de la carpeta: un LEEME nuevo no cambia la imagen.
+  const fMan = path.join(SALIDA, 'manifiesto.json');
+  const leidos = fs.existsSync(fMan) ? [fMan].concat((JSON.parse(fs.readFileSync(fMan, 'utf8')).capas || [])
+    .flatMap((c) => [c.archivos?.albedo, c.archivos?.normal]).filter(Boolean).map((f) => path.join(SALIDA, f))) : [];
+  const codigo = [path.join(SRC, 'world', 'Terreno.js'), path.join(SRC, 'world', 'Sotobosque.js')].concat(leidos)
     .filter((f) => fs.existsSync(f)).map((f) => fs.statSync(f).mtimeMs);
   const tope = Math.max(...codigo);
   let medidas = 0;
@@ -174,11 +201,27 @@ async function imagen() {
     const a = leer(`${PREFIJO}-sinpasto-suelo-${id}`), m = leer(`${PREFIJO}-sinpasto-medio-${id}-a`);
     if (!s.ok(!!a && !!m, `${id}: están las dos capturas (${PREFIJO})`)) continue;
     s.ok(a.mtime > tope && m.mtime > tope, `${id}: las capturas son más nuevas que el código y el horneado`, `${new Date(a.mtime).toISOString()} contra ${new Date(tope).toISOString()}`);
+    const ba = leer(`${PREFIJO_BASE}-sinpasto-suelo-${id}`), bm = leer(`${PREFIJO_BASE}-sinpasto-medio-${id}-a`);
+    if (!s.ok(!!ba && !!bm, `${id}: están las dos capturas de la base, de la misma semilla (${PREFIJO_BASE})`)) continue;
     const c = detalleYBrillo(a), me = detalleYBrillo(m, 0.40, 0.62);
-    const b = BASE[id];
+    const bc = detalleYBrillo(ba), bme = detalleYBrillo(bm, 0.40, 0.62);
+    const b = { detalle: +bc.detalle.toFixed(2), brillo: +bc.brillo.toFixed(2), medio: +bme.detalle.toFixed(2) };
     s.ok(c.detalle >= 1.5 * b.detalle, `${id}: el detalle cercano sube al menos 1,5 veces`, `${c.detalle.toFixed(2)} contra ${b.detalle} (×${(c.detalle / b.detalle).toFixed(2)})`);
-    s.ok(Math.abs(c.brillo - b.brillo) <= 0.10 * b.brillo, `${id}: el brillo cercano queda a ±10 %`, `${c.brillo.toFixed(2)} contra ${b.brillo} (${((c.brillo / b.brillo - 1) * 100).toFixed(1)} %)`);
-    s.ok(me.detalle <= 1.6 * b.medio, `${id}: a 10–40 m el detalle no pasa de 1,6 veces (sin aliasing)`, `${me.detalle.toFixed(2)} contra ${b.medio} (×${(me.detalle / b.medio).toFixed(2)})`);
+    // El brillo, contra la paleta calibrada sola (`-plano-`: módulo 1, normal plana, sin
+    // el ruido viejo), sacada en la misma tanda. No contra la imagen de la base: el ruido
+    // viejo no era neutro, dejaba el bosque un 11 % por debajo de su albedo calibrado
+    // (medido con r8-suelo-aislar.navegador.js), y la guarda castigaba sacarlo. Lo que
+    // tiene que cuidar es que la TEXTURA no aclare ni oscurezca lo calibrado.
+    const pl = leer(`${PREFIJO}-plano-sinpasto-suelo-${id}`);
+    if (!s.ok(!!pl && pl.mtime > tope, `${id}: está la captura de la paleta sola, más nueva que el código (${PREFIJO}-plano)`)) continue;
+    const pc = detalleYBrillo(pl);
+    s.ok(Math.abs(c.brillo - pc.brillo) <= 0.10 * pc.brillo, `${id}: el brillo cercano queda a ±10 % de la paleta calibrada`, `${c.brillo.toFixed(2)} contra ${pc.brillo.toFixed(2)} (${((c.brillo / pc.brillo - 1) * 100).toFixed(1)} %)`);
+    s.nota(`${id}: brillo cercano ${c.brillo.toFixed(2)} contra ${b.brillo} de la imagen de la base (${((c.brillo / b.brillo - 1) * 100).toFixed(1)} %; la paleta sola da ${((pc.brillo / b.brillo - 1) * 100).toFixed(1)} %)`);
+    // La guarda de «a 10–40 m el detalle no pasa de 1,6 veces» se sacó: contaba el
+    // detalle de verdad como aliasing (la hojarasca bien filtrada tiene más bordes que
+    // la mancha de antes), y empujó al agente a desenfocar de 4 a 16 m. Lo que protege
+    // del aliasing son los mipmaps y el LOD por derivadas, que se miran en la sección 2.
+    s.nota(`${id}: detalle a 10–40 m ${me.detalle.toFixed(2)} contra ${b.medio} de la base (informativo)`);
     medidas++;
   }
   // La piedra

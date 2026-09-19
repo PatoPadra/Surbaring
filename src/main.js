@@ -56,6 +56,7 @@ import { Mapa } from './ui/Mapa.js';
 import { Minimapa } from './ui/Minimapa.js';
 import { Trampas } from './systems/Trampas.js';
 import { Trampas3D } from './world/Trampas3D.js';
+import { cargarSuelo } from './util/suelo.js';
 import { Opciones } from './ui/Opciones.js';
 import { Bolso } from './ui/Bolso.js';
 import { Fin } from './ui/Fin.js';
@@ -678,6 +679,15 @@ async function iniciar() {
   }
   addEventListener('resize', redimensionar);
   redimensionar();
+
+  // Las capas del suelo horneado: Terreno ya las pidió en su constructor; acá se
+  // espera la carga y se suben a la placa mientras se ve la pantalla de carga,
+  // para que el primer paso del jugador no pague la subida ni los mipmaps.
+  // Si no llegan, `disponible` es false y el suelo sigue con el ruido.
+  {
+    const suelo = await cargarSuelo();
+    if (suelo.disponible) { render.initTexture(suelo.albedo); render.initTexture(suelo.normal); }
+  }
 
   // ── Bucle ─────────────────────────────────────────────────────────────────
   progreso(1, 'Listo.');
