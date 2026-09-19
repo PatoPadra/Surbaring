@@ -1297,6 +1297,71 @@ peor** (lo que hoy se fabrica se sigue fabricando).
 
 ---
 
+## FASE 6 · `luz` — la luna con la ley de Allen (y el fuego, que ya cambió)
+
+### Lo que se midió (19/9, con la 3b y la 3c ya cerradas)
+
+**1 · El suelo naranja junto al fuego ya no es el que vio el dueño.** Con el instrumento de
+la ronda 7 (`banco-r7-fase2.navegador.js`: cámara cenital, anillos alrededor de una
+fogata de noche, la noche sin luz restada), el mismo día y la misma sesión, con el
+`Terreno.js` de antes de la 3b y con el de ahora:
+
+| distancia | antes de la 3b | ahora |
+|---|---|---|
+| 1 m | 35,5 | 62,8 · 67,3 |
+| 2 m | 44,3 | 44,6 · 48,2 |
+| 3 m | 43,0 | 27,6 · 30,1 |
+| 5 m | 40,1 | **14,9 · 16,4** |
+| 8 m | 21,4 | 4,4 · 5,3 |
+
+Con la normal en el marco equivocado, una luz a 0,6 m del piso pegaba de frente sobre medio
+anillo, y el piso era un disco naranja parejo de unos 8 m (`r8-f6-fogata-noche-antes-3b.png`).
+Con la luz derecha, el resplandor se concentra junto al fuego y cae como tiene que caer una
+luz baja sobre suelo llano (`r8-f6-fogata-noche-ahora.png`); el pasto, que es vertical y mira
+a la llama, sigue naranja. **A 5 m el piso bajó un 60 %: más que el «un poco» que pidió el
+dueño.** Decisión del jefe: **no se baja nada más** hasta que el dueño lo mire; y los umbrales
+de la ronda 7 (≥ 30 a 3 m, ≥ 8 a 8 m), calibrados con el defecto, quedan viejos (hoy 30,1 y
+5,3).
+
+**2 · La luna alumbra según la fracción iluminada, no según su brillo.** `Cielo.js` suma la
+luz de la noche con `max(0, altura) × uFaseLunar` (la fracción iluminada k) en el ambiente
+(`0,045 + 0,09·luna`), en la niebla (`0,020 + 0,045·luna`), en el halo y en cuánto apaga las
+estrellas. Medido en Node sobre dos meses (febrero y marzo de 2025, de 2 a 8 UTC, con el sol a
+más de 20° bajo el horizonte y la luna a más de 17° de altura): el exceso de luz ambiente
+sobre una noche sin luna, dividido por el seno de la altura de la luna y por el de la llena,
+sigue **exactamente k**:
+
+| ángulo de fase | hoy (medido) | k | Allen |
+|---|---|---|---|
+| 6° | 1,009 | 0,997 | 0,871 |
+| 53° | 0,812 | 0,803 | 0,275 |
+| 96° (cuarto) | 0,453 | 0,447 | **0,073** |
+| 112° | 0,313 | 0,309 | 0,038 |
+
+La ley de Allen (*Astrophysical Quantities*): la magnitud crece 0,026·α + 4·10⁻⁹·α⁴ con el
+ángulo de fase α en grados, o sea brillo relativo 10^(−0,4·(0,026α + 4·10⁻⁹α⁴)). La luna en
+cuarto brilla un 9 % de la llena, no un 50 %: la mitad del disco está iluminada, pero de
+costado, con las sombras largas del relieve. El dueño eligió **«Ley real (Allen)»**.
+
+### El contrato
+
+- **A1 · La ley, exportada.** `Cielo.js` exporta `brilloLunar(alfaGrados)` = 10^(−0,4·(0,026α
+  + 4·10⁻⁹α⁴)): 1 a 0°, 0,091 a 90° y 0,0116 a 135° (±2 %).
+- **A2 · La luz de la noche la sigue**, medido como arriba (dos meses, las mismas horas y los
+  mismos filtros): el exceso normalizado de cada noche queda a ±15 % de Allen(α) relativo a
+  la llena (o a ±0,02 donde Allen es menor que 0,13), en el **ambiente** y en la **niebla**.
+- **A3 · La llena y la noche sin luna no cambian**: el exceso por seno de altura de las noches
+  con α < 6° a ±10 % del de hoy (0,0889), y el ambiente sin luna a ±2 % (0,0459).
+- **A4 · El disco sigue mostrando la fracción** (el terminador sigue con `uFaseLunar`, que
+  sigue siendo la fracción iluminada: el banco del cielo de la ronda 7 lo fija contra JPL
+  Horizons); el halo y lo que la luna apaga las estrellas siguen el brillo, no la fracción.
+- **A5 · Sin compilar de más** (el brillo llega por un uniforme, no por un `#define`), y sin
+  regresión: la ronda 7 (el banco del cielo, fase 6, sigue en 7/7), las fases 1 a 4.
+
+**Propiedad exclusiva:** `src/world/Cielo.js`. Nada más.
+
+---
+
 ## FASE 7 · `reglas` — las decisiones del dueño y las deudas anotadas
 
 ### Lo que se midió
