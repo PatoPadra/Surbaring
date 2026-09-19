@@ -89,6 +89,17 @@ vuelta.**
 > relleno de la silueta con la base de cinco cargas (coníferas 0,38 → ≥ 0,50; puntitos
 > 5,35 y 9,41 → ≤ 3,4), C7 (el mismo árbol en cada carga), y un falsador nuevo (8 de 8, 3
 > controles) validado contra un horno y un `Vegetacion.js` de maqueta. Agente nuevo.
+>
+> **Preparado mientras corre la 4** (todo con banco validado contra la base y, donde se
+> pudo, contra una maqueta del jefe; falsadores con controles):
+> - **Fase 5 (piedra)** `ef06b61`: contrato P1–P12; el banco recorre la cadena del hacha con
+>   los sistemas de verdad desde un bolso vacío (hoy pide obsidiana y cuero); falsador 11/11.
+> - **Fase 6 (luz)** `9c04c2c`: la luna alumbra según la fracción (cuarto = 0,48 de la llena;
+>   Allen = 0,09); banco sobre dos meses de noches; falsador 8/8. **El suelo naranja junto al
+>   fuego ya bajó un 60 % a 5 m con la 3b**: no se toca más hasta que el dueño lo mire.
+> - **Fase 7 (reglas)** `07fc6c5`, `8b5714e`: `efectosAAgregar` está toda aplicada; la
+>   cestería suma dos veces (38 → 50 kg); el telar satisface recetas de fogata sin fuego. El
+>   banco reproduce los 17,7 apretadas del poncho de la ronda 7.
 
 ---
 
