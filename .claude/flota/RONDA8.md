@@ -1386,7 +1386,13 @@ costado, con las sombras largas del relieve. El dueño eligió **«Ley real (All
 - **«115»** en nueve comentarios de `Iconos.js` y `Bolso.js`: desde la ronda 7 los
   dibujos son más.
 - **`efectosAAgregar`** (`herramientas.json`): diez entradas que dicen «hoy tiene efecto
-  null» y cosas que ya no son ciertas.
+  null» y cosas que ya no son ciertas. *Recontado el 19/9 contra `historia.json`:* **las diez
+  ya están aplicadas** (a ninguna le falta nada de lo que pide). La lista entera es vieja.
+- **La cestería suma dos veces** (encontrado recontando la lista, 19/9). La nota del canasto
+  dice que el bono de la tecnología «pasa al objeto: ahora hay que hacer el canasto», pero
+  `historia.json` le sigue dando `capacidadExtraKg: 6` a la tecnología, y `main.js:496` suma
+  las dos: aprender la cestería da **+6 kg sin tejer nada**, y ponerse el canasto, **+6 más**
+  (38 → 50 kg).
 
 ### El contrato (se escribe entero al abrir la fase)
 
@@ -1403,4 +1409,9 @@ dentro del Parque.
 
 **G4 · Las deudas**: la estación se busca entre todas las que están a mano (fragua y
 fogata, como el telar); un solo radio; el número de dibujos dicho bien donde se dice; y
-`efectosAAgregar` al día, recontado desde `src/`.
+`efectosAAgregar` al día, recontado desde `src/`: lo aplicado sale de la lista (o pasa a una
+de aplicados, con la fecha), y ninguna nota dice algo que hoy no es cierto.
+
+**G5 · La cestería suma una vez** (agregado el 19/9): el bono de capacidad lo da el canasto
+puesto, no la tecnología. Aprender la cestería sin canasto deja el bolso en 38 kg; con el
+canasto puesto, 44.
