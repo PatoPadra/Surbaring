@@ -951,20 +951,45 @@ recargar, así que sin deriva): al frente 9,3 · 8,9 · 9,1 → **10,0 · 10,0 �
 sale NaN y el terreno se saltea el filtrado de las cascadas; recibirla lo paga. Es un 3 %
 del cuadro en Baja.
 
-### El contrato (se escribe entero al abrir la fase, después de cerrar la 3b)
+**5 · ¿Hay acné con una normal vertical en las laderas?** Era la sospecha del jefe al ver
+la resta a 40 m sobre la ladera de 25° con el sol a 14,7°: un moteado con rayas. Se armó
+una **verdad de campo sobre el DEM** (`medirAcne`: para 128 × 128 puntos del cuadro, el
+punto del suelo, su normal y si el sol lo alcanza marchando 3 km hacia él) y **la sospecha
+se refutó**: esa cara entera está tapada por el relieve, y lo oscurecido es sombra de
+verdad (el 100 % de lo tapado se ve en sombra). En una ladera de 24° que mira al sol y que
+nada tapa, con la normal vertical, **0 de 16.384 puntos al sol se oscurecen**, con el sol a
+14,7° y a 31,6°, desde 40 y desde 200 m.
 
-- **S1 · Recibe.** Con el instrumento de arriba, el terreno se oscurece bajo la sombra del
-  árbol en una fracción del cuadro a ±25 % de la del plano de control, y el oscurecimiento
-  medio no es menos de la mitad del del plano.
-- **S2 · Sin acné ni sombras sueltas en laderas**: el terreno sin nada que le haga sombra,
-  con el sol bajo, no cambia al prender la recepción de sombra más allá de las sombras que
-  proyecta el propio relieve (a medir: la ladera de 25° de la 3b, con el sol a 15° y a 45°).
-- **S3 · Costo**: ≤ +1,2 ms al frente y al suelo contra la 3b, en la misma carga si se
-  puede alternar el dato, o alternando cargas.
-- **S4 · Sin compilar de más, sin regresión.**
+### El contrato
 
-La decisión de pagarlo es del jefe por medición (3 % del cuadro por que los árboles den
-sombra en el suelo); si al dueño le pesa en Baja, se apaga por preset.
+- **S1 · Recibe.** Un coihue invisible que proyecta sombra, junto al arranque: el terreno
+  se oscurece en una fracción del cuadro a **±25 %** de la del plano de control, y su
+  oscurecimiento medio no baja de **la mitad** del del plano.
+- **S2 · Sin acné**, contra el DEM: en la ladera al sol, de los puntos al sol se oscurece
+  **el 1 % o menos**, y de los rasantes (N·L entre 0,03 y 0,15), el 5 % o menos.
+- **S2b · Las sombras del relieve aparecen**: de lo que el relieve tapa a menos de 150 m,
+  **el 90 % o más** se ve en sombra.
+- **S3 · Costo**: **≤ +1,2 ms** al frente y al suelo contra la 3b en la misma sesión.
+- **S4 · Sin compilar de más**, y el vértice ya no usa una normal en cero (banco Node,
+  sección 1, con el terreno construido sobre un mundo de juguete).
+- **S5 · Sin regresión**: la ronda 7, las fases 1, 2, 3 y 3b, `lint-shader`, `vite build`.
+
+Validado antes de encargar: la base da 11/15 en el navegador, roja en S1 (0 contra 0,31
+del plano) y en S2b (0 de 1763 y 0 de 3852), y 0/1 en el vértice; la maqueta del jefe (la
+normal en (0, 1, 0) como dato, en la misma carga) da 15/15 (el terreno 0,297 contra 0,320
+del plano). Falsador: 4/4 con 2 controles verdes (las dos formas del arreglo, el dato y el
+vértice). Bancos: `banco-r8-fase3c.mjs`, `banco-r8-fase3c.navegador.js`,
+`banco-r8-fase3c.falsar.mjs`; instrumentos en `r8-sombra.navegador.js`.
+
+**Propiedad exclusiva:** `src/world/Terreno.js`, y en él sólo la malla (`_construirMalla`,
+el atributo `normal`) o la inyección del vértice del material de color. Nada de
+`Calidad.js`: si hiciera falta apagarlo en Baja, lo decide el jefe con el dueño.
+
+La decisión de pagarlo es del jefe por medición (3 % del cuadro en Baja por que los
+árboles, las obras y el relieve den sombra en el suelo); si al dueño le pesa, se apaga
+por preset.
+
+<!-- CIERRE-F3C -->
 
 ---
 
