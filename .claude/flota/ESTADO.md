@@ -84,6 +84,11 @@ vuelta.**
 > 17/17 con la base en la misma carga, banco 4/4, falsador 4/4. Cuesta +0,95 ms al frente y
 > +0,6 al suelo; sin acné (0 de 16.384 contra el DEM). En la sombra queda el 11 % de la
 > luz del sol. En Baja el relieve no proyecta (decisión del preset, anotada).
+>
+> **19/9/2026 — FASE 4 (`copa`) ENCARGADA** (apertura `beccf51`). C4 reescrito sobre el
+> relleno de la silueta con la base de cinco cargas (coníferas 0,38 → ≥ 0,50; puntitos
+> 5,35 y 9,41 → ≤ 3,4), C7 (el mismo árbol en cada carga), y un falsador nuevo (8 de 8, 3
+> controles) validado contra un horno y un `Vegetacion.js` de maqueta. Agente nuevo.
 
 ---
 
