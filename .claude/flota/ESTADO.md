@@ -128,6 +128,31 @@ vuelta.**
 > ojo del dueño: el disco sigue con brillo fijo, así que el creciente sale igual de blanco
 > mientras todo lo que lo rodea bajó 0,68 paradas.
 >
+> **23/9/2026 — FASE 7 (`reglas`) CERRADA. LA RONDA 8 ESTÁ COMPLETA: las siete fases.**
+> Banco 7/7 (30 aserciones de contrato + 16 bancos de regresión), falsador 15/15 con 3
+> controles verdes. Morir ahora **se lleva todo** —las cuatro ranuras, la llama, el bolso— y
+> la pantalla de fin nombra lo puesto primero; la lana del coirón pasa de 2 de cada 3 a **1
+> de cada 4** y el poncho de 17,6 a **47,2 apretadas**; recolectar en el Parque queda
+> declarado como licencia con la Ley 22.351 art. 5 y se dice una vez; la estación se busca
+> **entre todas las que están a mano** y no sólo la más cercana (con eso se arregló que el
+> telar cociera brea sin fuego y que una fogata apagada tapara a la prendida); un solo
+> radio; el «115» afuera; y la cestería deja de sumar dos veces (38 / 44 en vez de 44 / 50).
+>
+> **Lo importante de esta fase no lo midió el banco: lo encontré leyendo `main.js`.** Las 30
+> aserciones pasaban **con la pestaña de licencias vacía en el juego**, porque el banco arma
+> su propio `normativa` a mano y `main.js` no le colgaba `herramientas`. Cableado y
+> comprobado en el juego: la pestaña pinta las siete licencias y cita la ley. Es otra vez
+> [[banco-sintetico-no-alcanza]]. También comprobé en el juego que `recoleccion.limites` no
+> existe y la jurisdicción llega por `mineria.limites`: sin ese camino alternativo la
+> licencia no se habría dicho nunca. **Un defecto del falsador, mío:** `eq.encendida = …`
+> contra un accesor de sólo lectura tiraba `TypeError` y explotaba la sección en vez de
+> medirla; lo encontró el agente con la cuenta hecha y sin tocar el archivo.
+>
+> **Queda abierto para la ronda 9:** la hoja de iconos a **2,22 kB de su techo** (137,78 de
+> 140) —es lo primero que va a morder—, `Fabricacion` que no gasta la herramienta que pide
+> (el percutor se gasta tirando flechas y no picando piedra), las ramas peladas de las
+> latifoliadas (fase 4b), y la **«otra cosa» de gráficos que el dueño nunca escribió**.
+>
 > **Preparado mientras corre la 4** (todo con banco validado contra la base y, donde se
 > pudo, contra una maqueta del jefe; falsadores con controles):
 > - **Fase 5 (piedra)** `ef06b61`: contrato P1–P12; el banco recorre la cadena del hacha con

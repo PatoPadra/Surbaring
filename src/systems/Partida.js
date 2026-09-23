@@ -11,9 +11,22 @@
  * - **Se guarda solo.** Cada minuto de reloj real y al cerrar la pestaña. No
  *   hay ranuras ni "guardar antes de arriesgarse": guardar a mano justo antes
  *   de una decisión difícil es lo que vacía de peso a la decisión.
- * - **Al morir perdés lo que cargabas encima.** El bolso entero, ahí donde
- *   caíste. Es lo único que se pierde, y es lo que hace que salir cargado de
- *   cuarenta kilos a cruzar un filo de noche sea una apuesta y no un trámite.
+ * - **Al morir perdés lo que cargabas encima.** El bolso entero **y las cuatro
+ *   ranuras**, ahí donde caíste, y la llama que llevabas se apaga. Es lo único
+ *   que se pierde, y es lo que hace que salir cargado de cuarenta kilos a cruzar
+ *   un filo de noche sea una apuesta y no un trámite.
+ *
+ *   Hasta la ronda 8 lo puesto sobrevivía: se moría uno con el hacha en la mano,
+ *   el quillango encima y la antorcha prendida, y reaparecía con las cuatro
+ *   cosas y el fuego todavía ardiendo. O sea que lo caro del bolso —justo lo que
+ *   cuesta más de fabricar— era lo único que la muerte no cobraba, y bastaba con
+ *   ponerse encima lo valioso antes de arriesgarse para que morir no costara casi
+ *   nada. El dueño eligió «se pierde todo» y es lo que hay: la decisión de salir
+ *   con el hacha buena vuelve a tener precio.
+ *
+ *   **Las trampas puestas no.** No son del bolso: están caladas en el monte, con
+ *   su lugar y su hora, y el cuerpo que cae no se las lleva. Volver a levantar el
+ *   lazo que uno dejó armado es justamente el motivo para volver.
  * - **Reaparecés en una base.** La más cercana al lugar donde moriste, entre
  *   las obras que abrigan o guardan. Sin base, volvés a la costa donde empezó
  *   todo. Eso convierte a "levantar un refugio arriba" en una decisión
@@ -95,11 +108,18 @@ export class Partida {
 
   /**
    * Se llama cuando el jugador muere, antes de mostrar la pantalla de fin: el
-   * bolso se vacía en el acto, así que lo que la pantalla cuenta ya es cierto.
-   * Devuelve el resumen de la pérdida para que el final lo muestre.
+   * bolso y las ranuras se vacían en el acto, así que lo que la pantalla cuenta
+   * ya es cierto. Devuelve el resumen de la pérdida para que el final lo muestre.
+   *
+   * El orden de adentro no es casual y se lee de arriba abajo: primero se
+   * **anota** todo —el bolso, las herramientas sueltas, lo puesto— y recién
+   * después se saca. Anotar después de vaciar fue el defecto que esta función ya
+   * tuvo una vez con las herramientas del bolso, y lo que se ve cuando pasa es
+   * una pantalla de fin que cuenta kilos y no nombra nada.
    */
   registrarMuerte(motivo) {
     const p = this.jugador.posicion;
+    const eq = this._equipo;
     const perdido = this.inventario.listar();
     // Las herramientas del bolso NO salen en `listar()`, y es a propósito: si
     // salieran, el depósito de `Construccion.guardarTodo()` las tragaría como
@@ -113,7 +133,32 @@ export class Partida {
       cantidad: 1,
       usos: cosa.usos,
     }));
+    // Y lo puesto va PRIMERO en la lista, no último, porque `Fin.js` nombra las
+    // seis primeras y resume el resto: de todo lo que se pierde, el hacha que
+    // llevabas en la mano es lo que el jugador quiere leer, no las cuatro fibras.
+    const puesto = Object.entries(eq?.puesto || {})
+      .filter(([, cosa]) => cosa)
+      .map(([ranura, cosa]) => ({
+        id: cosa.id,
+        nombre: eq?.definicion?.(cosa.id)?.nombre || cosa.id,
+        cantidad: 1,
+        usos: cosa.usos,
+        ranura,
+      }));
+    // `pesoKg` cuenta lo puesto por `pesoAparte()`, así que se lee antes de
+    // vaciar las ranuras: si no, el quillango y el canasto no pesarían nada.
     const kg = this.inventario.pesoKg;
+
+    // La llama se apaga antes de vaciar las ranuras y no después. `apagar()` le
+    // cobra el uso a **la instancia que ardía**, y esa instancia es la de la
+    // mano: con la ranura ya en null la llama seguiría atada a una antorcha que
+    // ya no sostiene nadie, y el primer `luzActiva()` la apagaría igual pero por
+    // «se te cayó», avisándole al jugador de un accidente en vez de una muerte.
+    eq?.apagar?.(this.tiempo?.fecha?.getTime?.());
+    // Las cuatro ranuras, a null. No por `desequipar()`, que devuelve lo puesto
+    // al bolso y falla limpio si no entra: acá no se devuelve nada a ningún lado.
+    for (const ranura of Object.keys(eq?.puesto || {})) eq.puesto[ranura] = null;
+    eq?.alCambiar?.();
     this.inventario.vaciar();
     this.inventario.alCambiar?.();
 
@@ -121,6 +166,7 @@ export class Partida {
     this.ultimaMuerte = {
       x: p.x, z: p.z, causa: motivo?.causa || 'agotamiento',
       perdido: [
+        ...puesto,
         ...herramientas,
         ...perdido.map(i => ({ id: i.id, nombre: i.nombre, cantidad: i.cantidad })),
       ],

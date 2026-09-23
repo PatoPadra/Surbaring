@@ -389,9 +389,16 @@ async function iniciar() {
     inventario, saberes, equipo, fundicion, hud,
   });
 
-  // Los tres datasets de normativa, ya cargados, a la pestaña que los muestra
+  // Los datasets de normativa, ya cargados, a la pestaña que los muestra.
+  //
+  // `herramientas` entra desde la ronda 8, fase 7, y no es por las herramientas:
+  // es por `licenciasDeJuego`, que vive ahí y que la pestaña Normativa ahora
+  // muestra entera. Sin este renglón la sección de licencias no se dibuja y no se
+  // nota, porque el banco de esa fase construye el códice a mano y nunca pasa por
+  // acá: lo encontré leyendo `main.js` contra el código del agente, no midiendo.
   codice.normativa = {
     caza: normativaCaza, mineria: datosMineria, construccion: datosConstruccion,
+    herramientas,
   };
 
   const taller = new Taller({ fundicion, mineria, construccion, limites, jugador, inventario });

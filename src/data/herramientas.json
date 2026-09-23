@@ -2544,137 +2544,32 @@
       "descripcion": "Tener abejas en vez de saquear un enjambre. El tronco ahuecado, tapado y parado en un claro soleado al reparo del viento oeste es la colmena más vieja que hay, y la comarca la usó hasta bien entrado el siglo XX."
     }
   ],
-  "efectosAAgregar": [
-    {
+  "efectosAAgregar": [],
+  "efectosAplicados": {
+    "que": "La lista de arriba está vacía a propósito, y esto es lo que tenía. Eran diez pedidos de la ronda 4 —«a esta tecnología hay que agregarle este efecto»— que se fueron cumpliendo ronda por ronda sin que nadie los tachara, así que la lista siguió pidiendo durante cuatro rondas cosas que historia.json ya tenía, y sus notas siguieron diciendo «hoy tiene efecto null» de tecnologías con efecto. Una lista de pendientes que no se tacha deja de ser una lista de pendientes y pasa a ser ruido que contradice al dataset.",
+    "recontadoEl": "2026-09-23, fase 7 de la ronda 8, contra src/data/historia.json. El recuento anterior, del 19/9/2026, decía diez de diez aplicadas y eran nueve: la décima, lasca_obsidiana, no está aplicada y tampoco corresponde (ver abajo).",
+    "nueveAplicadas": {
+      "cuales": [
+        "punta_proyectil",
+        "boleadora",
+        "arco_colihue",
+        "curtido_cuero",
+        "cesteria_junco",
+        "telar_witral",
+        "fuego_friccion",
+        "alfareria_bicroma",
+        "herreria_colonial"
+      ],
+      "comoSeComprueba": "Para cada una, todo lo que pedía el efecto está hoy en el efecto de esa tecnología en historia.json: las listas (herramienta, recetas) contenidas, y los valores sueltos (caza, horno) iguales. Es la misma cuenta que hace la sección 4 del banco de esta fase.",
+      "unaSalvedad": "cesteria_junco está aplicada en lo que pedía —los tres objetos—, pero el efecto capacidadExtraKg: 6 que la nota daba por mudado al canasto seguía ADEMÁS en la tecnología hasta esta fase, y main.js sumaba los dos: 38 + 6 + 6 = 50 kg. La ronda 8, fase 7, se lo sacó a la tecnología. El bono lo da el canasto puesto: 38 sin canasto, 44 con."
+    },
+    "unaRetirada": {
       "tecnologia": "lasca_obsidiana",
-      "efecto": {
-        "herramienta": [
-          "lasca",
-          "raspador",
-          "cuchillo",
-          "mango_labrado",
-          "punzon_hueso"
-        ]
-      },
-      "nota": "Hoy tiene efecto null: es la primera tecnología del árbol y no habilita absolutamente nada."
-    },
-    {
-      "tecnologia": "punta_proyectil",
-      "efecto": {
-        "recetas": [
-          "punta_litica",
-          "flechas"
-        ],
-        "herramienta": [
-          "lanza_colihue",
-          "estolica",
-          "arpon_hueso"
-        ]
-      },
-      "nota": "Idem: efecto null."
-    },
-    {
-      "tecnologia": "boleadora",
-      "efecto": {
-        "caza": true,
-        "herramienta": [
-          "bola_perdida",
-          "boleadora_dos",
-          "boleadora_tres"
-        ],
-        "recetas": [
-          "bola_forrada"
-        ]
-      },
-      "nota": "Habilita cazar en el juego, igual que el arco. Es una licencia deliberada: ver licenciasDeJuego.armaTradicional. El juego dice la norma real —RD APN 277/2011 art. 44: sólo arma larga de caño rayado de 6,5 mm o más— y después te deja tirar, que es lo mismo que ya hace con el fuego.",
-      "cuidado": "requisitoPara() devuelve la primera coincidencia del índice esté aprendida o no, y boleadora está antes que arco_colihue. Marcar caza:true acá SIN arreglar Saberes.js bloquea a quien ya aprendió el arco."
-    },
-    {
-      "tecnologia": "arco_colihue",
-      "efecto": {
-        "caza": true,
-        "herramienta": [
-          "arco_colihue_obj"
-        ]
-      },
-      "nota": "Ya tiene caza:true; se le suma el objeto fabricable."
-    },
-    {
-      "tecnologia": "curtido_cuero",
-      "efecto": {
-        "recetas": [
-          "curtido"
-        ],
-        "herramienta": [
-          "quillango",
-          "tamangos",
-          "mochila_cuero",
-          "odre_cuero"
-        ]
-      },
-      "nota": "No producía nada. Es la tecnología que más cosas destraba de todo el árbol."
-    },
-    {
-      "tecnologia": "cesteria_junco",
-      "efecto": {
-        "herramienta": [
-          "canasto_junco_obj",
-          "nasa_junco",
-          "red_fibra"
-        ]
-      },
-      "nota": "Hoy da +6 kg sin fabricar nada. El bono pasa al objeto."
-    },
-    {
-      "tecnologia": "telar_witral",
-      "efecto": {
-        "herramienta": [
-          "poncho_witral"
-        ]
-      },
-      "nota": "No producía nada."
-    },
-    {
-      "tecnologia": "fuego_friccion",
-      "efecto": {
-        "herramienta": [
-          "taladro_arco"
-        ],
-        "recetas": [
-          "brea_resina"
-        ]
-      },
-      "nota": "No producía nada."
-    },
-    {
-      "tecnologia": "alfareria_bicroma",
-      "efecto": {
-        "horno": "horno_barro",
-        "herramienta": [
-          "candil_grasa"
-        ]
-      },
-      "nota": "Ya habilita el horno."
-    },
-    {
-      "tecnologia": "herreria_colonial",
-      "efecto": {
-        "recetas": [
-          "herramienta"
-        ],
-        "herramienta": [
-          "hacha_hierro",
-          "sierra",
-          "martillo",
-          "pico_hierro",
-          "pala_hierro",
-          "barreta",
-          "eslabon"
-        ]
-      },
-      "nota": "Ya tiene recetas; se le suma todo el nivel 4."
+      "pedia": "Agregarle a su efecto.herramienta los cinco filos: lasca, raspador, cuchillo, mango_labrado y punzon_hueso.",
+      "estado": "Cuatro de los cinco están. Falta mango_labrado, y falta a propósito: la ronda 8, fase 5, se lo sacó porque el mango se labra con cualquier filo —la lasca de rodado, la de obsidiana o el cuchillo— y pedir la talla de obsidiana para labrar un palo dejaba la primera hacha a 1500 m de altura. Hoy mango_labrado tiene tecnologia null y pide filo por pideHerramienta. El pedido quedó viejo: aplicarlo sería deshacer una decisión posterior.",
+      "notaVieja": "Decía «hoy tiene efecto null: es la primera tecnología del árbol y no habilita absolutamente nada», y hace rondas que habilita cuatro filos."
     }
-  ],
+  },
   "engancheAlCodigo": {
     "Recursos.js": "Agregar los 16 recursos nuevos a RECURSOS (el archivo decía 11 y son 16). Y sacar la equivalencia madera_dura → tronco de la línea 29 — pero OJO: tieneFuente('tronco') sigue devolviendo true porque tronco es clave de RECURSOS, así que las obras saldrían como «faltan materiales» para siempre en vez de «inalcanzable». Hay que arreglar las dos cosas juntas. COSECHA_SOTOBOSQUE vive acá, en la línea 217, y no en Recoleccion.js como decía este archivo.",
     "Equipo.js": "Sistema nuevo. Cuatro ranuras, nivel de herramienta activo, durabilidad, desgaste por uso y reparación. Es la pieza que no existe y de la que cuelga todo lo demás.",
@@ -2831,13 +2726,14 @@
       },
       {
         "id": "lanaDelCoiron",
-        "que": "La lana sale del coirón. Dos de cada tres veces que se junta una mata, además de su fibra, sale un vellón de guanaco. Pasa en todo el mapa, también en el bosque del arranque, donde no hay guanacos.",
+        "que": "La lana sale del coirón. Una de cada cuatro veces que se junta una mata, además de su fibra, sale un vellón de guanaco. Pasa en todo el mapa, también en el bosque del arranque, donde no hay guanacos.",
         "laNormaReal": "Esta licencia no afloja una norma: afloja la realidad. No hay fuente que diga que el guanaco deja vellón en el coirón ni que se juntara de las matas. El pelo de guanaco que se hilaba en la región salía del cuero. En el sur del Neuquén el cuero se enterraba una semana hasta que el pelo se soltaba (Millán, 1960), y en la meseta del Chubut las tejedoras lo esquilan o lo arrancan de cueros enteros (Méndez, 2009, AIBR 4(1), § 3.2). Hoy la fibra sale de guanacos silvestres arreados, esquilados y soltados, entre 300 y 700 g por adulto (Quispe et al., 2009, FAO). El guanaco del juego es de estepa y ecotono, entre 750 y 1800 m, y está protegido. Tampoco el witral de la región se tejió siempre con guanaco. Antes de la conquista se tejía pelo de camélido, llamado weke o chiliweke en el sur de Chile (Museo Regional de Ancud), y en Rebolledo Arriba, Neuquén, hay tejidos de técnica compleja de 1300 a 1350 d. C. (Brugnoli y Hoces de la Guardia, 1995). A comienzos del siglo XVII la cría de ovejas y el tejido se extendieron al noroeste de la Patagonia, y la lana de oveja prevaleció sobre el pelo de camélido (Méndez, 2009, § 3.1, con Onelli 1916 y Palermo 1994). En el juego no hay ovejas.",
-        "porQueSeToma": "Lo decidió el jefe de la ronda: no se agrega fauna, no se caza al guanaco y no se inventa una oveja. Sin una fuente de lana el telar no produce nada, que era el defecto que ya tenía el árbol. La cantidad también es licencia. Medido en el juego real el 13/9/2026, con lana en el 16 % de las matas la lana de la cadena del poncho costaba 84 apretadas y metía 8,4 kg de fibra de paso, la cuarta parte del bolso. El número nuevo sale de un criterio: juntar lana no puede meter en el bolso más peso de otra cosa que el de la propia lana. Cada apretada trae 2 fibras, 100 g, y una lana pesa 150 g, así que va una lana cada apretada y media: dos de cada tres.",
+        "porQueSeToma": "Lo decidió el jefe de la ronda: no se agrega fauna, no se caza al guanaco y no se inventa una oveja. Sin una fuente de lana el telar no produce nada, que era el defecto que ya tenía el árbol. La cantidad también es licencia, y cambió dos veces. Medido en el juego real el 13/9/2026, con lana en el 16 % de las matas la lana de la cadena del poncho costaba 84 apretadas y metía 8,4 kg de fibra de paso, la cuarta parte del bolso. La ronda 7 la subió a dos de cada tres con un criterio del bolso: juntar lana no puede meter en el bolso más peso de otra cosa que el de la propia lana —cada apretada trae 2 fibras, 100 g, y una lana pesa 150 g, así que iba una lana cada apretada y media—.",
+        "porQueCambio": "El dueño lo jugó en la ronda 7 y dijo que era demasiado barato. Con dos de cada tres, las 12 lanas de la cadena del poncho —9 de hilado, a 3 por cada 4 lanas— salían en 17,7 apretadas medidas en el juego: un par de minutos parado al lado de un coirón para la última prenda del nivel, la que pide el telar levantado y el huso hecho. El jefe de la ronda 8 fijó una de cada cuatro, y el criterio nuevo es del costo y no del bolso: 48 apretadas, que son una caminata juntando por el camino y no una parada. Lo que se resigna es justamente el criterio viejo, y se dice con el número: esas 48 apretadas traen 96 fibras, 4,8 kg, contra 1,8 kg de lana, o sea que la paja pesa 2,7 veces lo que la lana. Se resigna a sabiendas porque la fibra se suelta y la lana no. Medido en el banco de la fase 7 con 4000 apretadas: 25,4 % y el poncho en 47,2 apretadas.",
         "comoLoDiceElJuego": "La primera vez que el coirón da lana, el aviso lo dice en el mismo renglón: que es una licencia, que el guanaco no vive en este bosque y que el pelo que se hilaba salía del cuero y de la esquila. El cartel de la tecla sigue diciendo «a veces lana», que es verdad.",
         "queNOSeAfloja": "El guanaco sigue protegido y no se caza; no aparece fauna nueva ni ovejas. El coirón sigue dando su fibra de siempre, y el tronco caído le sigue ganando la tecla. La licencia es sobre de dónde sale la lana y cuánta, no sobre lo que se hace con ella: hilar sigue pidiendo el huso, y tejer, el witral en pie.",
         "aviso": "Es una licencia de juego. El guanaco no vive en este bosque, y el pelo de guanaco que se hilaba salía del cuero o de la esquila, no de las matas. El juego lo pone en el coirón para que el telar exista.",
-        "nota": "El número vive en EXTRAS_MATA.coiron de Recoleccion.js: cantidad 1, probabilidad 2/3. La tecnología del telar dice «lana de oveja hilada», y es verdad para su época. El juego teje con esta lana porque no hay otra, y la licencia lo dice."
+        "nota": "El número vive en EXTRAS_MATA.coiron de Recoleccion.js: cantidad 1, probabilidad 1/4, con los dos criterios escritos al lado —el viejo y el que lo reemplazó—. La tecnología del telar dice «lana de oveja hilada», y es verdad para su época. El juego teje con esta lana porque no hay otra, y la licencia lo dice."
       },
       {
         "id": "pulidoSinAgua",
@@ -2847,6 +2743,16 @@
         "comoLoDiceElJuego": "La ficha del pulido lo dice completo: que se pule con arena Y agua contra una laja, y que el juego sólo cobra la arena. La explicación que cierra el círculo es que se pule en la orilla, que es donde está el agua y donde no hace falta cargarla.",
         "queNOSeAfloja": "La arena sigue siendo arena de verdad: se junta a puñados en la playa de la Reserva o fuera del área protegida, nunca en el Parque, con la licencia arenaDePlaya que ya existe y su aviso por jurisdicción. Y el pulido sigue siendo un paso propio, con su costo, su tecnología y sus dos horas de ficha: no se saltea, se abarata.",
         "nota": "Es la segunda licencia sobre la física y no sobre la norma, después de luzNocturna. La toma la ronda 8, fase 5."
+      },
+      {
+        "id": "recoleccionEnElParque",
+        "que": "Dentro del Parque Nacional la tecla de acción junta lo mismo que en la Reserva: ramas caídas, corteza suelta, fibra, juncos, frutos y piedra del suelo, sin permiso y sin trámite. En la vida real eso no se puede.",
+        "laNormaReal": "La Ley 22.351 prohíbe en los Parques Nacionales la explotación agropecuaria y forestal y «cualquier tipo de aprovechamiento de los recursos naturales» (artículo 5). El mismo artículo prohíbe además «toda otra acción u omisión que pudiere originar alguna modificación del paisaje o del equilibrio biológico», que es exactamente lo que describe juntar del suelo. No hay excepción por cantidad ni por juntar sin cortar: levantar leña caída para un fuego también es aprovechamiento. En las Reservas Nacionales la misma ley admite actividades productivas reglamentadas (artículo 10), y el punto de partida del juego está en la Reserva; fuera del área protegida la cuestión es provincial y municipal, y el juego no modela ese trámite.",
+        "porQueSeToma": "El juego entero es la tecla de acción. Sin juntar no hay fibra, no hay cordel, no hay leña, no hay fuego y no hay nada del árbol: negarla en el Parque sería dejar sin juego el 60,5 % del mapa. Medido el 23/9/2026 sobre las mismas cajas de Limites.js, en una grilla de 400 por 400 sobre los 65.536 m del mundo: Parque 60,5 %, Reserva 25,4 %, fuera del área protegida 14,1 %. Y no es que el jugador pueda esquivarlo: el arranque está en la Reserva, pero apenas se sale del corredor del lago el mapa es Parque. Es el mismo criterio con el que ya se tomaron el fuego y el arco: se afloja la norma que arruinaría el juego, y se dice.",
+        "comoLoDiceElJuego": "La primera vez que se junta algo dentro del Parque, el aviso lo dice en el mismo renglón: qué prohíbe el artículo 5 y que el juego se toma la licencia. Una sola vez por partida. En la Reserva y fuera del área protegida no se dice, porque ahí la licencia no hace falta.",
+        "queNOSeAfloja": "Todo lo demás del Parque sigue firme, y es bastante: la cantera se niega siempre (Mineria.evaluar), el puñado de arena no cruza la línea del Parque (licencia arenaDePlaya), la fauna nativa no se caza nunca, las trampas tienen su norma y el fuego tiene la suya. Y no se afloja la regla que el juego se puso desde el prototipo: no se tala y no se mata. Se juntan ramas caídas, corteza suelta, fibra y frutos, y la planta queda en pie con su descanso.",
+        "aviso": "Es una licencia de juego: dentro del Parque Nacional esto no se podría juntar. La Ley 22.351, artículo 5, prohíbe cualquier tipo de aprovechamiento de los recursos naturales, y no hace excepción por levantar del suelo. El juego se la toma para que haya juego; en la Reserva, donde empezaste, la ley sí admite actividades reglamentadas.",
+        "nota": "La toma la ronda 8, fase 7, por decisión del dueño: la recolección ya era ilegal en el Parque desde el primer día y el juego no lo decía. Es la licencia más vieja del proyecto y la última en declararse. El límite lo decide Limites.jurisdiccion(); Recoleccion.js dice el aviso una sola vez, junto con el rinde, porque HUD.aviso() es una sola ranura."
       }
     ]
   },

@@ -1116,13 +1116,13 @@
       "requiere": [],
       "costoSaber": 10,
       "efecto": {
-        "capacidadExtraKg": 6,
         "herramienta": [
           "canasto_junco_obj",
           "nasa_junco",
           "red_fibra"
         ]
       },
+      "notaRonda8": "Esta tecnología daba capacidadExtraKg: 6 y el canasto de junco daba otros 6, y main.js suma los dos: aprender la cestería subía el bolso de 38 a 44 kg sin tejer nada, y ponerse el canasto lo subía a 50. La nota del canasto ya decía que el bono «pasa al objeto», pero el de la tecnología nunca se sacó, así que durante cuatro rondas el bono se cobró dos veces. La ronda 8, fase 7, se lo saca a la tecnología: saber cómo se teje un cesto no agranda ningún cesto. El bolso queda en 38 kg con la cestería aprendida y en 44 con el canasto puesto, que es lo que dice la ficha del canasto. Lo que la tecnología habilita —el canasto, la nasa y la red— no cambia.",
       "notaCorreccion": "Decia «fibras de nocha». Greigia landbeckii es endemica de Chile y ninguna de las 63 especies de flora.json es nocha: como la obsidiana, cruzaba la cordillera por intercambio. Corregido en la ronda 4 por la revision de rigor. Decía además «algunos tejidos apretados podían contener líquidos», y es verdad a medias: la estanqueidad de la cestería en aduja la describe Piñeiro (1967), citada en Carrasco y Cisterna (2019), Cestería mapuche: usos y prácticas culturales, Museo Mapuche de Cañete, para piezas de Arauco y Cautín, y no es un uso para llevar agua. Por eso el recipiente de antes del cuero es de greda y no un canasto. Corregido en la ronda 7, fase 4."
     },
     {

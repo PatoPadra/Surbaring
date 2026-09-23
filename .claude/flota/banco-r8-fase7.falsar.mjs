@@ -75,8 +75,15 @@ const DEFECTOS = [
   ['muerte-deja-ranuras', 'la muerte vacía el bolso pero deja lo puesto',
     enJs('systems/Partida.js', envolverMuerte('if (eq) Object.assign(eq.puesto, puestoAntes);')),
     ['las cuatro ranuras quedan vacías']],
+  // `Equipo.encendida` es un accesor de SÓLO LECTURA (`get encendida()`, sin setter), y
+  // los módulos ES corren en modo estricto: `eq.encendida = …` tira un TypeError. La
+  // primera versión de este defecto hacía justo eso, explotaba la sección entera y caía
+  // como «por otro motivo». Lo encontró el agente `reglas` el 23/9 y lo comprobé: el
+  // defecto habría explotado igual contra la base, así que no medía nada. Se sombrea el
+  // accesor con una propiedad propia, que es la forma de mentirle a un getter desde
+  // afuera sin tocar `Equipo.js`.
   ['muerte-deja-llama', 'la muerte no apaga la llama',
-    enJs('systems/Partida.js', envolverMuerte('if (eq && prendidaAntes) eq.encendida = prendidaAntes;')),
+    enJs('systems/Partida.js', envolverMuerte("if (eq && prendidaAntes) Object.defineProperty(eq, 'encendida', { value: prendidaAntes, configurable: true });")),
     ['la llama se apaga']],
   ['muerte-no-nombra', 'la pantalla de fin no nombra lo que estaba puesto',
     enJs('systems/Partida.js', envolverMuerte(`const ids = Object.values(puestoAntes).filter(Boolean).map((c) => c.id);

@@ -8,14 +8,16 @@
  *
  * Las dos excepciones son físicas y no de diseño: el hierro pide la fragua
  * porque hay que ablandarlo, y la brea y el curtido piden fuego porque hay que
- * cocerlos. Para esas se reusa `Fundicion.cercano()`, que ya resuelve «¿tengo un
- * horno al lado y está prendido?» y ya registra el aserradero como uno más.
+ * cocerlos. Para esas se reusa `Fundicion.cercano()`, que ya sabe dónde están los
+ * hornos y ya registra el aserradero como uno más.
  *
  * El telar es la tercera excepción, y es de otra clase: no pide fuego, pide un
  * lugar armado. El poncho se teje en un witral en pie, y el witral es una obra de
- * campamento que `Construccion` anota como estación en `Fundicion`. Esa estación
- * no se busca con `cercano()` —ver `_estacionDeObra()`—; la fogata y la fragua
- * sí, igual que antes.
+ * campamento que `Construccion` anota como estación en `Fundicion`.
+ *
+ * Las tres se preguntan igual desde la ronda 8, fase 7, y eso es lo que cambió:
+ * **entre todas las estaciones que están a mano, ¿hay alguna que sirva?**, y no
+ * «¿la más cercana es la que hace falta?». Ver `estacion()`.
  *
  * Y hay recetas que no piden un lugar sino una herramienta encima: hilar pide
  * el huso, y desde la ronda 8 toda la cadena de la piedra pide el percutor o el
@@ -31,13 +33,11 @@
  */
 
 import { pesoDe, nombreDe } from './Recursos.js';
-
-/**
- * El radio de una estación de obra. Son los 8 m de `Fundicion.cercano()`, escritos
- * dos veces porque `Fundicion` no los exporta: está pedido en
- * `pendiente-r7-witral.md`. Hasta entonces, si cambia uno, cambian los dos.
- */
-const RADIO_ESTACION_M = 8;
+// El radio de «estar al lado» es uno solo y vive donde se mide, que es
+// `Fundicion.cercano()`. Hasta la ronda 8 estaba copiado acá como
+// `RADIO_ESTACION_M = 8` porque allá no se exportaba: dos números iguales en dos
+// archivos son un número que algún día va a ser dos.
+import { RADIO_HORNO_M } from './Fundicion.js';
 
 export class Fabricacion {
   /**
@@ -50,55 +50,77 @@ export class Fabricacion {
     this.alCambiar = null;
   }
 
-  /** ¿La estación que pide este objeto está a mano y en condiciones? */
+  /**
+   * ¿La estación que pide este objeto está a mano y en condiciones?
+   *
+   * **La pregunta es «¿hay alguna que sirva?», no «¿sirve la más cercana?»**, y
+   * ésa es toda la diferencia. `Fundicion.cercano()` sin filtro devuelve **un
+   * solo** horno —el más próximo— y recién después se miraba si era el que hacía
+   * falta, así que la estación correcta quedaba escondida detrás de cualquier
+   * otra cosa que estuviera medio metro más cerca. Un campamento es justamente
+   * eso: la fogata, la fragua y el telar en cinco metros.
+   *
+   * La ronda 7 ya lo había arreglado para el telar, con `_estacionDeObra()`, y
+   * dejó a la fogata y a la fragua con el defecto. Medido antes de esta fase:
+   * con la fogata a 2 m y la fragua a 6, una receta de fragua decía «hace falta
+   * estar al lado de: Fragua» teniéndola al lado; y al revés, con el telar a 1 m
+   * y ninguna fogata, una receta de fuego se daba por lista —el telar no quema,
+   * y `arde()` dice que sí a todo lo que no quema—, o sea que se cocía brea sin
+   * fuego. Una fogata apagada a un metro también escondía a la prendida a cinco.
+   *
+   * Ahora las tres preguntan igual, con el filtro de `cercano()`, que recorre
+   * todos los hornos y no sólo el primero.
+   */
   estacion(obj) {
     const donde = obj.donde || 'bolso';
     if (donde === 'bolso') return { ok: true };
+    const f = this.fundicion;
+    if (!f) return { ok: false, motivo: `Hace falta estar al lado de: ${nombreDe(donde)}.` };
 
-    // Una estación que no es la fogata ni un horno de `mineria.json` es una obra:
-    // hoy, el telar. Ésa se busca aparte. La fogata y la fragua siguen por el
-    // camino de abajo sin cambiar una coma.
-    const esHorno = donde === 'fogata' || !!this.fundicion?.hornoPorId?.(donde);
-    if (!esHorno && this.fundicion) return this._estacionDeObra(donde);
-
-    const horno = this.fundicion?.cercano();
+    // `'fogata'` no nombra a la fogata: nombra al fuego. Sirve cualquier horno
+    // que queme y esté ardiendo —la fogata, la fragua, el horno de barro—, y por
+    // eso pide las dos condiciones: `usaFuego()` para que el telar y el
+    // aserradero no cuenten, y `arde()` para que una apagada tampoco.
     if (donde === 'fogata') {
-      if (horno && this.fundicion.arde(horno)) return { ok: true };
+      if (f.cercano(RADIO_HORNO_M, h => f.usaFuego(h) && f.arde(h))) return { ok: true };
       return { ok: false, motivo: 'Hace falta un fuego encendido al lado: esto hay que cocerlo.' };
     }
-    if (horno?.def?.id === donde) {
-      if (!this.fundicion.usaFuego(horno) || this.fundicion.arde(horno)) return { ok: true };
-      return { ok: false, motivo: `La ${horno.def.nombre.toLowerCase()} está apagada.` };
-    }
-    const def = this.fundicion?.definicionesHorno?.find(d => d.id === donde);
-    return { ok: false, motivo: `Hace falta estar al lado de: ${def?.nombre || donde}.` };
+    // Todo lo demás nombra una estación por su id: la fragua, el horno de barro,
+    // el telar. Da igual si es un horno de `mineria.json` o una obra levantada:
+    // las dos llegan a `Fundicion.hornos` y se buscan igual.
+    return this._estacionDeObra(donde);
   }
 
   /**
-   * ¿Hay una obra con este id en pie a menos de 8 m?
+   * ¿Hay una estación de este id a mano, en pie y en condiciones?
    *
-   * No usa `Fundicion.cercano()`, y ésa es la razón de que este método exista.
-   * `cercano()` devuelve **un solo** horno, el más cercano, y recién después se
-   * pregunta si es el que hace falta. Con la fogata del campamento a un metro y
-   * el telar a cinco —que es como se arma un campamento—, el poncho decía que
-   * faltaba el telar teniéndolo al lado. Acá se pregunta al revés: entre todas
-   * las estaciones a mano, ¿alguna es ésta?
+   * «En condiciones» es lo mismo que pide el taller: lo que no quema está
+   * siempre listo —el telar, el aserradero— y lo que quema tiene que estar
+   * prendido. `arde()` ya contesta las dos cosas.
    */
   _estacionDeObra(id) {
     const f = this.fundicion;
-    const p = f.jugador?.posicion;
-    const deEsas = f.hornos.filter(h => h.def?.id === id);
-    // `arde()` da siempre sí a lo que no quema, como el telar; queda por si una
-    // obra que procesa con fuego llega a pedirse como estación.
-    if (p && deEsas.some(h => Math.hypot(h.x - p.x, h.z - p.z) < RADIO_ESTACION_M && f.arde(h))) {
-      return { ok: true };
+    if (f.cercano(RADIO_HORNO_M, h => h.def?.id === id && f.arde(h))) return { ok: true };
+
+    // El nombre sale de una estación levantada, si hay alguna en el mapa —aunque
+    // esté lejos: para nombrarla no hace falta tenerla al lado—, y si no del
+    // catálogo de hornos o del id. `Fabricacion` no conoce el catálogo de obras.
+    const enElMapa = (f.hornos || []).find(h => h.def?.id === id);
+    const nombre = enElMapa?.def?.nombre
+      || f.definicionesHorno?.find(d => d.id === id)?.nombre
+      || nombreDe(id);
+
+    // Tenerla apagada y no tenerla piden cosas distintas: una se prende, la otra
+    // se levanta. Decir «hace falta estar al lado» parado justo al lado manda al
+    // jugador a caminar en vez de a cargar leña. Y se dice «sin prender» y no
+    // «apagada» porque el nombre puede ser de cualquier género —la fragua, el
+    // horno de barro— y el motivo se arma con él.
+    if (f.cercano(RADIO_HORNO_M, h => h.def?.id === id)) {
+      return { ok: false, motivo: `Falta el fuego: ${nombre.toLowerCase()} está sin prender.` };
     }
-    // El nombre sale de una obra levantada, si hay alguna en el mapa, y si no del
-    // id: `Fabricacion` no conoce el catálogo de obras, y para decirlo no hace falta.
-    const nombre = deEsas[0]?.def?.nombre || nombreDe(id);
     return {
       ok: false,
-      motivo: `Esto se hace al lado de: ${nombre}. Tiene que estar en pie y a menos de ${RADIO_ESTACION_M} m.`,
+      motivo: `Esto se hace al lado de: ${nombre}. Tiene que estar en pie y a menos de ${RADIO_HORNO_M} m.`,
     };
   }
 

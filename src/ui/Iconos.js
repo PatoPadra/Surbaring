@@ -1,5 +1,5 @@
 /**
- * Iconos — los 115 dibujos del bolso, y la hoja que los reparte.
+ * Iconos — los 122 dibujos del bolso, y la hoja que los reparte.
  *
  * Hasta la fase 2 cada casillero decía una sigla de tres letras. En una captura
  * de veinticuatro casillas había **cuatro «Arc» y dos «Tos»**: la sigla ubicaba y
@@ -19,8 +19,8 @@
  *
  * 2. **Un vocabulario de formas y una paleta por materia, compartidos.** Es lo
  *    mismo que hizo `Herramientas3D.js` con dieciocho modelos y nueve tintes: acá
- *    hay unas cuarenta piezas y unos cuarenta tintes, y los 115 salen de
- *    componerlas. Nadie dibujó 115 cosas de a una — hay **un solo** envoltorio de
+ *    hay unas cuarenta piezas y unos cuarenta tintes, y los 122 salen de
+ *    componerlas. Nadie dibujó 122 cosas de a una — hay **un solo** envoltorio de
  *    dibujo escrito a mano en todo el archivo. Que dos se parezcan está bien;
  *    que dos sean el mismo, no, y hay un banco que lo mide carácter por carácter.
  *
@@ -28,7 +28,7 @@
  *    silueta tres veces —el tono oscuro corrido abajo y a la derecha, el de base
  *    encima, y el claro encogido hacia arriba y a la izquierda—. A 56 px lo que
  *    se lee es la silueta y el contraste, no el detalle; con la luz viniendo
- *    siempre del mismo lado, ciento quince dibujos hechos por separado parecen
+ *    siempre del mismo lado, ciento veintidós dibujos hechos por separado parecen
  *    del mismo juego. Es `bulto()`, y está en casi todos.
  *
  * La casilla mide 79 × 79 px de verdad, así que el arte se dibuja en una caja de
@@ -45,7 +45,7 @@
 // Todo se dibuja en una caja de 64 × 64 con el suelo imaginario en y = 56. Las
 // coordenadas se redondean a medio punto: a 58 px de tamaño final medio punto es
 // 0,45 px —invisible— y recorta como un 15 % del peso de la hoja, que es el
-// presupuesto que hay que cuidar (140 kB para los 115).
+// presupuesto que hay que cuidar (140 kB para los 122, y van 137,8).
 
 const CAJA = 64;
 
@@ -54,8 +54,11 @@ const lista = (pts) => pts.map(([x, y]) => `${n(x)},${n(y)}`).join(' ');
 
 const P = (d, f, x = '') => `<path d="${d}" fill="${f}"${x}/>`;
 // Ni `stroke-linecap` ni `stroke-linejoin` se escriben por forma: son atributos
-// que se heredan, van una sola vez en el envoltorio y se ahorran 14 kB de los
-// 140 del presupuesto — 648 repeticiones en los 115 dibujos.
+// que se heredan, van una sola vez en el envoltorio y se ahorran 27,8 kB de los
+// 140 del presupuesto: 605 elementos con trazo en los 122 dibujos, a 47 bytes
+// los dos atributos juntos. Recontado el 23/9/2026 sobre la hoja de verdad. El
+// número de antes venía de la ronda 6 y contaba el ahorro de UNO solo de los dos
+// atributos, sobre los dibujos que había entonces: quedó a la mitad y viejo.
 const T = (d, s, w = 2, x = '') =>
   `<path d="${d}" fill="none" stroke="${s}" stroke-width="${n(w)}"${x}/>`;
 const C = (cx, cy, r, f, x = '') => `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="${f}"${x}/>`;
@@ -668,11 +671,16 @@ function panal(t, { cx = 32, cy = 32, r = 6.5, filas = 2 }) {
   return p;
 }
 
-// ── Las 115 recetas ─────────────────────────────────────────────────────────
+// ── Las 122 recetas ─────────────────────────────────────────────────────────
 //
 // Cada una recibe el ruido con semilla de su propio id y devuelve la lista de
-// formas. Se leen en el mismo orden que los datos: primero los 71 de `RECURSOS`
-// y después los 44 objetos de `herramientas.json` que se tienen en la mano.
+// formas. Se leen en el mismo orden que los datos: primero los 74 de `RECURSOS`
+// y después los 48 objetos de `herramientas.json` que se tienen en la mano.
+//
+// Los tres números se recuentan, no se copian: `IDS.length` es la cuenta buena y
+// el banco de la ronda 6 fase 3 la imprime en cada corrida. Hasta la ronda 8 acá
+// estaban los de la ronda 6, sin tocar: nueve comentarios de este archivo y del
+// bolso envejecieron juntos mientras el archivo crecía siete dibujos.
 //
 // La regla que ordena todo esto: **la materia da la paleta y la forma da el
 // oficio**. Dos maderas se distinguen por el tono; una madera y una tabla, por la
@@ -681,7 +689,7 @@ function panal(t, { cx = 32, cy = 32, r = 6.5, filas = 2 }) {
 // número de tiras, y eso es todo lo que hay: son parecidos a propósito, porque
 // en el mundo también lo son.
 
-/** Los 71 de `RECURSOS`: lo que se junta, se cocina y se fabrica a granel. */
+/** Los 74 de `RECURSOS`: lo que se junta, se cocina y se fabrica a granel. */
 const RECETAS_RECURSOS = {
 
   // ── Madera y monte ────────────────────────────────────────────────────────
@@ -1268,7 +1276,7 @@ const RECETAS_RECURSOS = {
 };
 
 /**
- * Los 44 objetos que se tienen en la mano.
+ * Los 48 objetos que se tienen en la mano.
  *
  * Acá el oficio manda sobre la materia: los diez que llevan cabo se dibujan
  * todos con el mismo cabo diagonal y la misma atadura, y lo que cambia es la
@@ -1277,8 +1285,8 @@ const RECETAS_RECURSOS = {
  * por la misma razón: **la silueta de la cabeza es lo que se reconoce**, el cabo
  * es sólo lo que dice «esto se agarra».
  *
- * Los doce que faltan para los 56 de `herramientas.json` llevan `produce` o
- * `esReceta` y nunca se sostienen: no son de acá.
+ * Los dieciséis que faltan para los 64 de `herramientas.json` llevan `produce`
+ * o `esReceta` y nunca se sostienen: no son de acá.
  */
 const RECETAS_OBJETOS = {
 
@@ -1734,7 +1742,7 @@ const RECETAS_OBJETOS = {
   ],
 };
 
-/** Los 115, en el mismo orden que los datos. */
+/** Los 122, en el mismo orden que los datos. */
 const RECETAS = { ...RECETAS_RECURSOS, ...RECETAS_OBJETOS };
 
 // ── Las puertas del módulo ──────────────────────────────────────────────────
@@ -1751,7 +1759,7 @@ const envolver = (cuerpo) =>
  * bolso sin que nadie se entere, que es exactamente lo que ya pasó una vez con
  * los dos remedios que el bolso viejo no listaba. Así que cae acá: un recuadro
  * punteado con un signo de pregunta, en el violeta de la botica, que no se
- * parece a ninguno de los 115 y se ve como lo que es — un agujero.
+ * parece a ninguno de los 122 y se ve como lo que es — un agujero.
  */
 const RESERVA = envolver([
   R(9, 9, 46, 46, 'none', 7, ` stroke="${M.violeta[2]}" stroke-width="3" stroke-dasharray="7 5"`),

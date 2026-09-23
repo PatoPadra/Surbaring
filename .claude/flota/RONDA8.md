@@ -1577,6 +1577,13 @@ comprobé antes de tocar nada:
 - **`efectosAAgregar`** (`herramientas.json`): diez entradas que dicen «hoy tiene efecto
   null» y cosas que ya no son ciertas. *Recontado el 19/9 contra `historia.json`:* **las diez
   ya están aplicadas** (a ninguna le falta nada de lo que pide). La lista entera es vieja.
+  > **Corregido el 23/9 por el agente `reglas`, y comprobado: son NUEVE, no diez.** La
+  > décima es `lasca_obsidiana`, que pide agregarle `mango_labrado`, y **no hay que
+  > aplicarla**: la fase 5 se lo sacó a propósito el 22/9 —el mango se labra con cualquier
+  > filo y pedir la obsidiana dejaba la primera hacha a 6,4 km— y hoy `mango_labrado` tiene
+  > `tecnologia: null`. Aplicarla desharía una decisión posterior. Quedó anotada aparte, en
+  > `efectosAplicados.unaRetirada`. El banco contaba bien las nueve; el que contaba mal era
+  > este renglón, o sea yo.
 - **La cestería suma dos veces** (encontrado recontando la lista, 19/9). La nota del canasto
   dice que el bono de la tecnología «pasa al objeto: ahora hay que hacer el canasto», pero
   `historia.json` le sigue dando `capacidadExtraKg: 6` a la tecnología, y `main.js:496` suma
@@ -1633,3 +1640,65 @@ exportar el radio), `src/ui/Codice.js` (sólo la pestaña Normativa), `src/ui/Ic
 licencia y `efectosAAgregar`), `src/data/historia.json` (sólo la cestería). Si hace falta
 cablear algo en `main.js` (los límites para `Recoleccion`, las licencias para el códice), lo
 pide en su pendiente y lo hace el jefe.
+
+### CERRADA el 23/9/2026
+
+**Banco 7/7 entero** —muerte 8 aserciones, lana 3, licencia 6, deudas 10, cestería 3,
+regresión **16 bancos**, `vite build`— corrido por el jefe, aparte del que corrió el
+agente. **Falsador 15/15 con los 3 controles verdes.**
+
+| guarda | antes | ahora |
+|---|---|---|
+| ranuras puestas tras morir | 4 | **0** |
+| la llama | seguía encendida | **apagada** |
+| la pantalla de fin nombra lo puesto | 0 de 4 | **4 de 4, y primero** |
+| lana en 4000 apretadas sembradas | 2724 (68,1 %) | **1016 (25,4 %)** |
+| el poncho | 17,6 apretadas | **47,2** |
+| fragua a 6 m con la fogata a 2 | `falta_estacion` | **lista** |
+| telar a 1 m y sin fogata | lista (cocía brea sin fuego) | **pide fuego** |
+| fogata apagada a 1 m, prendida a 5 | `falta_estacion` | **lista** |
+| `RADIO_*` en `Fabricacion.js` · «115» · `efectosAAgregar` aplicadas | 1 · 9 · 9 | **0 · 0 · 0** |
+| el bolso sin canasto / con canasto | 44 / 50 kg | **38 / 44** |
+
+**Lo importante de esta fase no lo midió el banco: lo encontré leyendo.** El banco arma su
+propio `normativa` a mano, así que sus 30 aserciones pasaban **con la pestaña vacía en el
+juego**: `main.js` le colgaba a `codice.normativa` sólo `caza`, `mineria` y `construccion`,
+y las licencias viven en `herramientas.json`. Sin ese renglón la sección de licencias no se
+dibuja y nada se pone rojo. Cableado por el jefe (`herramientas` en `codice.normativa`) y
+**comprobado en el juego**: la pestaña dibuja el bloque, cita la Ley 22.351 y su artículo 5,
+y pinta las **siete** licencias. Es, otra vez, «el banco sintético no alcanza».
+
+**Verificado en el juego, con los sistemas de verdad y no con los falsos del banco:**
+- **La muerte**: las cuatro ranuras vacías, `encendida` en `null`, el bolso vacío, y la
+  pantalla de fin nombrando «Antorcha (mano), Garrote (arma), Quillango (abrigo), Canasto
+  de junco (espalda)» **primero**, antes de las piedras y las fibras.
+- **La licencia**: en la Reserva, seis apretadas y ni una mención. En el Parque —el más
+  cercano está a **11 km** del arranque—, la dice en la **primera** apretada y sólo en ésa.
+  Y ojo con esto: en el juego `recoleccion.limites` **no existe**, la jurisdicción le llega
+  por `mineria.limites`, que es justamente el camino alternativo que escribió el agente. Sin
+  eso, la licencia no se habría dicho nunca y el banco no lo habría visto.
+- **La estación**, con la `Fundicion` real y hornos de verdad: los cuatro casos dan lo que
+  tienen que dar. El filtro es `usaFuego(h) && arde(h)`, y `usaFuego` mira
+  `def.temperaturaC`: comprobado que la fogata la tiene (600 °C) y el telar no, que es lo
+  que hace que el telar deje de contar como fuego.
+- **La cestería**: 38 sin canasto, 44 con el canasto puesto, y `inventario.capacidadKg` lee
+  44 de verdad.
+
+**Un defecto del falsador, y era mío.** `muerte-deja-llama` hacía `eq.encendida = …`, pero
+`Equipo.encendida` es un accesor de **sólo lectura** (`get encendida()`, sin setter) y los
+módulos ES corren en modo estricto: la asignación tiraba `TypeError`, explotaba la sección
+entera y caía como «por otro motivo». Lo encontró el agente con la cuenta hecha y sin tocar
+el archivo; lo comprobé y lo arreglé sombreando el accesor con `Object.defineProperty`.
+Habría explotado igual contra la base, o sea que no medía nada.
+
+**Lo que el agente encontró y dejó anotado** (todo en `pendiente-r8-reglas.md`):
+1. Las entradas de `efectosAAgregar` eran **nueve**, no diez: ver la corrección de arriba.
+2. El comentario de los atributos heredados de `Iconos.js` contaba la mitad: decía 14 kB
+   (605 × 22 B, uno solo de los dos atributos) y son **27,8 kB** (605 × 47 B). Corregido.
+3. «La mitad más alta del mapa» no se sostenía y la sacó: el Catedral cae del lado de la
+   **Reserva**. Medido: Parque **60,5 %** de la superficie, Reserva 25,4 %, fuera 14,1 %, y
+   **100 % Reserva a menos de 5 km del arranque** —lo confirmé en el juego.
+4. La hoja de iconos sigue a **2,22 kB del techo**. No agregó ni un dibujo. **Sigue abierto,
+   y es lo primero que va a morder en la ronda 9.**
+5. `Equipo` no tiene `vaciar()`: las ranuras se ponen en `null` desde `Partida` sobre
+   `equipo.puesto`, que es público. No tocó `Equipo.js`.
