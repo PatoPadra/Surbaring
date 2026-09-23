@@ -90,6 +90,13 @@ vuelta.**
 > 5,35 y 9,41 → ≤ 3,4), C7 (el mismo árbol en cada carga), y un falsador nuevo (8 de 8, 3
 > controles) validado contra un horno y un `Vegetacion.js` de maqueta. Agente nuevo.
 >
+> **22/9/2026 — FASE 4 (`copa`) CERRADA** (`6b7c91d`). Navegador 9/9, banco 6/6, falsador
+> 8/8. El ciprés pasa de 0,32 a 0,76 de relleno y el pino de 0,28 a 0,70; los puntitos, de
+> 7,2 y 14,4 por mil a 0,27 y 0,37; las hojas miden entre ×1,0 y ×1,9 del largo real (antes
+> ×10 a ×20). Y **los árboles cuestan la mitad**: 2,5 → 1,2 ms. Al agente lo cortaron dos
+> veces los límites (de sesión y semanal) y se lo retomó con su contexto. Queda a la vista,
+> fuera de contrato, que a las latifoliadas les asoman ramas desnudas: sería la fase 4b.
+>
 > **Preparado mientras corre la 4** (todo con banco validado contra la base y, donde se
 > pudo, contra una maqueta del jefe; falsadores con controles):
 > - **Fase 5 (piedra)** `ef06b61`: contrato P1–P12; el banco recorre la cadena del hacha con
