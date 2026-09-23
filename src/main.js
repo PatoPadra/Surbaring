@@ -16,7 +16,7 @@ import { Mundo } from './world/Mundo.js';
 import { Terreno } from './world/Terreno.js';
 import { Cielo } from './world/Cielo.js';
 import { Agua } from './world/Agua.js';
-import { Vegetacion } from './world/Vegetacion.js';
+import { Vegetacion, cargarFollaje } from './world/Vegetacion.js';
 import { Sotobosque } from './world/Sotobosque.js';
 import { Fauna } from './entities/Fauna.js';
 import { Codice } from './ui/Codice.js';
@@ -227,6 +227,12 @@ async function iniciar() {
   jugador.aspecto = aspecto;
 
   progreso(0.76, 'Plantando el bosque andino-patagónico…');
+  // Los atlas de follaje horneados, ANTES de construir la vegetación: así el
+  // modelo, el material y las treinta carteleras se arman de una con ellos. Si
+  // llegaran después, `Vegetacion` los aplica sola y paga volver a hornear las
+  // carteleras, que en medio de la partida sería un tirón. Nunca rechaza: sin
+  // los archivos sigue el atlas procedural de siempre.
+  await cargarFollaje();
   const vegetacion = new Vegetacion(mundo, flora, render);
   // Las carteleras se iluminan a mano: necesitan ver el cielo.
   vegetacion.cielo = cielo;

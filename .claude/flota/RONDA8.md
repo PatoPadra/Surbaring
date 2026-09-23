@@ -1158,6 +1158,43 @@ la exporta con `Math.random` da rojo (las dos llamadas difieren) y una con semil
 especie da verde. El banco precalienta las cinco especies antes de comparar, porque la
 primera de cada clase arma además el atlas de hojas.
 
+### CERRADA el 22/9/2026
+
+**Mitad navegador 9/9**, con la base (el `Vegetacion.js` de `HEAD`) medida en la misma
+sesión y la misma carga del banco:
+
+| especie | relleno, base → ahora | umbral | puntitos, base → ahora | umbral |
+|---|---|---|---|---|
+| ciprés | 0,317 → **0,758** | ≥ 0,50 | 7,23 → **0,27** | ≤ 3,4 |
+| pino | 0,284 → **0,695** | ≥ 0,50 | 14,44 → **0,37** | ≤ 3,4 |
+| coihue | 0,509 → 0,536 | ≥ 0,506 | 0,78 → 0,50 | ≤ 1,39 |
+| ñire | 0,532 → 0,567 | ≥ 0,484 | 2,07 → 0,61 | ≤ 2,55 |
+| maitén | 0,556 → 0,591 | ≥ 0,481 | 1,99 → 0,70 | ≤ 2,20 |
+
+Y el costo **bajó a la mitad**: los árboles pasan de 2,5 a **1,2 ms** (el contrato permitía
+subir un 15 %). Una segunda pasada no compila nada (25 → 25). Banco Node **6/6** (horno 25
+aserciones, hoja 6, clases 10, regresión 12, `vite build`, modelo 12) y falsador **8/8** con
+3 controles verdes.
+
+**El agente predijo bien esta vez**, y lo dijo con la cuenta: ciprés 0,757 contra 0,758
+medido; pino 0,677 contra 0,695; coihue 0,556 contra 0,536 (avisó que era el de menos
+margen); puntitos, todos por debajo de 1,1 contra los ≤ 0,7 medidos. El costo lo acotó entre
+−33 % y +4 %, y salió −52 %.
+
+**Del coordinador:** `main.js` espera `cargarFollaje()` antes de construir la vegetación
+(lo pidió el agente), así el modelo, el material y las treinta carteleras se arman de una
+con el atlas horneado. Comprobado en el juego: `follajeHorneado` queda sin definir, o sea
+que el atlas llegó a tiempo y no hubo que rehornear nada en caliente.
+
+**Para que mire el dueño** (`r8-f4-copa-arbol-*.png` y `r8-f4-bosque-ahora.png`): las
+coníferas dejaron de ser palitos —el ciprés y el pino son copas cónicas densas— y las hojas
+miden lo que miden (de 24–84 cm a 0,7–6,5 cm, entre ×1,0 y ×1,9 del largo real). **Queda a
+la vista un defecto que no era del contrato: al coihue y a las otras latifoliadas les asoman
+ramas desnudas fuera de la copa**, del modelo viejo. Es la fase 4b si el dueño quiere.
+Además, el follaje horneado suma **11,2 MB** de memoria de video (declarado por el agente).
+
+---
+
 **Pendiente del jefe antes de abrirla (anotado el 19/9, cerrando la fase 3).** Los
 números de C4 en el juego se midieron en UNA carga, y dos cosas cambian de carga a carga:
 el clima (dos semillas al azar en `Tiempo`: la misma vista cambió un 25 % de brillo, y el

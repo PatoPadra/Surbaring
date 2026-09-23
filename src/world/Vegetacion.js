@@ -202,6 +202,15 @@ export class Vegetacion {
     // ellos no puede llevarse por delante a los otros veintinueve.
     this.profundidadLiberada = liberarProfundidadHorno(this.lotes);
 
+    // Los atlas horneados (`public/tex/follaje/`). Lo normal es que ya estén
+    // acá —`main.js` espera `cargarFollaje()` en la pantalla de carga— y
+    // entonces esto no hace nada: el material y las carteleras se armaron
+    // arriba con ellos. Si todavía no llegaron, se cambian cuando lleguen, y se
+    // paga volver a hornear las carteleras una vez. Si no llegan nunca, queda
+    // el atlas procedural de siempre.
+    this._subirAtlas();
+    cargarFollaje().then((r) => { if (r.disponible) this._aplicarFollaje(); });
+
     this._celdaActual = { x: 9999, z: 9999 };
     this._matriz = new THREE.Matrix4();
     this._pos = new THREE.Vector3();
@@ -312,6 +321,95 @@ export class Vegetacion {
 
     this.grupo.add(malla);
     return { malla, colores, dist: new Float32Array(MAX_IMPOSTORES), n: 0, horneado };
+  }
+
+  /**
+   * Sube los atlas a la placa antes de que se dibuje el primer cuadro. Si no,
+   * la subida y la generación de los mipmaps —5,6 MB por atlas de 1024— caen
+   * dentro del primer cuadro en que aparece un árbol de esa clase, que es un
+   * tirón a la vista del jugador y no en la pantalla de carga.
+   */
+  _subirAtlas() {
+    if (!this.render?.initTexture) return;
+    const vistos = new Set();
+    for (const lote of this.lotes) {
+      const t = lote.malla.material.map;
+      if (!t || vistos.has(t)) continue;
+      vistos.add(t);
+      this.render.initTexture(t);
+    }
+  }
+
+  /**
+   * Cambia el atlas procedural por el horneado, ya empezada la partida.
+   *
+   * Sólo corre si los atlas llegaron DESPUÉS de construir la vegetación. Tres
+   * cosas, en este orden:
+   *
+   * 1. **El brillo del tronco.** El color por vértice de la madera trae
+   *    horneada la compensación `1 / media` de la franja de corteza (ver
+   *    `pintar`), y la media del atlas horneado no es la del procedural. Se
+   *    reescala el color de los vértices que muestrean la franja —los únicos
+   *    con `uv.x ≥ CORTEZA_X0`, porque el follaje no pasa de `uMax`—, así que
+   *    el tronco queda con el mismo albedo medio que tenía.
+   * 2. **El mapa del material.** Cambiar el valor de `map` por otra textura del
+   *    mismo tipo no toca la clave del programa: no se compila nada (C5).
+   * 3. **Las carteleras**, que se hornearon con el atlas viejo y quedarían de
+   *    otro color y otra silueta que el árbol de malla al que reemplazan.
+   *
+   * Si el manifiesto declara otra escala que la de `CLASES_HOJA`, esa clase se
+   * deja como está: la geometría ya se armó con la escala de la tabla y
+   * estirarle otra encima pondría la hoja de otro tamaño.
+   */
+  _aplicarFollaje() {
+    let cambiados = 0;
+    for (const lote of this.lotes) {
+      const clase = claseHojaDe(lote.esp);
+      const info = _horneados.get(clase);
+      const tabla = CLASES_HOJA[clase];
+      if (!info || lote.malla.material.map === info.textura) continue;
+      if (info.pxPorMetro !== tabla.pxPorMetro || info.lado !== tabla.lado || info.uMax !== tabla.uMax) continue;
+      const viejo = _atlasCache.get(tabla.procedural);
+      const factor = viejo ? info.corteza.compensacion / viejo.corteza.compensacion : 1;
+      if (Math.abs(factor - 1) > 1e-4) {
+        const geo = lote.malla.geometry;
+        const col = geo.getAttribute('color'), uv = geo.getAttribute('uv');
+        for (let i = 0; i < col.count; i++) {
+          if (uv.getX(i) < CORTEZA_X0) continue;
+          col.setXYZ(i, col.getX(i) * factor, col.getY(i) * factor, col.getZ(i) * factor);
+        }
+        col.needsUpdate = true;
+      }
+      lote.malla.material.map = info.textura;
+      if (lote.impostor) this._rehornearImpostor(lote);
+      cambiados++;
+    }
+    if (!cambiados) return;
+    // La profundidad compartida de los hornos nuevos, devuelta como en el
+    // constructor; y el atlas procedural, que ya no lo mira nadie.
+    this.profundidadLiberada += liberarProfundidadHorno(this.lotes);
+    const enUso = new Set(this.lotes.map((l) => l.malla.material.map));
+    for (const [dibujo, info] of _atlasCache) {
+      if (enUso.has(info.textura)) continue;
+      info.textura.dispose();
+      _atlasCache.delete(dibujo);
+    }
+    this._subirAtlas();
+    this.follajeHorneado = cambiados;
+  }
+
+  /** Vuelve a hornear la cartelera de un lote con el atlas que tenga ahora. */
+  _rehornearImpostor(lote) {
+    const viejo = lote.impostor.horneado;
+    const nuevo = hornearImpostor(this.render, lote.malla.geometry, lote.malla.material.map);
+    const u = lote.impostor.malla.material.uniforms;
+    u.uMapa.value = nuevo.textura;
+    u.uAncho.value = nuevo.ancho;
+    u.uAlto.value = nuevo.alto;
+    u.uVistas.value = nuevo.vistas;
+    u.uRejilla.value.set(nuevo.cols, nuevo.filas);
+    lote.impostor.horneado = nuevo;
+    viejo?.objetivo?.dispose();
   }
 
   /** El lote al que pertenece una malla, para los ganchos de sombra. */
@@ -1025,10 +1123,12 @@ void main() {
  * vértices del tronco al mismo punto: un tronco entero muestreando un texel.
  *
  * Poner corteza ahí pedía más resolución, y agrandar el cuadrado era el camino
- * obvio y equivocado. Las tarjetas de follaje eligen su ventana con
- * `u0 ∈ [0, 0.55]` y `uw ∈ [0.30, 0.44]`, así que **llegan hasta 0,99**: ya hoy
- * el 0,58 % de las tarjetas muerde el cuadrado blanco y se ve como una mancha
- * opaca en la copa. Con el parche al 20 % ese número sube al 5,3 %.
+ * obvio y equivocado. Las tarjetas de follaje elegían entonces su ventana con
+ * `u0 ∈ [0, 0.55]` y `uw ∈ [0.30, 0.44]`, así que **llegaban hasta 0,99**: el
+ * 0,58 % de las tarjetas mordía el cuadrado blanco y se veía como una mancha
+ * opaca en la copa. Con el parche al 20 % ese número subía al 5,3 %. (Desde la
+ * ronda 8 la ventana ya no es una fracción fija: sale del tamaño de la tarjeta
+ * y de `pxPorMetro`, y sigue acotada a `FOLLAJE_U_MAX` por lo mismo.)
  *
  * La salida es al revés: se **acota la ventana de las tarjetas** a
  * `FOLLAJE_U_MAX` y la corteza se queda con una franja vertical de 64 px de
@@ -1043,6 +1143,168 @@ void main() {
 const CORTEZA_X0 = 0.875;          // 448/512: dónde arranca la franja
 const CORTEZA_GUARDA = 8 / 512;    // columnas de guarda contra el sangrado bilineal
 const FOLLAJE_U_MAX = 0.86;        // tope de la ventana de atlas de una tarjeta
+
+/**
+ * Las cuatro clases de hoja y la escala de su atlas (ronda 8, fase 4).
+ *
+ * **`pxPorMetro` es a qué escala se estira el atlas sobre la tarjeta**, y es lo
+ * que dimensiona las tarjetas: una tarjeta de `2s` metros de lado muestra
+ * `2s · pxPorMetro` texels del atlas, ni uno más. Antes la ventana era una
+ * fracción fija del atlas (0,30 a 0,44) fuera cual fuera el tamaño de la
+ * tarjeta, y la tarjeta medía `0,105 · alturaRef`: el atlas quedaba estirado a
+ * ~25 px por metro y la hoja del coihue medía en el mundo de 24 a 84 cm, diez a
+ * veinte veces la real. Ahora la hoja se dibuja en el atlas de su largo a esa
+ * escala, y la tarjeta más grande que se puede armar mide
+ * `uMax · lado / pxPorMetro` metros.
+ *
+ * Estos números los declara el horno (`tools/hornear-follaje.mjs`) en su
+ * manifiesto, con la referencia de cada hoja; acá están repetidos porque el
+ * modelo del árbol se arma con ellos aunque el atlas horneado no haya llegado
+ * (en Node, en el banco, o si el `fetch` falla). Si el manifiesto trae otros,
+ * manda el manifiesto y se avisa en la consola.
+ *
+ * `procedural` es el dibujo de antes que se usa si falta el horneado: el atlas
+ * de hoy, tal cual, con la lámina para las latifoliadas y las ramitas de
+ * acículas para las coníferas.
+ */
+const CLASES_HOJA = {
+  nothofagus: { pxPorMetro: 100, lado: 1024, uMax: FOLLAJE_U_MAX, procedural: 'lamina', conifera: false },
+  ancha: { pxPorMetro: 100, lado: 1024, uMax: FOLLAJE_U_MAX, procedural: 'lamina', conifera: false },
+  escama: { pxPorMetro: 150, lado: 512, uMax: FOLLAJE_U_MAX, procedural: 'aguja', conifera: true },
+  aguja: { pxPorMetro: 150, lado: 512, uMax: FOLLAJE_U_MAX, procedural: 'aguja', conifera: true },
+};
+
+/** La escala con la que se dimensionan las tarjetas de una clase. */
+function escalaDe(clase) {
+  const h = _horneados.get(clase);
+  const c = CLASES_HOJA[clase] || CLASES_HOJA.ancha;
+  return h ? { pxPorMetro: h.pxPorMetro, lado: h.lado, uMax: h.uMax } : c;
+}
+
+/** Atlas horneados que ya llegaron, por clase. Vacío hasta que `cargarFollaje()` resuelve. */
+const _horneados = new Map();
+let _promesaFollaje = null;
+const BASE_FOLLAJE = '/tex/follaje/';
+
+/**
+ * Carga (una sola vez) los atlas horneados de `public/tex/follaje/`. Nunca
+ * rechaza: si falta el manifiesto, algún PNG, o el navegador no sabe
+ * descomprimir, resuelve `{ disponible: false }` y el juego sigue con el atlas
+ * procedural de siempre. Igual que `src/util/suelo.js` y `src/util/atlas.js`:
+ * nada de `import` estático de la salida del horno, que puede no existir.
+ *
+ * Lo ideal es esperarla ANTES de `new Vegetacion(...)` —en la pantalla de
+ * carga—: así el modelo, el material y las carteleras se arman de una con el
+ * atlas horneado. Si llega después, la vegetación lo cambia sola (ver
+ * `_aplicarFollaje`), a costa de volver a hornear las carteleras.
+ *
+ * @returns {Promise<{disponible: boolean, clases: string[]}>}
+ */
+export function cargarFollaje() {
+  if (!_promesaFollaje) _promesaFollaje = cargarFollajeInterno();
+  return _promesaFollaje;
+}
+
+async function cargarFollajeInterno() {
+  try {
+    if (typeof fetch === 'undefined' || typeof DecompressionStream === 'undefined') throw new Error('sin fetch o sin DecompressionStream');
+    const r = await fetch(BASE_FOLLAJE + 'manifiesto.json');
+    if (!r.ok) throw new Error(`manifiesto.json respondió ${r.status}`);
+    const man = await r.json();
+    const lista = Array.isArray(man.clases) ? man.clases : Object.entries(man.clases || {}).map(([id, v]) => ({ id, ...v }));
+    const cargadas = await Promise.all(lista.filter((c) => CLASES_HOJA[c.id]).map(async (c) => {
+      const resp = await fetch(BASE_FOLLAJE + c.archivo);
+      if (!resp.ok) throw new Error(`${c.archivo} respondió ${resp.status}`);
+      const img = await decodificarPNG(await resp.arrayBuffer());
+      if (img.ancho !== img.alto) throw new Error(`${c.archivo} no es cuadrado`);
+      return { c, img };
+    }));
+    for (const { c, img } of cargadas) {
+      const tabla = CLASES_HOJA[c.id];
+      if (c.pxPorMetro !== tabla.pxPorMetro || c.uMax !== tabla.uMax || img.ancho !== tabla.lado) {
+        console.warn(`[follaje] ${c.id}: el manifiesto dice ${c.pxPorMetro} px/m, uMax ${c.uMax}, ${img.ancho} px; Vegetacion.js tiene ${tabla.pxPorMetro}, ${tabla.uMax}, ${tabla.lado}. Manda el manifiesto.`);
+      }
+      const tex = new THREE.DataTexture(img.datos, img.ancho, img.alto, THREE.RGBAFormat, THREE.UnsignedByteType);
+      prepararTexturaFollaje(tex);
+      tex.flipY = false;   // fila 0 = v 0: así lo escribe el horno
+      _horneados.set(c.id, {
+        textura: tex, pxPorMetro: c.pxPorMetro, lado: img.ancho, uMax: c.uMax ?? FOLLAJE_U_MAX,
+        corteza: {
+          u0: c.corteza.u0, u1: c.corteza.u1, v0: c.corteza.v0, v1: c.corteza.v1,
+          mediaLineal: c.corteza.mediaLineal, maxLineal: c.corteza.maxLineal,
+          compensacion: 1 / Math.max(1e-3, c.corteza.mediaLineal),
+        },
+      });
+    }
+    return { disponible: _horneados.size > 0, clases: [..._horneados.keys()] };
+  } catch (err) {
+    console.warn('[follaje] atlas horneados no disponibles, sigue el procedural:', err?.message || err);
+    return { disponible: false, clases: [] };
+  }
+}
+
+/** Filtrado y mipmaps de un atlas de follaje: el mismo para el horneado y el procedural. */
+function prepararTexturaFollaje(tex) {
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 8;
+  tex.generateMipmaps = true;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+}
+
+/**
+ * PNG RGBA de 8 bits sin entrelazar, que es lo único que escribe el horno. Se
+ * decodifica a mano por el mismo motivo que en `src/util/suelo.js` (de donde
+ * sale esta función): pasarlo por un lienzo o un `<img>` premultiplica por el
+ * alfa, y el horno guarda en los texels transparentes el color de las hojas
+ * vecinas justamente para que el mipmap no promedie negro. Con la
+ * premultiplicación ese color se pierde y cada hoja lejana tiene su halo oscuro.
+ */
+async function decodificarPNG(buf) {
+  const b = new Uint8Array(buf);
+  const firma = [137, 80, 78, 71, 13, 10, 26, 10];
+  if (firma.some((v, i) => b[i] !== v)) throw new Error('no es un PNG');
+  const dv = new DataView(buf);
+  let p = 8, ancho = 0, alto = 0;
+  const trozos = [];
+  while (p + 8 <= b.length) {
+    const largo = dv.getUint32(p);
+    const tipo = String.fromCharCode(b[p + 4], b[p + 5], b[p + 6], b[p + 7]);
+    if (tipo === 'IHDR') {
+      ancho = dv.getUint32(p + 8); alto = dv.getUint32(p + 12);
+      if (b[p + 16] !== 8 || b[p + 17] !== 6 || b[p + 20] !== 0) throw new Error('PNG que no es RGBA de 8 bits sin entrelazar');
+    } else if (tipo === 'IDAT') {
+      trozos.push(b.subarray(p + 8, p + 8 + largo));
+    } else if (tipo === 'IEND') break;
+    p += 12 + largo;
+  }
+  const flujo = new Blob(trozos).stream().pipeThrough(new DecompressionStream('deflate'));
+  const crudo = new Uint8Array(await new Response(flujo).arrayBuffer());
+  const fila = ancho * 4;
+  if (crudo.length < alto * (fila + 1)) throw new Error('PNG truncado');
+  const out = new Uint8Array(alto * fila);
+  for (let y = 0; y < alto; y++) {
+    const filtro = crudo[y * (fila + 1)];
+    const src = y * (fila + 1) + 1, dst = y * fila, arriba = dst - fila;
+    for (let x = 0; x < fila; x++) {
+      const a = x >= 4 ? out[dst + x - 4] : 0;
+      const c = y > 0 ? out[arriba + x] : 0;
+      const ac = y > 0 && x >= 4 ? out[arriba + x - 4] : 0;
+      let v = crudo[src + x];
+      if (filtro === 1) v += a;
+      else if (filtro === 2) v += c;
+      else if (filtro === 3) v += (a + c) >> 1;
+      else if (filtro === 4) {
+        const pp = a + c - ac, pa = Math.abs(pp - a), pb = Math.abs(pp - c), pc = Math.abs(pp - ac);
+        v += pa <= pb && pa <= pc ? a : pb <= pc ? c : ac;
+      } else if (filtro !== 0) throw new Error(`filtro PNG ${filtro} desconocido`);
+      out[dst + x] = v & 255;
+    }
+  }
+  return { ancho, alto, datos: out };
+}
 
 /**
  * Atlas de follaje dibujado a mano alzada en un lienzo, más la franja de
@@ -1061,9 +1323,16 @@ const FOLLAJE_U_MAX = 0.86;        // tope de la ventana de atlas de una tarjeta
  */
 const _atlasCache = new Map();
 
+/**
+ * El atlas de una clase: el horneado si ya llegó, y si no el procedural de
+ * siempre, dibujado una vez por dibujo (`lamina` o `aguja`) y compartido.
+ */
 function atlasDe(clase) {
-  let info = _atlasCache.get(clase);
-  if (!info) { info = construirAtlas(clase); _atlasCache.set(clase, info); }
+  const h = _horneados.get(clase);
+  if (h) return h;
+  const dibujo = (CLASES_HOJA[clase] || CLASES_HOJA.ancha).procedural;
+  let info = _atlasCache.get(dibujo);
+  if (!info) { info = construirAtlas(dibujo); _atlasCache.set(dibujo, info); }
   return info;
 }
 
@@ -1076,28 +1345,24 @@ function corteza(clase) {
   return atlasDe(clase).corteza;
 }
 
-function construirAtlas(clase) {
+/** El atlas procedural de antes. `dibujo` es `'lamina'` o `'aguja'`. */
+function construirAtlas(dibujo) {
   const N = 512;
   const lienzo = document.createElement('canvas');
   lienzo.width = lienzo.height = N;
   const c = lienzo.getContext('2d');
   c.clearRect(0, 0, N, N);
 
-  if (clase === 'aguja') dibujarAciculas(c, N);
+  if (dibujo === 'aguja') dibujarAciculas(c, N);
   else dibujarLaminas(c, N);
 
   // La franja va última porque es opaca y tapa lo que le haya quedado debajo,
   // exactamente igual que el parche blanco al que reemplaza.
   const xIni = Math.round(CORTEZA_X0 * N);
-  const franja = dibujarCorteza(c, N, clase, xIni, N - xIni);
+  const franja = dibujarCorteza(c, N, dibujo, xIni, N - xIni);
 
   const tex = new THREE.CanvasTexture(lienzo);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 8;
-  tex.generateMipmaps = true;
-  tex.minFilter = THREE.LinearMipmapLinearFilter;
-  tex.needsUpdate = true;
+  prepararTexturaFollaje(tex);
 
   return {
     textura: tex,
@@ -1462,30 +1727,38 @@ function dibujarCorteza(ctx, N, clase, xIni, ancho) {
  * como un volumen redondo en vez de como un montón de carteles planos, que es
  * lo que delata a los árboles baratos.
  */
-function tarjetasFollaje({ centro, radioH, radioV, cantidad, tamano, color, variacion = 0.2, aplanar = 1 }) {
+function tarjetasFollaje({ centro, radioH, radioV, cantidad, tamano, color, variacion = 0.2, aplanar = 1, clase, azar, eje = null, radioCopa = 0, sesgo = 0.45 }) {
   const pos = [], nor = [], uv = [], col = [], flx = [], idx = [];
   let v = 0;
   const c = new THREE.Color();
+  // La escala del atlas de esta clase: cuántos texels por metro muestra una
+  // tarjeta, y la tarjeta más grande que entra en la ventana.
+  const { pxPorMetro, lado, uMax } = escalaDe(clase);
+  const semiladoMax = uMax * lado / pxPorMetro / 2;
 
   for (let i = 0; i < cantidad; i++) {
     // Punto dentro del elipsoide de la copa, con sesgo hacia la superficie
-    const u = Math.random() * Math.PI * 2;
-    const w = Math.acos(2 * Math.random() - 1);
-    const rad = Math.pow(Math.random(), 0.45);
+    const u = azar() * Math.PI * 2;
+    const w = Math.acos(2 * azar() - 1);
+    const rad = Math.pow(azar(), sesgo);
     const px = centro.x + Math.sin(w) * Math.cos(u) * radioH * rad;
     const pz = centro.z + Math.sin(w) * Math.sin(u) * radioH * rad;
     const py = centro.y + Math.cos(w) * radioV * rad;
 
-    // Normal hacia afuera de la copa
-    let nx = px - centro.x, ny = (py - centro.y) * aplanar, nz = pz - centro.z;
+    // Normal hacia afuera de la copa. Con `eje`, desde el eje del árbol a esa
+    // altura y no desde el centro de la mata: una conífera se ilumina como un
+    // cono, no como un racimo de pelotas.
+    const ox = eje ? eje.x : centro.x, oy = eje ? py : centro.y, oz = eje ? eje.z : centro.z;
+    let nx = px - ox, ny = (py - oy) * aplanar, nz = pz - oz;
     const ln = Math.hypot(nx, ny, nz) || 1;
     nx /= ln; ny = ny / ln + 0.35; nz /= ln;
     const ln2 = Math.hypot(nx, ny, nz) || 1;
     nx /= ln2; ny /= ln2; nz /= ln2;
 
-    const s = tamano * (0.62 + Math.random() * 0.8);
-    const giro = Math.random() * Math.PI * 2;
-    const inclina = (Math.random() - 0.5) * 1.1;
+    // El tamaño que pide la copa, hasta lo que entra en la ventana del atlas.
+    const s = Math.min(semiladoMax, tamano * (0.62 + azar() * 0.8));
+    const giro = azar() * Math.PI * 2;
+    const inclina = (azar() - 0.5) * 1.1;
 
     // Base ortonormal de la tarjeta
     const ex = Math.cos(giro), ez = Math.sin(giro);
@@ -1498,18 +1771,14 @@ function tarjetasFollaje({ centro, radioH, radioV, cantidad, tamano, color, vari
       [px + ux + vx, py + vy, pz + uz + vz],
       [px - ux + vx, py + vy, pz - uz + vz],
     ];
-    // Ventana del atlas: cada tarjeta toma un recorte distinto.
-    //
-    // El tope en U es `FOLLAJE_U_MAX` y no 1. Con `u0 ∈ [0 · 0,55]` y
-    // `uw ∈ [0,30 · 0,44]` la ventana llegaba hasta **0,99**, o sea que mordía
-    // la esquina opaca del atlas: el 0,58 % de las tarjetas salía con una mancha
-    // maciza del tinte de la hoja en medio de la copa. Con la franja de corteza
-    // ahí el número sería mucho peor, porque la franja es diez veces más ancha
-    // que el parche al que reemplaza. En V no hace falta tope: la franja ocupa
-    // todo el alto del lienzo, así que no hay nada que esquivar en esa dirección.
-    const uw = 0.30 + Math.random() * 0.14;
-    const u0 = Math.random() * Math.max(0, FOLLAJE_U_MAX - uw);
-    const v0 = Math.random() * 0.55;
+    // Ventana del atlas: la que corresponde al tamaño de la tarjeta a
+    // `pxPorMetro`, en un lugar al azar. Así la hoja mide en el mundo lo que
+    // mide en el atlas dividido por `pxPorMetro`, que el horno dibujó de su
+    // largo real. En U no pasa de `uMax`: más allá está la franja de corteza
+    // (ver la nota de `FOLLAJE_U_MAX`). En V el follaje ocupa todo el alto.
+    const uw = 2 * s * pxPorMetro / lado;
+    const u0 = azar() * Math.max(0, uMax - uw);
+    const v0 = azar() * Math.max(0, 1 - uw);
     const uvs = [[u0, v0], [u0 + uw, v0], [u0 + uw, v0 + uw], [u0, v0 + uw]];
 
     // Oclusión interna de la copa. Hasta acá todas las tarjetas se iluminaban
@@ -1522,12 +1791,16 @@ function tarjetasFollaje({ centro, radioH, radioV, cantidad, tamano, color, vari
     // Se hornea en el color del vértice: cuesta cero por cuadro, viaja gratis
     // al impostor —que se dibuja con estos mismos colores— y no depende de la
     // hora del día, que es justamente lo que se le pide a una oclusión.
-    const profundidad = 1.0 - rad;                       // 0 en la piel, 1 en el corazón
+    // En una conífera el corazón es el eje del árbol y no el de la mata: la
+    // oscuridad crece hacia el tronco, que es donde no llega el cielo.
+    const profundidad = eje && radioCopa > 0
+      ? Math.min(1, Math.max(0, 1 - Math.hypot(px - eje.x, pz - eje.z) / radioCopa))
+      : 1.0 - rad;                                       // 0 en la piel, 1 en el corazón
     const alturaRel = (py - centro.y) / (radioV || 1);   // -1 abajo, +1 arriba
     const ao = (1 - profundidad * profundidad * 0.62)
              * (0.80 + 0.20 * (alturaRel * 0.5 + 0.5));
 
-    const brillo = (1 + (Math.random() - 0.5) * variacion * 2) * ao;
+    const brillo = (1 + (azar() - 0.5) * variacion * 2) * ao;
     c.copy(color).multiplyScalar(brillo);
 
     for (let k = 0; k < 4; k++) {
@@ -1558,7 +1831,9 @@ function tarjetasFollaje({ centro, radioH, radioV, cantidad, tamano, color, vari
  * arma una copa ancha y horizontal, el ciprés una columna cónica, el ñire crece
  * retorcido y bajo, y la caña colihue es un haz de varas verticales.
  */
-function construirPlanta(esp) {
+export function construirPlanta(esp) {
+  // El azar de este árbol sale de su id y de nada más: ver `azarDePlanta`.
+  const azar = azarDePlanta(esp);
   const partes = [];
   const alturaRef = (esp.alturaMinM + esp.alturaMaxM) / 2;
   const colTronco = new THREE.Color(esp.colorTronco || '#4a3b30');
@@ -1572,13 +1847,13 @@ function construirPlanta(esp) {
     // Haz de cañas: la colihue forma matas densas e impenetrables
     const n = 14;
     for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2 + Math.random();
-      const r = Math.random() * 0.5;
-      const h = alturaRef * (0.6 + Math.random() * 0.6);
+      const a = (i / n) * Math.PI * 2 + azar();
+      const r = azar() * 0.5;
+      const h = alturaRef * (0.6 + azar() * 0.6);
       const g = new THREE.CylinderGeometry(0.012, 0.022, h, 4, 1);
       g.translate(0, h / 2, 0);
       const incl = new THREE.Matrix4().makeRotationFromEuler(
-        new THREE.Euler((Math.random() - 0.5) * 0.3, a, (Math.random() - 0.5) * 0.3)
+        new THREE.Euler((azar() - 0.5) * 0.3, a, (azar() - 0.5) * 0.3)
       );
       g.applyMatrix4(incl);
       g.translate(Math.cos(a) * r, 0, Math.sin(a) * r);
@@ -1586,21 +1861,25 @@ function construirPlanta(esp) {
       // con el texel blanco— y ahora recoge las estrías verticales de la franja
       // sobre el verde del culmo, que es como se ve una colihue de cerca.
       // `heightSegments = 1`, así que el único `repV` legal es 1.
-      pintar(g, colHoja, 0.75, { clase: claseHoja });
+      pintar(g, colHoja, 0.75, { clase: claseHoja, azar });
       partes.push(g);
       // Hojas lanceoladas cerca de la punta
       for (let j = 0; j < 3; j++) {
         const hoja = new THREE.PlaneGeometry(0.5, 0.09);
         hoja.translate(0.25, 0, 0);
         hoja.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(
-          new THREE.Euler(0, Math.random() * 6.28, -0.3 - Math.random() * 0.5)
+          new THREE.Euler(0, azar() * 6.28, -0.3 - azar() * 0.5)
         ));
         hoja.translate(Math.cos(a) * r, h * (0.6 + j * 0.13), Math.sin(a) * r);
-        pintar(hoja, colHoja, 1.0, { modoUV: 'hoja', clase: claseHoja });
+        pintar(hoja, colHoja, 1.0, { modoUV: 'hoja', clase: claseHoja, azar, tamM: [0.5, 0.09] });
         partes.push(hoja);
       }
     }
     return fusionar(partes);
+  }
+
+  if (arquetipo === 'columnar') {
+    return construirConifera({ esp, alturaRef, colTronco, colHoja, claseHoja, azar });
   }
 
   // ── Tronco con conicidad y curvatura leve
@@ -1608,7 +1887,7 @@ function construirPlanta(esp) {
   const radioBase = Math.max(0.05, alturaRef * (arquetipo === 'arbusto' ? 0.020 : 0.032));
   const segmentos = 7;
   const tronco = troncoCurvo(radioBase, radioBase * 0.32, alturaTronco, segmentos,
-    arquetipo === 'retorcido' ? 0.32 : 0.09);
+    arquetipo === 'retorcido' ? 0.32 : 0.09, azar);
   // Cuántas veces se repite la franja de corteza a lo alto del tronco.
   //
   // No es libre: el pliegue de la onda triangular tiene que caer sobre un anillo
@@ -1624,14 +1903,14 @@ function construirPlanta(esp) {
   // `anisotropy = 8`: con repV = 1,75 da **7,2**, que el filtro cubre entero.
   // Con el siguiente valor legal (2,33) da 9,6 y el filtro ya no llega.
   const repTronco = segmentos / 4;
-  pintar(tronco, colTronco, 0.0, { clase: claseHoja, repV: repTronco });
+  pintar(tronco, colTronco, 0.0, { clase: claseHoja, repV: repTronco, azar });
   partes.push(tronco);
 
   // ── Ramas
-  const nRamas = arquetipo === 'columnar' ? 0 : (arquetipo === 'arbusto' ? 5 : 7);
+  const nRamas = arquetipo === 'arbusto' ? 5 : 7;
   for (let i = 0; i < nRamas; i++) {
     const t = 0.42 + (i / Math.max(1, nRamas)) * 0.55;
-    const ang = (i / nRamas) * Math.PI * 2 + Math.random() * 0.9;
+    const ang = (i / nRamas) * Math.PI * 2 + azar() * 0.9;
     // El largo se deriva del alcance de la copa, no del tronco. Antes eran
     // proporcionales al tronco y en el coihue sobrepasaban el follaje: quedaban
     // patas de araña oscuras asomando contra el cielo, que era lo que más
@@ -1639,14 +1918,14 @@ function construirPlanta(esp) {
     // no se ve, y ésa es exactamente la idea.
     const elevacion = arquetipo === 'copa_ancha' ? 0.95 : 0.55;
     const alcanceCopa = alturaRef * (arquetipo === 'copa_ancha' ? 0.30 : 0.16);
-    const largo = (alcanceCopa / Math.max(0.3, Math.sin(elevacion))) * (0.7 + Math.random() * 0.5);
+    const largo = (alcanceCopa / Math.max(0.3, Math.sin(elevacion))) * (0.7 + azar() * 0.5);
     const g = new THREE.CylinderGeometry(radioBase * 0.10, radioBase * 0.26, largo, 4, 1);
     g.translate(0, largo / 2, 0);
     g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, 0, -elevacion)));
     g.applyMatrix4(new THREE.Matrix4().makeRotationY(ang));
     g.translate(0, alturaTronco * t, 0);
     // `heightSegments = 1`: el único `repV` legal es 1 (ver `repTronco`).
-    pintar(g, colTronco, 0.0, { clase: claseHoja });
+    pintar(g, colTronco, 0.0, { clase: claseHoja, azar });
     partes.push(g);
   }
 
@@ -1654,44 +1933,30 @@ function construirPlanta(esp) {
   const cumbre = alturaTronco;
   const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 
-  if (arquetipo === 'columnar') {
-    // Ciprés de la cordillera: columna angosta que se afina hacia la punta
-    const capas = 7;
-    for (let i = 0; i < capas; i++) {
-      const t = i / (capas - 1);
-      const y = cumbre * 0.16 + t * alturaRef * 0.84;
-      const r = (1 - t * 0.82) * alturaRef * 0.15 + 0.12;
-      partes.push(tarjetasFollaje({
-        centro: V3(0, y, 0),
-        radioH: r, radioV: alturaRef * 0.09,
-        cantidad: 12, tamano: alturaRef * 0.075,
-        color: colHoja, variacion: 0.16, aplanar: 1.6,
-      }));
-    }
-  } else if (arquetipo === 'copa_ancha') {
+  if (arquetipo === 'copa_ancha') {
     // Coihue: copa amplia y aparasolada, con la masa repartida en lóbulos
     const lobulos = 5;
     for (let i = 0; i < lobulos; i++) {
-      const a = (i / lobulos) * Math.PI * 2 + Math.random() * 0.8;
-      const r = alturaRef * (0.10 + Math.random() * 0.16);
+      const a = (i / lobulos) * Math.PI * 2 + azar() * 0.8;
+      const r = alturaRef * (0.10 + azar() * 0.16);
       partes.push(tarjetasFollaje({
-        centro: V3(Math.cos(a) * r, cumbre + alturaRef * (0.10 + Math.random() * 0.26), Math.sin(a) * r),
+        centro: V3(Math.cos(a) * r, cumbre + alturaRef * (0.10 + azar() * 0.26), Math.sin(a) * r),
         radioH: alturaRef * 0.20, radioV: alturaRef * 0.11,
-        cantidad: 34, tamano: alturaRef * 0.105,
-        color: colHoja, variacion: 0.19, aplanar: 0.55,
+        cantidad: 24, tamano: alturaRef * 0.105,
+        clase: claseHoja, azar, color: colHoja, variacion: 0.19, aplanar: 0.55,
       }));
     }
   } else if (arquetipo === 'retorcido') {
     // Ñire y lenga: masas bajas, densas y desparejas
     const lobulos = 4;
     for (let i = 0; i < lobulos; i++) {
-      const a = (i / lobulos) * Math.PI * 2 + Math.random() * 0.9;
-      const r = alturaRef * Math.random() * 0.20;
+      const a = (i / lobulos) * Math.PI * 2 + azar() * 0.9;
+      const r = alturaRef * azar() * 0.20;
       partes.push(tarjetasFollaje({
-        centro: V3(Math.cos(a) * r, cumbre * 0.82 + alturaRef * (0.08 + Math.random() * 0.24), Math.sin(a) * r),
+        centro: V3(Math.cos(a) * r, cumbre * 0.82 + alturaRef * (0.08 + azar() * 0.24), Math.sin(a) * r),
         radioH: alturaRef * 0.19, radioV: alturaRef * 0.14,
-        cantidad: 28, tamano: alturaRef * 0.10,
-        color: colHoja, variacion: 0.21, aplanar: 0.8,
+        cantidad: 22, tamano: alturaRef * 0.10,
+        clase: claseHoja, azar, color: colHoja, variacion: 0.21, aplanar: 0.8,
       }));
     }
   } else {
@@ -1699,11 +1964,111 @@ function construirPlanta(esp) {
     partes.push(tarjetasFollaje({
       centro: V3(0, cumbre * 0.72 + alturaRef * 0.26, 0),
       radioH: alturaRef * 0.28, radioV: alturaRef * 0.22,
-      cantidad: 26, tamano: alturaRef * 0.15,
-      color: colHoja, variacion: 0.22, aplanar: 0.9,
+      cantidad: 18, tamano: alturaRef * 0.15,
+      clase: claseHoja, azar, color: colHoja, variacion: 0.22, aplanar: 0.9,
     }));
   }
 
+  return fusionar(partes);
+}
+
+/**
+ * Una conífera, en pisos (ronda 8, fase 4).
+ *
+ * Antes era una columna de siete elipsoides con doce tarjetas cada uno, sin
+ * ramas, con el tronco cortado a media altura, y el atlas de acículas cubría el
+ * 8 % de su ventana: en el juego, un esqueleto de palitos con el cielo
+ * atravesándolo (`capturas/r8-f4-base1-arbol-*.png`). Ahora:
+ *
+ * - **El tronco llega casi a la punta.** Las coníferas son de eje único; el de
+ *   antes terminaba en el 52 % de la altura y el follaje de arriba flotaba.
+ *   Más fino (2,4 % de la altura de radio, contra 3,2 %), porque un pino de 20 m
+ *   no tiene 1,3 m de diámetro.
+ * - **La copa es un cono**, del ancho de la ficha: el ciprés de la cordillera
+ *   tiene la «copa piramidal, compacta» (SIB) y baja casi hasta el suelo; el
+ *   pino murrayana, «copa mayormente cónica» con las ramas «extendidas,
+ *   ascendentes en la punta» (Gymnosperm Database), y la copa más alta.
+ * - **El follaje va en ramas por pisos**: en cada piso, de tres a seis ramas
+ *   repartidas por el ángulo de oro, y en cada rama una mata de tarjetas a
+ *   media distancia del eje, subiendo un poco hacia la punta. En el pino las
+ *   ramas se ven —son de verdad—; en el ciprés las tapa el follaje.
+ * - **La normal y la oscuridad salen del eje del árbol**, no de cada mata: la
+ *   copa se ilumina como un cono y es oscura hacia el tronco.
+ *
+ * Las tarjetas se dimensionan con la escala del atlas (`escalaDe`), así que
+ * ninguna pasa de lo que entra en la ventana a `pxPorMetro`: con las dos clases
+ * de conífera a 150 px/m sobre 512, 2,94 m de lado.
+ */
+function construirConifera({ esp, alturaRef, colTronco, colHoja, claseHoja, azar }) {
+  const partes = [];
+  const H = alturaRef;
+  const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+  const escamas = claseHoja === 'escama';
+  // `densidad`: cuántas veces el área de la mata cubren sus tarjetas. Es lo que
+  // hace que un alerce de 45 m no quede ralo con tarjetas del mismo tamaño que
+  // las de un ciprés de 18: ninguna tarjeta pasa de lo que entra en el atlas.
+  const porte = escamas
+    ? { base: 0.04, pisos: 12, ramas: [3, 5], densidad: 3.1, sube: 0.22, ramasVisibles: false, lejos: [0.48, 0.68], ancho: 0.55, alto: 0.8, tarjeta: [0.5, 0.4] }
+    : { base: 0.14, pisos: 8, ramas: [4, 6], densidad: 4.0, sube: 0.35, ramasVisibles: true, lejos: [0.58, 0.82], ancho: 0.42, alto: 0.55, tarjeta: [0.34, 0.3] };
+  // Los grandes de bosque —alerce, oregón— tienen el fuste limpio y la copa
+  // arriba; el ciprés y el pino de la estepa, abiertos, la copa casi hasta abajo.
+  porte.base += Math.min(0.35, Math.max(0, (H - 20) / 60));
+  const { pxPorMetro, lado, uMax } = escalaDe(claseHoja);
+  const semiladoMax = uMax * lado / pxPorMetro / 2;
+
+  // Tronco hasta el 88 % de la altura, afinándose casi a nada. La franja de
+  // corteza se repite 3,5 veces (7 segmentos / 2, un valor legal: ver `repTronco`
+  // en `construirPlanta`), que con este tronco más alto y más fino deja la
+  // razón de texels vertical/horizontal en ~5,6, adentro de la anisotropía 8.
+  const radioBase = Math.max(0.05, H * 0.024);
+  const tronco = troncoCurvo(radioBase, radioBase * 0.12, H * 0.88, 7, 0.05, azar);
+  pintar(tronco, colTronco, 0.0, { clase: claseHoja, repV: 3.5, azar });
+  partes.push(tronco);
+
+  const hBase = H * porte.base, hTope = H * 0.97;
+  // El ancho de la copa sale de la ficha (`diametroCopaM`), que es lo medido.
+  const Rb = esp.diametroCopaM ? esp.diametroCopaM / 2 : H * 0.16;
+  const radioA = (h) => Rb * Math.pow(Math.max(0, (hTope - h) / (hTope - hBase)), 0.9) + 0.25;
+  const paso = (hTope - hBase) / porte.pisos;
+  const eje = V3(0, 0, 0);
+  let fase = azar() * Math.PI * 2;
+  for (let i = 0; i < porte.pisos; i++) {
+    const h = hBase + paso * (i + 0.35 + azar() * 0.3);
+    const r = radioA(h);
+    const nR = Math.round(porte.ramas[0] + (porte.ramas[1] - porte.ramas[0]) * Math.min(1, r / Rb));
+    fase += 2.39996;   // ángulo de oro: ningún piso repite el rumbo del de abajo
+    for (let j = 0; j < nR; j++) {
+      const az = fase + (j / nR) * Math.PI * 2 + (azar() - 0.5) * 0.6;
+      const d = r * (porte.lejos[0] + azar() * (porte.lejos[1] - porte.lejos[0]));
+      const cx = Math.cos(az) * d, cz = Math.sin(az) * d, cy = h + d * porte.sube;
+      const radioH = r * porte.ancho, radioV = paso * porte.alto;
+      const tamano = r * porte.tarjeta[0] + porte.tarjeta[1];
+      const s = Math.min(semiladoMax, tamano);
+      const cantidad = Math.max(2, Math.min(10, Math.round(porte.densidad * Math.PI * radioH * radioV / (4 * s * s))));
+      partes.push(tarjetasFollaje({
+        centro: V3(cx, cy, cz),
+        radioH, radioV, cantidad, tamano,
+        clase: claseHoja, azar, color: colHoja, variacion: 0.16, aplanar: 1.2,
+        eje, radioCopa: r,
+      }));
+      if (porte.ramasVisibles) {
+        // La rama, del tronco a la mata: fina, de cuatro caras, sin tapas.
+        const largo = Math.hypot(d, d * porte.sube);
+        const g = new THREE.CylinderGeometry(radioBase * 0.06, radioBase * 0.16, largo, 4, 1, true);
+        g.translate(0, largo / 2, 0);
+        g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, 0, -(Math.PI / 2 - Math.atan(porte.sube)))));
+        g.applyMatrix4(new THREE.Matrix4().makeRotationY(-az));
+        g.translate(0, h, 0);
+        pintar(g, colTronco, 0.0, { clase: claseHoja, azar });
+        partes.push(g);
+      }
+    }
+  }
+  // La punta: el brote guía.
+  partes.push(tarjetasFollaje({
+    centro: V3(0, hTope - paso * 0.6, 0), radioH: 0.35, radioV: paso * 0.6,
+    cantidad: 3, tamano: 0.55, clase: claseHoja, azar, color: colHoja, variacion: 0.16, aplanar: 1.2,
+  }));
   return fusionar(partes);
 }
 
@@ -1715,9 +2080,45 @@ function construirPlanta(esp) {
  * material, y `construirPlanta()`, para las UV y la compensación. Si fueran dos
  * expresiones parecidas y una se moviera, el tronco compensaría con la media de
  * un atlas y muestrearía del otro: saldría con el brillo mal y sin ningún error.
+ *
+ * Cuatro clases desde la ronda 8 (antes: todo lo columnar era `aguja` y lo
+ * demás `lamina`, así que el ciprés de la cordillera tenía acículas de pino):
+ *
+ * - `nothofagus`: coihue, lenga y ñire, la hoja chica aserrada en ramitas.
+ * - `escama`: las Cupresáceas —ciprés de la cordillera, alerce—, ramillas
+ *   aplanadas de hojas escamiformes.
+ * - `aguja`: las Pináceas —los pinos y el oregón—, acículas.
+ * - `ancha`: el resto de las latifoliadas, la hoja elíptica más grande.
+ *
+ * Se decide por el género y la familia de la ficha, que es el dato botánico, y
+ * por el id sólo si la ficha no los trae.
  */
-function claseHojaDe(esp) {
-  return clasificar(esp) === 'columnar' ? 'aguja' : 'lamina';
+export function claseHojaDe(esp) {
+  const cientifico = esp?.nombreCientifico || '';
+  const familia = esp?.familia || '';
+  const id = esp?.id || '';
+  // El género, entero: «Nothofagus dombeyi» → nothofagus.
+  if (cientifico.split(' ')[0] === 'Nothofagus' || (!cientifico && /coihue|lenga|nire/.test(id))) return 'nothofagus';
+  if (familia === 'Cupressaceae' || (!familia && /cipres|alerce/.test(id))) return 'escama';
+  if (familia === 'Pinaceae' || (!familia && /pino|conifer/.test(id))) return 'aguja';
+  return 'ancha';
+}
+
+/**
+ * El azar del modelo de una especie: mulberry32 sembrado con FNV-1a de su id.
+ *
+ * Hasta la ronda 8 `construirPlanta` usaba `Math.random`, así que cada carga
+ * armaba otro árbol: el mismo pino dio 0,238 y 0,178 de cobertura en dos
+ * cargas, y un umbral medía la suerte (RONDA8.md, fase 4, C7). Ahora el modelo
+ * depende de la especie y de nada más, y no consume ni un número del azar
+ * global: da igual qué especies se armaron antes o si el atlas de su clase ya
+ * estaba dibujado.
+ */
+function azarDePlanta(esp) {
+  const s = 'planta:' + (esp?.id || esp?.nombreCientifico || '');
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return semillero(h >>> 0);
 }
 
 function clasificar(esp) {
@@ -1731,11 +2132,14 @@ function clasificar(esp) {
 }
 
 /** Tronco con conicidad y una curvatura acumulada. */
-function troncoCurvo(rBase, rTope, altura, segs, curvatura) {
+function troncoCurvo(rBase, rTope, altura, segs, curvatura, azar) {
   const g = new THREE.CylinderGeometry(rTope, rBase, altura, 6, segs);
   g.translate(0, altura / 2, 0);
   const pos = g.attributes.position;
-  const dirX = Math.cos(Math.random() * 6.28), dirZ = Math.sin(Math.random() * 6.28);
+  // Un solo sorteo para el rumbo de la curva. Antes eran dos (uno para el coseno
+  // y otro para el seno), así que la dirección no tenía largo uno.
+  const rumbo = azar() * Math.PI * 2;
+  const dirX = Math.cos(rumbo), dirZ = Math.sin(rumbo);
   for (let i = 0; i < pos.count; i++) {
     const y = pos.getY(i);
     const t = y / altura;
@@ -1787,7 +2191,7 @@ function pingPong(s) {
  * salen de `claseHojaDe()` y no de dos expresiones parecidas.
  */
 function pintar(geo, color, flexion, opciones = {}) {
-  const { variacion = 0, modoUV = 'madera', clase = 'lamina', repV = 1 } = opciones;
+  const { variacion = 0, modoUV = 'madera', clase = 'ancha', repV = 1, azar, tamM = null } = opciones;
   const n = geo.attributes.position.count;
   const col = new Float32Array(n * 3);
   const flex = new Float32Array(n);
@@ -1801,16 +2205,22 @@ function pintar(geo, color, flexion, opciones = {}) {
   // tronco caído de la ronda 1 (albedo 0,047 → negro puro). Ver `construirAtlas`.
   if (madera) c.multiplyScalar(fr.compensacion);
 
-  // Ventana del atlas para el camino `'hoja'`, acotada a `FOLLAJE_U_MAX`: si la
-  // hoja pudiera llegar hasta 0,97 muerde la franja de corteza y sale con una
-  // mancha de madera en el medio.
-  const uw = 0.28 + Math.random() * 0.14;
-  const u0 = Math.random() * Math.max(0, FOLLAJE_U_MAX - uw);
-  const v0 = Math.random() * 0.55;
+  // Ventana del atlas para el camino `'hoja'`: la que corresponde al tamaño de
+  // la pieza (`tamM`, en metros) a `pxPorMetro`, como las tarjetas, y acotada a
+  // `uMax`: si la hoja pudiera llegar hasta 0,97 muerde la franja de corteza y
+  // sale con una mancha de madera en el medio.
+  let uw = 0, vh = 0, u0 = 0, v0 = 0;
+  if (!madera) {
+    const { pxPorMetro, lado, uMax } = escalaDe(clase);
+    uw = Math.min(uMax, (tamM ? tamM[0] : 0.5) * pxPorMetro / lado);
+    vh = Math.min(1, (tamM ? tamM[1] : 0.5) * pxPorMetro / lado);
+    u0 = azar() * Math.max(0, uMax - uw);
+    v0 = azar() * Math.max(0, 1 - vh);
+  }
   const uvOriginal = geo.attributes.uv;
 
   for (let i = 0; i < n; i++) {
-    const v = variacion ? 1 + (Math.random() - 0.5) * variacion * 2 : 1;
+    const v = variacion ? 1 + (azar() - 0.5) * variacion * 2 : 1;
     col[i * 3] = c.r * v;
     col[i * 3 + 1] = c.g * v;
     col[i * 3 + 2] = c.b * v;
@@ -1828,7 +2238,7 @@ function pintar(geo, color, flexion, opciones = {}) {
       uv[i * 2 + 1] = fr.v0 + pingPong(sv * repV) * (fr.v1 - fr.v0);
     } else {
       uv[i * 2] = u0 + su * uw;
-      uv[i * 2 + 1] = v0 + sv * uw;
+      uv[i * 2 + 1] = v0 + sv * vh;
     }
   }
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));

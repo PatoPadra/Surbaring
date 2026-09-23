@@ -1,0 +1,161 @@
+{
+  "generador": "tools/hornear-follaje.mjs",
+  "descripcion": "Atlas de follaje por clase de hoja, a escala: la hoja mide en el atlas lo que mide en el mundo por pxPorMetro. Fila 0 = v 0 (se sube sin dar vuelta). El follaje ocupa u < uMax; la franja de corteza, u de corteza.u0 a corteza.u1.",
+  "corte": 0.28,
+  "clases": [
+    {
+      "id": "nothofagus",
+      "archivo": "nothofagus.png",
+      "lado": 1024,
+      "referencia": "Hoja de los Nothofagus del parque. Coihue (N. dombeyi): 2-3,5 cm × 1-1,5, lanceolada, algo romboidal, coriácea, borde finamente aserrado. Lenga (N. pumilio): 2-4 cm × 1,4-3, ovado-elíptica, crenado-dentada. Ñire (N. antarctica): 1-3,5 cm, ovada, borde lobulado y ondulado. Fuente: SIB, Sistema de Información de Biodiversidad de la Administración de Parques Nacionales (sib.gob.ar/especies/nothofagus-dombeyi, /nothofagus-pumilio, /nothofagus-antarctica). Se toma el rango del coihue, [2, 3,5] cm. Dibujada de 4 a 6 px a 100 px/m (4 a 6 cm): el doble de la real a lo sumo, para que de cerca se lea como hoja y no como grano.",
+      "hojaCm": [
+        2,
+        3.5
+      ],
+      "hojaPx": 5,
+      "pxPorMetro": 100,
+      "uMax": 0.86,
+      "hojaEnElMundoCm": 5,
+      "vecesLaReal": 1.82,
+      "tarjetaMaximaM": 8.81,
+      "matas": 29,
+      "cobertura": {
+        "32": 0.4583,
+        "64": 0.4151,
+        "128": 0.4053,
+        "256": 0.3938,
+        "512": 0.3783,
+        "1024": 0.3605
+      },
+      "colorMedioLineal": [
+        0.2987,
+        0.5638,
+        0.2311
+      ],
+      "factorLuz": 1.1567,
+      "corteza": {
+        "u0": 0.890625,
+        "u1": 0.984375,
+        "v0": 0.00048828125,
+        "v1": 0.99951171875,
+        "mediaLineal": 0.817437,
+        "maxLineal": 1
+      }
+    },
+    {
+      "id": "ancha",
+      "archivo": "ancha.png",
+      "lado": 1024,
+      "referencia": "Hoja elíptica de las latifoliadas que no son Nothofagus. Maitén (Maytenus boaria): 2-6 cm × 0,5-2, lanceolado-elíptica, aserrada. Laura (Schinus patagonicus): 2,5-5 cm, ovada, coriácea. Fuente: SIB (sib.gob.ar/especies/maytenus-boaria, /schinus-patagonicus). Se toma el rango del maitén, [2, 6] cm, dibujada de 4,5 a 7 px a 100 px/m. El canelo (Drimys winteri, 5-15 cm × 1,5-6 según el SIB, sib.gob.ar/especies/drimys-winteri) comparte el atlas y queda con la hoja más chica que la real: licencia declarada, porque un atlas por especie cuesta memoria de video que no hay.",
+      "hojaCm": [
+        2,
+        6
+      ],
+      "hojaPx": 5.75,
+      "pxPorMetro": 100,
+      "uMax": 0.86,
+      "hojaEnElMundoCm": 5.75,
+      "vecesLaReal": 1.44,
+      "tarjetaMaximaM": 8.81,
+      "matas": 42,
+      "cobertura": {
+        "32": 0.4491,
+        "64": 0.4176,
+        "128": 0.4021,
+        "256": 0.3957,
+        "512": 0.3782,
+        "1024": 0.3554
+      },
+      "colorMedioLineal": [
+        0.3364,
+        0.5551,
+        0.2039
+      ],
+      "factorLuz": 1.1319,
+      "corteza": {
+        "u0": 0.890625,
+        "u1": 0.984375,
+        "v0": 0.00048828125,
+        "v1": 0.99951171875,
+        "mediaLineal": 0.817437,
+        "maxLineal": 1
+      }
+    },
+    {
+      "id": "escama",
+      "archivo": "escama.png",
+      "lado": 512,
+      "referencia": "Ciprés de la cordillera (Austrocedrus chilensis): hojas opuestas, escamiformes, imbricadas, de dos tipos; las laterales con el dorso aquillado y dos bandas estomáticas blanquecinas, de 2-5 mm; las faciales triangulares, de 0,5-2 mm. Ramillas aplanadas, en un plano. Copa piramidal, compacta. Fuente: SIB (sib.gob.ar/especies/austrocedrus-chilensis). Se toma la escama lateral, [0,2, 0,5] cm. A 150 px/m una escama mide un texel: el atlas dibuja la ramilla aplanada de su tamaño (abanicos de 10 a 20 cm, ramitas de un texel de ancho) y la escama como el grano claro-oscuro de un texel a lo largo de cada ramita, con algunas ramillas vueltas que muestran las bandas blanquecinas. El alerce (Fitzroya cupressoides) comparte la clase por tener también hojas escamiformes; sin cifra propia.",
+      "hojaCm": [
+        0.2,
+        0.5
+      ],
+      "hojaPx": 1,
+      "pxPorMetro": 150,
+      "uMax": 0.86,
+      "hojaEnElMundoCm": 0.67,
+      "vecesLaReal": 1.9,
+      "tarjetaMaximaM": 2.94,
+      "matas": 13,
+      "cobertura": {
+        "32": 0.3924,
+        "64": 0.3676,
+        "128": 0.3533,
+        "256": 0.3406,
+        "512": 0.3211
+      },
+      "colorMedioLineal": [
+        0.3384,
+        0.5542,
+        0.2182
+      ],
+      "factorLuz": 1.093,
+      "corteza": {
+        "u0": 0.890625,
+        "u1": 0.984375,
+        "v0": 0.0009765625,
+        "v1": 0.9990234375,
+        "mediaLineal": 0.652215,
+        "maxLineal": 1
+      }
+    },
+    {
+      "id": "aguja",
+      "archivo": "aguja.png",
+      "lado": 512,
+      "referencia": "Pino murrayana (Pinus contorta subsp. murrayana): acículas de a dos por fascículo, de 5-8 cm × 1-2 mm, amarillo verdosas, ápice agudo; ramas extendidas y ascendentes en la punta; copa cónica. Fuente: The Gymnosperm Database, Earle (conifers.org/pi/Pinus_contorta_murrayana.php), que sigue a Flora of North America; para la especie, «2 (raramente 3) por fascículo, 2-8 cm × 0,7-2 mm, persisten 3-8 años» (conifers.org/pi/Pinus_contorta.php). Dibujadas de 7,5 a 12 px a 150 px/m, o sea de su largo. El ancho no: 0,8 px son 5 mm, tres veces el real, porque una acícula de un tercio de texel el mipmap la borra. El pino ponderosa y el oregón comparten el atlas: licencia.",
+      "hojaCm": [
+        5,
+        8
+      ],
+      "hojaPx": 9.75,
+      "pxPorMetro": 150,
+      "uMax": 0.86,
+      "hojaEnElMundoCm": 6.5,
+      "vecesLaReal": 1,
+      "tarjetaMaximaM": 2.94,
+      "matas": 17,
+      "cobertura": {
+        "32": 0.5,
+        "64": 0.4631,
+        "128": 0.4508,
+        "256": 0.4414,
+        "512": 0.4173
+      },
+      "colorMedioLineal": [
+        0.3756,
+        0.5467,
+        0.161
+      ],
+      "factorLuz": 1.0927,
+      "corteza": {
+        "u0": 0.890625,
+        "u1": 0.984375,
+        "v0": 0.0009765625,
+        "v1": 0.9990234375,
+        "mediaLineal": 0.652215,
+        "maxLineal": 1
+      }
+    }
+  ]
+}
