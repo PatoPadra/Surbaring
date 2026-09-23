@@ -972,10 +972,10 @@
           "lasca",
           "raspador",
           "cuchillo",
-          "mango_labrado",
           "punzon_hueso"
         ]
-      }
+      },
+      "notaRonda8": "La ronda 8, fase 5, le sacó `mango_labrado` a la lista: el mango se labra con cualquier filo —la lasca de rodado, la de obsidiana o el cuchillo—, y pedir la obsidiana para labrar un palo dejaba la primera hacha a 6,4 km y 700 m de desnivel. La talla de obsidiana sigue siendo lo que es: la industria del filo fino, con la piedra que había que traer del norte neuquino."
     },
     {
       "id": "punta_proyectil",
@@ -1263,17 +1263,15 @@
       "id": "hacha_pulida",
       "nombre": "Hacha de piedra pulida",
       "era": "pueblos_originarios",
-      "requiere": [
-        "lasca_obsidiana"
-      ],
-      "costoSaber": 16,
+      "requiere": [],
+      "costoSaber": 3,
       "materiales": [
         {
           "recurso": "piedra",
-          "cantidad": 3
+          "cantidad": 2
         },
         {
-          "recurso": "cordel",
+          "recurso": "arena",
           "cantidad": 2
         }
       ],
@@ -1283,9 +1281,14 @@
           "azuela",
           "pala_omoplato",
           "rastra"
+        ],
+        "recetas": [
+          "pulido_hoja"
         ]
       },
-      "descripcion": "El pulido por abrasión contra arenisca mojada tarda días y da un filo que resiste el golpe, cosa que el astillado no puede: la lasca corta mejor y se rompe al primer impacto. Es la tecnología que separa cortar de talar."
+      "descripcion": "El pulido por abrasión contra una laja mojada con arena tarda horas y da un filo que resiste el golpe, cosa que el astillado no puede: la lasca corta mejor y se rompe al primer impacto. Es la tecnología que separa cortar de talar, y en este árbol es la que habilita el tercer paso de la cadena de la piedra: pulir la hoja.",
+      "contextoHistorico": "La piedra pulida es rara en la Patagonia, donde manda la talla por percusión y presión. Salas (1942) publicó dos hachas pulidas Y ENMANGADAS del territorio del Neuquén, de una mina de sal cerca de Chos Malal, y son excepcionales justamente por eso y porque conservan el mango. Fenton (1984) cronometró la secuencia completa sobre réplicas: el desbaste lleva minutos, el picado de 3 a 5 horas, el desgaste de 1 a 3 y el pulido unas 3.",
+      "notaRequisitos": "Hasta la ronda 8 costaba 16 de saber y requería «talla de obsidiana», que a su vez pide 2 obsidianas de más de 1500 m. O sea: el hacha de piedra pedía subir 700 m antes de existir. Ahora no requiere ninguna tecnología previa y cuesta 3, que es lo que da descubrir un solo lugar (medido el 19/9/2026: cada lugar descubierto da 3 puntos de saber). Sus materiales —2 de piedra y 2 de arena— son lo que se gasta aprendiendo a pulir: se aprende puliendo."
     },
     {
       "id": "telar_witral",

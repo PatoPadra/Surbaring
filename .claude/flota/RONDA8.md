@@ -1344,6 +1344,66 @@ tecnologías de la cadena); `src/systems/Fabricacion.js` (sólo para que pida he
 una lista); `src/systems/Recursos.js` (los recursos nuevos); `src/ui/Iconos.js` (los iconos
 nuevos). Nada de `main.js`.
 
+### CERRADA el 23/9/2026
+
+**La cadena entera, corrida en el juego de verdad y no en el banco.** Desde un bolso
+vacío, con 10 piedras, 4 arenas, 12 fibras, 4 maderas y 2 huesos, y 3 de saber:
+
+| paso | resultado |
+|---|---|
+| `percutor` | **hecho** · va solo a la mano, 30/30 usos |
+| `lasca_rodado` | **hecho** · 12/12 |
+| `cordel_fibra` ×4 | **hecho** |
+| `mango_labrado` | **hecho** (con la lasca de rodado, sin obsidiana) |
+| `preforma_hacha` | **hecho** |
+| aprender `hacha_pulida` | **desbloqueada** · 3 de saber → 0, y 2 piedra + 2 arena |
+| `pulido_hoja` | **hecho** |
+| `hacha_piedra` | **hecho** · 120/120, se equipa en la mano |
+| `martillo_piedra` | **hecho** · 150/150 |
+| `medula_hueso` | **hecho** · 2 huesos → 1 grasa |
+
+Nada de esto pidió obsidiana, cuero ni cazar, que es el punto entero de la fase.
+
+**El banco y el falsador.** Banco de la fase **7/7** (cadena 15 aserciones, primera hora 3,
+martillo 4, nadie queda peor 2, notas 10, regresión 15, `vite build`). Falsador **11/11**
+con los 3 controles verdes. Regresión aparte, corrida a mano: `banco-r5-fase3` 4/4,
+`banco-r6-fase3` 6/6, `banco-r7-fase2b` 7/7.
+
+**Un defecto, y fue mío, del jefe.** La primera corrida entera puso en rojo **siete**
+bancos de regresión, todos por una aserción. Ninguno era del agente: todos bajaban a
+`banco-r7-fase2b.mjs`, sección 3, que pide que **ningún par de los treinta modelos de la
+mano tenga las tres medidas de la caja dentro del 15 %**. El modelo del martillo de piedra
+lo escribí yo el 22/9, y caía a 10,0 %, 8,7 % y 12,3 % de la maza y cuñas. Arreglado por
+donde las dos piezas se diferencian de verdad y no con un retoque: el cabo pasó de 33,5 a
+**28,5 cm** —es de una mano, se usa golpeando hacia abajo sobre un hueso apoyado, contra
+los 38 cm a dos manos de la maza— y la cabeza pasó a ser un canto tan grueso como largo en
+vez del cilindro atravesado. Quedó en **20,2 %, 14,3 % y 12,3 %**: se separa el largo, que
+es la diferencia real. Cero pares dentro del 15 % entre los treinta.
+
+**Lo que el agente dejó anotado y no se toca todavía** (está entero en
+`pendiente-r8-piedra.md`):
+1. **`Fabricacion` no gasta la herramienta que pide.** El percutor tiene 30 usos y casi no
+   bajan: `Equipo.desgastar()` sólo lo llaman la recolección —y sólo si la herramienta
+   habilita la acción, y el percutor no habilita ninguna— y el tiro. O sea que **se gasta
+   tirando flechas y no picando piedra**. Falta una marca por receta (`hilar_lana` dice
+   explícitamente que hilar NO gasta el huso) y una decisión de balance. Candidato para la
+   fase 7 o la ronda 9.
+2. **La hoja de iconos quedó a 2,22 kB del techo**: 137,78 kB de 140 kB con 122 iconos.
+   Con dos dibujos más, la sección 3 de `banco-r6-fase3.mjs` se pone roja, y le va a
+   aparecer al agente de la **fase 7** como si fuera culpa suya. No se arregla dibujando
+   más chico: el techo lo consumen los 122, no los últimos 4. **Avisarle al abrir la 7.**
+3. La azuela, la pala de omóplato y la rastra siguen saliendo de piedra cruda en un paso, y
+   la azuela sigue pidiendo 3 tientos (cazar). Sería la continuación natural.
+4. `balanceSaber` del dataset quedó desactualizado (dice 1480 puntos y propone justamente
+   lo que P6 prohíbe). Lo mide `r4-economia.mjs`, que no está en esta regresión.
+
+**Para que mire el dueño** (`r8-f5-martillo-vs-maza.png`, `r8-f5-zoom-percutor.png`): la
+primera herramienta de piedra ya no está detrás de una caminata de 6,4 km y 700 m de
+desnivel hasta la obsidiana —eran 30 a 37 minutos reales antes de poder fabricar lo
+primero—, sale con una piedra del suelo en el primer minuto, y el hacha sale de cinco pasos
+en vez de uno. Y hay un martillo de piedra antes del hierro, que abre huesos para sacar la
+médula: una segunda fuente de grasa que no pasa por cazar.
+
 ### Borrador del contrato (19/9, mientras corre la 3b; se ajusta al abrir)
 
 La cadena, toda sin obsidiana y sin cazar, cada paso con su nota y su fuente:

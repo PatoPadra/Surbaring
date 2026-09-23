@@ -819,6 +819,27 @@ const RECETAS_RECURSOS = {
     E(30, 43, 3.4, 4.4, M.arcilla[2], ' opacity=".7"'),
   ],
 
+  // ── Los dos estados intermedios del hacha (ronda 8, fase 5) ───────────────
+  //
+  // Son el paso a paso dibujado: la misma pieza tres veces —canto, preforma,
+  // hoja— y lo que cambia entre una y otra es exactamente lo que cambia en la
+  // realidad. La preforma ya tiene la silueta del hacha y está picada, que son
+  // los hoyuelos; la hoja tiene la misma silueta lisa y con brillo. Si se ven
+  // una al lado de la otra en el bolso, se lee la secuencia sin leer un nombre.
+
+  preforma: (z) => [
+    ...bulto([[32, 6], [41, 14], [44, 34], [40, 50], [30, 55], [23, 44], [21, 22], [25, 11]]
+      .map(([x, y]) => [x + (z() - 0.5) * 3, y + (z() - 0.5) * 3]), M.piedra),
+    ...[[28, 17], [35, 22], [27, 29], [34, 35], [29, 42], [36, 47]]
+      .map(([x, y]) => E(x, y, 2.2, 1.6, M.piedra[2], ' opacity=".6"')),
+  ],
+
+  hoja_hacha: () => [
+    ...filo(M.piedra, { x: 32, y: 30, largo: 40, ancho: 11, pancho: 1.15 }),
+    T('M26 14q-3 18 1 34', LUZ, 2.4, ' opacity=".45"'),
+    E(33, 51, 9, 3, M.piedra[0], ' opacity=".5"'),
+  ],
+
   fruto: (z) => bayas(M.baya, { cx: 32, cy: 37, r: 9.5, cuantas: 3, z }),
 
   junco: () => {
@@ -1261,7 +1282,22 @@ const RECETAS_RECURSOS = {
  */
 const RECETAS_OBJETOS = {
 
-  // ── Filos sin cabo ────────────────────────────────────────────────────────
+  // ── El percutor, y los filos sin cabo ─────────────────────────────────────
+  //
+  // El percutor va primero aunque no sea un filo: es lo que hace a los tres que
+  // siguen, y en el bolso se lee en ese orden.
+
+  // El percutor es el mismo rodado que el recurso `piedra` y no puede parecerlo:
+  // lo que lo separa es el uso. Las medias lunas machucadas del extremo con el
+  // que se golpea, y las dos esquirlas saltando. Es la única pieza de la familia
+  // que se dibuja en el momento de estar trabajando.
+  percutor: (z) => [
+    ...canto(M.piedra, { cx: 30, cy: 35, r: 17, lados: 8, z, achata: 0.92, sacude: 0.18 }),
+    ...[[22, 26], [27, 22], [33, 23]].map(([x, y]) => C(x, y, 2.6, M.piedra[2], ' opacity=".55"')),
+    L(21, 31, 28, 27, LUZ, 1.4, ' opacity=".4"'),
+    G([[44, 20], [50, 16], [47, 24]], M.piedra[1]),
+    G([[48, 30], [53, 29], [50, 34]], M.piedra[2]),
+  ],
 
   // Un rodado partido: lo que lo hace herramienta es la cara fresca del golpe,
   // un plano recto en una piedra que no tiene ninguno. Antes ese plano le tapaba
@@ -1385,6 +1421,21 @@ const RECETAS_OBJETOS = {
       ...atadura(M.cuero2, { cx: 33, cy: 22, w: 13, h: 5 }),
       ...atadura(M.cuero2, { cx: 34, cy: 15, w: 13, h: 5 }),
       ...filo(M.piedra, { x: 34, y: 18, largo: 20, ancho: 9, pancho: 1.1, ang: 90 }),
+    ]),
+  ],
+
+  // El martillo de piedra: la misma percusión con mango que el hacha, y lo que
+  // lo distingue a 58 px es que la cabeza NO tiene filo. Es un canto entero,
+  // panzón, con la ligadura de fibra bajando por la garganta picada —las dos
+  // rayas verticales— en vez de las dos ataduras horizontales del hacha. Contra
+  // la maza y cuñas, que lleva la cabeza de leño tumbado y las dos cuñas.
+  martillo_piedra: (z) => [
+    gira(-34, 32, 32, [
+      ...varilla(M.madera, { x1: 26, y1: 56, x2: 34, y2: 14, w: 6 }),
+      ...canto(M.piedra, { cx: 34, cy: 19, r: 13, lados: 6, z, achata: 0.66, giro: 1.2, sacude: 0.18 }),
+      L(29, 12, 29, 27, M.piedra[2], 2.2),
+      L(39, 12, 39, 27, M.piedra[2], 2.2),
+      ...atadura(M.fibra, { cx: 34, cy: 19, w: 8, h: 15 }),
     ]),
   ],
 

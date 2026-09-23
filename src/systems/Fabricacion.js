@@ -17,9 +17,11 @@
  * no se busca con `cercano()` —ver `_estacionDeObra()`—; la fogata y la fragua
  * sí, igual que antes.
  *
- * Y hay una receta que no pide un lugar sino una herramienta encima: hilar pide
- * el huso. Se hila en cualquier lado, pero no sin huso. Es `pideHerramienta`, y se
- * mira antes que la estación y antes de consumir nada.
+ * Y hay recetas que no piden un lugar sino una herramienta encima: hilar pide
+ * el huso, y desde la ronda 8 toda la cadena de la piedra pide el percutor o el
+ * martillo. Se hila en cualquier lado, pero no sin huso. Es `pideHerramienta`, y
+ * se mira antes que la estación y antes de consumir nada. Puede ser un id o una
+ * lista de ids, y una lista se lee como un O: ver `herramientaQueFalta()`.
  *
  * El molde de «pedir materiales, ver qué falta, consumir» ya estaba escrito tres
  * veces en el proyecto —`Saberes.estado()`, `Fundicion.estadoReceta()`,
@@ -110,14 +112,34 @@ export class Fabricacion {
    *
    * Cuenta tenerlo en el bolso o puesto, que es lo que dice `Equipo.tiene()`. Roto
    * no cuenta: con un huso partido no se hila.
+   *
+   * ── Ronda 8, fase 5: `pideHerramienta` puede ser una lista ────────────────
+   *
+   * El huso era un caso de uno: se hila con el huso o no se hila. El mango no:
+   * se labra con **cualquier filo**, y hay tres —la lasca de rodado, la de
+   * obsidiana y el cuchillo enmangado—. Escrito con un id solo, pedir el mejor
+   * dejaba la primera hacha detrás de los 1500 m de la obsidiana, y pedir el
+   * peor hacía que tener el cuchillo no sirviera. Con lista, la receta dice
+   * «algo que corte» y **alcanza con tener uno sano**: es un O, no un Y. Un id
+   * suelto se sigue aceptando y significa lo mismo que antes, así que ninguna
+   * ficha vieja cambia de sentido.
+   *
+   * Lo que se devuelve cuando falta es el PRIMERO de la lista, que por eso se
+   * escribe en las fichas de más barato a más caro: el motivo tiene que señalar
+   * el camino más corto, igual que `Saberes.faltaPara()`. Los otros van en
+   * `alternativas` para que el aviso pueda nombrarlos.
    */
   herramientaQueFalta(obj) {
-    const id = obj.pideHerramienta;
-    if (!id) return null;
-    if (this.equipo?.tiene(id) && !this.equipo.gastado(id)) return null;
-    return this.equipo?.definicion?.(id)
+    const pedidas = [].concat(obj.pideHerramienta || []);
+    if (!pedidas.length) return null;
+    if (pedidas.some(id => this.equipo?.tiene(id) && !this.equipo.gastado(id))) return null;
+    const ficha = id => this.equipo?.definicion?.(id)
       || (this.datos.objetos || []).find(o => o.id === id)
       || { id, nombre: nombreDe(id) };
+    const falta = ficha(pedidas[0]);
+    return pedidas.length > 1
+      ? { ...falta, alternativas: pedidas.slice(1).map(ficha) }
+      : falta;
   }
 
   /**
@@ -149,9 +171,15 @@ export class Fabricacion {
     // materiales por el mismo orden de siempre: primero lo que se junta.
     const herramienta = this.herramientaQueFalta(obj);
     if (herramienta) {
+      // Con una sola opción el motivo es el de siempre. Con varias tiene que
+      // nombrarlas a todas, o el jugador que ya tiene el cuchillo iría a
+      // fabricarse una lasca que no le hace falta.
+      const otras = (herramienta.alternativas || []).map(h => h.nombre);
       return {
         estado: 'falta_herramienta', herramienta: herramienta.id,
-        motivo: `Hace falta tener encima: ${herramienta.nombre}.`,
+        motivo: otras.length
+          ? `Hace falta tener encima alguna de éstas: ${[herramienta.nombre, ...otras].join(', ')}.`
+          : `Hace falta tener encima: ${herramienta.nombre}.`,
       };
     }
 

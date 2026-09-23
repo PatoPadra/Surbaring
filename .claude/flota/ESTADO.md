@@ -97,6 +97,21 @@ vuelta.**
 > veces los límites (de sesión y semanal) y se lo retomó con su contexto. Queda a la vista,
 > fuera de contrato, que a las latifoliadas les asoman ramas desnudas: sería la fase 4b.
 >
+> **23/9/2026 — FASE 5 (`piedra`) CERRADA.** Banco 7/7, falsador 11/11 con 3 controles
+> verdes, y la cadena entera corrida **en el juego**: desde un bolso vacío salen el
+> percutor, la lasca, el cordel, el mango, la preforma, la hoja pulida, el hacha, el
+> martillo de piedra y la grasa de médula, sin obsidiana, sin cuero y sin cazar. La
+> primera herramienta de piedra deja de estar detrás de 6,4 km y 700 m de desnivel: sale
+> con una piedra del suelo en el primer minuto. El hacha sale de **cinco pasos** en vez
+> de uno, cuesta 3 de saber en vez de 16, y se ata con cordel de fibra en vez de tiento.
+> **Un defecto, y fue del jefe:** el modelo 3D del martillo que escribí tenía la misma
+> caja que la maza y cuñas dentro del 15 % y puso en rojo siete bancos de regresión de
+> una sola vez; arreglado acortando el cabo a 28,5 cm (es de una mano) y engrosando la
+> cabeza. Al agente lo cortó el límite de sesión y terminó el jefe lo que faltaba medir.
+> Queda anotado, sin tocar: **`Fabricacion` no gasta la herramienta que pide** —el
+> percutor se gasta tirando flechas y no picando piedra— y **la hoja de iconos quedó a
+> 2,22 kB del techo**, lo que le va a aparecer a la fase 7 como si fuera culpa suya.
+>
 > **Preparado mientras corre la 4** (todo con banco validado contra la base y, donde se
 > pudo, contra una maqueta del jefe; falsadores con controles):
 > - **Fase 5 (piedra)** `ef06b61`: contrato P1–P12; el banco recorre la cadena del hacha con

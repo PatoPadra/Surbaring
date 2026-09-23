@@ -249,22 +249,59 @@
       "kg": 0.01,
       "cat": "material",
       "nota": "Anzuelo vestido con pluma y lana para imitar un insecto. Se produce de a cuatro y no tenía ficha: el validador la había puesto a mano en la lista blanca y por eso no la vio nadie."
+    },
+    {
+      "id": "preforma",
+      "nombre": "Preforma de hacha",
+      "kg": 0.9,
+      "cat": "material",
+      "nota": "El canto ya desbastado y picado, con la forma del hacha y todavía áspero. Pesa 0,9 kg: la receta cuesta dos piedras de 1,4, pero una es el canto y la otra es lo que se va en lascas, en polvo y en los que se parten al medio. Del canto queda un 64 %."
+    },
+    {
+      "id": "hoja_hacha",
+      "nombre": "Hoja de hacha pulida",
+      "kg": 0.8,
+      "cat": "material",
+      "nota": "La preforma después de la arena: lisa, lustrosa y con el filo cerrado. Pesa 0,8 kg, sólo 100 g menos que la preforma, y esa diferencia es el dato: el picado es lo que talla, el pulido es lo que termina. Es lo único del árbol que pasa por cuatro pasos antes de servir para algo, y es a propósito."
     }
   ],
   "objetos": [
+    {
+      "id": "percutor",
+      "nombre": "Percutor de mano",
+      "categoria": "herramienta",
+      "nivel": 0,
+      "tecnologia": null,
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 1
+        }
+      ],
+      "nota": "Un rodado duro del tamaño del puño. No se fabrica: se elige. Se busca uno pesado, de grano parejo y sin fisuras, y se usa tal cual sale del arroyo. No corta ni golpea nada del mundo —no habilita ninguna acción de la tecla— y es lo que hace que lo demás exista: con él se astilla el filo de la lasca, se desbasta y se pica el canto del hacha, y se abre la garganta del martillo. Va en la mano porque es lo único que hace con él la mano: golpear.",
+      "porQueExiste": "Es el paso que faltaba antes del primero. Hasta la ronda 8, la primera herramienta de piedra del juego —la lasca de rodado— pedía la tecnología «talla de obsidiana»: 2 obsidianas, que sólo aparecen por encima de los 1500 m, y 8 de saber, con el saber en 0 al arrancar y el arranque a 822 m. Al empezar una partida no se podía fabricar NINGUNA herramienta de piedra. Ahora la cadena empieza acá, con una piedra del suelo, sin tecnología y sin saber nada.",
+      "fuente": "Fenton, M. B. (1984), «The nature of the source and the manufacture of Scottish battle-axes and axe-hammers», Proceedings of the Prehistoric Society 50: 217-243. Es un trabajo experimental: la réplica se hace con percutores de piedra y cada etapa está cronometrada. El desbaste por lascado lleva minutos; el picado, entre 3 y 5 horas; el desgaste, de 1 a 3; y el pulido, unas 3. Se pule frotando contra una laja o una roca fija, con arena y agua. El percutor duro es el instrumento de las dos primeras etapas.",
+      "notaDurabilidad": "CUIDADO, y está pedido en pendiente-r8-piedra.md: hoy esos 30 usos casi no bajan. `Equipo.desgastar()` sólo toca la mano, y lo llaman `Recoleccion._gastarHerramienta()` —sólo cuando la herramienta de la mano habilita la acción, y el percutor no habilita ninguna— y `Caza._tiro()`, que gasta lo que hay en la mano al tirar con el arma. O sea que el percutor se gastaría tirando flechas y no picando piedra, que es exactamente al revés. Lo que falta es que `Fabricacion.fabricar()` gaste un uso de la herramienta de `pideHerramienta`, y eso no lo hago acá por dos razones: el contrato me autoriza `Fabricacion.js` sólo para la lista, y no puede ser una regla ciega —la ficha de `hilar_lana` dice explícitamente que hilar NO gasta el huso—, así que necesita una marca por receta y una decisión de quien balancee.",
+      "kg": 0.8,
+      "ranura": "mano",
+      "durabilidad": 30,
+      "criterioDurabilidad": "30 usos. El número es una decisión del juego y no sale de ninguna fuente; lo que sale de la fuente es POR QUÉ éste es el que se rompe. El percutor recibe el golpe en su propio cuerpo y no en un filo: se machuca, se agrieta y se parte, no se desafila. Y la etapa que lo castiga es la más larga de la cadena: el picado de una sola preforma son de 3 a 5 horas de miles de golpes cortos (Fenton 1984). En la escala del propio árbol queda donde corresponde: dos veces y media la lasca de rodado que saca (12) y la cuarta parte del hacha que ayuda a hacer (120). Medido contra la cadena: hacer un hacha más un martillo lo usa en tres recetas, así que 30 son diez cadenas completas. Y cuando se acaba, el repuesto es una piedra del suelo sin tecnología: es la pieza más frágil del árbol sin ser una pared.",
+      "certeza": "El percutor de piedra es universal en la talla lítica y no hace falta una fuente local para sostenerlo. Lo que sí es una decisión del juego es que «se fabrique» con una piedra en vez de levantarse del suelo: se hace así para que aparezca en el taller y el paso a paso se lea como paso a paso. En la realidad se agacha uno y lo junta."
+    },
     {
       "id": "lasca_rodado",
       "nombre": "Lasca de rodado",
       "categoria": "herramienta",
       "nivel": 1,
       "ranura": "mano",
-      "tecnologia": "lasca_obsidiana",
+      "tecnologia": null,
       "donde": "bolso",
       "kg": 0.3,
       "materiales": [
         {
           "recurso": "piedra",
-          "cantidad": 2
+          "cantidad": 1
         }
       ],
       "durabilidad": 12,
@@ -273,9 +310,63 @@
         "descuerar",
         "cortar_cana"
       ],
-      "nota": "Un rodado de arroyo partido por percusión. Corta mucho peor que la obsidiana y dura un tercio, pero se hace con dos piedras del suelo en el primer minuto de juego.",
-      "porQueExiste": "Sin esto, 52 de los 57 objetos quedaban detrás de una caminata de 6,4 km y 700 m de desnivel hasta la cota 1500 donde aparece la obsidiana: entre 30 y 37 minutos reales antes de poder fabricar lo primero. Medido por el revisor de diseño. El arranque no puede ser una caminata.",
-      "notaGeologica": "La comarca es volcánica y los arroyos bajan rodados de basalto y andesita: cualquier roca volcánica de grano fino astilla con filo. La obsidiana es la mejor y por eso se traía de lejos, no la única."
+      "nota": "Un rodado de arroyo partido por percusión: un golpe seco y oblicuo cerca del borde salta una lasca con filo vivo en todo el contorno. Corta mucho peor que la obsidiana y dura un tercio, pero se hace con una piedra del suelo y el percutor, en el primer minuto de juego y sin saber nada.",
+      "porQueExiste": "Sin esto, 52 de los 57 objetos quedaban detrás de una caminata de 6,4 km y 700 m de desnivel hasta la cota 1500 donde aparece la obsidiana: entre 30 y 37 minutos reales antes de poder fabricar lo primero. Medido por el revisor de diseño. Hasta la ronda 8 esta ficha lo decía y era falso, porque la receta seguía pidiendo la tecnología «talla de obsidiana», que cuesta 2 obsidianas de más de 1500 m y 8 de saber. Desde la ronda 8 no pide ninguna tecnología, cuesta una sola piedra —la segunda de antes era, en realidad, el percutor, y ahora está escrita como lo que es— y lo único que pide es llevar el percutor encima. Recién ahora el arranque no es una caminata.",
+      "notaGeologica": "La comarca es volcánica y los arroyos bajan rodados de basalto y andesita: cualquier roca volcánica de grano fino astilla con filo. La obsidiana es la mejor y por eso se traía de lejos, no la única.",
+      "pideHerramienta": "percutor"
+    },
+    {
+      "id": "preforma_hacha",
+      "nombre": "Preforma de hacha",
+      "categoria": "insumo",
+      "nivel": 1,
+      "tecnologia": null,
+      "donde": "bolso",
+      "pideHerramienta": "percutor",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 2
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "preforma",
+          "cantidad": 1
+        }
+      ],
+      "nota": "El segundo paso, y el más largo de todos. Se elige un canto alargado y se le saca la forma en dos tiempos. Primero el desbaste: golpes francos con el percutor que arrancan lascas grandes y dejan el contorno. Después el picado: miles de golpecitos cortos y verticales con la punta del percutor, que no arrancan lascas sino que muelen la superficie hasta dejar el perfil del hacha y una cara pareja donde después morderá la arena. Cuesta dos piedras porque una es el canto y la otra es lo que se va en astillas y polvo.",
+      "fuente": "Fenton, M. B. (1984), «The nature of the source and the manufacture of Scottish battle-axes and axe-hammers», Proceedings of the Prehistoric Society 50: 217-243. Es un trabajo experimental: la réplica se hace con percutores de piedra y cada etapa está cronometrada. El desbaste por lascado lleva minutos; el picado, entre 3 y 5 horas; el desgaste, de 1 a 3; y el pulido, unas 3. Se pule frotando contra una laja o una roca fija, con arena y agua. El picado es la etapa que domina el costo: de 3 a 5 horas contra los pocos minutos del desbaste.",
+      "porQueExiste": "El hacha del juego salía de un solo paso —dos piedras, un mango y cuatro tientos— y no tenía ni una línea de pulido: «pulida» estaba en el nombre y en ningún lado más. Éste es el paso que el dueño pidió por su nombre: «trabajar piedra para después hacer un hacha».",
+      "esReceta": true
+    },
+    {
+      "id": "pulido_hoja",
+      "nombre": "Pulir la hoja",
+      "categoria": "insumo",
+      "nivel": 2,
+      "tecnologia": "hacha_pulida",
+      "donde": "bolso",
+      "materiales": [
+        {
+          "recurso": "preforma",
+          "cantidad": 1
+        },
+        {
+          "recurso": "arena",
+          "cantidad": 2
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "hoja_hacha",
+          "cantidad": 1
+        }
+      ],
+      "nota": "El tercer paso: la preforma picada se frota contra una laja o una roca fija, con arena y agua en el medio. La arena es el abrasivo de verdad —la laja sólo la sostiene— y el agua arrastra el polvo de piedra para que el grano siga mordiendo. Primero el desgaste, que baja las crestas del picado, y después el pulido, que cierra el poro hasta dejar la piedra lustrosa. Eso es lo que separa un filo que corta de un filo que aguanta el golpe: el astillado corta mejor y salta al primer impacto contra la madera.",
+      "fuente": "Fenton, M. B. (1984), «The nature of the source and the manufacture of Scottish battle-axes and axe-hammers», Proceedings of the Prehistoric Society 50: 217-243. Es un trabajo experimental: la réplica se hace con percutores de piedra y cada etapa está cronometrada. El desbaste por lascado lleva minutos; el picado, entre 3 y 5 horas; el desgaste, de 1 a 3; y el pulido, unas 3. Se pule frotando contra una laja o una roca fija, con arena y agua. De ahí salen las dos etapas de esta receta y el par arena + agua.",
+      "criterio": "Dos de arena por hoja. No hay una medida publicada de cuánta arena consume un pulido, así que el número es del juego: la arena se junta a puñados en la playa de la Reserva (licencia arenaDePlaya, ronda 7) y el banco más cercano al arranque está a 500 m, así que dos puñados es un desvío corto y no una expedición. El agua no se cobra: ver licenciasDeJuego.pulidoSinAgua.",
+      "esReceta": true
     },
     {
       "id": "cordel_fibra",
@@ -455,7 +546,7 @@
       "nombre": "Mango labrado",
       "categoria": "insumo",
       "nivel": 1,
-      "tecnologia": "lasca_obsidiana",
+      "tecnologia": null,
       "donde": "bolso",
       "materiales": [
         {
@@ -473,8 +564,14 @@
           "cantidad": 1
         }
       ],
-      "nota": "Hace falta un filo para labrarlo, y por eso vive en el nivel 1 aunque sea de madera. Es la dependencia que ordena todo el árbol: primero se corta, después se ata.",
-      "esReceta": true
+      "nota": "Una rama elegida por veta, descortezada y labrada hasta que la cabeza entre justa. Hace falta un filo para labrarlo, y por eso vive en el nivel 1 aunque sea de madera: es la dependencia que ordena todo el árbol, primero se corta y después se ata. Cualquier filo sirve —la lasca de rodado, la de obsidiana o el cuchillo enmangado—, y el juego acepta los tres: hasta la ronda 8 pedía la tecnología de la obsidiana, o sea subir a 1500 m para labrar un palo.",
+      "esReceta": true,
+      "pideHerramienta": [
+        "lasca_rodado",
+        "lasca",
+        "cuchillo"
+      ],
+      "fuente": "Salas, A. M. (1942), «Hachas de piedra pulida y enmangadas del territorio del Neuquén», Relaciones de la Sociedad Argentina de Antropología 3: 67-72. Describe dos hachas de piedra pulida conservadas CON SU MANGO, halladas en una mina de sal cerca de Chos Malal, Neuquén. Es un hallazgo excepcional por dos motivos: el enmangue de madera y fibra casi nunca se conserva, y la piedra pulida es rara en la Patagonia, donde la industria dominante es la talla por percusión y presión. Las dos piezas de Chos Malal son la prueba local de que el mango existía y de cómo iba atado; lo que casi nunca sobrevive es justamente esa parte."
     },
     {
       "id": "brea_resina",
@@ -937,16 +1034,16 @@
       "donde": "bolso",
       "materiales": [
         {
-          "recurso": "piedra",
-          "cantidad": 2
+          "recurso": "hoja_hacha",
+          "cantidad": 1
         },
         {
           "recurso": "mango",
           "cantidad": 1
         },
         {
-          "recurso": "tiento",
-          "cantidad": 4
+          "recurso": "cordel",
+          "cantidad": 3
         }
       ],
       "durabilidad": 120,
@@ -955,8 +1052,73 @@
         "talar",
         "descortezar"
       ],
-      "nota": "Piedra pulida por abrasión, no astillada: se tardaban días en hacer una y por eso se heredaban. No corta como la obsidiana, aplasta la fibra de la madera hasta partirla, y para eso hacen falta el peso y el mango.",
-      "kg": 1.6
+      "nota": "El último paso: la hoja pulida se encaja en la horquilla del mango y se ata con cordel apretado en cruz, mojado, para que al secarse muerda. No corta como la obsidiana: aplasta la fibra de la madera hasta partirla, y para eso hacen falta el peso y el mango. Se tardaban días en hacer una —el picado solo lleva de 3 a 5 horas y el pulido otras 6— y por eso se heredaban.",
+      "kg": 1.3,
+      "fuente": "Salas, A. M. (1942), «Hachas de piedra pulida y enmangadas del territorio del Neuquén», Relaciones de la Sociedad Argentina de Antropología 3: 67-72. Describe dos hachas de piedra pulida conservadas CON SU MANGO, halladas en una mina de sal cerca de Chos Malal, Neuquén. Es un hallazgo excepcional por dos motivos: el enmangue de madera y fibra casi nunca se conserva, y la piedra pulida es rara en la Patagonia, donde la industria dominante es la talla por percusión y presión.",
+      "porQueExiste": "Antes de la ronda 8 el hacha salía de un solo paso: dos piedras, un mango y cuatro tientos. El tiento sale del cuero, o sea de cazar, así que la primera hacha pedía subir 700 m por la obsidiana y además cazar; y no tenía ni una línea de pulido. Ahora sale de la cadena entera —percutor, lasca, preforma, pulido, mango— y se ata con cordel de fibra, que se tuerce a mano desde el primer minuto.",
+      "criterioAtadura": "Se ata con cordel y no con tiento a propósito. El tiento es mejor —tira de cuero crudo, se ata mojada y al secar aprieta sola, y la ficha del tiento lo dice— pero pide cuero, o sea cazar o encontrar carroña, y eso no entra en la primera hora. El cordel de fibra vegetal es la atadura de quien todavía no mató nada. Tres cordeles: la atadura de un hacha enmangada es una ligadura larga, cruzada y repetida, no un nudo.",
+      "criterioPeso": "1,3 kg: la hoja pulida (0,8), el mango labrado (0,4) y los tres cordeles de la ligadura (0,09). Hasta la ronda 8 decía 1,6 y no cerraba con nada, porque el hacha salía de dos piedras sueltas y no de una hoja: ahora el peso es la suma de sus partes y baja 300 g. Una cabeza de hacha pulida de 800 g es una pieza de tamaño corriente; la de 1,2 kg que implicaba el número viejo era un hacha de tala grande."
+    },
+    {
+      "id": "martillo_piedra",
+      "nombre": "Martillo de piedra",
+      "categoria": "herramienta",
+      "nivel": 2,
+      "tecnologia": null,
+      "donde": "bolso",
+      "pideHerramienta": "percutor",
+      "materiales": [
+        {
+          "recurso": "piedra",
+          "cantidad": 2
+        },
+        {
+          "recurso": "mango",
+          "cantidad": 1
+        },
+        {
+          "recurso": "cordel",
+          "cantidad": 3
+        }
+      ],
+      "nota": "La misma cadena que el hacha, un paso más corta: un canto pesado al que se le pica una garganta alrededor con el percutor, y se ata a un mango por esa garganta. No lleva pulido, y ésa es la diferencia entera con el hacha. El hacha necesita un filo liso que aguante el impacto, y eso cuesta seis horas de arena; el martillo no tiene filo, sólo masa, así que el picado alcanza. Por eso está al alcance antes: dura más, no corta nada y multiplica el brazo.",
+      "fuente": "Fenton, M. B. (1984), «The nature of the source and the manufacture of Scottish battle-axes and axe-hammers», Proceedings of the Prehistoric Society 50: 217-243. Es un trabajo experimental: la réplica se hace con percutores de piedra y cada etapa está cronometrada. El desbaste por lascado lleva minutos; el picado, entre 3 y 5 horas; el desgaste, de 1 a 3; y el pulido, unas 3. Se pule frotando contra una laja o una roca fija, con arena y agua. El trabajo es, literalmente, sobre hachas y hachas-martillo escocesas: la secuencia desbaste → picado → desgaste → pulido es la misma para las dos, y la pieza sin filo se queda en el picado.",
+      "porQueExiste": "El dueño pidió «trabajar piedra para después hacer un hacha, un martillo, etc.» y el único martillo del juego era de hierro: nivel 4, en la fragua, detrás de la herrería colonial. La maza y cuñas de nivel 3 pide asta y la cantería. No había ninguna percusión con mango antes del hierro, que es justamente el nombre del nivel 2.",
+      "notaGarganta": "La garganta —el surco ecuatorial picado— no es adorno: es lo único que impide que la atadura se corra hacia adelante con el golpe. La bola de la boleadora lleva el mismo surco y por la misma razón, y su ficha ya lo dice.",
+      "kg": 1.5,
+      "notaRanura": "Va en la mano desde la ronda 8, fase 5, con su modelo en `src/entities/Herramientas3D.js`: cabeza de tres cilindros con la garganta picada en el medio y el cabo atado en ella, más corto y más grueso que el de la maza y cuña. Los 150 usos son los más altos de la piedra —más que el hacha, que son 120— y la razón es la misma por la que no lleva pulido: no tiene filo que se desafile, tiene masa. Lo que se rompe de una maza enmangada es el mango o la atadura, no el canto.",
+      "ranura": "mano",
+      "durabilidad": 150,
+      "habilita": [
+        "rematar"
+      ],
+      "criterioHabilita": "Habilita `rematar`, que es nivelMinimo 0 y cuya propia ficha dice «lo que ya cayó en una trampa o está herido. No es caza y no abre nada por sí solo». Es el uso honesto de un canto enmangado y es el que completa la trampa de lazo de la fase 2: el lazo agarra y hay que rematar. No habilita `partir_piedra` ni `cantera`, que son de la maza y cuña de nivel 3 y de la cantera, y meter el martillo ahí sería saltearse un nivel entero del árbol."
+    },
+    {
+      "id": "medula_hueso",
+      "nombre": "Médula de hueso",
+      "categoria": "insumo",
+      "nivel": 2,
+      "tecnologia": null,
+      "donde": "bolso",
+      "pideHerramienta": "martillo_piedra",
+      "materiales": [
+        {
+          "recurso": "hueso",
+          "cantidad": 2
+        }
+      ],
+      "produce": [
+        {
+          "recurso": "grasa",
+          "cantidad": 1
+        }
+      ],
+      "nota": "Un hueso largo apoyado en una piedra plana y un golpe seco con el martillo, en el punto justo del medio: el hueso se abre a lo largo y deja a la vista el canuto de médula. Es grasa casi pura, y es la única grasa que se saca de un animal que ya está muerto hace días, cuando la carne no sirve: la médula va adentro del hueso, sellada. A mano no se abre un fémur de ciervo, y con una lasca tampoco; hace falta masa.",
+      "fuente": "Mengoni Goñalons, G. L. (1999), «Cazadores de guanacos de la estepa patagónica», Buenos Aires, Sociedad Argentina de Antropología: la fractura sistemática de los huesos largos para extraer la médula es una de las prácticas mejor documentadas del procesamiento del guanaco en la Patagonia, y deja un patrón de fragmentación reconocible en los sitios. Outram, A. K. (2001), «A new approach to identifying bone marrow and grease exploitation: why the \"indeterminate\" fragments should not be ignored», Journal of Archaeological Science 28: 401-410: ese patrón de astillas es lo que separa un hueso roto por una persona de uno roto por un carnívoro, y es por eso que las esquirlas «indeterminadas» no se pueden descartar del recuento.",
+      "criterio": "Dos huesos por una de grasa. El número es una decisión del juego y no sale de ninguna fuente: ninguna de las dos citadas mide cuánta médula rinde un hueso. Se eligió así para que la médula sea una fuente real de grasa sin volverse la fácil —el hueso pesa 0,3 kg y la grasa también, o sea que la receta es un 50 % de pérdida en peso— y para que la carroña siga rindiendo más grasa directa que el martillo.",
+      "porQueImporta": "Es el uso del martillo que se puede hacer en la primera semana sin cazar nada. El hueso sale de la carroña, que ya está en caza.json —los restos de una presa de puma rinden cuero, tendón y hueso—, y la grasa abre el candil de grasa, la brea, el curtido y el odre. Hasta la ronda 8 la grasa la entregaba solamente la carroña; ahora hay una segunda vía y pasa por la piedra.",
+      "esReceta": true
     },
     {
       "id": "azuela",
@@ -2676,6 +2838,15 @@
         "queNOSeAfloja": "El guanaco sigue protegido y no se caza; no aparece fauna nueva ni ovejas. El coirón sigue dando su fibra de siempre, y el tronco caído le sigue ganando la tecla. La licencia es sobre de dónde sale la lana y cuánta, no sobre lo que se hace con ella: hilar sigue pidiendo el huso, y tejer, el witral en pie.",
         "aviso": "Es una licencia de juego. El guanaco no vive en este bosque, y el pelo de guanaco que se hilaba salía del cuero o de la esquila, no de las matas. El juego lo pone en el coirón para que el telar exista.",
         "nota": "El número vive en EXTRAS_MATA.coiron de Recoleccion.js: cantidad 1, probabilidad 2/3. La tecnología del telar dice «lana de oveja hilada», y es verdad para su época. El juego teje con esta lana porque no hay otra, y la licencia lo dice."
+      },
+      {
+        "id": "pulidoSinAgua",
+        "que": "El pulido de la hoja del hacha pide arena y NO pide agua.",
+        "laRealidad": "Se pule frotando la preforma contra una laja o una roca fija con arena y agua en el medio. El agua no es opcional: arrastra el polvo de piedra, mantiene el grano suelto entre las dos caras y evita que el abrasivo se apelmace. La réplica experimental de Fenton (1984, Proceedings of the Prehistoric Society 50: 217-243) se hace así, y le lleva de 1 a 3 horas de desgaste y unas 3 de pulido.",
+        "porQueSeToma": "Desde la ronda 7 el agua del juego viaja en un recipiente, y el primer recipiente —el metawe de greda— pide cerámica, o sea horno de barro, o sea nivel 3. Cobrar el agua dejaría la primera hacha detrás del primer horno, que es exactamente el defecto que esta fase vino a arreglar. Medido el 22/9/2026 con el inventario real: en un bolso de arranque, `Inventario.agregar('agua', 1)` devuelve 0 —no hay en qué llevarla—, así que la receta nunca estaría lista.",
+        "comoLoDiceElJuego": "La ficha del pulido lo dice completo: que se pule con arena Y agua contra una laja, y que el juego sólo cobra la arena. La explicación que cierra el círculo es que se pule en la orilla, que es donde está el agua y donde no hace falta cargarla.",
+        "queNOSeAfloja": "La arena sigue siendo arena de verdad: se junta a puñados en la playa de la Reserva o fuera del área protegida, nunca en el Parque, con la licencia arenaDePlaya que ya existe y su aviso por jurisdicción. Y el pulido sigue siendo un paso propio, con su costo, su tecnología y sus dos horas de ficha: no se saltea, se abarata.",
+        "nota": "Es la segunda licencia sobre la física y no sobre la norma, después de luzNocturna. La toma la ronda 8, fase 5."
       }
     ]
   },
