@@ -1501,6 +1501,54 @@ costado, con las sombras largas del relieve. El dueño eligió **«Ley real (All
 
 **Propiedad exclusiva:** `src/world/Cielo.js`. Nada más.
 
+### CERRADA el 23/9/2026
+
+**Banco 6/6** (ley 6 aserciones, noche 5, cielo 3, regresión 13, lint del shader, `vite
+build`) y **falsador 8/8 con los 3 controles verdes**. `brilloLunar` da Allen clavado a
+cinco decimales en los cinco ángulos que mide el banco: 1,00000 · 0,48608 · 0,09100 ·
+0,01160 · 0,00194.
+
+**El número de la fase**, medido por el banco sobre dos meses de noches:
+
+> la luna en cuarto alumbraba **0,480** de la llena —la fracción iluminada del disco— y
+> ahora alumbra **0,090**, que es lo que dice Allen.
+
+**Medido en el juego** (no en el banco), la misma noche con las mismas semillas de clima
+y Vite reiniciado para cada versión, **20/2/2025 08:00 UTC, luna a 56°, α 85,6°**:
+
+| | antes | ahora | |
+|---|---|---|---|
+| ambiente | 0,0858 | **0,0536** | −37,5 % |
+| niebla (azul) | 0,0414 | **0,0253** | −38,9 % |
+| lo que aporta la luna sola | 0,0408 | **0,0086** | ÷ 4,7 |
+| `uFaseLunar` (la forma del disco) | 0,538 | 0,538 | **igual**, que es A4 |
+
+Y en la imagen, restando las dos capturas (`r8-f6-cuarto-ANTES.png` /
+`-AHORA.png`): el suelo baja **10,3 %** y los puntos de estrella pasan de **443 a 569**
+(×1,28). El cielo medio casi no se mueve (−1,5 %): lo que cambia es el contraste, no el
+fondo.
+
+**Dos defectos del banco y del instrumental, los dos míos.** Los encontró el agente y los
+comprobé antes de tocar nada:
+1. **`BASE_LLENA` decía 0,0889 y la base mide 0,0899.** Error de transcripción mío.
+   Comprobado el 23/9 corriendo la sección contra una copia de HEAD (`git archive`). El
+   1,2 % no cambiaba ningún veredicto, pero el día que alguien apriete la tolerancia al
+   5 % estaría restándole un error de tipeo al presupuesto de la física. Corregido.
+2. **`lint-shader.mjs` daba verde y salida 0 sobre un archivo que no parsea.** Una comilla
+   invertida dentro de un comentario GLSL cierra el literal de plantilla; la regla 2 busca
+   sólo `${` porque da por sentado que la comilla la caza otra cosa —la sección del banco
+   que importa el módulo—, y **el falsador corre siempre con `BANCO_SIN_BUILD=1`**, que es
+   justo esa sección. Un archivo que ninguna sección importe no lo miraba nadie.
+   Reproducido y arreglado: el lint ahora corre `node --check` antes que nada. Comprobado
+   sobre el archivo roto (error, salida 1) y sobre los seis objetivos de siempre (verdes).
+
+**Lo que queda anotado, sin tocar** (todo en `pendiente-r8-luz.md`):
+- **El disco sigue con brillo fijo `2.6`**, que es lo que manda A4. Ahora el creciente sale
+  igual de blanco mientras todo lo que lo rodea bajó 0,68 paradas, y el halo quedó en el
+  19,6 %. **Es lo único de esta fase que hay que mirar con el ojo y no con el banco.**
+- El `0.30` del halo quedó calibrado para la otra ley: la llena no cambió, pero el resto
+  bajó mucho más.
+
 ---
 
 ## FASE 7 · `reglas` — las decisiones del dueño y las deudas anotadas

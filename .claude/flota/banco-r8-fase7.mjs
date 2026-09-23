@@ -318,8 +318,8 @@ async function regresion() {
     ['banco-r8-fase3c.mjs', '2/2', { BANCO_SECCIONES: 'vertice,shader' }],
     ['banco-r8-fase4.mjs', '4/4', { BANCO_SECCIONES: 'horno,hoja,clases,modelo' }],
     ['banco-r8-fase5.mjs', '5/5', { BANCO_SECCIONES: 'cadena,primeraHora,martillo,nadiePeor,notas' }],
-    // Mientras la fase 6 no esté hecha, su banco da 1/4 y eso es lo que se fija
-    ['banco-r8-fase6.mjs', '1/4', { BANCO_SECCIONES: 'ley,noche,cielo,shader' }],
+    // La fase 6 se cerró el 23/9/2026: vuelve a 4/4 (estuvo en 1/4 mientras no existía)
+    ['banco-r8-fase6.mjs', '4/4', { BANCO_SECCIONES: 'ley,noche,cielo,shader' }],
   ];
   let corrio = 0;
   for (const [archivo, esperado, env] of otros) {

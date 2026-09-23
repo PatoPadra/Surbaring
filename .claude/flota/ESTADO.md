@@ -112,6 +112,22 @@ vuelta.**
 > percutor se gasta tirando flechas y no picando piedra— y **la hoja de iconos quedó a
 > 2,22 kB del techo**, lo que le va a aparecer a la fase 7 como si fuera culpa suya.
 >
+> **23/9/2026 — FASE 6 (`luz`) CERRADA.** Banco 6/6, falsador 8/8 con 3 controles verdes.
+> La luna alumbra con la ley de Allen y no con la fracción iluminada del disco: **el cuarto
+> pasa de 0,480 a 0,090 de la llena**, que es lo que dice la ley. Medido en el juego, la
+> misma noche con las mismas semillas y Vite reiniciado para cada versión (20/2/2025, luna
+> a 56°, α 85,6°): el ambiente baja de 0,0858 a 0,0536 (−37,5 %), la niebla −38,9 %, y lo
+> que aporta la luna sola se divide por 4,7. En la imagen, el suelo baja 10,3 % y los
+> puntos de estrella pasan de 443 a 569. La forma del disco no cambió (`uFaseLunar` 0,538
+> en las dos), que es lo que pedía A4. **Dos defectos del instrumental, los dos míos y los
+> dos encontrados por el agente:** `BASE_LLENA` decía 0,0889 y la base mide 0,0899
+> (comprobado contra una copia de HEAD), y **`lint-shader.mjs` daba verde sobre un archivo
+> que no parsea** —una comilla invertida en un comentario GLSL cierra el literal— porque la
+> regla que lo atraparía es la sección que importa el módulo, y el falsador corre siempre
+> con `BANCO_SIN_BUILD=1`. Ahora el lint corre `node --check` antes que nada. Queda para el
+> ojo del dueño: el disco sigue con brillo fijo, así que el creciente sale igual de blanco
+> mientras todo lo que lo rodea bajó 0,68 paradas.
+>
 > **Preparado mientras corre la 4** (todo con banco validado contra la base y, donde se
 > pudo, contra una maqueta del jefe; falsadores con controles):
 > - **Fase 5 (piedra)** `ef06b61`: contrato P1–P12; el banco recorre la cadena del hacha con

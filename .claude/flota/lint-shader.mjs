@@ -29,6 +29,7 @@
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 const POR_OMISION = [
   'src/world/Agua.js', 'src/world/Terreno.js', 'src/world/Vegetacion.js',
@@ -90,6 +91,29 @@ function revisar(rel) {
   const ruta = resolve(process.cwd(), rel);
   const txt = readFileSync(ruta, 'utf8');
   const errores = [], avisos = [];
+
+  // ── (0) que el archivo PARSEE, antes que nada.
+  //
+  // Agregado el 23/9/2026, y lo encontró el agente `luz` pisándolo en la fase 6: una
+  // comilla invertida dentro de un comentario GLSL cierra el literal de plantilla,
+  // el archivo deja de parsear —`node --check` tira SyntaxError— y este lint decía
+  // «ok» y salía con 0. La regla (2) no lo agarraba porque busca sólo `${`, dando por
+  // sentado que la comilla la caza otra cosa; lo único que se notaba era que el
+  // recuento de trozos daba de más, y nadie mira ese número.
+  //
+  // «Otra cosa» es la sección del banco que importa el módulo, y ahí está el agujero:
+  // el falsador corre SIEMPRE con `BANCO_SIN_BUILD=1`, y un archivo que ninguna
+  // sección importe no lo mira nadie. Un instrumento que dice «ok» sobre algo que no
+  // compila es peor que no tenerlo.
+  // Se usa `node --check` y no `new Function(txt)`: estos archivos son módulos ES y
+  // `new Function` los rechazaría siempre por el `import` de arriba, o sea que daría
+  // error en todos y no serviría de nada.
+  const chequeo = spawnSync(process.execPath, ['--check', ruta], { encoding: 'utf8' });
+  if (chequeo.status !== 0) {
+    const detalle = (chequeo.stderr || '').split('\n').find((l) => /Error:/.test(l)) || 'no parsea';
+    errores.push(`${rel}  el archivo no parsea como JavaScript: ${detalle.trim()}`);
+    return { rel, errores, avisos, trozos: 0 };
+  }
 
   const trozos = literales(txt).filter(l => esGLSL(l.cuerpo));
   if (!trozos.length) return { rel, errores, avisos, trozos: 0 };

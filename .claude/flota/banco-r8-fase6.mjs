@@ -31,8 +31,14 @@ const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const RAIZ = path.resolve(AQUI, '..', '..');
 const SRC = process.env.BANCO_SRC ? path.resolve(process.env.BANCO_SRC) : path.join(RAIZ, 'src');
 const ALLEN = (a) => Math.pow(10, -0.4 * (0.026 * a + 4e-9 * a ** 4));
-// Lo que midió la base el 19/9/2026 (RONDA8.md, fase 6, punto 2)
-const BASE_LLENA = 0.0889;       // exceso de ambiente por seno de altura, noches con α < 6°
+// Lo que midió la base el 19/9/2026 (RONDA8.md, fase 6, punto 2).
+//
+// `BASE_LLENA` decía 0,0889 y era un error de transcripción MÍO, del jefe: lo encontró
+// el agente `luz` y lo comprobé el 23/9 corriendo esta misma sección contra una copia de
+// HEAD (`git archive HEAD src`), que da **0,0899**. El 1,2 % no cambiaba ningún veredicto
+// —las dos versiones caen dentro del ±10 %—, pero dejarlo habría sido restarle un error
+// de tipeo al presupuesto de la física el día que alguien apriete la tolerancia al 5 %.
+const BASE_LLENA = 0.0899;       // exceso de ambiente por seno de altura, noches con α < 6°
 const BASE_SIN_LUNA = 0.0459;    // ambiente de una noche sin luna
 
 function seccion(num, nombre) {
