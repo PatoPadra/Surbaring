@@ -49,7 +49,7 @@ hicieron como preguntas con opciones, y contestó todas:
 | **La luz de la luna** | **ley real de Allen** | en cuarto alumbra la décima parte que llena. Fase 6 |
 | **El primer año** (arrancar en primavera, pasar el invierno) | **propuesta escrita** | se mide la primera hora y el calendario y se escribe el diseño; **no se toca código de eso** |
 | **Alcance mientras no está** | **todo, incluido el paso a paso** | notas 1 a 4, gráficos, y el trabajo de la piedra de la nota 5 |
-| **Qué gráfico molesta más** | **el suelo de cerca · árboles y follaje** · «otra cosa» sin texto | fases 3 y 4. **La «otra cosa» no llegó escrita: preguntarle a la vuelta** |
+| **Qué gráfico molesta más** | **el suelo de cerca · árboles y follaje** | fases 3 y 4. Había una tercera opción sin texto y **el 27/9/2026 el dueño confirmó que no existe**: eran dos |
 
 ---
 

@@ -18,8 +18,9 @@ hierro.
 Siete fases: `rumbo`, `lazo`, `suelo`, `copa`, `piedra`, `luz`, `reglas`. Más la
 propuesta escrita del primer año, sin código.
 
-**La «otra cosa» de gráficos que marcó el dueño no llegó escrita: preguntarle a la
-vuelta.**
+**La «otra cosa» de gráficos: NO EXISTE.** El dueño lo contestó el 27/9/2026 —«la
+«otra cosa» a la que haces alusión no existe»—. Eran dos y no tres: el suelo de cerca
+y los árboles. Cerrado, no volver a preguntarlo.
 
 > **18/9/2026 — FASE 1 (`rumbo`) CERRADA** (`f9d8746`). Banco 7/7, falsador 16/16 con
 > 3 controles verdes, navegador 29/29. La flecha apunta bien en el mapa y el minimapa
@@ -151,7 +152,7 @@ vuelta.**
 > **Queda abierto para la ronda 9:** la hoja de iconos a **2,22 kB de su techo** (137,78 de
 > 140) —es lo primero que va a morder—, `Fabricacion` que no gasta la herramienta que pide
 > (el percutor se gasta tirando flechas y no picando piedra), las ramas peladas de las
-> latifoliadas (fase 4b), y la **«otra cosa» de gráficos que el dueño nunca escribió**.
+> latifoliadas (fase 4b). La «otra cosa» de gráficos **no existe**: contestado el 27/9.
 >
 > **Preparado mientras corre la 4** (todo con banco validado contra la base y, donde se
 > pudo, contra una maqueta del jefe; falsadores con controles):
