@@ -2,6 +2,21 @@
 
 ## Ronda 8 · ABIERTA el 18/9/2026 · rama `mejoras/ronda8-lo-que-vio`
 
+> **28/9/2026 — LA RONDA 8 SE FUSIONA A MAIN, Y ESTA VEZ SIN HABERLA JUGADO.** Lo pidió
+> el dueño con el motivo dicho: le quedaba la mitad de la cuota semanal hasta el día
+> siguiente y no iba a tener tiempo de probar, así que prefiere que la ronda 9 arranque
+> sobre `main` y probar todo junto después. **Es una excepción declarada a la regla de
+> siempre** (`fusionar-recien-cuando-lo-vio`), y se anota porque cambia lo que significa
+> `main`: hasta la ronda 7, `main` era código que el dueño había jugado. Desde ésta, no.
+>
+> **Lo que sí está medido:** las siete fases con banco y falsador verdes, y lo que un
+> banco no puede ver, medido a mano en el juego (la cadena de la piedra, la noche de
+> cuarto, la muerte, la licencia del Parque, las estaciones y la capacidad del bolso).
+> **Lo que NO está validado es el juego como experiencia:** las tres decisiones de
+> balance —morir pierde todo, la lana en 1 de cada 4, el hacha en cinco pasos— no las
+> probó nadie jugando. Si al probarlas hay que volver atrás, se vuelve sobre `main`.
+
+
 El dueño jugó la ronda 7 y trajo cinco notas. **Se fue a Chile el 18/9 y vuelve el
 lunes 21 a la noche**: pidió que la ronda siga sin él, con más peso en los
 gráficos. Antes de irse contestó todas las decisiones pendientes, esta vez como
