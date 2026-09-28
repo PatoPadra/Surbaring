@@ -20,7 +20,7 @@
  *   dejarla, el peso, el HUD y las recetas siguen viendo lo mismo de siempre.
  *   Una pila que vive en una variable de la interfaz es una pila que se pierde
  *   el día que alguien cierra el panel con el bolso en la mano.
- * - **Con iconos, desde la fase 3.** Son 115 dibujos y viven en `Iconos.js`. La
+ * - **Con iconos, desde la fase 3.** Son 122 dibujos y viven en `Iconos.js`. La
  *   sigla de tres letras que había antes se fue: en una captura de veinticuatro
  *   casillas se leían cuatro «Arc» y dos «Tos», o sea que ubicaba y no
  *   identificaba. Queda para un solo caso —un id sin dibujo—, y ahí conviene
@@ -75,7 +75,7 @@ const CSS = `
     gap: 4px; margin: .45rem 0 .2rem; }
   /* Va background-color y NO el atajo background: el dibujo del icono llega por
      una clase de Iconos.js, y el atajo —que también fija background-image— se lo
-     borraría desde una regla de más peso. Es el defecto que dejaría los 115
+     borraría desde una regla de más peso. Es el defecto que dejaría todos los
      casilleros pintados de un color plano y sin ningún dibujo.
      Y sin comillas invertidas en los comentarios de acá adentro: todo este
      bloque es una plantilla de texto y una comilla invertida la parte al medio,
@@ -239,7 +239,7 @@ export class Bolso {
     this._tomada = null;
     /** El último casillero por el que pasó el puntero: es el que se detalla. */
     this._mirando = null;
-    /** Si la hoja de los 115 iconos ya está en el documento. */
+    /** Si la hoja de los 122 iconos ya está en el documento. */
     this._hojaPuesta = false;
     this._crear();
     // Armar los dibujos en el primer rato libre, para que abrir el bolso por
@@ -360,6 +360,14 @@ export class Bolso {
           this.hud?.aviso(this.equipo?.definicion(cosa.id)?.nombre || cosa.id,
             'No se pudo sacar.');
         }
+      } else if (accion === 'poner') {
+        // La del casillero señalado, con sus usos: con dos nasas, «poner la
+        // nasa» tiene que poner la que el jugador está mirando. El aviso de que
+        // quedó puesta, con la norma la primera vez, lo da `Trampas`; acá sólo
+        // se dice por qué no.
+        const cosa = this.inventario.casillas[+b.dataset.i];
+        const r = this.trampas?.poner(cosa?.id ?? id, cosa ?? null);
+        if (r && !r.ok) this.hud?.aviso(this.equipo?.definicion(cosa?.id ?? id)?.nombre || id, r.motivo || 'No se pudo poner.');
       } else if (accion === 'desequipar') {
         const ranura = b.dataset.ranura;
         const puesto = this.equipo?.enRanura(ranura);
@@ -688,6 +696,12 @@ export class Bolso {
     // número por el que se decide qué soltar, y el que explica el aviso de
     // derrame antes de que pase.
     const guarda = Number(def?.efecto?.guardaAgua) || 0;
+    // Lo que se deja puesto: la trampa de lazo (`pasiva`, habilita trampear) y
+    // lo que se cala en el agua (habilita `trampear_pez`: la nasa y la red). Sin
+    // ranura, «Sacar» no les toca, y hasta la ronda 8 el único botón que tenían
+    // era «Tirar».
+    const sePone = !!this.trampas && !rota && (def?.pasiva === true
+      || (def?.habilita || []).some(h => h === 'trampear' || h === 'trampear_pez'));
     return `<div class="bp-it" style="border-top:none;padding-top:0">
         <b class="bp-det-ic ${claseDe(c.id)}"></b>
         <span>${nombre}<small style="color:var(--tinta-tenue)"> · nivel ${def?.nivel ?? 0}${
@@ -697,6 +711,7 @@ export class Bolso {
         ${finito ? this._durabilidadHTML(it) : '<span class="bp-kg">no se gasta</span>'}
         <span class="bp-kg">${this.inventario.kgDe(c.id).toFixed(1)} kg</span>
         ${def?.ranura && !rota ? `<button data-accion="equipar" data-i="${i}">Sacar</button>` : ''}
+        ${sePone ? `<button data-accion="poner" data-i="${i}" data-id="${c.id}">Poner</button>` : ''}
         ${alumbra && !rota ? `<button data-accion="encender" data-id="${c.id}">Encender</button>` : ''}
         ${rota ? `<button data-accion="reparar" data-i="${i}">Reparar</button>` : ''}
         <button data-accion="tirar_obj" data-i="${i}">Tirar</button>
@@ -760,11 +775,11 @@ export class Bolso {
   }
 
   /**
-   * La hoja de los 115 dibujos, puesta una sola vez.
+   * La hoja de los 122 dibujos, puesta una sola vez.
    *
    * Medido en la página: **inyectarla cuesta 0,2 ms y armarla cuesta 21**. Lo
-   * caro no es meter 130 kB de CSS en el documento —eso no se siente—, sino
-   * correr las 115 recetas la primera vez, con el compilador todavía frío.
+   * caro no es meter 138 kB de CSS en el documento —eso no se siente—, sino
+   * correr las 122 recetas la primera vez, con el compilador todavía frío.
    *
    * Por eso hay dos caminos y no uno. `_asegurarIconos()` es la garantía: si el
    * jugador abre el bolso a los tres segundos de entrar, paga los 21 ms una vez

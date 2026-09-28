@@ -267,31 +267,58 @@ export class Pesca {
       return null;
     }
 
-    const esp = v.esp;
+    return this.resolverPez(v.esp);
+  }
+
+  /**
+   * Qué se hace con un pez que ya salió del agua: la regla de la caña, en el
+   * orden en que la pregunta un guardaparque. El nativo se devuelve siempre, el
+   * salmónido de más de la medida también, y el resto va al bolso como pescado.
+   *
+   * Es un método aparte porque la caña no es la única que saca peces: la nasa y
+   * la red también (`Trampas.revisar()`), y un pez vivo en una nasa sigue siendo
+   * fauna nativa o un reproductor grande. Una sola regla para los dos, así no
+   * hay una versión que se actualiza y otra que se queda atrás.
+   *
+   * Dos opciones, para quien revisa una nasa con cinco peces adentro:
+   * - `avisar: false` no pisa el cartel con un aviso por pez; el veredicto
+   *   vuelve armado en `titulo` y `detalle` para que se diga todo junto.
+   * - `premiar: false` no suma saber. Devolver bien con la caña es una decisión
+   *   del jugador y se premia; lo que devuelve una nasa lo eligió el embudo, y
+   *   premiarlo sería pagar por usar un arte de pesca prohibido.
+   *
+   * @param {object} esp la especie de `fauna.json`
+   * @returns {{esp:object, largoCm:number, conservado:boolean, motivo:string,
+   *   piezas:number, titulo:string, detalle:string}}
+   */
+  resolverPez(esp, { avisar = true, premiar = true } = {}) {
     // Talla del ejemplar. El largo del dataset es el de un adulto grande, y en
     // el agua la mayoría son juveniles, así que la distribución tira para abajo:
     // de una trucha arcoíris de 50 cm de referencia salen ejemplares de 18 a 55.
     const largoCm = Math.max(4, (esp.largoM || 0.2) * 100 * (0.35 + Math.random() * 0.75));
     this.codice?.registrarFauna(esp, true);
+    const decir = (titulo, detalle) => { if (avisar) this.hud.aviso(titulo, detalle); };
 
     // ── Nativo: se devuelve siempre
     if (esp.nativa) {
       this.devoluciones++;
       const nota = (this.n.especiesNativas || []).find(e => e.id === esp.id)?.nota;
-      this.saberes.otorgar(3, `${esp.nombreComun} devuelto al agua`);
-      this.hud.aviso(`${esp.nombreComun} (${largoCm.toFixed(0)} cm): devolución obligatoria`,
-        `${nota || ''} ${this.n.devolucion?.nativas || 'Es fauna nativa dentro de un área protegida: se devuelve.'}`.trim());
-      return { esp, largoCm, conservado: false, motivo: 'nativa' };
+      if (premiar) this.saberes.otorgar(3, `${esp.nombreComun} devuelto al agua`);
+      const titulo = `${esp.nombreComun} (${largoCm.toFixed(0)} cm): devolución obligatoria`;
+      const detalle = `${nota || ''} ${this.n.devolucion?.nativas || 'Es fauna nativa dentro de un área protegida: se devuelve.'}`.trim();
+      decir(titulo, detalle);
+      return { esp, largoCm, conservado: false, motivo: 'nativa', piezas: 0, titulo, detalle };
     }
 
     // ── Salmónido: exótico, pero con medida
     const maxCm = this.n.medidas?.salmonidoMaximoCm ?? 40;
     if (largoCm > maxCm) {
       this.devoluciones++;
-      this.saberes.otorgar(2, 'Devolviste un reproductor');
-      this.hud.aviso(`${esp.nombreComun} de ${largoCm.toFixed(0)} cm: se devuelve`,
-        `La normativa del parque apunta a conservar los ejemplares chicos y devolver los grandes, que son los mejores reproductores. ${this.n.devolucion?.comoSeHace || ''}`.trim());
-      return { esp, largoCm, conservado: false, motivo: 'medida' };
+      if (premiar) this.saberes.otorgar(2, 'Devolviste un reproductor');
+      const titulo = `${esp.nombreComun} de ${largoCm.toFixed(0)} cm: se devuelve`;
+      const detalle = `La normativa del parque apunta a conservar los ejemplares chicos y devolver los grandes, que son los mejores reproductores. ${this.n.devolucion?.comoSeHace || ''}`.trim();
+      decir(titulo, detalle);
+      return { esp, largoCm, conservado: false, motivo: 'medida', piezas: 0, titulo, detalle };
     }
 
     const kg = (esp.pesoKg || 1) * Math.pow(largoCm / ((esp.largoM || 0.4) * 100), 3);
@@ -299,10 +326,11 @@ export class Pesca {
     const n = this.inventario.agregar('pescado', piezas);
     this.capturas++;
     const regla = this.reglaPorEspecie.get(esp.id);
-    this.hud.aviso(`${esp.nombreComun} de ${largoCm.toFixed(0)} cm`,
-      n > 0
-        ? `${n} × pescado · ${regla?.razonEcologica || 'Especie introducida: su extracción alivia la presión sobre los peces nativos.'}`
-        : `No entra nada más (${this.inventario.pesoKg.toFixed(1)} kg)`);
-    return { esp, largoCm, conservado: n > 0, motivo: 'exotica' };
+    const titulo = `${esp.nombreComun} de ${largoCm.toFixed(0)} cm`;
+    const detalle = n > 0
+      ? `${n} × pescado · ${regla?.razonEcologica || 'Especie introducida: su extracción alivia la presión sobre los peces nativos.'}`
+      : `No entra nada más (${this.inventario.pesoKg.toFixed(1)} kg)`;
+    decir(titulo, detalle);
+    return { esp, largoCm, conservado: n > 0, motivo: 'exotica', piezas: n, titulo, detalle };
   }
 }

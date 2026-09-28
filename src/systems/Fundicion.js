@@ -34,7 +34,18 @@ import { normalizar, nombreDe } from './Recursos.js';
 import { LIQUIDOS } from './Inventario.js';
 
 const MS_HORA = 3600 * 1000;
-const RADIO_HORNO_M = 8;
+
+/**
+ * A qué distancia se considera que uno está «al lado» de un horno o de una
+ * estación de obra.
+ *
+ * Se exporta desde la ronda 8, fase 7, y ése es todo el cambio: `Fabricacion.js`
+ * lo tenía copiado como `RADIO_ESTACION_M = 8` porque acá no se exportaba, y dos
+ * números iguales escritos en dos archivos son un número que algún día va a ser
+ * dos. Lo pidió `pendiente-r7-witral.md`. Vive acá y no allá porque el que mide
+ * es `cercano()`: la fabricación pregunta, la fundición contesta.
+ */
+export const RADIO_HORNO_M = 8;
 
 /** Valores por defecto de la humedad, por si el dataset no los trae. */
 const HUMEDAD = {

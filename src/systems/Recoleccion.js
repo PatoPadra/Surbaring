@@ -10,6 +10,19 @@
  * fibra, corteza suelta y frutos, y la planta queda en pie con un descanso
  * antes de poder volver a darle. La restricción no es de diseño, es la regla
  * real del lugar, y de paso enseña por qué existe.
+ *
+ * Y aun así **no alcanza**, y desde la ronda 8 el juego lo dice. Dentro del
+ * Parque Nacional la Ley 22.351, en su artículo 5, prohíbe «cualquier tipo de
+ * aprovechamiento de los recursos naturales», sin excepción por cantidad ni por
+ * juntar sin cortar: levantar una rama caída para el fuego también lo es. El
+ * juego lo permite igual porque negarlo sería quedarse sin juego en el **60,5 %
+ * del mapa** —medido el 23/9/2026 sobre las mismas cajas de `Limites.js`, contra
+ * el 25,4 % de Reserva y el 14,1 % de fuera del área protegida—, y por eso es una
+ * **licencia declarada** —`recoleccionEnElParque` en `herramientas.json`— que se
+ * dice en el cartel la primera vez que se junta algo del lado del Parque. En la
+ * Reserva no se dice, porque ahí la misma ley admite actividades reglamentadas y
+ * la licencia no hace falta; y el arranque está en la Reserva: a menos de 5 km
+ * del punto de partida no hay un metro cuadrado de Parque.
  */
 
 import { cosechaDe, cosechaPosibleDe, COSECHA_SOTOBOSQUE, nombreDe, RECURSOS } from './Recursos.js';
@@ -87,19 +100,36 @@ const EXTRAS_MATA = {
   // del cuero, y hoy de la esquila (ver la licencia). Además, alrededor del
   // arranque no hay guanacos: la fauna viva es de bosque.
   //
-  // El 2/3 sale de un criterio: juntar lana no puede meter en el bolso más peso
-  // de otra cosa que el de la propia lana. La mata trae siempre 2 fibras —100 g,
-  // en `COSECHA_SOTOBOSQUE`— y una lana pesa 150 g, así que va una lana cada
-  // apretada y media. Con el 16 % de antes entraban 667 g de paja por cada lana:
-  // medido en el juego el 13/9/2026 en 61 puntos, la lana de la cadena del
-  // poncho eran 84 apretadas y 8,4 kg de fibra, en un bolso de 38.
+  // ── De dónde sale el 1/4, y qué criterio reemplazó ────────────────────────
+  //
+  // El número anterior era 2/3, y salía de un criterio del bolso: **juntar lana
+  // no puede meter en el bolso más peso de otra cosa que el de la propia lana**.
+  // La mata trae siempre 2 fibras —100 g, en `COSECHA_SOTOBOSQUE`— y una lana
+  // pesa 150 g, así que iba una lana cada apretada y media. Ese criterio había
+  // arreglado algo real: con el 16 % del principio entraban 667 g de paja por
+  // cada lana, y medido en el juego el 13/9/2026 en 61 puntos la lana de la
+  // cadena del poncho eran 84 apretadas y 8,4 kg de fibra en un bolso de 38.
+  //
+  // Lo que el criterio no miraba es **cuánto tiene que costar el poncho**, y ahí
+  // se pasó de largo. La cadena es 9 de hilado, a 3 por cada 4 lanas: 12 lanas.
+  // Con 2/3 eso son 18 apretadas —medidas en el juego en la ronda 7: 17,7— o sea
+  // un par de minutos parado al lado de un coirón para la última prenda del
+  // nivel, la que pide el telar levantado y el huso hecho. El dueño lo jugó y
+  // dijo que era demasiado barato; el jefe de la ronda fijó **1 de cada 4**.
+  //
+  // El criterio nuevo es del costo y no del bolso: las 12 lanas salen en **48
+  // apretadas**, que es una caminata juntando por el camino y no una parada.
+  // Lo que se resigna es justamente el criterio viejo, y conviene decirlo con el
+  // número: esas 48 apretadas traen 96 fibras, 4,8 kg, contra 1,8 kg de lana —la
+  // paja pesa 2,7 veces lo que la lana—. Se resigna a sabiendas porque la fibra
+  // se suelta y la lana no: lo que pesa de más se tira, lo que falta se camina.
   //
   // Queda «a veces» en todas las matas, y no fijada por mata como la carroña.
   // Así cada coirón sigue prometiendo lo que da, y cada apretada que promete
   // lana es una apretada que el jugador paga de verdad: lo que se mide es lo que
   // cuesta. `licencia` es lo que hace que la primera lana lo diga (ver el caso
   // `sotobosque` de `actuar()`).
-  coiron: [{ recurso: 'lana', cantidad: 1, probabilidad: 2 / 3, licencia: 'lanaDelCoiron' }],
+  coiron: [{ recurso: 'lana', cantidad: 1, probabilidad: 1 / 4, licencia: 'lanaDelCoiron' }],
   // Las plumas se juntan del pastizal húmedo, que es donde hay aves. Sin ellas
   // no hay flechas: un astil sin emplumar cabecea y no va a ningún lado.
   pasto_humedo: [{ recurso: 'pluma', cantidad: 2, probabilidad: 0.22 }],
@@ -410,6 +440,15 @@ export class Recoleccion {
     const aguaAMano = this.jugador.enAgua || this._aguaCerca();
     if (aguaAMano && this.jugador.sed < 92) return this._beber();
 
+    // La trampa propia, a menos de 2,5 m: revisarla si cayó algo, levantarla si
+    // está vacía. Va debajo de la sed —la sed mata, y una nasa se cala justo al
+    // lado del agua— y arriba de todo lo que se junta caminando, por la vara de
+    // siempre: la planta y la piedra están en cualquier lado; la trampa es una
+    // sola y el jugador vino hasta acá a buscarla. El cartel lo arma `Trampas`,
+    // que es quien sabe qué hay adentro.
+    const trampa = this.trampas?.cerca(p.x, p.z);
+    if (trampa) return { tipo: 'trampa', trampa, etiqueta: this.trampas.etiqueta(trampa) };
+
     // La orilla: la arcilla de la barranca y la arena de la playa, en un gesto.
     //
     // Va acá, arriba del tronco, de la chatarra y de la planta, por la vara de
@@ -626,6 +665,43 @@ export class Recoleccion {
     return this.herramientas?.licenciasDeJuego?.licencias?.find(l => l.id === 'arenaDePlaya') || null;
   }
 
+  /**
+   * El texto de la licencia de juntar dentro del Parque, **una sola vez**, o ''.
+   *
+   * Recolectar en un Parque Nacional es ilegal de verdad —Ley 22.351, art. 5— y
+   * el juego lo permite desde el prototipo sin decirlo. Es la licencia más vieja
+   * del proyecto y la última en declararse: ver el encabezado de este archivo y
+   * `licenciasDeJuego.recoleccionEnElParque`.
+   *
+   * Tres decisiones, y las tres ya estaban tomadas en este mismo archivo por la
+   * arena y por la lana:
+   *
+   * - **Se dice en el mismo renglón que el rinde**, no en un aviso aparte.
+   *   `HUD.aviso()` es una sola ranura: un aviso diferido lo pisa el siguiente, y
+   *   el jugador leería «4 × Leña» y nada más.
+   * - **Una vez por partida**, y la marca vive en `_licenciasDichas`, el mismo
+   *   conjunto que usa la lana. Repetir una explicación de cuatro renglones en
+   *   cada apretada la convertiría en algo que se saltea.
+   * - **Sólo del lado del Parque.** El límite lo decide `Limites.jurisdiccion()`,
+   *   que llega por `limites` o, si nadie lo cableó, por el que ya tiene
+   *   `Mineria` —es el mismo objeto, y la jurisdicción es una sola—. Sin límites
+   *   no se dice nada: inventar en qué jurisdicción está parado el jugador sería
+   *   peor que callarse.
+   *
+   * Sin el dataset cableado tampoco se dice: el texto vive en la licencia, no acá.
+   */
+  _licenciaDeRecoleccion() {
+    const id = 'recoleccionEnElParque';
+    if (this._licenciasDichas?.has(id)) return '';
+    const p = this.jugador.posicion;
+    const limites = this.limites ?? this.mineria?.limites;
+    if (limites?.jurisdiccion?.(p.x, p.z) !== 'parque') return '';
+    const texto = this.herramientas?.licenciasDeJuego?.licencias?.find(l => l.id === id)?.aviso;
+    if (typeof texto !== 'string') return '';
+    (this._licenciasDichas ??= new Set()).add(id);
+    return texto;
+  }
+
   _claveTramo(lugar, x, z) {
     return `${lugar}:${Math.round(x / TRAMO_ORILLA_M)}:${Math.round(z / TRAMO_ORILLA_M)}`;
   }
@@ -808,7 +884,14 @@ export class Recoleccion {
           if (n > 0) obtenido.push(`${n} × ${nombreDe(c.recurso)}`);
         }
         if (!obtenido.length) this.hud.aviso('No entra nada más', `Cargás ${this.inventario.pesoKg.toFixed(1)} kg`);
-        else if (!nueva) this.hud.aviso(esp.nombreComun, obtenido.join(' · '));
+        else if (!nueva) {
+          // La licencia del Parque, si es la primera vez. Va en este renglón y no
+          // en el de la planta nueva: cuando la especie es nueva este caso no
+          // avisa nada —la ranura se la lleva el códice— y la licencia quedaría
+          // marcada como dicha sin que nadie la haya leído.
+          const enElParque = this._licenciaDeRecoleccion();
+          this.hud.aviso(esp.nombreComun, obtenido.join(' · ') + (enElParque ? ` · ${enElParque}` : ''));
+        }
         return;
       }
 
@@ -859,6 +942,15 @@ export class Recoleccion {
             dice += ` · ${texto}`;
           }
         }
+
+        // Y la del lugar: juntar dentro del Parque también es una licencia, y se
+        // dice la primera vez que algo entra al bolso del lado del Parque. Se
+        // pregunta sólo si entró algo: la licencia es por aprovechar, y una
+        // apretada que no puso nada en el bolso no aprovechó nada.
+        if (obtenido.length) {
+          const enElParque = this._licenciaDeRecoleccion();
+          if (enElParque) dice += ` · ${enElParque}`;
+        }
         this.hud.aviso(acc.mata.tipo.nombre, dice);
         return;
       }
@@ -874,8 +966,15 @@ export class Recoleccion {
             if (n > 0) obtenido.push(`${n} × ${nombreDe(c.recurso)}`);
           }
         }
-        const dice = obtenido.length
+        let dice = obtenido.length
           ? obtenido.join(' · ') : `No entra nada más (${this.inventario.pesoKg.toFixed(1)} kg)`;
+        // La licencia del Parque: acá sólo puede ser la barranca, porque la playa
+        // no cruza la línea del Parque —lo decide `playaEn()`— y por eso no hay
+        // riesgo de encimar dos licencias en el mismo renglón.
+        if (obtenido.length) {
+          const enElParque = this._licenciaDeRecoleccion();
+          if (enElParque) dice += ` · ${enElParque}`;
+        }
         const titulo = acc.partes.length > 1 ? 'Barranca y playa'
           : acc.partes[0].lugar === 'playa' ? 'Playa' : 'Barranca';
 
@@ -896,6 +995,15 @@ export class Recoleccion {
         // rompe en esta palada, el aviso de que se rompió es el que tiene que
         // quedar a la vista.
         if (acc.partes.some(q => q.conHerramienta)) this._gastarHerramienta();
+        return;
+      }
+
+      case 'trampa': {
+        // Con algo adentro se revisa; vacía se levanta y vuelve al bolso. Los
+        // avisos los da `Trampas`: la norma, el rinde o por qué no se pudo.
+        const t = acc.trampa;
+        if (t.presas?.length) this.trampas.revisar(t);
+        else this.trampas.levantar(t);
         return;
       }
 

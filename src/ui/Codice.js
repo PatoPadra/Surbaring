@@ -758,12 +758,29 @@ export class Codice {
    * pantalla— así que la única forma de leer una explicación de quinientos
    * caracteres era alcanzar a leerla en los 4,2 segundos del cartel.
    *
+   * En el medio, desde la ronda 8, van **las licencias de juego**: los lugares
+   * donde el juego afloja a propósito una norma real porque jugarla al pie de la
+   * letra lo dejaría sin juego. Estaban declaradas en `herramientas.json` desde
+   * la ronda 4 y no se podían leer en ninguna pantalla: cada una se decía una
+   * vez, en un cartel de cuatro segundos, y después no existía más. Una licencia
+   * que no se puede releer es, para el que juega, una norma mal contada.
+   *
+   * Van acá y no en una pestaña propia porque es el mismo tema: primero lo que
+   * la ley dice, después dónde el juego se aparta y por qué, y al final lo que
+   * el jugador intentó. Puestas aparte se leerían como una lista de trampas.
+   *
    * Abajo de todo va el registro de lo que el jugador intentó y no pudo. Ése sí
    * es suyo: es su historial de haber chocado contra la ley, con lo que le
    * costó, y es lo que convierte la negativa en algo que se relee.
    */
   _pintarNormativa() {
     const n = this.normativa || {};
+    // El dataset de las licencias, venga por donde venga. `main.js` se lo cuelga
+    // a `codice.normativa`, igual que los otros tres; los dos caminos de abajo
+    // son por si alguna vez se lo cuelga al códice a secas.
+    const licenciasDeJuego = n.licenciasDeJuego || n.herramientas?.licenciasDeJuego
+      || this.licenciasDeJuego || this.herramientas?.licenciasDeJuego || null;
+    const licencias = licenciasDeJuego?.licencias || n.licencias || this.licencias || [];
     let html = `<article class="cx-bloque"><h3>Por qué esta pestaña no se desbloquea</h3>
       <p class="cx-desc">Todo lo que sigue está disponible desde el primer minuto.
       La ley no es un coleccionable: rige sepas o no sepas, y ésa es justamente la
@@ -798,6 +815,31 @@ export class Codice {
           <div class="cx-anio">${x.anio || ''}</div>
           <div class="cx-datos"><h3>${titulo}</h3>
             <p class="cx-desc">${x.detalle || x.descripcion || x.resumen || ''}</p></div>
+        </article>`;
+      }
+    }
+
+    // Las licencias de juego, enteras y con la norma que aflojan.
+    if (licencias.length) {
+      html += `<article class="cx-bloque"><h3>Dónde el juego se aparta de la norma</h3>
+        <p class="cx-desc">${licenciasDeJuego?.regla
+          || `Hay lugares donde jugar la norma al pie de la letra dejaría al juego sin
+             juego. En esos lugares se toma una licencia a propósito, se declara y se
+             dice: la licencia es del diseño, el dato sigue siendo verdadero.`}</p>
+        <p class="cx-desc">Son ${licencias.length}, y cada una dice qué afloja, qué
+          dice la norma de verdad, por qué se toma y qué NO se afloja.</p></article>`;
+      for (const l of licencias) {
+        html += `<article class="cx-linea">
+          <div class="cx-anio">Licencia</div>
+          <div class="cx-datos">
+            <h3>${l.que || l.id}</h3>
+            ${l.laNormaReal ? `<p class="cx-desc"><b>La norma real:</b> ${l.laNormaReal}</p>` : ''}
+            ${l.laRealidad ? `<p class="cx-desc"><b>La realidad:</b> ${l.laRealidad}</p>` : ''}
+            ${l.porQueSeToma ? `<p class="cx-uso"><b>Por qué se toma:</b> ${l.porQueSeToma}</p>` : ''}
+            ${l.porQueCambio ? `<p class="cx-uso"><b>Por qué cambió:</b> ${l.porQueCambio}</p>` : ''}
+            ${l.queNOSeAfloja ? `<p class="cx-curioso"><b>Lo que NO se afloja:</b> ${l.queNOSeAfloja}</p>` : ''}
+            ${l.comoLoDiceElJuego ? `<p class="cx-meta">${l.comoLoDiceElJuego}</p>` : ''}
+          </div>
         </article>`;
       }
     }

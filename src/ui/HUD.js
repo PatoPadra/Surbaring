@@ -128,7 +128,10 @@ export class HUD {
       #termico.visible { opacity: 1; }
       #termico.frio { color: #7fb8d8; }
       #termico.calor { color: #d8a05a; }
-      #fenomenos { position: absolute; top: 1rem; left: 50%; transform: translateX(-50%);
+      /* Debajo de la brújula, que ocupa los 30 px de arriba: con los dos en
+         top 1rem y centrados, las etiquetas tapaban los rumbos. No se veía
+         porque la brújula estuvo corrida a la izquierda hasta la ronda 8. */
+      #fenomenos { position: absolute; top: 2.6rem; left: 50%; transform: translateX(-50%);
         display: flex; gap: .4rem; pointer-events: none; }
       #fenomenos .fen { font-size: .68rem; letter-spacing: .06em; padding: .22rem .6rem;
         border-radius: 2px; background: rgba(12,14,13,.72); border-left: 2px solid;

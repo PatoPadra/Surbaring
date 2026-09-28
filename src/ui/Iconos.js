@@ -1,5 +1,5 @@
 /**
- * Iconos — los 115 dibujos del bolso, y la hoja que los reparte.
+ * Iconos — los 122 dibujos del bolso, y la hoja que los reparte.
  *
  * Hasta la fase 2 cada casillero decía una sigla de tres letras. En una captura
  * de veinticuatro casillas había **cuatro «Arc» y dos «Tos»**: la sigla ubicaba y
@@ -19,8 +19,8 @@
  *
  * 2. **Un vocabulario de formas y una paleta por materia, compartidos.** Es lo
  *    mismo que hizo `Herramientas3D.js` con dieciocho modelos y nueve tintes: acá
- *    hay unas cuarenta piezas y unos cuarenta tintes, y los 115 salen de
- *    componerlas. Nadie dibujó 115 cosas de a una — hay **un solo** envoltorio de
+ *    hay unas cuarenta piezas y unos cuarenta tintes, y los 122 salen de
+ *    componerlas. Nadie dibujó 122 cosas de a una — hay **un solo** envoltorio de
  *    dibujo escrito a mano en todo el archivo. Que dos se parezcan está bien;
  *    que dos sean el mismo, no, y hay un banco que lo mide carácter por carácter.
  *
@@ -28,7 +28,7 @@
  *    silueta tres veces —el tono oscuro corrido abajo y a la derecha, el de base
  *    encima, y el claro encogido hacia arriba y a la izquierda—. A 56 px lo que
  *    se lee es la silueta y el contraste, no el detalle; con la luz viniendo
- *    siempre del mismo lado, ciento quince dibujos hechos por separado parecen
+ *    siempre del mismo lado, ciento veintidós dibujos hechos por separado parecen
  *    del mismo juego. Es `bulto()`, y está en casi todos.
  *
  * La casilla mide 79 × 79 px de verdad, así que el arte se dibuja en una caja de
@@ -45,7 +45,7 @@
 // Todo se dibuja en una caja de 64 × 64 con el suelo imaginario en y = 56. Las
 // coordenadas se redondean a medio punto: a 58 px de tamaño final medio punto es
 // 0,45 px —invisible— y recorta como un 15 % del peso de la hoja, que es el
-// presupuesto que hay que cuidar (140 kB para los 115).
+// presupuesto que hay que cuidar (140 kB para los 122, y van 137,8).
 
 const CAJA = 64;
 
@@ -54,8 +54,11 @@ const lista = (pts) => pts.map(([x, y]) => `${n(x)},${n(y)}`).join(' ');
 
 const P = (d, f, x = '') => `<path d="${d}" fill="${f}"${x}/>`;
 // Ni `stroke-linecap` ni `stroke-linejoin` se escriben por forma: son atributos
-// que se heredan, van una sola vez en el envoltorio y se ahorran 14 kB de los
-// 140 del presupuesto — 648 repeticiones en los 115 dibujos.
+// que se heredan, van una sola vez en el envoltorio y se ahorran 27,8 kB de los
+// 140 del presupuesto: 605 elementos con trazo en los 122 dibujos, a 47 bytes
+// los dos atributos juntos. Recontado el 23/9/2026 sobre la hoja de verdad. El
+// número de antes venía de la ronda 6 y contaba el ahorro de UNO solo de los dos
+// atributos, sobre los dibujos que había entonces: quedó a la mitad y viejo.
 const T = (d, s, w = 2, x = '') =>
   `<path d="${d}" fill="none" stroke="${s}" stroke-width="${n(w)}"${x}/>`;
 const C = (cx, cy, r, f, x = '') => `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" fill="${f}"${x}/>`;
@@ -668,11 +671,16 @@ function panal(t, { cx = 32, cy = 32, r = 6.5, filas = 2 }) {
   return p;
 }
 
-// ── Las 115 recetas ─────────────────────────────────────────────────────────
+// ── Las 122 recetas ─────────────────────────────────────────────────────────
 //
 // Cada una recibe el ruido con semilla de su propio id y devuelve la lista de
-// formas. Se leen en el mismo orden que los datos: primero los 71 de `RECURSOS`
-// y después los 44 objetos de `herramientas.json` que se tienen en la mano.
+// formas. Se leen en el mismo orden que los datos: primero los 74 de `RECURSOS`
+// y después los 48 objetos de `herramientas.json` que se tienen en la mano.
+//
+// Los tres números se recuentan, no se copian: `IDS.length` es la cuenta buena y
+// el banco de la ronda 6 fase 3 la imprime en cada corrida. Hasta la ronda 8 acá
+// estaban los de la ronda 6, sin tocar: nueve comentarios de este archivo y del
+// bolso envejecieron juntos mientras el archivo crecía siete dibujos.
 //
 // La regla que ordena todo esto: **la materia da la paleta y la forma da el
 // oficio**. Dos maderas se distinguen por el tono; una madera y una tabla, por la
@@ -681,7 +689,7 @@ function panal(t, { cx = 32, cy = 32, r = 6.5, filas = 2 }) {
 // número de tiras, y eso es todo lo que hay: son parecidos a propósito, porque
 // en el mundo también lo son.
 
-/** Los 71 de `RECURSOS`: lo que se junta, se cocina y se fabrica a granel. */
+/** Los 74 de `RECURSOS`: lo que se junta, se cocina y se fabrica a granel. */
 const RECETAS_RECURSOS = {
 
   // ── Madera y monte ────────────────────────────────────────────────────────
@@ -817,6 +825,27 @@ const RECETAS_RECURSOS = {
     E(26, 31, 4, 5.5, M.arcilla[2], ' opacity=".7"'),
     E(35, 34, 3.6, 5, M.arcilla[2], ' opacity=".7"'),
     E(30, 43, 3.4, 4.4, M.arcilla[2], ' opacity=".7"'),
+  ],
+
+  // ── Los dos estados intermedios del hacha (ronda 8, fase 5) ───────────────
+  //
+  // Son el paso a paso dibujado: la misma pieza tres veces —canto, preforma,
+  // hoja— y lo que cambia entre una y otra es exactamente lo que cambia en la
+  // realidad. La preforma ya tiene la silueta del hacha y está picada, que son
+  // los hoyuelos; la hoja tiene la misma silueta lisa y con brillo. Si se ven
+  // una al lado de la otra en el bolso, se lee la secuencia sin leer un nombre.
+
+  preforma: (z) => [
+    ...bulto([[32, 6], [41, 14], [44, 34], [40, 50], [30, 55], [23, 44], [21, 22], [25, 11]]
+      .map(([x, y]) => [x + (z() - 0.5) * 3, y + (z() - 0.5) * 3]), M.piedra),
+    ...[[28, 17], [35, 22], [27, 29], [34, 35], [29, 42], [36, 47]]
+      .map(([x, y]) => E(x, y, 2.2, 1.6, M.piedra[2], ' opacity=".6"')),
+  ],
+
+  hoja_hacha: () => [
+    ...filo(M.piedra, { x: 32, y: 30, largo: 40, ancho: 11, pancho: 1.15 }),
+    T('M26 14q-3 18 1 34', LUZ, 2.4, ' opacity=".45"'),
+    E(33, 51, 9, 3, M.piedra[0], ' opacity=".5"'),
   ],
 
   fruto: (z) => bayas(M.baya, { cx: 32, cy: 37, r: 9.5, cuantas: 3, z }),
@@ -1247,7 +1276,7 @@ const RECETAS_RECURSOS = {
 };
 
 /**
- * Los 44 objetos que se tienen en la mano.
+ * Los 48 objetos que se tienen en la mano.
  *
  * Acá el oficio manda sobre la materia: los diez que llevan cabo se dibujan
  * todos con el mismo cabo diagonal y la misma atadura, y lo que cambia es la
@@ -1256,12 +1285,27 @@ const RECETAS_RECURSOS = {
  * por la misma razón: **la silueta de la cabeza es lo que se reconoce**, el cabo
  * es sólo lo que dice «esto se agarra».
  *
- * Los doce que faltan para los 56 de `herramientas.json` llevan `produce` o
- * `esReceta` y nunca se sostienen: no son de acá.
+ * Los dieciséis que faltan para los 64 de `herramientas.json` llevan `produce`
+ * o `esReceta` y nunca se sostienen: no son de acá.
  */
 const RECETAS_OBJETOS = {
 
-  // ── Filos sin cabo ────────────────────────────────────────────────────────
+  // ── El percutor, y los filos sin cabo ─────────────────────────────────────
+  //
+  // El percutor va primero aunque no sea un filo: es lo que hace a los tres que
+  // siguen, y en el bolso se lee en ese orden.
+
+  // El percutor es el mismo rodado que el recurso `piedra` y no puede parecerlo:
+  // lo que lo separa es el uso. Las medias lunas machucadas del extremo con el
+  // que se golpea, y las dos esquirlas saltando. Es la única pieza de la familia
+  // que se dibuja en el momento de estar trabajando.
+  percutor: (z) => [
+    ...canto(M.piedra, { cx: 30, cy: 35, r: 17, lados: 8, z, achata: 0.92, sacude: 0.18 }),
+    ...[[22, 26], [27, 22], [33, 23]].map(([x, y]) => C(x, y, 2.6, M.piedra[2], ' opacity=".55"')),
+    L(21, 31, 28, 27, LUZ, 1.4, ' opacity=".4"'),
+    G([[44, 20], [50, 16], [47, 24]], M.piedra[1]),
+    G([[48, 30], [53, 29], [50, 34]], M.piedra[2]),
+  ],
 
   // Un rodado partido: lo que lo hace herramienta es la cara fresca del golpe,
   // un plano recto en una piedra que no tiene ninguno. Antes ese plano le tapaba
@@ -1385,6 +1429,21 @@ const RECETAS_OBJETOS = {
       ...atadura(M.cuero2, { cx: 33, cy: 22, w: 13, h: 5 }),
       ...atadura(M.cuero2, { cx: 34, cy: 15, w: 13, h: 5 }),
       ...filo(M.piedra, { x: 34, y: 18, largo: 20, ancho: 9, pancho: 1.1, ang: 90 }),
+    ]),
+  ],
+
+  // El martillo de piedra: la misma percusión con mango que el hacha, y lo que
+  // lo distingue a 58 px es que la cabeza NO tiene filo. Es un canto entero,
+  // panzón, con la ligadura de fibra bajando por la garganta picada —las dos
+  // rayas verticales— en vez de las dos ataduras horizontales del hacha. Contra
+  // la maza y cuñas, que lleva la cabeza de leño tumbado y las dos cuñas.
+  martillo_piedra: (z) => [
+    gira(-34, 32, 32, [
+      ...varilla(M.madera, { x1: 26, y1: 56, x2: 34, y2: 14, w: 6 }),
+      ...canto(M.piedra, { cx: 34, cy: 19, r: 13, lados: 6, z, achata: 0.66, giro: 1.2, sacude: 0.18 }),
+      L(29, 12, 29, 27, M.piedra[2], 2.2),
+      L(39, 12, 39, 27, M.piedra[2], 2.2),
+      ...atadura(M.fibra, { cx: 34, cy: 19, w: 8, h: 15 }),
     ]),
   ],
 
@@ -1683,7 +1742,7 @@ const RECETAS_OBJETOS = {
   ],
 };
 
-/** Los 115, en el mismo orden que los datos. */
+/** Los 122, en el mismo orden que los datos. */
 const RECETAS = { ...RECETAS_RECURSOS, ...RECETAS_OBJETOS };
 
 // ── Las puertas del módulo ──────────────────────────────────────────────────
@@ -1700,7 +1759,7 @@ const envolver = (cuerpo) =>
  * bolso sin que nadie se entere, que es exactamente lo que ya pasó una vez con
  * los dos remedios que el bolso viejo no listaba. Así que cae acá: un recuadro
  * punteado con un signo de pregunta, en el violeta de la botica, que no se
- * parece a ninguno de los 115 y se ve como lo que es — un agujero.
+ * parece a ninguno de los 122 y se ve como lo que es — un agujero.
  */
 const RESERVA = envolver([
   R(9, 9, 46, 46, 'none', 7, ` stroke="${M.violeta[2]}" stroke-width="3" stroke-dasharray="7 5"`),

@@ -146,6 +146,25 @@ export const RECURSOS = {
   // `hilar_lana` de herramientas.json, con su fuente.
   hilado:        { nombre: 'Hilado de lana', kg: 0.15, cat: 'material' },
   mango:         { nombre: 'Mango labrado', kg: 0.4, cat: 'material' },
+  // ── La cadena de la piedra (ronda 8, fase 5) ─────────────────────────────
+  //
+  // Los dos estados intermedios del hacha, que antes no existían: el hacha salía
+  // de un solo paso y «pulida» estaba en el nombre y en ningún lado más. La
+  // preforma es el canto ya desbastado y picado —de 3 a 5 horas de picado en la
+  // réplica experimental de Fenton (1984)— y la hoja es esa misma preforma
+  // después de la arena.
+  //
+  // Los números, y de dónde salen. La receta de la preforma cuesta DOS piedras
+  // de 1,4 kg, y eso no quiere decir que la preforma pese 2,8: una es el canto y
+  // la otra es lo que se va en lascas, en polvo de picado y en los que se parten
+  // al medio. Del canto de 1,4 quedan 0,9 —un 36 % menos, que es lo que se le
+  // saca a un rodado para dejarle el perfil—. El pulido, en cambio, casi no
+  // quita masa: baja las crestas del picado y cierra el poro, y son 100 g, de
+  // 0,9 a 0,8. Esa asimetría es el dato: el picado es lo que talla, el pulido es
+  // lo que termina. El hacha entera pesa esos 0,8 más el mango (0,4) y los tres
+  // cordeles (0,09), o sea 1,3 kg, y su ficha lo dice.
+  preforma:      { nombre: 'Preforma de hacha', kg: 0.9, cat: 'material' },
+  hoja_hacha:    { nombre: 'Hoja de hacha pulida', kg: 0.8, cat: 'material' },
   // Tira de cuero crudo cortada en espiral de una sola pieza. Se ata en húmedo y
   // al secar aprieta solo: es el remache de la Patagonia, y pide filo porque el
   // cuero no se corta con la mano.

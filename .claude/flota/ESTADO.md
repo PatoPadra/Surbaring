@@ -1,5 +1,187 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+## Ronda 8 · ABIERTA el 18/9/2026 · rama `mejoras/ronda8-lo-que-vio`
+
+> **28/9/2026 — LA RONDA 8 SE FUSIONA A MAIN, Y ESTA VEZ SIN HABERLA JUGADO.** Lo pidió
+> el dueño con el motivo dicho: le quedaba la mitad de la cuota semanal hasta el día
+> siguiente y no iba a tener tiempo de probar, así que prefiere que la ronda 9 arranque
+> sobre `main` y probar todo junto después. **Es una excepción declarada a la regla de
+> siempre** (`fusionar-recien-cuando-lo-vio`), y se anota porque cambia lo que significa
+> `main`: hasta la ronda 7, `main` era código que el dueño había jugado. Desde ésta, no.
+>
+> **Lo que sí está medido:** las siete fases con banco y falsador verdes, y lo que un
+> banco no puede ver, medido a mano en el juego (la cadena de la piedra, la noche de
+> cuarto, la muerte, la licencia del Parque, las estaciones y la capacidad del bolso).
+> **Lo que NO está validado es el juego como experiencia:** las tres decisiones de
+> balance —morir pierde todo, la lana en 1 de cada 4, el hacha en cinco pasos— no las
+> probó nadie jugando. Si al probarlas hay que volver atrás, se vuelve sobre `main`.
+
+
+El dueño jugó la ronda 7 y trajo cinco notas. **Se fue a Chile el 18/9 y vuelve el
+lunes 21 a la noche**: pidió que la ronda siga sin él, con más peso en los
+gráficos. Antes de irse contestó todas las decisiones pendientes, esta vez como
+preguntas con opciones. La carta, con las respuestas y lo medido, está en
+`RONDA8.md`.
+
+Medido antes de encargar nada: **la trampa de lazo no se puede poner** (`pasiva`
+no lo lee nadie, y la nasa y la red tienen el mismo problema), **la flecha del
+mapa apunta a 180° justos**, el zoom termina en 8 m/px, el minimapa no existe, y
+**la brújula de arriba nunca estuvo centrada**: le falta `position` desde el
+prototipo. El hacha de piedra sale de un solo paso, y el único martillo es de
+hierro.
+
+Siete fases: `rumbo`, `lazo`, `suelo`, `copa`, `piedra`, `luz`, `reglas`. Más la
+propuesta escrita del primer año, sin código.
+
+**La «otra cosa» de gráficos: NO EXISTE.** El dueño lo contestó el 27/9/2026 —«la
+«otra cosa» a la que haces alusión no existe»—. Eran dos y no tres: el suelo de cerca
+y los árboles. Cerrado, no volver a preguntarlo.
+
+> **18/9/2026 — FASE 1 (`rumbo`) CERRADA** (`f9d8746`). Banco 7/7, falsador 16/16 con
+> 3 controles verdes, navegador 29/29. La flecha apunta bien en el mapa y el minimapa
+> (una sola función), la brújula está centrada (y los fenómenos bajaron para no
+> taparla), el zoom llega a 2 m/px sin dibujar la grilla del DEM, el mapa abre centrado
+> en el jugador, y hay minimapa: 900 m, velo como el mapa, 0,007 ms por cuadro. Dos
+> defectos del banco, encontrados por el agente; los dos, míos.
+>
+> **Fase 2 (`lazo`)**: contrato, banco, falsador y mitad navegador escritos antes del
+> agente y validados contra una maqueta del jefe que no se le da (21/21 del falsador).
+> Tres defectos del banco encontrados así, antes de que el agente escribiera una línea.
+>
+> **18/9/2026 — FASE 2 (`lazo`) CERRADA** (`187919f`). Banco 10/10, falsador 21/21
+> con 3 controles verdes, navegador 10/10. La trampa se pone, trabaja sola por hora
+> del mundo, queda marcada en el mapa y el minimapa, y poner no compila nada. En el
+> mundo real un lazo agarra algo el 31,3 % de las noches y la liebre es el 24,5 % de lo
+> que cae; lo demás es fauna protegida, que no rinde y lo dice la norma. La tasa es una
+> licencia dicha (41× la fuente). La fauna vive donde vive: diez especies ya no están
+> pegadas al agua. Y al mirar el mapa al tope apareció la costa en escalones de 32 m:
+> arreglada por el coordinador, medida sobre el DEM real. Al agente lo cortó el límite
+> de sesión una vez y se lo retomó con su contexto.
+>
+> **Preparado mientras corre la fase 2**: el contrato, el banco (validado contra la
+> base) y el falsador de la **fase 3** (`suelo`); la medición de apertura de la **fase
+> 4** (`copa`: el problema de las coníferas es el dibujo del atlas, 8 % de cobertura, no
+> el mipmap); y **la propuesta del primer año**, escrita y sin código, en
+> `r8-primer-anio.md`, con cinco preguntas para el dueño.
+>
+> **19/9/2026 — FASE 3 (`suelo`) CERRADA.** Navegador 6/6, banco 7/7, falsador 10/10 con
+> sus controles. El suelo de cerca es una textura de capas horneada (hojarasca, andisol
+> con pómez, estepa, acarreo): el detalle cercano sube ×8 a ×12, y el terreno mirando al
+> suelo baja de 13,4 a 4,6 ms (al frente, de 13,3 a 9,3), medido contra la base en la
+> misma sesión. La piedra dejó de ser verde. Siete defectos del banco, todos del jefe; el
+> más caro: **el clima de cada carga sale de dos semillas al azar**, y comparar capturas
+> de dos cargas medía el cielo (ahora se fijan). El agente encontró que **la normal del
+> terreno se ilumina en el marco equivocado** desde el prototipo: es la fase 3b, con
+> banco, falsador (9/9, 3 controles) y mitad navegador escritos y validados antes de
+> encargarla. Para el dueño: el suelo del bosque queda un 13 % más claro mirando abajo,
+> porque el ruido viejo lo oscurecía por debajo de la paleta calibrada.
+>
+> **19/9/2026 — FASE 3b (`suelo`, la luz) CERRADA.** Una línea: la normal del terreno pasa
+> al marco de la cámara. Girar la cámara sobre su eje ya no cambia la luz del suelo (antes
+> hasta +446 %; ahora 0,1 %), el mismo punto visto desde cuatro rumbos cambia sólo por el
+> especular (≤ 14,4 %), y el costo no se distingue de la deriva (tres pares alternados).
+> Banco 5/5, falsador 10/10, navegador verde. El agente encontró además que **el terreno
+> no recibe ninguna sombra** (normal del vértice en cero → NaN en ANGLE): confirmado
+> restando y con la causa probada (poner la normal en (0,1,0) la devuelve). Cuesta +0,9
+> ms al frente, medido en la misma carga. Es la **fase 3c**, abierta con su medición.
+> Preparado también: el instrumento de la fase 4 rehecho (un árbol solo, clima fijo), y
+> con él se vio que la cobertura de apertura estaba sesgada, que los modelos de árbol
+> cambian en cada carga, y que el problema de las coníferas es real igual.
+>
+> **19/9/2026 — FASE 3c (`suelo`, las sombras) ENCARGADA** (banco `6a56ade`). Banco
+> escrito antes: recibe contra un plano de control, sin acné contra una verdad de campo
+> sobre el DEM, las sombras del relieve aparecen, y el costo. Base 11/15 roja por el
+> motivo correcto, maqueta 15/15, falsador 4/4. La sospecha de acné del jefe se refutó
+> midiendo antes de encargar. Después viene la **fase 4** (copa), con el contrato C4
+> reescrito sobre el relleno de la silueta y C7 (modelo de árbol determinista) primero.
+>
+> **19/9/2026 — FASE 3c CERRADA.** El atributo `normal` del terreno en (0, 1, 0): el suelo
+> recibe la sombra de los árboles, las obras y (en Media y Alta) el relieve. Navegador
+> 17/17 con la base en la misma carga, banco 4/4, falsador 4/4. Cuesta +0,95 ms al frente y
+> +0,6 al suelo; sin acné (0 de 16.384 contra el DEM). En la sombra queda el 11 % de la
+> luz del sol. En Baja el relieve no proyecta (decisión del preset, anotada).
+>
+> **19/9/2026 — FASE 4 (`copa`) ENCARGADA** (apertura `beccf51`). C4 reescrito sobre el
+> relleno de la silueta con la base de cinco cargas (coníferas 0,38 → ≥ 0,50; puntitos
+> 5,35 y 9,41 → ≤ 3,4), C7 (el mismo árbol en cada carga), y un falsador nuevo (8 de 8, 3
+> controles) validado contra un horno y un `Vegetacion.js` de maqueta. Agente nuevo.
+>
+> **22/9/2026 — FASE 4 (`copa`) CERRADA** (`6b7c91d`). Navegador 9/9, banco 6/6, falsador
+> 8/8. El ciprés pasa de 0,32 a 0,76 de relleno y el pino de 0,28 a 0,70; los puntitos, de
+> 7,2 y 14,4 por mil a 0,27 y 0,37; las hojas miden entre ×1,0 y ×1,9 del largo real (antes
+> ×10 a ×20). Y **los árboles cuestan la mitad**: 2,5 → 1,2 ms. Al agente lo cortaron dos
+> veces los límites (de sesión y semanal) y se lo retomó con su contexto. Queda a la vista,
+> fuera de contrato, que a las latifoliadas les asoman ramas desnudas: sería la fase 4b.
+>
+> **23/9/2026 — FASE 5 (`piedra`) CERRADA.** Banco 7/7, falsador 11/11 con 3 controles
+> verdes, y la cadena entera corrida **en el juego**: desde un bolso vacío salen el
+> percutor, la lasca, el cordel, el mango, la preforma, la hoja pulida, el hacha, el
+> martillo de piedra y la grasa de médula, sin obsidiana, sin cuero y sin cazar. La
+> primera herramienta de piedra deja de estar detrás de 6,4 km y 700 m de desnivel: sale
+> con una piedra del suelo en el primer minuto. El hacha sale de **cinco pasos** en vez
+> de uno, cuesta 3 de saber en vez de 16, y se ata con cordel de fibra en vez de tiento.
+> **Un defecto, y fue del jefe:** el modelo 3D del martillo que escribí tenía la misma
+> caja que la maza y cuñas dentro del 15 % y puso en rojo siete bancos de regresión de
+> una sola vez; arreglado acortando el cabo a 28,5 cm (es de una mano) y engrosando la
+> cabeza. Al agente lo cortó el límite de sesión y terminó el jefe lo que faltaba medir.
+> Queda anotado, sin tocar: **`Fabricacion` no gasta la herramienta que pide** —el
+> percutor se gasta tirando flechas y no picando piedra— y **la hoja de iconos quedó a
+> 2,22 kB del techo**, lo que le va a aparecer a la fase 7 como si fuera culpa suya.
+>
+> **23/9/2026 — FASE 6 (`luz`) CERRADA.** Banco 6/6, falsador 8/8 con 3 controles verdes.
+> La luna alumbra con la ley de Allen y no con la fracción iluminada del disco: **el cuarto
+> pasa de 0,480 a 0,090 de la llena**, que es lo que dice la ley. Medido en el juego, la
+> misma noche con las mismas semillas y Vite reiniciado para cada versión (20/2/2025, luna
+> a 56°, α 85,6°): el ambiente baja de 0,0858 a 0,0536 (−37,5 %), la niebla −38,9 %, y lo
+> que aporta la luna sola se divide por 4,7. En la imagen, el suelo baja 10,3 % y los
+> puntos de estrella pasan de 443 a 569. La forma del disco no cambió (`uFaseLunar` 0,538
+> en las dos), que es lo que pedía A4. **Dos defectos del instrumental, los dos míos y los
+> dos encontrados por el agente:** `BASE_LLENA` decía 0,0889 y la base mide 0,0899
+> (comprobado contra una copia de HEAD), y **`lint-shader.mjs` daba verde sobre un archivo
+> que no parsea** —una comilla invertida en un comentario GLSL cierra el literal— porque la
+> regla que lo atraparía es la sección que importa el módulo, y el falsador corre siempre
+> con `BANCO_SIN_BUILD=1`. Ahora el lint corre `node --check` antes que nada. Queda para el
+> ojo del dueño: el disco sigue con brillo fijo, así que el creciente sale igual de blanco
+> mientras todo lo que lo rodea bajó 0,68 paradas.
+>
+> **23/9/2026 — FASE 7 (`reglas`) CERRADA. LA RONDA 8 ESTÁ COMPLETA: las siete fases.**
+> Banco 7/7 (30 aserciones de contrato + 16 bancos de regresión), falsador 15/15 con 3
+> controles verdes. Morir ahora **se lleva todo** —las cuatro ranuras, la llama, el bolso— y
+> la pantalla de fin nombra lo puesto primero; la lana del coirón pasa de 2 de cada 3 a **1
+> de cada 4** y el poncho de 17,6 a **47,2 apretadas**; recolectar en el Parque queda
+> declarado como licencia con la Ley 22.351 art. 5 y se dice una vez; la estación se busca
+> **entre todas las que están a mano** y no sólo la más cercana (con eso se arregló que el
+> telar cociera brea sin fuego y que una fogata apagada tapara a la prendida); un solo
+> radio; el «115» afuera; y la cestería deja de sumar dos veces (38 / 44 en vez de 44 / 50).
+>
+> **Lo importante de esta fase no lo midió el banco: lo encontré leyendo `main.js`.** Las 30
+> aserciones pasaban **con la pestaña de licencias vacía en el juego**, porque el banco arma
+> su propio `normativa` a mano y `main.js` no le colgaba `herramientas`. Cableado y
+> comprobado en el juego: la pestaña pinta las siete licencias y cita la ley. Es otra vez
+> [[banco-sintetico-no-alcanza]]. También comprobé en el juego que `recoleccion.limites` no
+> existe y la jurisdicción llega por `mineria.limites`: sin ese camino alternativo la
+> licencia no se habría dicho nunca. **Un defecto del falsador, mío:** `eq.encendida = …`
+> contra un accesor de sólo lectura tiraba `TypeError` y explotaba la sección en vez de
+> medirla; lo encontró el agente con la cuenta hecha y sin tocar el archivo.
+>
+> **Queda abierto para la ronda 9:** la hoja de iconos a **2,22 kB de su techo** (137,78 de
+> 140) —es lo primero que va a morder—, `Fabricacion` que no gasta la herramienta que pide
+> (el percutor se gasta tirando flechas y no picando piedra), las ramas peladas de las
+> latifoliadas (fase 4b). La «otra cosa» de gráficos **no existe**: contestado el 27/9.
+>
+> **Preparado mientras corre la 4** (todo con banco validado contra la base y, donde se
+> pudo, contra una maqueta del jefe; falsadores con controles):
+> - **Fase 5 (piedra)** `ef06b61`: contrato P1–P12; el banco recorre la cadena del hacha con
+>   los sistemas de verdad desde un bolso vacío (hoy pide obsidiana y cuero); falsador 11/11.
+> - **Fase 6 (luz)** `9c04c2c`: la luna alumbra según la fracción (cuarto = 0,48 de la llena;
+>   Allen = 0,09); banco sobre dos meses de noches; falsador 8/8. **El suelo naranja junto al
+>   fuego ya bajó un 60 % a 5 m con la 3b**: no se toca más hasta que el dueño lo mire.
+> - **Fase 7 (reglas)** `07fc6c5`, `8b5714e`: `efectosAAgregar` está toda aplicada; la
+>   cestería suma dos veces (38 → 50 kg); el telar satisface recetas de fogata sin fuego. El
+>   banco reproduce los 17,7 apretadas del poncho de la ronda 7.
+
+---
+
 ## Ronda 7, fase 6 · `cielo` · CERRADA
 
 Banco Node 7/7 con `vite build`, falsador 18/18 con 3 controles verdes, mitad navegador

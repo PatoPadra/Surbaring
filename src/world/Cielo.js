@@ -10,8 +10,10 @@
  * largos del atardecer sobre el lago.
  *
  * La noche también es la de la fecha. La luna sale de una efeméride, con su
- * paralaje y su fase; el cielo gira alrededor del polo sur celeste con el tiempo
- * sidéreo y la precesión; y las estrellas son las de un catálogo:
+ * paralaje y su fase —la forma del disco por geometría y cuánto alumbra por la ley
+ * de Allen, que no es lo mismo: ver `brilloLunar()`—; el cielo gira alrededor del
+ * polo sur celeste con el tiempo sidéreo y la precesión; y las estrellas son las de
+ * un catálogo:
  *
  *   Hoffleit, D. & Warren Jr., W. H. (1991), The Bright Star Catalogue, 5th
  *   Revised Ed., NASA ADC; vía CDS, catálogo V/50.
@@ -229,6 +231,33 @@ const DIURNO_NOCHE = 0.1;
 const RADIO_LUNA = 0.52 * RAD;
 
 /**
+ * Brillo del disco entero de la luna, relativo a la llena, por su ángulo de fase.
+ *
+ * La ley de Allen (C. W. Allen, *Astrophysical Quantities*, 3ª ed., § 68 «The Moon»,
+ * la tabla de magnitud contra ángulo de fase): la magnitud aparente del disco crece
+ *
+ *     Δm = 0,026·α + 4·10⁻⁹·α⁴        (α en grados)
+ *
+ * así que el brillo relativo es 10^(−0,4·Δm). Da 1 en la llena (α = 0°), 0,091 en el
+ * cuarto (90°) y 0,0116 a 135°.
+ *
+ * **No es la fracción iluminada**, que es lo que el juego usaba hasta la ronda 8. En
+ * el cuarto la mitad del disco está iluminada, pero de costado: cerca del terminador
+ * el sol rasante deja el relieve lleno de sombras largas, y el regolito devuelve
+ * mucho más hacia atrás que de lado —la retrodispersión, el «efecto de oposición»,
+ * que es también por lo que la luna se pone desproporcionadamente brillante justo en
+ * la llena—. El resultado es que el cuarto alumbra un 9 % de la llena, no un 50 %.
+ * El término de cuarto grado es el que dobla la curva hacia abajo en las fases finas.
+ *
+ * @param {number} alfaGrados ángulo de fase: 0° llena, 90° cuarto, 180° nueva
+ * @returns {number} brillo relativo a la llena
+ */
+export function brilloLunar(alfaGrados) {
+  const a = Math.abs(alfaGrados);
+  return Math.pow(10, -0.4 * (0.026 * a + 4e-9 * a * a * a * a));
+}
+
+/**
  * Color de una estrella por su B−V, lineal y con luminancia 1: el brillo lo pone la
  * magnitud, no el color, y así el orden de brillo de la imagen es el del catálogo.
  *
@@ -268,8 +297,13 @@ export class Cielo {
     this.direccionSol = new THREE.Vector3(0, 1, 0);
     this.direccionLuna = new THREE.Vector3(0, -1, 0);
     // La edad de la luna en fracción del ciclo: 0 nueva, 0,5 llena. La fracción
-    // iluminada, que es lo que alumbra, está en `uFaseLunar`.
+    // iluminada del disco, que es lo que se DIBUJA, está en `uFaseLunar`.
     this.faseLunar = 0.5;
+    // El ángulo de fase en grados (0 llena, 180 nueva) y el brillo del disco entero
+    // relativo a la llena por la ley de Allen (`brilloLunar`), que es lo que ALUMBRA:
+    // la luz de la noche, la niebla, el halo y cuánto se lavan las estrellas.
+    this.anguloFase = 0;
+    this.brilloLuna = 1;
 
     // Del J2000 al mundo en la última `actualizar()`: precesión, tiempo sidéreo y
     // horizonte del lugar. Es lo que gira el cielo entero.
@@ -280,9 +314,14 @@ export class Cielo {
     this.uniformes = {
       uSol: { value: this.direccionSol },
       uLuna: { value: this.direccionLuna },
-      // La fracción iluminada del disco, de 0 a 1. La leen la luz de la noche y la
-      // niebla nocturna, además del disco.
+      // La fracción iluminada del disco, de 0 a 1: sólo la forma, o sea dónde cae el
+      // terminador. Lo que alumbra es `uBrilloLunar`, que es otra cosa.
       uFaseLunar: { value: 0.5 },
+      // Brillo del disco entero relativo a la llena, por la ley de Allen
+      // (`brilloLunar`). Lo leen el halo y las estrellas, y del lado de JavaScript la
+      // luz de la noche y la niebla. Viaja como VALOR de uniforme y no como `#define`:
+      // cambia todas las noches y no tiene que recompilar nada.
+      uBrilloLunar: { value: 1 },
       uTurbiedad: { value: 2.2 },   // aire muy limpio: es un parque nacional
       // Estaba en 1,6 y encima multiplicado por (1 + 0,15·turbiedad), o sea 2,13
       // efectivo: una atmósfera del doble de espesa que la real. La turbiedad
@@ -369,7 +408,7 @@ export class Cielo {
       uCieloAMundo: this.uniformes.uCieloAMundo,
       uSol: this.uniformes.uSol,
       uLuna: this.uniformes.uLuna,
-      uFaseLunar: this.uniformes.uFaseLunar,
+      uBrilloLunar: this.uniformes.uBrilloLunar,
       uNubes: this.uniformes.uNubes,
       uCeniza: this.uniformes.uCeniza,
       uTiempo: this.uniformes.uTiempo,
@@ -546,6 +585,15 @@ export class Cielo {
     const alSol = this._hacia.copy(this._sol).sub(luna);
     const cosFase = -alSol.dot(luna) / (alSol.length() * luna.length());
     this.uniformes.uFaseLunar.value = (1 + cosFase) / 2;
+
+    // La forma y el brillo salen del MISMO ángulo, pero no son la misma cuenta: la
+    // fracción iluminada es geometría, (1 + cos α) / 2, y el brillo es fotometría, la
+    // ley de Allen. Confundirlas era hacer que el cuarto alumbrara 5,5 veces de más:
+    // 0,500 contra 0,091.
+    this.anguloFase = Math.acos(Math.max(-1, Math.min(1, cosFase))) / RAD;
+    this.brilloLuna = brilloLunar(this.anguloFase);
+    this.uniformes.uBrilloLunar.value = this.brilloLuna;
+
     this.faseLunar = (((lonLuna - lonSol) % 360) + 360) % 360 / 360;
   }
 
@@ -725,9 +773,15 @@ export class Cielo {
 
     // De noche manda la luna. Sin este piso la escena queda en negro absoluto:
     // no es lo que ve un ojo adaptado bajo el cielo austral.
+    //
+    // La luna entra por su BRILLO (la ley de Allen), no por la fracción iluminada del
+    // disco: el seno de la altura reparte la irradiancia sobre el suelo, y el brillo
+    // dice cuánta manda la luna esta noche. La llena sigue dando 0,045 + 0,09·sen h,
+    // que es lo que había; el cuarto, que daba 0,045·sen h (la mitad del disco), pasa
+    // a dar 0,0082·sen h.
     const noche = 1 - suave(-0.10, 0.06, solY);
     if (noche > 0.001) {
-      const luna = Math.max(0, this.direccionLuna.y) * u.uFaseLunar.value;
+      const luna = Math.max(0, this.direccionLuna.y) * this.brilloLuna;
       const ambNoche = (0.045 + 0.09 * luna) * noche;
       const az = [0.42, 0.55, 1.0];
       for (let i = 0; i < 3; i++) {
@@ -790,8 +844,10 @@ export class Cielo {
     // De noche el aire igual devuelve algo: la luna y el resplandor del cielo
     // estrellado. Sin este piso la cordillera se recorta en negro absoluto
     // contra un cielo que sí tiene brillo.
+    // La luna entra por su brillo (Allen), igual que el ambiente: es la misma luz
+    // rebotando en el aire, no puede seguir otra ley que la del suelo.
     const noche = 1 - suave(-0.10, 0.06, this.direccionSol.y);
-    const luna = Math.max(0, this.direccionLuna.y) * this.uniformes.uFaseLunar.value;
+    const luna = Math.max(0, this.direccionLuna.y) * this.brilloLuna;
     const piso = noche * (0.020 + 0.045 * luna);
     salida.setRGB(c[0] + piso * 0.62, c[1] + piso * 0.78, c[2] + piso);
 
@@ -864,6 +920,7 @@ varying vec3 vDir;
 uniform vec3 uSol;
 uniform vec3 uLuna;
 uniform float uFaseLunar;
+uniform float uBrilloLunar;
 uniform float uTurbiedad;
 uniform float uRayleigh;
 uniform float uMieG;
@@ -1003,9 +1060,12 @@ void main() {
   // En el disco, q es la posición en radios de la luna: q.x hacia el sol, q.y de
   // costado. Una esfera iluminada de lado muestra el limbo del lado del sol y el
   // terminador, una media elipse con semieje (1 - 2k); sobre el eje del sol, lo
-  // iluminado mide 2k radios, que es la fracción iluminada k. La superficie
-  // iluminada brilla igual en creciente que en llena; lo que cambia con k es
-  // cuánta hay, y el halo.
+  // iluminado mide 2k radios, que es la fracción iluminada k. Acá la superficie
+  // iluminada brilla igual en creciente que en llena y lo único que cambia con k es
+  // cuánta hay: es una aproximación de dibujo, y buena para lo que se ve en pantalla
+  // a 9 px de diámetro. El disco es lo único que sigue usando k; el halo, la luz del
+  // suelo, la niebla y lo que se lavan las estrellas van por uBrilloLunar, que es la
+  // fotometría de verdad (la ley de Allen) y baja mucho más rápido.
   //
   // La cara oscura tapa lo que hay detrás —la Vía Láctea, las estrellas se apagan
   // solas en su vértice— y deja lo que hay delante, que es el aire: de noche el
@@ -1028,9 +1088,11 @@ void main() {
     color += disco * (iluminado * 2.6 + (1.0 - iluminado) * 0.004 * noche) * vec3(0.95, 0.95, 0.88);
   }
   if (noche > 0.001) {
-    // El halo es aire iluminado, delante del disco: va después, y crece con k
+    // El halo es aire iluminado por la luna, delante del disco: va después, y crece
+    // con lo que la luna manda de verdad —el brillo de Allen—, no con cuánto disco se
+    // ve. Una luna en cuarto casi no tiene halo aunque se le vea media cara.
     float haloLuna = pow(max(0.0, cosLuna), 320.0) * 0.30;
-    color += haloLuna * smoothstep(-0.06, 0.06, luna.y) * uFaseLunar * noche * vec3(0.95, 0.95, 0.88);
+    color += haloLuna * smoothstep(-0.06, 0.06, luna.y) * uBrilloLunar * noche * vec3(0.95, 0.95, 0.88);
   }
 
   // ── Disco solar ───────────────────────────────────────────────────────────
@@ -1127,7 +1189,11 @@ void main() {
  * - El día: `luz·noche² − 2,5·diurno`. El cielo claro se come primero las débiles:
  *   con el sol 3° bajo el horizonte sólo quedan las de magnitud 0 o más, a 6° las de
  *   3, y al sol 8° abajo todas. A pleno día, ninguna.
- * - La luna alta y llena aclara el cielo y se lleva las de magnitud 5 para abajo.
+ * - La luna, por su altura y por su brillo de Allen (`uBrilloLunar`), no por cuánto
+ *   disco muestre: alta y llena aclara el cielo y se lleva las de magnitud 5 para
+ *   abajo. Medido el 20/2/2025 a las 8 UTC, con la luna a 56° y en cuarto, de las
+ *   2438 que están arriba del horizonte sobreviven 2296; con la fracción iluminada
+ *   sobrevivían 776.
  * - Las nubes, con la cobertura del domo en esa dirección, y el cubierto entero.
  * - La ceniza, dos veces la densidad del domo: la estrella la atraviesa de ida.
  * - El disco de la luna, que está delante.
@@ -1142,7 +1208,7 @@ attribute vec3 aColor;
 uniform mat3 uCieloAMundo;
 uniform vec3 uSol;
 uniform vec3 uLuna;
-uniform float uFaseLunar;
+uniform float uBrilloLunar;
 uniform float uNubes;
 uniform float uCeniza;
 uniform float uTiempo;
@@ -1184,7 +1250,10 @@ void main() {
 
   float noche = 1.0 - diurno;
   luz = luz * noche * noche - 2.5 * diurno;
-  luz -= 0.05 * max(uLuna.y, 0.0) * uFaseLunar;
+  // La luna lava el cielo con la luz que manda —el brillo de Allen— y no con cuánto
+  // disco muestra: con la llena alta se pierden las de magnitud 5, y con el cuarto,
+  // que alumbra un 9 %, casi ninguna.
+  luz -= 0.05 * max(uLuna.y, 0.0) * uBrilloLunar;
 
   if (uNubes > 0.01) {
     float d;

@@ -16,7 +16,7 @@ import { Mundo } from './world/Mundo.js';
 import { Terreno } from './world/Terreno.js';
 import { Cielo } from './world/Cielo.js';
 import { Agua } from './world/Agua.js';
-import { Vegetacion } from './world/Vegetacion.js';
+import { Vegetacion, cargarFollaje } from './world/Vegetacion.js';
 import { Sotobosque } from './world/Sotobosque.js';
 import { Fauna } from './entities/Fauna.js';
 import { Codice } from './ui/Codice.js';
@@ -53,6 +53,10 @@ import { instalarLuces, fuenteDeMano, radioDeLuzEn } from './engine/Luces.js';
 import { Exploracion } from './systems/Exploracion.js';
 import { Hallazgos } from './systems/Hallazgos.js';
 import { Mapa } from './ui/Mapa.js';
+import { Minimapa } from './ui/Minimapa.js';
+import { Trampas } from './systems/Trampas.js';
+import { Trampas3D } from './world/Trampas3D.js';
+import { cargarSuelo } from './util/suelo.js';
 import { Opciones } from './ui/Opciones.js';
 import { Bolso } from './ui/Bolso.js';
 import { Fin } from './ui/Fin.js';
@@ -223,6 +227,12 @@ async function iniciar() {
   jugador.aspecto = aspecto;
 
   progreso(0.76, 'Plantando el bosque andino-patagónico…');
+  // Los atlas de follaje horneados, ANTES de construir la vegetación: así el
+  // modelo, el material y las treinta carteleras se arman de una con ellos. Si
+  // llegaran después, `Vegetacion` los aplica sola y paga volver a hornear las
+  // carteleras, que en medio de la partida sería un tirón. Nunca rechaza: sin
+  // los archivos sigue el atlas procedural de siempre.
+  await cargarFollaje();
   const vegetacion = new Vegetacion(mundo, flora, render);
   // Las carteleras se iluminan a mano: necesitan ver el cielo.
   vegetacion.cielo = cielo;
@@ -379,9 +389,16 @@ async function iniciar() {
     inventario, saberes, equipo, fundicion, hud,
   });
 
-  // Los tres datasets de normativa, ya cargados, a la pestaña que los muestra
+  // Los datasets de normativa, ya cargados, a la pestaña que los muestra.
+  //
+  // `herramientas` entra desde la ronda 8, fase 7, y no es por las herramientas:
+  // es por `licenciasDeJuego`, que vive ahí y que la pestaña Normativa ahora
+  // muestra entera. Sin este renglón la sección de licencias no se dibuja y no se
+  // nota, porque el banco de esa fase construye el códice a mano y nunca pasa por
+  // acá: lo encontré leyendo `main.js` contra el código del agente, no midiendo.
   codice.normativa = {
     caza: normativaCaza, mineria: datosMineria, construccion: datosConstruccion,
+    herramientas,
   };
 
   const taller = new Taller({ fundicion, mineria, construccion, limites, jugador, inventario });
@@ -400,8 +417,29 @@ async function iniciar() {
   const mapa = new Mapa({
     mundo, jugador, tiempo, exploracion, codice, construccion, hallazgos,
   });
+  // La misma carta en chico, abajo a la derecha. Se arma después del mapa porque
+  // se esconde mientras el grande está abierto.
+  const minimapa = new Minimapa({
+    mundo, jugador, exploracion, hallazgos, construccion, codice, mapa,
+  });
   const bolso = new Bolso({ inventario, jugador, hud, recoleccion, equipo, fabricacion, tiempo });
   const fin = new Fin({ jugador, mundo, tiempo, hud, codice, saberes, construccion });
+
+  // Lo que se deja puesto en el mundo y trabaja solo: el lazo, la nasa, la red.
+  // Sortea su presa con la misma cuenta con que la fauna decide qué aparece, y
+  // lo marcan el mapa y el minimapa, porque el que la puso tiene que poder volver.
+  const trampas = new Trampas({
+    mundo, fauna: bichos, peces, pesca, inventario, equipo, caza, norma, hud, tiempo, jugador,
+    objetos: herramientas.objetos,
+  });
+  const trampas3D = new Trampas3D(trampas);
+  // Antes del primer cuadro, como el terreno y las obras: el programa de la
+  // muestra se compila en la carga, y poner la primera trampa no compila nada.
+  for (const m of trampas3D.materiales) conCSM(csm, m);
+  escena.add(trampas3D.grupo);
+  recoleccion.trampas = trampas;
+  bolso.trampas = trampas;
+  hallazgos.trampas = trampas;
 
   // El arco del juego: un año con un cuaderno. No es una trama pegada encima —el
   // motor ya simula estaciones, vedas y cota de nieve—, es el objetivo que el
@@ -429,7 +467,7 @@ async function iniciar() {
   // tecnologías, mapa— no se pierde nunca: ésa es la tesis del juego.
   const partida = new Partida({
     jugador, inventario, saberes, codice, construccion, fundicion, tiempo,
-    mundo, hud, exploracion, recoleccion, equipo,
+    mundo, hud, exploracion, recoleccion, equipo, trampas,
     obras: { agregar: dibujarObra },
     hornos: { agregar: dibujarHorno },
   });
@@ -655,6 +693,15 @@ async function iniciar() {
   addEventListener('resize', redimensionar);
   redimensionar();
 
+  // Las capas del suelo horneado: Terreno ya las pidió en su constructor; acá se
+  // espera la carga y se suben a la placa mientras se ve la pantalla de carga,
+  // para que el primer paso del jugador no pague la subida ni los mipmaps.
+  // Si no llegan, `disponible` es false y el suelo sigue con el ruido.
+  {
+    const suelo = await cargarSuelo();
+    if (suelo.disponible) { render.initTexture(suelo.albedo); render.initTexture(suelo.normal); }
+  }
+
   // ── Bucle ─────────────────────────────────────────────────────────────────
   progreso(1, 'Listo.');
   await new Promise(r => setTimeout(r, 420));
@@ -820,6 +867,9 @@ async function iniciar() {
       acumulador -= PASO;
       pasos++;
     }
+    // Las trampas cuentan con el reloj del mundo, que ya avanzó en este cuadro.
+    trampas.actualizar();
+    trampas3D.sincronizar();
     // Lo que los eventos hacen por su cuenta: quemar, golpear, voltear.
     //
     // Las horas que se les pasan son las del CUERPO, no las del mundo. Acá
@@ -984,6 +1034,7 @@ async function iniciar() {
 
     // ── Interfaz
     hud.actualizar(dt, cielo);
+    minimapa.actualizar(dt);
     if (performance.now() - ultimoDiag > 250) {
       ultimoDiag = performance.now();
       const inf = render.info;
@@ -1005,7 +1056,7 @@ async function iniciar() {
     inventario, saberes, recoleccion, caza, audio, equipo, fabricacion, bolso,
     limites, mineria, fundicion, hornos, taller, construccion, obras, peces, pesca,
     eventos, clima, oclusion, color, calidad,
-    exploracion, hallazgos, mapa, bolso, opciones, fin, partida, norma, relevamiento, cierre,
+    exploracion, hallazgos, mapa, minimapa, trampas, trampas3D, bolso, opciones, fin, partida, norma, relevamiento, cierre,
     luces, juntarLuces,
   };
 

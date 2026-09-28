@@ -49,10 +49,13 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 /** Lados de los torneados. Ocho: el cabo de un hacha no necesita más. */
 const SEG = 8;
 
-/** Los dieciocho objetos con `ranura: "mano"` de `herramientas.json`. */
+/**
+ * Los objetos con `ranura: "mano"` de `herramientas.json`. Eran dieciocho hasta la
+ * ronda 8; la fase 5 sumó el percutor y el martillo de piedra, y son **veinte**.
+ */
 export const IDS_MANO = [
-  'lasca_rodado', 'lasca', 'raspador', 'cuchillo', 'hacha_piedra', 'azuela',
-  'pala_omoplato', 'maza_cuna', 'pico_asta', 'hacha_hierro', 'sierra',
+  'percutor', 'lasca_rodado', 'lasca', 'raspador', 'cuchillo', 'hacha_piedra', 'azuela',
+  'pala_omoplato', 'maza_cuna', 'martillo_piedra', 'pico_asta', 'hacha_hierro', 'sierra',
   'martillo', 'pico_hierro', 'pala_hierro', 'barreta', 'antorcha',
   'candil_grasa', 'ahumador',
 ];
@@ -255,6 +258,19 @@ const MODELOS = {
     },
   }),
 
+  // El percutor: el rodado ENTERO, el que golpea. Lo que lo separa de la lasca en
+  // silueta es el bulto, y está medido: el grosor relativo —la medida menor de la
+  // caja sobre la mayor— es 0,88 acá y 0,53 en la lasca de rodado, que es una
+  // esquirla chata (0,17 en la de obsidiana). Éste es un canto redondeado que llena
+  // el puño. Es la herramienta con la que se saca la lasca y se pica la preforma
+  // (RONDA8.md, fase 5).
+  percutor: () => ({
+    montaje: 'corto',
+    piezas: {
+      piedra: [poner(canto(0.074), { y: 0.028, rx: 0.35, ry: 0.55, rz: 0.18, ex: 1.0, ey: 0.86, ez: 0.92 })],
+    },
+  }),
+
   // La misma idea en vidrio volcánico: más larga, más fina y más aguda. Lo que
   // la separa de la de rodado en silueta es el largo, no el color.
   lasca: () => ({
@@ -329,6 +345,35 @@ const MODELOS = {
         poner(pico(0.017, 0.085, 6), { x: -0.052, y: 0.255, z: 0.020, rz: 0.30, rx: 0.15 })],
       piedra: [poner(new THREE.CylinderGeometry(0.050, 0.050, 0.135, 6, 1),
         { y: 0.365, rz: Math.PI / 2 })],
+    },
+  }),
+
+  // El martillo de piedra: un canto con la GARGANTA PICADA —una acanaladura
+  // alrededor— y el mango atado en ella. La garganta es lo que lo distingue de la
+  // maza y cuña, que lleva la cabeza lisa y además el pico de madera: acá son tres
+  // cilindros, el del medio más fino. Es la forma con que se enmangaban las
+  // hachas y mazas del Neuquén (Salas 1942).
+  //
+  // El cabo es de UNA MANO y mucho más corto que el de la maza —28,5 contra 38
+  // cm—, y la cabeza es un canto tan grueso como largo en vez del cilindro
+  // atravesado de la maza. Las dos cosas son la pieza, no un retoque: el
+  // martillo se usa sentado, golpeando hacia abajo sobre un hueso apoyado, y no
+  // a dos manos contra una cuña. Y también es lo que las separa en la silueta:
+  // con el cabo largo de la primera versión, el banco de la ronda 7 (fase 2b,
+  // sección 3) encontraba las tres medidas de la caja dentro del 15 % de la maza
+  // y cuñas —10,0 %, 8,7 % y 12,3 %— y se ponía rojo con razón. Ahora son
+  // 20,2 %, 14,3 % y 12,3 %: la regla pide que se separe UNA de las tres, y la
+  // que se separa es el largo, que es justamente la diferencia real entre una
+  // maza de dos manos y un martillo de una.
+  martillo_piedra: () => ({
+    montaje: 'cabo',
+    piezas: {
+      madera: [tubo(0.031, 0.025, 0.285), atadura(0.035, 0.205), atadura(0.035, 0.256)],
+      piedra: [
+        poner(new THREE.CylinderGeometry(0.062, 0.062, 0.046, 6, 1), { x: -0.034, y: 0.272, rz: Math.PI / 2 }),
+        poner(new THREE.CylinderGeometry(0.050, 0.050, 0.028, 6, 1), { y: 0.272, rz: Math.PI / 2 }),
+        poner(new THREE.CylinderGeometry(0.062, 0.062, 0.046, 6, 1), { x: 0.034, y: 0.272, rz: Math.PI / 2 }),
+      ],
     },
   }),
 
