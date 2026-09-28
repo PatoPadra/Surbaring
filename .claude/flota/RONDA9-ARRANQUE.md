@@ -51,6 +51,35 @@ Por orden de lo que va a morder primero:
    por el arreglo de la luz del terreno de la fase 3b. **Decidí no tocarlo más hasta que lo
    mire**: si sigue molestando, es un cambio de una línea en el radio de la luz de fogata.
 
+8. **`efecto.herramienta` y `efecto.recetas` de `historia.json` no los lee ningún
+   sistema.** `Saberes.faltaPara()` sólo se consulta con `'caza'`, `'horno'` y
+   `'recetas'` (esta última sólo desde `Fundicion`). Las listas se mantienen al día
+   porque son documentación del códice, pero **ahí no hay una compuerta**: la compuerta
+   es `obj.tecnologia`. Que nadie crea que editando esas listas cambia algo.
+9. **El tiento sigue siendo la mejor atadura y el hacha ya no lo usa.** Es correcto —el
+   tiento pide cuero, o sea cazar, y la fase 5 sacó eso del camino— pero deja una mejora
+   obvia sin modelar: rehacer el hacha con tiento cuando ya cazaste debería darle más
+   durabilidad. Hoy no hay ningún sistema de variantes de receta.
+
+## LO QUE ESPERA UNA RESPUESTA DEL DUEÑO
+
+**`r8-primer-anio.md` está escrito desde el 18/9/2026 y espera cinco respuestas.** El
+dueño pidió la propuesta del primer año («que el juego arranque en primavera y que uno
+de los primeros desafíos de verdad verdadera sea pasar el invierno con un buen
+refugio») y pidió que fuera **escrita, sin tocar código**. Está hecha y medida: el juego
+ya tiene un arco de 365 días en `Relevamiento.js`, pero es de *relevamiento* y no de
+supervivencia. Las cinco preguntas, sin contestar:
+
+1. **¿En qué estación arranca una partida nueva?** Primavera como pidió (el invierno
+   queda a 84 h de juego), otoño (a 24 h), o primavera con otro reloj.
+2. **¿Se puede dormir** con refugio y fuego para pasar la noche?
+3. **¿El año de supervivencia reemplaza al año del cuaderno o lo acompaña?**
+4. **¿Qué pasa al cumplir el año?** Hoy avisa y se sigue jugando.
+5. **¿Morir reinicia la cuenta?** Hoy el cuaderno sobrevive a la muerte.
+
+**Sin esas respuestas no se puede abrir ninguna fase del primer año.** Es lo primero que
+hay que preguntarle.
+
 ## Lo que hay que preguntarle al dueño, y lo que NO
 
 - **NO preguntar la «otra cosa» de gráficos.** El 27/9/2026 confirmó que no existe: eran
