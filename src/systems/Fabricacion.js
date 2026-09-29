@@ -165,6 +165,18 @@ export class Fabricacion {
   }
 
   /**
+   * La que se usa DE VERDAD: la primera de `pideHerramienta` que el jugador
+   * tiene sana, o `null` si la receta no pide ninguna. Es el mismo criterio que
+   * `herramientaQueFalta()` de arriba usa para decidir si falta — acá se usa
+   * para saber CUÁL desgastar en `fabricar()`, y no una fija ni todas las
+   * alternativas.
+   */
+  _herramientaUsada(obj) {
+    const pedidas = [].concat(obj.pideHerramienta || []);
+    return pedidas.find(id => this.equipo?.tiene(id) && !this.equipo.gastado(id)) || null;
+  }
+
+  /**
    * Estado de un objeto: si se puede hacer, y si no, exactamente por qué.
    *
    * Distinguir «te falta juntar» de «todavía no sabés» de «no tenés con qué» de
@@ -241,6 +253,10 @@ export class Fabricacion {
     const e = this.estado(obj);
     if (e.estado !== 'lista') return e;
 
+    // La que se va a gastar, si la receta pide una: se busca ACÁ, antes de tocar
+    // nada, porque es la misma que `estado()` ya confirmó que está sana.
+    const herramientaUsada = this._herramientaUsada(obj);
+
     // El peso se comprueba ANTES de consumir: quedarse sin materiales y sin
     // objeto porque no entraba en el bolso sería robarle al jugador. Se mira el
     // neto, porque casi toda receta suelta más de lo que entrega —cuatro fibras
@@ -282,6 +298,11 @@ export class Fabricacion {
       // exactamente el agujero por donde el objeto se perdía en silencio.
       return { estado: 'no_entra', motivo: `${obj.nombre} salió pero no hubo dónde ponerla.` };
     }
+
+    // Se gasta recién acá, con todo lo demás ya en firme: fabricar no es una
+    // acción que pueda fallar a mitad de camino con la herramienta ya gastada y
+    // nada que mostrar por eso.
+    if (herramientaUsada) this.equipo?.desgastarId?.(herramientaUsada);
 
     this.alCambiar?.();
     return { estado: 'hecho', objeto: obj, salida };

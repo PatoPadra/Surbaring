@@ -45,6 +45,30 @@ días. El detalle completo está en `r8-primer-anio.md`, al final.
    anteriores porque es la más grande y no depende de ninguna: puede prepararse (contrato
    y banco) mientras corre `copa-b`.
 
+> **28/9/2026 — FASE 1 (`iconos`) CERRADA.** La hoja pasa de 123 `data:image/svg+xml`
+> sueltos a un sprite: un solo `<svg>` con una celda por ícono, cada clase eligiendo la
+> suya con `background-position`. **137,78 → 130,01 kB** (banco 6/6), verificado de
+> forma independiente con `banco-r9-fase1.navegador.js`: **246/246 sin diferencia de
+> píxeles** contra la hoja vieja, a los dos tamaños reales de uso, y confirmado jugando
+> con el bolso abierto. El agente sumó por su cuenta un `clip-path` compartido
+> (2,71 kB) para blindar contra formas que se pasan de la celda de 64×64; medido y
+> razonable.
+>
+> **28/9/2026 — FASE 2 (`desgaste`) CERRADA.** La escribió el jefe directamente, sin
+> agente: quedó del todo especificada a nivel de línea al investigarla. `Equipo` suma
+> `desgastarId(id, cuanto)` —gasta la mejor instancia de un id esté donde esté, grilla
+> o puesta— y `Fabricacion.fabricar()` gasta la herramienta que la receta REALMENTE usó.
+> El huso queda exento sin escribir ninguna excepción a mano: nunca declaró
+> `durabilidad`, y esa es la misma señal que ya usaba `desgastar()` para «esto no se
+> rompe». Banco 8/8 (D1 a D8), falsador 4/4 con 2 controles limpios. De paso,
+> `balanceSaber.arreglo` en `herramientas.json` dejó de proponer que `hacha_pulida`
+> volviera a depender de la obsidiana —la fase 5 sacó esa dependencia a propósito— sin
+> inventar un total nuevo (el instrumento viejo, `r4-economia.mjs`, no está mantenido).
+> **Una corrida del banco dio 6/7 en la regresión de la piedra** (`banco-r8-fase5.mjs`)
+> y no se le creyó: coincidió con un lanzamiento de agente de más por error del jefe
+> (resuelto al toque). Confirmado limpio en 4 corridas más, una de ellas bajo carga
+> deliberada — no se reprodujo nunca más. Se cierra con el banco completo en 8/8.
+
 **Lo que NO es una fase todavía, y espera el ojo del dueño jugando** (regla
 `fusionar-recien-cuando-lo-vio`): el disco de la luna con brillo fijo (punto 4 de la
 bandeja) y el suelo naranja junto al fuego (punto 7). Ninguno se toca sin que el dueño

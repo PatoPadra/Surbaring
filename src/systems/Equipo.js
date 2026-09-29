@@ -410,22 +410,47 @@ export class Equipo {
   }
 
   /**
-   * Gasta un uso de **la instancia que está en la mano**, no «del hacha»: la que
-   * quedó en el bolso no se entera. Devuelve true si se acaba de romper, para
-   * que quien llame avise una sola vez y no en cada golpe.
+   * Le resta usos a una instancia ya localizada, si las reglas lo permiten: una
+   * luz no se gasta a golpes (se consume con el reloj, en `luzActiva()`) y algo
+   * sin `usos` finitos no se gasta nunca (es la señal de "esto no se rompe usándolo",
+   * como el huso: no declara `durabilidad` porque hilar no lo gasta). Devuelve
+   * true si la dejó en 0.
    */
-  desgastar(cuanto = 1) {
-    const cosa = this.puesto.mano;
+  _envejecer(cosa, cuanto) {
     if (!cosa) return false;
-    // Una luz no se gasta a golpes: se consume con el reloj, en `luzActiva()`.
-    // Hace falta decirlo porque `Caza._tiro()` desgasta lo que hay en la MANO al
-    // tirar con el ARMA, y una antorcha de un solo uso quedaba gastada ardiendo
-    // al primer flechazo.
     if (this.definicion(cosa.id)?.efecto?.luz) return false;
     if (!Number.isFinite(cosa.usos) || cosa.usos <= 0) return false;
     cosa.usos = Math.max(0, cosa.usos - cuanto);
     this.alCambiar?.();
     return cosa.usos === 0;
+  }
+
+  /**
+   * Gasta un uso de **la instancia que está en la mano**, no «del hacha»: la que
+   * quedó en el bolso no se entera. Devuelve true si se acaba de romper, para
+   * que quien llame avise una sola vez y no en cada golpe.
+   */
+  desgastar(cuanto = 1) {
+    return this._envejecer(this.puesto.mano, cuanto);
+  }
+
+  /**
+   * Gasta un uso de la MEJOR instancia de `id` que haya, esté en la grilla o
+   * puesta — el mismo universo que recorren `tiene()`/`usosDe()`. Hace falta
+   * porque lo que una receta de `Fabricacion` pide con `pideHerramienta` no
+   * siempre va en la ranura `mano` (el huso se hila con él encima nomás, no
+   * puesto), así que `desgastar()` no alcanza. Con dos instancias del mismo id,
+   * se gasta la sana y no la que ya estaba rota: es la misma lógica que
+   * `usosDe()` ya usa para decidir cuál "es" la herramienta.
+   */
+  desgastarId(id, cuanto = 1) {
+    let mejor = null;
+    for (const { cosa } of this.todas()) {
+      if (cosa.id !== id) continue;
+      if (!Number.isFinite(cosa.usos) || cosa.usos <= 0) continue;
+      if (!mejor || cosa.usos > mejor.usos) mejor = cosa;
+    }
+    return this._envejecer(mejor, cuanto);
   }
 
   /** Lo que cuesta reparar: la mitad de los materiales, para arriba. */

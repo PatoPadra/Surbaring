@@ -84,3 +84,99 @@ y sin desplazamiento visible** en ninguno de los dos tamaños.
   Vite real comparando contra `base-r9/Iconos.js`).
 - `.claude/flota/banco-r9-fase1.falsar.mjs` — planta defectos sobre una copia y trae
   controles.
+
+---
+
+## FASE 2 · `desgaste` — la herramienta que una receta pide se gasta usándola
+
+### El problema, medido antes de escribir el contrato
+
+`Fabricacion.fabricar()` nunca llama a nada de `Equipo` que gaste una herramienta.
+Confirmado con grep: `desgastar()` sólo lo llaman `Recoleccion._gastarHerramienta()`
+(cuando corta, mata o cava) y `Caza._tiro()` (al tirar con el arma). **Ninguna receta
+de `Fabricacion` gasta la herramienta que `pideHerramienta` exige.**
+
+Hay exactamente **6 recetas** con `pideHerramienta` en `herramientas.json` (confirmado
+por script, no a ojo):
+
+| receta | pide | durabilidad de la herramienta |
+|---|---|---|
+| `lasca_rodado` | `percutor` | 30 |
+| `preforma_hacha` | `percutor` | 30 |
+| `martillo_piedra` | `percutor` | 30 |
+| `medula_hueso` | `martillo_piedra` | 150 |
+| `mango_labrado` | `["lasca_rodado","lasca","cuchillo"]` (cualquiera) | 12 / 40 / 90 |
+| `hilar_lana` | `huso` | **sin declarar → `Infinity`** |
+
+La propia ficha del huso ya lo dice: *"no declara durabilidad porque hilar no lo
+gasta"* — es la excepción que `RONDA9-ARRANQUE.md` pedía resolver con una marca nueva
+(`gastaHerramienta`). **No hace falta esa marca nueva.** `Equipo.desgastar()` YA trata
+"sin `usos` finito" como "no se gasta nunca" (`if (!Number.isFinite(cosa.usos) ||
+cosa.usos <= 0) return false`) — es exactamente la regla que el huso necesita, y ya la
+tiene por no declarar `durabilidad`. Reusar esa misma señal para las cinco recetas
+restantes (que sí declaran `durabilidad`) resuelve las seis sin escribir una excepción
+a mano ni inventar un campo paralelo que se pueda desincronizar de `durabilidad`.
+**Es una decisión de la flota, y ya está tomada: no se agrega `gastaHerramienta`.**
+
+Lo único que falta es un lugar de dónde COLGAR el desgaste: `Equipo.desgastar()`
+sólo sabe gastar lo que está puesto en la ranura `mano`, y la herramienta que
+`pideHerramienta` exige puede estar en el bolso sin estar equipada (`herramientaQueFalta`
+ya lo dice: "cuenta tenerlo en el bolso o puesto"). Hace falta un método que la
+encuentre por id, esté donde esté.
+
+### El contrato
+
+- **D1 — `Equipo.desgastarId(id, cuanto = 1)`, método nuevo.** Busca, entre TODAS las
+  instancias de ese id (grilla o puesta — el mismo universo que recorren `tiene()` y
+  `usosDe()`), la de más usos, y le resta `cuanto` con las mismas reglas que
+  `desgastar()`: nunca algo con `efecto.luz`, nunca si sus `usos` no son finitos o ya
+  están en 0. Devuelve `true` si la dejó en 0. Si no hay ninguna instancia elegible,
+  devuelve `false` y no toca nada. **No cambia `desgastar()`** (lo que usa `Caza`
+  sigue exactamente igual).
+- **D2 — `Fabricacion.fabricar()` gasta, al terminar con éxito, la herramienta
+  REALMENTE usada:** la primera de `obj.pideHerramienta` que el jugador tiene sana (el
+  mismo criterio que ya usa `herramientaQueFalta()` para decidir si falta o no — no
+  una fija, no todas las alternativas de la lista).
+- **D3 — Con el huso, `hilar_lana` no le baja ningún uso.** Sale solo de D1+D2: no se
+  escribe ninguna condición especial para `huso` ni para `hilar_lana`.
+- **D4 — Las otras cinco SÍ bajan un uso** de la herramienta que se haya usado
+  (`percutor`, `martillo_piedra`, o la que corresponda de la lista en
+  `mango_labrado`), cada vez que esa receta se fabrica con éxito.
+- **D5 — Nada más cambia.** `estado(obj)` sigue devolviendo exactamente lo mismo que
+  hoy para cualquier receta (ni más estricta ni más floja), y una receta SIN
+  `pideHerramienta` no se ve afectada en absoluto.
+- **D6 — `herramientas.json`: corregir `balanceSaber.arreglo`.** Hoy propone volver a
+  pedirle `lasca_obsidiana` a `hacha_pulida` — la fase 5 de la ronda 8 sacó esa
+  dependencia A PROPÓSITO (ver `notaRequisitos` de `hacha_pulida` en
+  `historia.json`), así que ese texto quedó contradiciendo una decisión ya tomada.
+  Corregirlo para que lo diga (marcarlo desactualizado desde la ronda 8, fase 5) **sin
+  inventar números nuevos**: el instrumento que calculaba "el árbol pide X, el juego
+  reparte Y" (`r4-economia.mjs`) no está mantenido y hoy da un árbol que ya no existe
+  (todavía cree que `hacha_pulida` depende de `lasca_obsidiana`), así que no es una
+  fuente confiable para un número de reemplazo. Decir lo que se sabe (el arreglo
+  propuesto ya no vale) y no lo que no se sabe (el total real hoy).
+- **D7 — Sin regresión:** `banco-r8-fase5.mjs` (la cadena entera de la piedra, con
+  `Inventario`/`Equipo`/`Saberes`/`Fabricacion` reales) sigue verde. **No** se pide
+  `r4-banco-fabricacion.mjs`: medido antes de escribir este contrato, ya da **18
+  fallas contra la base sin tocar** — quedó desactualizado desde que la fase 5 sacó la
+  tecnología previa de `lasca_rodado` (hoy `tecnologia: null`, el banco todavía espera
+  `falta_saber`) y otros cambios de esa misma fase. No es una regresión de esta fase:
+  ya estaba roto. Queda anotado para quien quiera repararlo o jubilarlo, pero no es
+  trabajo de `desgaste`.
+- **D8 — `vite build` limpio.**
+
+### Lo que NO pide este contrato
+
+- No pide tocar `Recoleccion.js` ni `Caza.js` (sus desgastes ya funcionan, aunque uno
+  tenga su propio defecto conocido de apuntar a "lo que hay en la mano" — no es de
+  esta fase).
+- No pide rebalancear cuánto dura cada herramienta (`durabilidad` no cambia).
+- No pide recalcular el árbol de saber completo — sólo corregir el texto que quedó
+  contradiciendo una decisión ya tomada.
+
+### Instrumentos
+
+- `.claude/flota/banco-r9-fase2.mjs` — D1 a D6 (Node, contra `Equipo`/`Fabricacion`
+  reales, no maquetas).
+- `.claude/flota/banco-r9-fase2.falsar.mjs` — planta defectos sobre una copia y trae
+  controles.
