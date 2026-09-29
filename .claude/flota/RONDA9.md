@@ -273,3 +273,101 @@ limpio dentro del follaje, sin ningún palo asomando.
   con el mismo stub de `document`/canvas que ya usa `banco-r8-fase4.mjs`).
 - `.claude/flota/banco-r9-fase3.falsar.mjs` — planta defectos sobre una copia y
   trae controles.
+
+---
+
+## FASE 4 · `primer-año` — las cinco respuestas del dueño, hechas juego
+
+Las cinco preguntas de `r8-primer-anio.md` están contestadas (28/9/2026, ver
+`ESTADO.md`). Esta fase es grande y se abre en sub-fases, cada una con su propio
+cierre — la misma disciplina que las fases 1 a 3, a otra escala.
+
+**Medido antes de encargar nada** (jefe, investigación en el código real, no
+supuestos): la pantalla de cierre del año (`src/ui/Cierre.js`) **ya existe** y ya
+hace casi exactamente lo que pedía la pregunta 4 (cartel breve con lo logrado,
+botón "Seguir anotando", el juego no termina) — no hay que construirla, sólo
+enriquecerla con lo que este contrato agregue. El punto de enganche de la muerte
+(`jugador.alMorir`, cableado en `main.js` a `partida.registrarMuerte` + `fin.mostrar`)
+ya existe y es justo donde hace falta enganchar la pregunta 5. El cartel de acción
+contextual (`E`) es un solo sistema, `Recoleccion.quePuedoHacer()` → `HUD.mostrarAccion()`,
+acoplado 1:1 a esa clase: agregar «Dormir» ahí adentro mezclaría un concepto de
+reloj con la clase de recolección, así que se engancha ENVOLVIENDO el método desde
+`main.js` (el mismo patrón que ya usa el proyecto con `partida.reaparecer` y
+`construccion.levantar`), no tocando `Recoleccion.js`.
+
+### Sub-fase 4a · `reloj` — CERRADA
+
+Una línea en `Tiempo.js`: la fecha de arranque de una partida NUEVA pasa del
+12 de febrero (verano) al 21 de septiembre (el equinoccio de primavera), sin
+tocar la velocidad del reloj (pregunta 1, opción A). El invierno queda al día
+253 (~84 h reales), lejos pero sin reabrir el balance de luz/clima de las rondas
+5 a 8.
+
+Verificado que **una partida guardada no se entera**: `Partida._cargar()`
+restaura `tiempo.fecha` desde `d.tiempo.ms` si existe (`Partida.js` línea ~374),
+así que el cambio de default sólo alcanza a partidas sin guardado previo — que es
+exactamente lo que pedía la pregunta ("¿en qué estación arranca una partida
+NUEVA?"). Verificado también que ningún banco de regresión pasa por el default
+(`banco-r8-fase7.mjs` y `banco-r8-fase2.mjs` construyen su propio `Tiempo` con
+una fecha explícita).
+
+**Verificado jugando**: partida nueva, sin guardado previo, arranca el
+2025-09-21T13:20 UTC. (Nota de proceso: un primer intento mostró febrero por una
+caché de Vite vieja —`node_modules/.vite`—, no por el código; ver
+[[vite-cache-mata-el-cambio]] en la memoria del jefe.)
+
+Sin banco propio: es un cambio de una constante, ya cubierto por la comprobación
+de arriba (ningún banco depende del default) y por la partida real jugada.
+
+### Sub-fase 4b · `dormir` — SIGUE
+
+**La pregunta 2**: dormir con refugio y fuego para pasar la noche. Piezas que ya
+existen y se reusan, no se reinventan:
+
+- **Fuego cerca**: `fundicion.cercano(RADIO_HORNO_M, h => fundicion.usaFuego(h) && fundicion.arde(h))`
+  — el mismo patrón exacto de `Fabricacion.js:85`.
+- **Refugio cerca**: `construccion.abrigoEn(x, z)` (`Construccion.js:181-189`) da
+  0..1; alcanza con que sea `> 0` (cualquier obra con `abrigo` declarado a menos
+  de `RADIO_ABRIGO_M` — hoy 6 m). No hay categoría "vivac"/"ruca" en el dataset
+  real (`RONDA9-ARRANQUE.md` lo daba por hecho y no es cierto): son las obras de
+  `construccion.json` con `abrigo > 0` (parapeto 0,35, vivac de nieve 0,55, etc.).
+- **El salto de reloj**: no existe nada que lo haga hoy (confirmado, no hay
+  atajo de "pasar tiempo" en `Jugador.js` ni `Tiempo.js`). Se arma reusando el
+  mismo paso que ya corre cada cuadro (`tiempo.avanzar(dt)` + la actualización de
+  supervivencia de `Jugador`), repetido en cuadros grandes hasta el amanecer, y
+  no con una fórmula aparte que resuma "una noche" de un tirón: así la
+  temperatura, el hambre y la sed de dormir abrigado y con fuego salen del MISMO
+  modelo térmico que ya está medido, no de un número inventado para la ocasión.
+- **El cartel**: se envuelve `recoleccion.quePuedoHacer` desde `main.js` (mismo
+  patrón que `partida.reaparecer`): si el original no tiene nada que ofrecer Y
+  hay refugio y fuego a mano, se ofrece "Dormir" por la tecla `E` que ya se usa
+  para todo lo demás — no una tecla nueva que aprender.
+
+Falta: contrato exacto (qué pasa con hambre/sed durante el salto, cuánto avanza,
+qué pasa si el fuego se apaga a mitad de la noche), banco y — clave acá, porque
+es una mecánica nueva que hay que sentir jugando — verificación en el navegador.
+
+### Sub-fase 4c · `hitos` — SIGUE
+
+Las preguntas 3, 4 y 5. El año de supervivencia **acompaña** al del cuaderno
+(mismo contador de `Relevamiento.js`, reinterpretado): no hay que crear un
+segundo reloj. Falta:
+
+- Un hito nuevo, chico, independiente del contador de días: una bandera de
+  "racha sin morir" para el logro "primer año cumplido" (pregunta 5). El
+  contador de días (`Relevamiento.dias`) NO se toca —sigue sobreviviendo a la
+  muerte, como ya está escrito y como pide la pregunta—; sólo el LOGRO se
+  reinicia. Se engancha en `jugador.alMorir` o envolviendo
+  `partida.registrarMuerte`, con el mismo patrón de "envolver sin tocar" que ya
+  usa el proyecto.
+- Los hitos intermedios (primera noche, primera semana con refugio+recipiente,
+  otoño preparado, invierno pasado) anotados en el cuaderno.
+- `Cierre.js` (ya existe, pregunta 4 ya resuelta en su mayor parte) se enriquece
+  con si se cumplió la racha y si se pasó el invierno, sin tocar el epílogo de
+  Moreno que ya tiene.
+
+### Sub-fase 4d · `códice` — SIGUE
+
+La ficha del objetivo en el códice (mencionada en `r8-primer-anio.md`, punto 7).
+Contenido, no mecánica: bajo riesgo, se hace al final con todo lo demás ya
+decidido.

@@ -65,8 +65,14 @@ export class Tiempo {
   constructor(lat, lon, fechaInicial = null) {
     this.lat = lat;
     this.lon = lon;
-    // Arranca un mediodía de febrero: la luz alta muestra bien el relieve.
-    this.fecha = fechaInicial ?? new Date(Date.UTC(2025, 1, 12, 13, 20, 0));
+    // Arranca en primavera —21 de septiembre, el equinoccio— y no en verano: es
+    // el pedido del dueño para el primer año («r8-primer-anio.md», pregunta 1,
+    // opción A elegida el 28/9/2026). El invierno (1 de junio) queda al día 253,
+    // 84 horas reales a la velocidad por defecto: lejos, pero es la que no
+    // reabre el balance de luz/clima ya medido en las rondas 5 a 8 —cambiar la
+    // velocidad del reloj sí lo haría—. La hora es la misma de siempre: un
+    // mediodía muestra bien el relieve.
+    this.fecha = fechaInicial ?? new Date(Date.UTC(2025, 8, 21, 13, 20, 0));
     this.indiceVelocidad = 1;
     this.segundosTotales = 0;
 
