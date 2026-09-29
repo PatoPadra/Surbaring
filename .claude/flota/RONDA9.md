@@ -433,7 +433,54 @@ sólo entonces mira el fuego — el mismo efecto que una Y. **Si alguien vuelve 
 tocar esa función, hay que releerla a mano**, porque este banco no puede cazar
 sola una Y que se vuelva O. `vite build` limpio.
 
-### Sub-fase 4c · `hitos` — SIGUE
+### Sub-fase 4c · `hitos` — CERRADA (alcance recortado a la pregunta 5)
+
+**Decisión de la flota, y por qué se recorta el alcance:** los "hitos
+intermedios" (primera noche, primera semana, otoño, invierno) que proponía
+`r8-primer-anio.md` sección 6 eran una SUGERENCIA del jefe anterior, no una de
+las cinco decisiones que el dueño contestó. Las cinco preguntas reales sólo
+piden, para esta sub-fase, la pregunta 5 (morir sólo reinicia el logro, no el
+contador). Construir además los hitos narrativos sería agregar alcance que
+nadie pidió — se anota como pendiente futuro y no se hace ahora.
+
+**Lo que sí pide la pregunta 5, implementado:**
+
+- `Relevamiento.murioEnElAnio` (bandera nueva, persistida junto al resto del
+  cuaderno) y `Relevamiento.registrarMuerte()`, que la pone en `true` una sola
+  vez y guarda. **No toca `inicioMs` ni `dias`** — el cuaderno sigue
+  sobreviviendo a la muerte, exactamente como ya estaba escrito.
+- `resumen()` suma `sinMorir: !this.murioEnElAnio`, que es lo que `Cierre.js`
+  necesita para mostrarlo.
+- Enganchado en `main.js`, junto a `jugador.alMorir` (el mismo punto de
+  extensión que ya usa `partida.registrarMuerte`): cada muerte real llama
+  también a `relevamiento.registrarMuerte()`.
+- `olvidar()` (el reinicio completo del cuaderno) también limpia la racha,
+  coherente con que es un reinicio de todo, no sólo de la fecha.
+- `Cierre.js` (que ya existía, pregunta 4) suma UN dato más a su grilla —"Sí"/
+  "No" a "llegaste sin morir en el camino"— en vez de una pantalla aparte:
+  así el año de supervivencia **acompaña** al del relevamiento (pregunta 3),
+  no lo reemplaza ni le arma una interfaz separada.
+
+**Verificado**: banco de Node `banco-r9-fase4c.mjs` (`Relevamiento` es una
+clase pura, corre en Node de verdad con un `localStorage` de mentira) 5/5,
+falsador 4/4 con 1 control limpio. Verificado además jugando: `jugador.alMorir`
+real invocado a mano, `murioEnElAnio` pasa a `true`, `dias` queda en `0`, la
+bandera sobrevive a un `location.reload()`, y `Cierre.mostrar()` pinta
+correctamente la nueva celda ("No" tras la muerte simulada) integrada en la
+misma grilla que ya tenía.
+
+**De paso, un defecto propio encontrado y corregido:** el primer falsador que
+escribí para esta sub-fase reusó la técnica de "cortar un método buscando su
+cierre" (`indexOf('\n  }\n', …)`) de la fase 2 — y esa técnica ya estaba rota
+para CUALQUIER archivo con fin de línea CRLF, que es TODO el repo (ver la nota
+del 29/9 en `ESTADO.md`, fase 2). Se escribió bien desde el principio acá
+(normalizando a LF antes de mutar) y de paso se corrigió el falsador viejo de
+la fase 2, que daba un "VISTO" verdadero pero por el motivo equivocado (un
+error de sintaxis, no la aserción real).
+
+Pendiente para más adelante, si el dueño lo pide: los hitos narrativos
+intermedios de `r8-primer-anio.md` sección 6 (primera noche, primera semana,
+otoño, invierno) — no están en las cinco preguntas contestadas.
 
 Las preguntas 3, 4 y 5. El año de supervivencia **acompaña** al del cuaderno
 (mismo contador de `Relevamiento.js`, reinterpretado): no hay que crear un

@@ -100,6 +100,30 @@ días. El detalle completo está en `r8-primer-anio.md`, al final.
 > el radio horizontal del lóbulo, y una rama con trayecto casi vertical rozó el
 > borde (1,001× en vez de ≤1) — corregido usando el radio menor de los dos ejes.
 
+> **29/9/2026 — FASE 4a/4b/4c (`primer-año`) — reloj, dormir e hitos CERRADAS.**
+> **4a**: partidas nuevas arrancan el 21 de septiembre (primavera) en vez del 12 de
+> febrero; una partida guardada no se entera (restaura su propia fecha). **4b**: se
+> puede dormir con refugio y fuego —el cartel de "E" lo ofrece envolviendo
+> `Recoleccion.quePuedoHacer`/`actuar`, sin tocar esa clase ni sumar una tecla
+> nueva—, y el salto de reloj reusa la simulación real (`jugador.actualizarSupervivencia`
+> + `tiempo.avanzar`, en un bucle) en vez de una fórmula inventada: medido, sin
+> protección 14 h de mundo bajan la temperatura 1,78 °C, con refugio+fuego la mitad
+> (0,95 °C), mismo gasto de hambre/sed. **4c**: sólo el logro «primer año cumplido» se
+> reinicia al morir (`Relevamiento.murioEnElAnio`, nuevo), nunca el contador de días;
+> `Cierre.js` —que ya existía de una ronda anterior y ya resolvía gran parte de la
+> pregunta 4— suma un dato más a su grilla en vez de una pantalla aparte. Los "hitos
+> narrativos" intermedios de la sección 6 de `r8-primer-anio.md` quedan afuera a
+> propósito: eran una sugerencia del jefe anterior, no una de las cinco preguntas
+> contestadas. Bancos: 4a sin banco propio (verificado que nada depende del default);
+> 4b navegador 8/8; 4c Node 5/5 con falsador 4/4. Los tres con `vite build` limpio.
+>
+> **Corrección de instrumento, de paso:** preparando el falsador de 4c se encontró que
+> el de la fase 2 (`sin-desgastarId`) daba un "VISTO" por un error de sintaxis —cortaba
+> buscando `'\n  }\n'`, y TODO el repo usa CRLF, así que el corte caía mal y duplicaba
+> el archivo en vez de sacar el método—. Corregido normalizando a LF antes de mutar;
+> revalidado 4/4 por el motivo correcto. El código de la fase 2 no cambió: ya estaba
+> verificado por el banco completo y a mano en el navegador.
+
 **Lo que NO es una fase todavía, y espera el ojo del dueño jugando** (regla
 `fusionar-recien-cuando-lo-vio`): el disco de la luna con brillo fijo (punto 4 de la
 bandeja) y el suelo naranja junto al fuego (punto 7). Ninguno se toca sin que el dueño

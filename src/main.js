@@ -484,7 +484,14 @@ async function iniciar() {
     sotobosque.sembrarTodo(p);
     vegetacion.actualizar(p, tiempo.segundosTotales, tiempo.estado(), camara);
   };
-  jugador.alMorir = (m) => { partida.registrarMuerte(m); fin.mostrar(m); };
+  jugador.alMorir = (m) => {
+    partida.registrarMuerte(m);
+    // Sólo el logro del primer año se reinicia acá (pregunta 5,
+    // r8-primer-anio.md): `relevamiento.dias` no se toca, sigue sobreviviendo
+    // a la muerte como ya estaba escrito.
+    relevamiento.registrarMuerte();
+    fin.mostrar(m);
+  };
 
   const levantarOriginal = construccion.levantar.bind(construccion);
   construccion.levantar = (obra) => {

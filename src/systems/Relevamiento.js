@@ -40,6 +40,14 @@ export class Relevamiento {
     this.inicioMs = null;
     /** Ya se cerró el año alguna vez. */
     this.cerrado = false;
+    /**
+     * La racha del hito «primer año cumplido» (pregunta 5, r8-primer-anio.md,
+     * contestada el 28/9/2026): sólo este logro se reinicia al morir, nunca
+     * `inicioMs`/`dias` — el cuaderno sigue sobreviviendo a la muerte, como ya
+     * estaba escrito. Es la bandera chica y nueva que pedía la respuesta, no
+     * el contador viejo.
+     */
+    this.murioEnElAnio = false;
     /** Lo llama main cuando el año se cumple. */
     this.alCumplirse = null;
     this._cargar();
@@ -49,6 +57,17 @@ export class Relevamiento {
   comenzar(fecha) {
     if (this.inicioMs != null) return;
     this.inicioMs = fecha.getTime();
+    this._guardar();
+  }
+
+  /**
+   * Se llama al morir (enganchado desde `main.js`, junto a `jugador.alMorir`).
+   * Marca la racha rota para siempre: no hay un «segundo año» que la
+   * restaure, porque el arco entero es un año calendario, uno solo.
+   */
+  registrarMuerte() {
+    if (this.murioEnElAnio) return;
+    this.murioEnElAnio = true;
     this._guardar();
   }
 
@@ -89,6 +108,7 @@ export class Relevamiento {
   resumen() {
     return {
       dias: this.dias,
+      sinMorir: !this.murioEnElAnio,
       especies: this.codice?.identificadas?.size ?? 0,
       especiesPosibles: (this.codice?.flora?.especies?.length ?? 0)
         + (this.codice?.fauna?.especies?.length ?? 0),
@@ -105,7 +125,7 @@ export class Relevamiento {
   _guardar() {
     try {
       localStorage.setItem(CLAVE, JSON.stringify({
-        inicioMs: this.inicioMs, cerrado: this.cerrado,
+        inicioMs: this.inicioMs, cerrado: this.cerrado, murioEnElAnio: this.murioEnElAnio,
       }));
     } catch { /* sin almacenamiento */ }
   }
@@ -117,6 +137,7 @@ export class Relevamiento {
       const d = JSON.parse(crudo);
       this.inicioMs = Number.isFinite(d.inicioMs) ? d.inicioMs : null;
       this.cerrado = !!d.cerrado;
+      this.murioEnElAnio = !!d.murioEnElAnio;
       // Una fecha de inicio que no guarda relación con el reloj del mundo es un
       // dato roto, no un cuaderno viejo: con una de 1971 el año se cerraría en
       // el primer cuadro y el jugador vería el epílogo antes de dar un paso.
@@ -133,6 +154,7 @@ export class Relevamiento {
   olvidar() {
     this.inicioMs = null;
     this.cerrado = false;
+    this.murioEnElAnio = false;
     this._guardar();
   }
 }
