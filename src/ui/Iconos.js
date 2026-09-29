@@ -1811,31 +1811,87 @@ const aUri = (svg) => 'data:image/svg+xml,' + svg
   .replace(/>/g, '%3E');
 
 /**
- * El armazón de la hoja. `background-size: contain` y no un tamaño fijo: quien
- * usa la clase decide de qué tamaño es la caja —79 px en la grilla, 34 en el
- * renglón de detalle— y el dibujo se acomoda solo.
- *
- * `pointer-events: none` está por un defecto concreto: el dibujo tapa el
- * casillero entero, y sin esto cada movimiento del puntero dentro de una casilla
- * dispararía `mouseover` de nuevo contra otro elemento.
+ * Cuánto mide el envoltorio que pone `envolver()` antes y después del dibujo.
+ * Se calcula UNA vez llamando a `envolver('')` en vez de copiar el literal a
+ * mano: si el envoltorio cambia algún día (otro `viewBox`, otro atributo
+ * heredado), esto sigue cortando en el lugar justo solo.
  */
-const ARMAZON = `.${CLASE_BASE}{background-repeat:no-repeat;background-position:50% 46%;`
-  + `background-size:contain;pointer-events:none}`;
+const SUFIJO_ARTE = '</svg>';
+const PREFIJO_ARTE = envolver('').slice(0, -SUFIJO_ARTE.length);
+
+/** El dibujo de un `arteDe()`, sin el `<svg>` que lo envuelve: lo que entra en una celda del sprite. */
+const cuerpoDe = (svgCompleto) => svgCompleto.slice(PREFIJO_ARTE.length, svgCompleto.length - SUFIJO_ARTE.length);
+
+/**
+ * La hoja es un sprite, no 123 imágenes sueltas.
+ *
+ * Ronda 9, fase 1 (`RONDA9.md`): envolver cada ícono a mano repetía el mismo
+ * `<svg xmlns=… viewBox="0 0 64 64" stroke-linecap=… stroke-linejoin=…>` 123
+ * veces — ~121 bytes ya codificados por ícono, ~14,9 kB de puro duplicado sobre
+ * 137,78 kB. Sacarle el `xmlns` no sirve (medido en el navegador: sin él el
+ * `data:image/svg+xml` no carga como `background-image`), así que el envoltorio
+ * se paga UNA sola vez por sprite entero — un solo `<svg>` con una celda de
+ * 64×64 por ícono — en vez de una vez por ícono.
+ *
+ * Cada celda es un `<g>` trasladado a su lugar en la grilla, recortado con un
+ * `clipPath` COMPARTIDO por las 123 (un solo `<rect>` de 64×64, referenciado
+ * por cada `<g>` vía `clip-path`): sin ese recorte, un dibujo que se pase un
+ * poco del cuadro de 64×64 —hay formas rotadas y bultos con la sombra corrida
+ * `dx`/`dy`— sangraría en la celda de al lado. Antes cada ícono clipeaba solo,
+ * gratis, porque el `viewBox` de un `<svg>` no-raíz ya recorta por afuera; acá,
+ * al compartir un único `<svg>`, hay que pedirlo.
+ */
+const CLIP_ID = 'q';
+
+const celda = (indice, cols, cuerpo) =>
+  `<g clip-path="url(#${CLIP_ID})" transform="translate(${(indice % cols) * CAJA} ${Math.floor(indice / cols) * CAJA})">${cuerpo}</g>`;
+
+/**
+ * La posición de una celda dentro de la grilla, en porcentaje: la fórmula de
+ * siempre para sprites con `background-size` en porcentaje — `i / (total - 1) *
+ * 100`—, que cuadra exacta sólo porque los dos usos reales de esta clase son
+ * CUADRADOS (79 px en `.bp-cs > .ic` de `Bolso.js`, 2,3 rem en `.bp-det-ic`).
+ * Con una caja cuadrada, `background-size: cols% filas%` estira el sprite al
+ * mismo factor en los dos ejes, y esta cuenta cae justo en el borde de cada
+ * celda. Redondeada a tres decimales: de sobra para no perder ni un píxel y
+ * mucho más corta que el número exacto.
+ */
+const pct = (i, ultimo) => (ultimo <= 0 ? '0' : String(Math.round((i * 100000) / ultimo) / 1000));
 
 let _hoja = null;
 
 /**
- * La hoja entera: una clase por icono, con el dibujo adentro como imagen de
- * fondo. Se arma una sola vez y queda cacheada — armarla cuesta unos pocos
- * milisegundos y **no se puede pagar en cada pintada**, que es la razón entera
- * por la que los dibujos no van en línea.
+ * La hoja entera: un sprite con una celda por ícono, más una regla de
+ * `background-position` por ícono para elegir la celda — ya no una imagen de
+ * fondo por ícono. Se arma una sola vez y queda cacheada — armarla cuesta unos
+ * pocos milisegundos y **no se puede pagar en cada pintada**, que es la razón
+ * entera por la que los dibujos no van en línea.
  */
 export function hoja() {
   if (_hoja !== null) return _hoja;
-  const filas = [ARMAZON];
-  for (const id of IDS) filas.push(`.ic-${id}{background-image:url("${aUri(arteDe(id))}")}`);
-  filas.push(`.${CLASE_RESERVA}{background-image:url("${aUri(RESERVA)}")}`);
-  _hoja = filas.join('');
+
+  const total = IDS.length + 1; // + el de reserva
+  const cols = Math.ceil(Math.sqrt(total));
+  const filas = Math.ceil(total / cols);
+
+  const celdas = IDS.map((id, i) => celda(i, cols, cuerpoDe(arteDe(id))));
+  celdas.push(celda(IDS.length, cols, cuerpoDe(RESERVA)));
+
+  const sprite = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${cols * CAJA} ${filas * CAJA}"`
+    + ` stroke-linecap="round" stroke-linejoin="round">`
+    + `<clipPath id="${CLIP_ID}"><rect width="${CAJA}" height="${CAJA}"/></clipPath>`
+    + celdas.join('') + '</svg>';
+
+  const posicion = (i) => `${pct(i % cols, cols - 1)}% ${pct(Math.floor(i / cols), filas - 1)}%`;
+
+  const reglas = [
+    `.${CLASE_BASE}{background-repeat:no-repeat;background-size:${cols * 100}% ${filas * 100}%;`
+    + `background-image:url("${aUri(sprite)}");pointer-events:none}`,
+  ];
+  IDS.forEach((id, i) => reglas.push(`.ic-${id}{background-position:${posicion(i)}}`));
+  reglas.push(`.${CLASE_RESERVA}{background-position:${posicion(IDS.length)}}`);
+
+  _hoja = reglas.join('');
   return _hoja;
 }
 
