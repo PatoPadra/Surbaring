@@ -47,11 +47,23 @@ function estadoDe(secciones) {
   return secciones.map((s) => ({ num: s.num, nombre: s.nombre, verde: s.feliz && s.checks.every((c) => c.ok) }));
 }
 
+// El archivo real tiene fin de línea CRLF (Windows). Los patrones de acá abajo
+// que buscan un salto de línea literal (`\n`) fallarían contra `\r\n` sin este
+// paso — se trabaja en LF y se vuelve a CRLF al final. Encontrado el 29/9/2026
+// revisando ESTE archivo: `sin-desgastarId` cortaba por una posición de bytes
+// que `indexOf('\n  }\n', …)` nunca encontraba (daba -1), así que en vez de
+// sacar el método duplicaba casi todo el archivo — y el "VISTO" que reportaba
+// era un error de sintaxis tapando el hueco, no la aserción D1 cazando el
+// defecto real. Con esto corregido, ver la nota al pie del archivo con el
+// resultado verdadero.
 function mutarArchivo(srcDir, relativo, transformar) {
   const archivo = path.join(srcDir, relativo);
   const original = fs.readFileSync(archivo, 'utf8');
-  const nuevo = transformar(original);
-  if (nuevo === original) throw new Error(`la mutación en ${relativo} no cambió nada — el patrón no matcheó`);
+  const eraCRLF = original.includes('\r\n');
+  const enLF = eraCRLF ? original.replace(/\r\n/g, '\n') : original;
+  const nuevoEnLF = transformar(enLF);
+  if (nuevoEnLF === enLF) throw new Error(`la mutación en ${relativo} no cambió nada — el patrón no matcheó`);
+  const nuevo = eraCRLF ? nuevoEnLF.replace(/\n/g, '\r\n') : nuevoEnLF;
   fs.writeFileSync(archivo, nuevo);
 }
 

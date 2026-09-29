@@ -68,6 +68,18 @@ días. El detalle completo está en `r8-primer-anio.md`, al final.
 > y no se le creyó: coincidió con un lanzamiento de agente de más por error del jefe
 > (resuelto al toque). Confirmado limpio en 4 corridas más, una de ellas bajo carga
 > deliberada — no se reprodujo nunca más. Se cierra con el banco completo en 8/8.
+>
+> **Corrección del 29/9/2026, encontrada preparando la fase 4c:** el falsador de esta
+> fase (`banco-r9-fase2.falsar.mjs`) tenía un defecto propio. `sin-desgastarId` cortaba
+> el método buscando `'\n  }\n'`, pero **todo el repo usa fin de línea CRLF**: ese
+> `indexOf` daba −1 siempre, y en vez de sacar el método el «corte» duplicaba casi todo
+> el archivo —un error de sintaxis, no la aserción D1—. El «VISTO» que reportaba era el
+> error de importación tapando el hueco, no el banco cazando el defecto de verdad.
+> Corregido normalizando a LF antes de mutar y devolviendo a CRLF después; revalidado
+> **4/4 defectos, 2/2 controles, ahora por el motivo correcto** (confirmé a mano que el
+> archivo mutado queda sintácticamente válido y sin rastro de `desgastarId`). El código
+> de la fase 2 en sí no cambia: ya estaba verificado por el banco completo (D1-D8) y por
+> pruebas manuales en el navegador — esto corrige el INSTRUMENTO, no el juego.
 
 > **29/9/2026 — FASE 3 (`copa-b`) CERRADA.** El coihue tenía 6 de 7 ramas afuera de
 > todos los lóbulos de follaje —alguna hasta 15 m—, medido de verdad esta vez (una
