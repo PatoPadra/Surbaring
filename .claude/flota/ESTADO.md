@@ -1,5 +1,62 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+## Ronda 9 · ABIERTA el 28/9/2026 · rama `mejoras/ronda9-bandeja`
+
+Arranca sobre `main` (la ronda 8 se fusionó el 28/9 sin que el dueño la jugara — ver el
+aviso en la sección de la ronda 8, más abajo). El encargo es la bandeja de entrada que
+dejó la ronda 8, en `RONDA9-ARRANQUE.md`.
+
+**Medido antes de encargar nada (28/9/2026):** los nueve puntos de la bandeja siguen
+como estaban anotados. Confirmado en el código: la hoja de iconos sigue en **137,8 de
+140 kB** (`node .claude/flota/banco-r6-fase3.mjs`, verde pero a 2,2 kB del techo);
+`Fabricacion.js` no llama a `desgastar()` en ningún lado —sólo lo hace
+`Caza._tiro()` sobre lo que hay en la ranura `mano`—, así que el percutor no se gasta
+picando piedra; `balanceSaber` en `herramientas.json` propone volver a pedirle
+`lasca_obsidiana` al hacha pulida, algo que la fase 5 sacó a propósito (hoy
+`hacha_pulida.requiere = []`), así que ese texto quedó contradiciendo una decisión ya
+tomada; y `efecto.herramienta`/`efecto.recetas` de `historia.json` no los lee ningún
+sistema (confirmado: cero resultados fuera del propio dataset).
+
+**Las cinco preguntas del primer año, contestadas por el dueño el 28/9/2026** (las
+cinco con la recomendación del jefe aceptada): primavera con el reloj igual, se puede
+dormir con refugio y fuego, el año de supervivencia acompaña al del cuaderno con el
+mismo contador de `Relevamiento.js`, al cumplirlo hay un cierre breve y se sigue
+jugando, y morir sólo reinicia el HITO (una bandera de racha nueva), no el contador de
+días. El detalle completo está en `r8-primer-anio.md`, al final.
+
+**Orden propuesto y por qué:**
+
+1. **`iconos`** — empaquetar la hoja para bajarla de 137,8 kB antes de que la toque
+   cualquier otra fase y el banco se ponga rojo por culpa ajena. Mecánico, autocontenido,
+   sin implicancia de balance. Se abre primero porque bloquea a todo lo demás que agregue
+   un ícono.
+2. **`desgaste`** — marca `gastaHerramienta` por receta en `Fabricacion` + balance del
+   percutor. De paso, en el mismo archivo (`herramientas.json`), se actualiza el texto de
+   `balanceSaber` para que deje de contradecir la fase 5. Autocontenido a
+   `Fabricacion.js` / `Equipo.js` / `herramientas.json`.
+3. **`copa-b`** — medir de verdad, restando en la imagen (como hizo la fase 4), si las
+   latifoliadas tienen ramas peladas fuera de la copa. La prueba geométrica de la ronda 8
+   dio un cero que no hay que creer. Se abre después de `desgaste` porque si el resultado
+   es «sí hay defecto», toca modelos de árbol y conviene no solaparlo con otra fase de
+   contenido.
+4. **`primer-año`** — con las cinco preguntas ya contestadas: la fecha de arranque
+   (`Tiempo.js:69`), dormir con refugio y fuego, los hitos y el cierre en
+   `Relevamiento.js`, y la bandera de racha para el HITO. Se abre después de las tres
+   anteriores porque es la más grande y no depende de ninguna: puede prepararse (contrato
+   y banco) mientras corre `copa-b`.
+
+**Lo que NO es una fase todavía, y espera el ojo del dueño jugando** (regla
+`fusionar-recien-cuando-lo-vio`): el disco de la luna con brillo fijo (punto 4 de la
+bandeja) y el suelo naranja junto al fuego (punto 7). Ninguno se toca sin que el dueño
+los mire primero.
+
+**Lo que queda anotado sin fase, por ahora:** la azuela/pala de omóplato/rastra
+(punto 5, pide medir el impacto en `conTodo` antes de abrir) y el tiento como variante
+de receta con más durabilidad (punto 9, es una idea sin sistema que la sostenga). Se
+retoman si el dueño lo pide o cuando las cuatro fases de arriba estén cerradas.
+
+---
+
 ## Ronda 8 · ABIERTA el 18/9/2026 · rama `mejoras/ronda8-lo-que-vio`
 
 > **28/9/2026 — LA RONDA 8 SE FUSIONA A MAIN, Y ESTA VEZ SIN HABERLA JUGADO.** Lo pidió
