@@ -180,3 +180,96 @@ encuentre por id, esté donde esté.
   reales, no maquetas).
 - `.claude/flota/banco-r9-fase2.falsar.mjs` — planta defectos sobre una copia y trae
   controles.
+
+---
+
+## FASE 3 · `copa-b` — las ramas peladas del coihue, medidas de verdad
+
+### El problema, medido antes de escribir el contrato
+
+`pendiente-r8-copa.md` (fase 4, ronda 8) ya lo había visto y no lo había medido:
+*"El coihue sigue con las ramas desnudas asomando de la copa... siete cilindros que
+salen del tronco y terminan apenas adentro del follaje... no es el atlas, es el
+modelo `copa_ancha`"*. La captura `capturas/r8-f4-copa-arbol-coihue.png` ya lo
+mostraba sin ambigüedad: ramas grises bien afuera de las hojas, contra el cielo.
+`RONDA9-ARRANQUE.md` agregaba que la prueba geométrica de esa ronda había dado un
+cero sospechoso ("la clasificación por color de vértice mete casi todo en un
+balde") y que no había que creerle.
+
+**Medido de verdad esta vez** (jefe, con una copia instrumentada de
+`construirPlanta` en el scratchpad, no en el repo, que registra dónde cae cada
+rama y cada lóbulo de follaje del coihue REAL, el único que existe por especie
+desde que la ronda 8 lo hizo determinista):
+
+| rama | radio horizontal | altura de la punta | lóbulo más cercano | ¿adentro? |
+|---|---|---|---|---|
+| 0 | 7,98 m | 13,35 m | a 3,13× su radio | **NO — asoma ~14,9 m** |
+| 1 | 11,83 m | 17,53 m | a 2,28× su radio | **NO — asoma ~9,0 m** |
+| 2 | 9,71 m | 17,44 m | a 2,57× su radio | **NO — asoma ~11,0 m** |
+| 3 | 9,62 m | 18,82 m | a 2,59× su radio | **NO — asoma ~11,1 m** |
+| 4 | 7,62 m | 18,81 m | a 2,41× su radio | **NO — asoma ~9,9 m** |
+| 5 | 8,61 m | 20,95 m | a 1,74× su radio | **NO — asoma ~5,2 m** |
+| 6 | 9,84 m | 23,26 m | a 0,99× su radio | sí (justo) |
+
+**6 de 7 ramas del coihue caen afuera de TODOS los lóbulos de follaje**, alguna
+hasta 15 metros. La causa no es sólo angular (7 ramas y 5 lóbulos salen de dos
+sorteos independientes, con lo que una rama puede apuntar a un hueco entre dos
+lóbulos): es que **los lóbulos arrancan todos por encima de la copa del tronco**
+(`cumbre + alturaRef·0,10` para arriba) mientras las ramas más bajas (`t` desde
+0,42) ni llegan a esa altura. Confirmado visualmente: `capturas/r8-f4-copa-arbol-coihue.png`
+(la vieja) y una captura propia con el mismo resultado antes de tocar nada.
+
+**Las especies `retorcido` (ñire, lenga, maitén) NO tienen este problema en la
+misma magnitud**: medidas con el mismo instrumento, entre 1 y 2 de 7 ramas asoman,
+y por poco (4 cm a 1,4 m, no 5 a 15 metros). No es lo que reportó la ronda 8 y
+**queda fuera de este contrato a propósito** — corregirlo es una mejora menor,
+no el defecto que había que medir.
+
+### El arreglo, ya diseñado y verificado
+
+**Cada rama apunta a un lóbulo de verdad, no a un ángulo suelto.** Se calculan los
+5 lóbulos ANTES que las 7 ramas (antes era al revés), y cada rama —cíclicamente,
+2 lóbulos llevan 2 ramas— apunta derecho al centro de su lóbulo asignado, frenando
+`insercion` metros antes de llegar (`insercion = radioH_del_lóbulo × (0,35 a
+0,60)`): como `insercion` es una fracción del radio del PROPIO lóbulo, la punta
+cae siempre adentro sin importar qué tan lejos esté ese lóbulo del punto de anclaje
+en el tronco. `ang`/`elevacion`/`largo` se derivan del vector tronco→punta con
+trigonometría inversa; el resto de la rama (el cilindro, la pintura) no cambia.
+
+**Verificado con el mismo instrumento**: las 7 ramas del coihue caen dentro de su
+lóbulo asignado (0,66× a 0,86× su radio — margen real, no al límite). Verificado
+además **visualmente**, en el navegador, comparando `Vegetacion.js` antes y
+después con el mismo modelo simple (una malla con color de vértice, sin el atlas
+real): antes, ramas grises cruzando el cielo; después, el tronco desaparece
+limpio dentro del follaje, sin ningún palo asomando.
+
+### El contrato
+
+- **E1 — Cada rama del coihue (y de cualquier especie `copa_ancha`) cae dentro de
+  su lóbulo asignado**, con margen: distancia normalizada punta→centro del lóbulo
+  (`hipot(horizontal/radioH, vertical/radioV)`) ≤ 1 para el lóbulo `i % 5` de esa
+  rama.
+- **E2 — Las especies que NO son `copa_ancha` no cambian**: mismo resultado que
+  antes de esta fase para `retorcido` y `arbusto` (ramas, follaje, todo).
+- **E3 — El modelo sigue siendo determinista** (C7 de la ronda 8):
+  `construirPlanta(esp)` da la misma geometría byte a byte en dos llamadas, y
+  especies distintas dan geometría distinta.
+- **E4 — El gancho de depuración (`globalThis.__vegDebugCopa*`) no cuesta nada en
+  el juego**: no existe en ningún otro archivo, y con el global sin definir el
+  `if` no hace nada.
+- **E5 — Sin regresión: `banco-r8-fase4.mjs` y su falsador siguen verdes.**
+- **E6 — `vite build` limpio.**
+
+### Lo que NO pide este contrato
+
+- No pide tocar `retorcido` ni `arbusto` (medido: no es el defecto reportado).
+- No pide rehacer el atlas de follaje ni la textura de corteza.
+- No pide una hoja de contacto ni una captura nueva para el dueño más allá de la
+  que ya sirvió para verificar esta fase.
+
+### Instrumentos
+
+- `.claude/flota/banco-r9-fase3.mjs` — E1 a E6 (Node, contra `Vegetacion.js` real
+  con el mismo stub de `document`/canvas que ya usa `banco-r8-fase4.mjs`).
+- `.claude/flota/banco-r9-fase3.falsar.mjs` — planta defectos sobre una copia y
+  trae controles.

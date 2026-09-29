@@ -69,6 +69,25 @@ días. El detalle completo está en `r8-primer-anio.md`, al final.
 > (resuelto al toque). Confirmado limpio en 4 corridas más, una de ellas bajo carga
 > deliberada — no se reprodujo nunca más. Se cierra con el banco completo en 8/8.
 
+> **29/9/2026 — FASE 3 (`copa-b`) CERRADA.** El coihue tenía 6 de 7 ramas afuera de
+> todos los lóbulos de follaje —alguna hasta 15 m—, medido de verdad esta vez (una
+> copia instrumentada de `construirPlanta`, no la prueba geométrica de la ronda 8 que
+> daba un cero sospechoso). La causa: los lóbulos y las ramas salían de dos sorteos
+> de ángulo independientes, y los lóbulos arrancan todos por encima de la copa del
+> tronco mientras las ramas más bajas no llegaban ni ahí. Arreglo: los 5 lóbulos se
+> calculan primero, y cada una de las 7 ramas apunta derecho al centro de un lóbulo
+> asignado, frenando antes de llegar una fracción del radio MENOR de ese lóbulo (así
+> entra con margen sin importar el ángulo de llegada). Verificado con el mismo
+> instrumento (0 de 7 afuera, peor caso a 0,55× el radio) y **visualmente en el
+> navegador**, antes y después, con `Vegetacion.js` real: antes, ramas grises
+> cruzando el cielo; después, el tronco desaparece limpio en el follaje. `retorcido`
+> (ñire, lenga, maitén) no se tocó a propósito: medía mucho mejor (1-2 de 7, unos
+> centímetros a 1,4 m) y no era el defecto reportado. Banco 6/6 (con `vite build`
+> real y la regresión de `banco-r8-fase4.mjs`), falsador 3/3 con 2 controles limpios.
+> Un defecto propio, encontrado por el banco antes de cerrar: el margen usaba sólo
+> el radio horizontal del lóbulo, y una rama con trayecto casi vertical rozó el
+> borde (1,001× en vez de ≤1) — corregido usando el radio menor de los dos ejes.
+
 **Lo que NO es una fase todavía, y espera el ojo del dueño jugando** (regla
 `fusionar-recien-cuando-lo-vio`): el disco de la luna con brillo fijo (punto 4 de la
 bandeja) y el suelo naranja junto al fuego (punto 7). Ninguno se toca sin que el dueño

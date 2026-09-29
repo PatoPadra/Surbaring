@@ -1906,19 +1906,90 @@ export function construirPlanta(esp) {
   pintar(tronco, colTronco, 0.0, { clase: claseHoja, repV: repTronco, azar });
   partes.push(tronco);
 
+  // ── Follaje en tarjetas recortadas (los lóbulos de copa_ancha se calculan
+  // ACÁ, antes de las ramas: para que una rama pueda apuntar a un lóbulo de
+  // verdad hace falta saber antes dónde va a estar cada uno. Ver más abajo.)
+  const cumbre = alturaTronco;
+  const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+
+  let lobulosCopaAncha = null;
+  if (arquetipo === 'copa_ancha') {
+    const nLobulos = 5;
+    lobulosCopaAncha = [];
+    for (let i = 0; i < nLobulos; i++) {
+      const a = (i / nLobulos) * Math.PI * 2 + azar() * 0.8;
+      const r = alturaRef * (0.10 + azar() * 0.16);
+      lobulosCopaAncha.push({
+        x: Math.cos(a) * r, y: cumbre + alturaRef * (0.10 + azar() * 0.26), z: Math.sin(a) * r,
+        radioH: alturaRef * 0.20, radioV: alturaRef * 0.11, tamano: alturaRef * 0.105,
+      });
+    }
+    // Mismo gancho de sólo lectura que las ramas, ver más abajo.
+    if (globalThis.__vegDebugCopaLobulos) globalThis.__vegDebugCopaLobulos.set(esp.id, lobulosCopaAncha);
+  }
+
   // ── Ramas
   const nRamas = arquetipo === 'arbusto' ? 5 : 7;
   for (let i = 0; i < nRamas; i++) {
     const t = 0.42 + (i / Math.max(1, nRamas)) * 0.55;
-    const ang = (i / nRamas) * Math.PI * 2 + azar() * 0.9;
-    // El largo se deriva del alcance de la copa, no del tronco. Antes eran
-    // proporcionales al tronco y en el coihue sobrepasaban el follaje: quedaban
-    // patas de araña oscuras asomando contra el cielo, que era lo que más
-    // delataba a los árboles de lejos. Una rama que termina dentro de la copa
-    // no se ve, y ésa es exactamente la idea.
-    const elevacion = arquetipo === 'copa_ancha' ? 0.95 : 0.55;
-    const alcanceCopa = alturaRef * (arquetipo === 'copa_ancha' ? 0.30 : 0.16);
-    const largo = (alcanceCopa / Math.max(0.3, Math.sin(elevacion))) * (0.7 + azar() * 0.5);
+    let ang, elevacion, largo;
+
+    if (lobulosCopaAncha) {
+      // La rama apunta A UN LÓBULO DE VERDAD, no a un ángulo suelto. Antes los
+      // 7 ángulos de las ramas y los 5 de los lóbulos salían de dos sorteos
+      // independientes —«una rama que termina dentro de la copa no se ve»
+      // pedía que las dos cosas coincidieran, y no había nada que las hiciera
+      // coincidir—: medido, el coihue tenía 6 de 7 ramas afuera de TODO
+      // lóbulo, alguna hasta 15 m (RONDA9.md, fase `copa-b`). La causa no era
+      // sólo el ángulo: los lóbulos arrancan todos por encima de la copa del
+      // tronco (`cumbre + alturaRef·0,10` para arriba) y las ramas más bajas
+      // (`t` desde 0,42) ni llegaban a esa altura.
+      //
+      // Ahora se elige un lóbulo (cíclico: 7 ramas sobre 5 lóbulos, dos
+      // lóbulos llevan dos ramas) y la rama apunta directo a su centro,
+      // frenando `insercion` metros antes: como `insercion` es una fracción
+      // del radio del PROPIO lóbulo, la punta cae siempre adentro, sea cual
+      // sea la distancia real entre el tronco y ese lóbulo en particular.
+      const lob = lobulosCopaAncha[i % lobulosCopaAncha.length];
+      const origen = new THREE.Vector3(0, alturaTronco * t, 0);
+      const destino = new THREE.Vector3(lob.x, lob.y, lob.z);
+      const vector = destino.clone().sub(origen);
+      const distancia = vector.length();
+      // El radio MENOR de los dos ejes del lóbulo, no siempre radioH: si la
+      // rama sube casi vertical hacia un lóbulo achatado (radioV < radioH,
+      // el caso de copa_ancha), lo que sobra de "insercion" se proyecta casi
+      // entero en el eje vertical, y medido contra radioV solo un caso rozó
+      // el borde (1,001× en vez de ≤1, RONDA9.md fase copa-b). Con el radio
+      // menor de base, la punta siempre entra con margen sin importar de qué
+      // ángulo venga.
+      const insercion = Math.min(lob.radioH, lob.radioV) * (0.35 + azar() * 0.25);
+      largo = Math.max(distancia * 0.25, distancia - insercion);
+      const dir = vector.clone().normalize();
+      elevacion = Math.acos(THREE.MathUtils.clamp(dir.y, -1, 1));
+      ang = Math.atan2(-dir.z, dir.x);
+      // Gancho de sólo lectura para el banco (RONDA9.md, fase `copa-b`): sin
+      // esto, comprobar que la punta cae dentro de un lóbulo obligaría al
+      // banco a reimplementar esta cuenta aparte, con el riesgo de que las
+      // dos copias se desincronicen. `globalThis.__vegDebugCopa` no existe en
+      // el juego ni se define en ningún otro lado: el `if` no cuesta nada.
+      if (globalThis.__vegDebugCopa) {
+        globalThis.__vegDebugCopa.push({
+          especie: esp.id, ramaI: i, lobuloI: i % lobulosCopaAncha.length,
+          tip: { x: dir.x * largo, y: dir.y * largo + alturaTronco * t, z: dir.z * largo },
+        });
+      }
+    } else {
+      ang = (i / nRamas) * Math.PI * 2 + azar() * 0.9;
+      // El largo se deriva del alcance de la copa, no del tronco. Antes eran
+      // proporcionales al tronco y en el coihue sobrepasaban el follaje: quedaban
+      // patas de araña oscuras asomando contra el cielo, que era lo que más
+      // delataba a los árboles de lejos. Una rama que termina dentro de la copa
+      // no se ve, y ésa es exactamente la idea.
+      elevacion = 0.55;
+      const alcanceCopa = alturaRef * 0.16;
+      largo = (alcanceCopa / Math.max(0.3, Math.sin(elevacion))) * (0.7 + azar() * 0.5);
+    }
+
     const g = new THREE.CylinderGeometry(radioBase * 0.10, radioBase * 0.26, largo, 4, 1);
     g.translate(0, largo / 2, 0);
     g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0, 0, -elevacion)));
@@ -1929,20 +2000,13 @@ export function construirPlanta(esp) {
     partes.push(g);
   }
 
-  // ── Follaje en tarjetas recortadas
-  const cumbre = alturaTronco;
-  const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
-
   if (arquetipo === 'copa_ancha') {
     // Coihue: copa amplia y aparasolada, con la masa repartida en lóbulos
-    const lobulos = 5;
-    for (let i = 0; i < lobulos; i++) {
-      const a = (i / lobulos) * Math.PI * 2 + azar() * 0.8;
-      const r = alturaRef * (0.10 + azar() * 0.16);
+    for (const lob of lobulosCopaAncha) {
       partes.push(tarjetasFollaje({
-        centro: V3(Math.cos(a) * r, cumbre + alturaRef * (0.10 + azar() * 0.26), Math.sin(a) * r),
-        radioH: alturaRef * 0.20, radioV: alturaRef * 0.11,
-        cantidad: 24, tamano: alturaRef * 0.105,
+        centro: V3(lob.x, lob.y, lob.z),
+        radioH: lob.radioH, radioV: lob.radioV,
+        cantidad: 24, tamano: lob.tamano,
         clase: claseHoja, azar, color: colHoja, variacion: 0.19, aplanar: 0.55,
       }));
     }
