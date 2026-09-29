@@ -37,7 +37,7 @@ import { Recoleccion } from './systems/Recoleccion.js';
 import { Caza } from './systems/Caza.js';
 import { Limites } from './world/Limites.js';
 import { Mineria } from './systems/Mineria.js';
-import { Fundicion } from './systems/Fundicion.js';
+import { Fundicion, RADIO_HORNO_M } from './systems/Fundicion.js';
 import { Hornos, luzDeFuegoSegunSol } from './world/Hornos.js';
 import { Taller } from './ui/Taller.js';
 import { Construccion } from './systems/Construccion.js';
@@ -784,6 +784,83 @@ async function iniciar() {
     }
     return f;
   }
+
+  /**
+   * Dormir — el primer año, pregunta 2 (`r8-primer-anio.md`, contestada el
+   * 28/9/2026): con refugio y fuego se puede pasar la noche.
+   *
+   * No es un atajo que evite el costo de esperar: el salto llama exactamente
+   * los mismos dos pasos que ya corre `cuadro()` en cada vuelta —
+   * `jugador.actualizarSupervivencia()` y `tiempo.avanzar()`—, con el mismo
+   * `est` recalculado en cada una (el clima cambia con las horas) y el mismo
+   * `fuegoCercano()` de más arriba (si el fuego se apaga a mitad de la noche,
+   * el cuerpo se entera en el mismo bucle, con el mismo modelo térmico de
+   * siempre). Lo único que dormir ahorra es la MOLESTIA de mirar la pantalla
+   * mientras tanto —igual que ya hace acelerar el reloj con «T» para una
+   * hornada larga—, no el costo metabólico: la relación entre horas de mundo
+   * y horas de cuerpo sigue siendo la que da `tiempo.velocidad` en ese
+   * momento, la misma que si el jugador se hubiera quedado despierto.
+   */
+  const DT_PASO_DORMIR = 5; // "segundos equivalentes" por vuelta del bucle de dormir
+
+  /** ¿Hay refugio Y fuego encendido a mano, ahora mismo? */
+  function puedeDormir() {
+    if (!jugador.vivo) return false;
+    const p = jugador.posicion;
+    if (!(construccion.abrigoEn(p.x, p.z) > 0)) return false;
+    return !!fundicion.cercano(RADIO_HORNO_M, (h) => fundicion.usaFuego(h) && fundicion.arde(h));
+  }
+
+  /** Las 7:00 hora local (Bariloche, UTC−3 → 10:00 UTC) siguientes a `fecha`. */
+  function proximoAmanecer(fecha) {
+    const d = new Date(fecha.getTime());
+    d.setUTCHours(10, 0, 0, 0);
+    if (d.getTime() <= fecha.getTime()) d.setUTCDate(d.getUTCDate() + 1);
+    return d;
+  }
+
+  function dormir() {
+    if (!jugador.vivo) return;
+    const objetivoMs = proximoAmanecer(tiempo.fecha).getTime();
+    // Tope de seguridad: una noche de pleno invierno real ronda las 14 horas.
+    const limiteMs = tiempo.fecha.getTime() + 14 * 3600 * 1000;
+    const hambreAntes = jugador.hambre, sedAntes = jugador.sed;
+    let huboFrio = false;
+    // La posición no cambia durmiendo; el abrigo del lugar tampoco.
+    jugador.abrigo = Math.min(1, construccion.abrigoEn(jugador.posicion.x, jugador.posicion.z)
+      + equipo.suma('abrigo'));
+    while (jugador.vivo && tiempo.fecha.getTime() < objetivoMs && tiempo.fecha.getTime() < limiteMs) {
+      const est = eventos.aplicar(tiempo.estado());
+      jugador.fuego = fuegoCercano(est);
+      if (jugador.temperatura < 35.5) huboFrio = true;
+      jugador.actualizarSupervivencia(DT_PASO_DORMIR, est, ESCALA_METABOLISMO);
+      tiempo.avanzar(DT_PASO_DORMIR);
+    }
+    // Si murió durmiendo, `alMorir` ya corrió dentro del bucle: nada que avisar acá.
+    if (!jugador.vivo) return;
+    const bajoHambre = Math.round(hambreAntes - jugador.hambre);
+    const bajoSed = Math.round(sedAntes - jugador.sed);
+    hud.aviso('Amaneció', `Dormiste: bajaste ${bajoHambre} de hambre y ${bajoSed} de sed.`
+      + (huboFrio ? ' Pasaste frío en algún momento de la noche.' : ''));
+  }
+
+  // El cartel de «E» es un solo sistema, `Recoleccion.quePuedoHacer()`, acoplado
+  // a esa clase. Envolverlo (el mismo patrón que ya usan `partida.reaparecer` y
+  // `construccion.levantar` más arriba) evita mezclar un concepto de reloj
+  // adentro de la clase de recolección: si no hay nada más que ofrecer Y se
+  // puede dormir, el cartel dice «Dormir», y si no, todo sigue exactamente
+  // igual que antes.
+  const quePuedoHacerOriginal = recoleccion.quePuedoHacer.bind(recoleccion);
+  recoleccion.quePuedoHacer = (ahora) => {
+    const accion = quePuedoHacerOriginal(ahora);
+    if (accion) return accion;
+    return puedeDormir() ? { tipo: 'dormir', etiqueta: 'Dormir · con refugio y fuego' } : null;
+  };
+  const actuarOriginal = recoleccion.actuar.bind(recoleccion);
+  recoleccion.actuar = (ahora) => {
+    if (recoleccion.quePuedoHacer(ahora)?.tipo === 'dormir') { dormir(); return; }
+    return actuarOriginal(ahora);
+  };
 
   /**
    * Las luces del cuadro: lo que se lleva en la mano, los hornos que arden y el

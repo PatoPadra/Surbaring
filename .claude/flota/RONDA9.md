@@ -347,6 +347,92 @@ Falta: contrato exacto (qué pasa con hambre/sed durante el salto, cuánto avanz
 qué pasa si el fuego se apaga a mitad de la noche), banco y — clave acá, porque
 es una mecánica nueva que hay que sentir jugando — verificación en el navegador.
 
+### El contrato de `dormir`, ya diseñado
+
+**Dónde vive**: dentro de `main.js`, como función local junto a `fuegoCercano`
+—no un archivo nuevo—, porque las dos dependen de las mismas variables
+capturadas del cierre (`jugador`, `tiempo`, `construccion`, `fundicion`,
+`est`) y `fuegoCercano` ya es exactamente ese patrón, no una clase aparte.
+
+- **F1 — Disponible cuando**: `construccion.abrigoEn(pos.x, pos.z) > 0`
+  (cualquier obra con `abrigo` declarado a `RADIO_ABRIGO_M` o menos) **Y**
+  `fundicion.cercano(RADIO_HORNO_M, h => fundicion.usaFuego(h) && fundicion.arde(h))`
+  (el mismo booleano que ya usa `Fabricacion.estacion()`).
+- **F2 — El salto reusa la simulación real, no una fórmula aparte**: un bucle
+  que llama, en cada vuelta, exactamente los mismos dos pasos que ya corre el
+  bucle principal —`jugador.actualizarSupervivencia(dtPaso, est, ESCALA_METABOLISMO)`
+  y `tiempo.avanzar(dtPaso)`—, con `est = eventos.aplicar(tiempo.estado())`
+  recalculado en cada vuelta (el clima cambia con las horas) y `jugador.fuego =
+  fuegoCercano(est)` recalculado también (si el fuego se apaga a mitad de la
+  noche, el cuerpo empieza a enfriarse EN EL MISMO bucle, con el mismo modelo
+  térmico de siempre — no hay un camino especial "protegido" para dormir).
+  `jugador.abrigo` se fija una vez antes del bucle (la posición no cambia). Se
+  usa `dtPaso = 5` (5 "segundos equivalentes" por vuelta, contra el 1/60 del
+  cuadro a cuadro normal): con la velocidad de reloj que tenga el jugador en
+  ese momento, una noche de 8 horas son unas 80 vueltas — nada que se note.
+  **La relación entre body-hours y horas de mundo sigue siendo la que da
+  `tiempo.velocidad` en ese momento**, la misma que si el jugador se hubiera
+  quedado despierto esperando: dormir no es un atajo que evite el costo
+  metabólico, evita la MOLESTIA de esperar mirando la pantalla.
+- **F3 — Hasta cuándo**: hasta las 7:00 hora local (Bariloche, UTC−3 → 10:00
+  UTC) del día siguiente si ya pasó esa hora, o de HOY si todavía no. Un tope
+  de seguridad de 14 horas de mundo por si algo no converge (una noche de
+  pleno invierno real ronda las 14).
+- **F4 — Corta si el jugador muere en el camino**: cada vuelta comprueba
+  `jugador.vivo`; si `actualizarSupervivencia` dispara `alMorir` a mitad de
+  noche (fuego apagado + sin refugio de verdad + una racha de frío), el bucle
+  para ahí, `Partida.registrarMuerte`/`Fin.mostrar` corren exactamente igual
+  que si el jugador hubiera muerto despierto — dormir no esconde la muerte.
+- **F5 — El cartel**: se envuelve `recoleccion.quePuedoHacer` en `main.js`
+  (mismo patrón que `partida.reaparecer`): si el resultado original es `null`
+  (no hay nada más que hacer ahí) y F1 se cumple, se devuelve
+  `{ tipo: 'dormir', etiqueta: 'Dormir · con refugio y fuego' }`. Se envuelve
+  `recoleccion.actuar` igual para despachar a la función de dormir cuando
+  `tipo === 'dormir'`. La tecla sigue siendo `E`, la que ya se usa para todo lo
+  contextual — no hay que aprender una tecla nueva.
+- **F6 — Al despertar**: un aviso (`hud.aviso(...)`, la ranura que ya existe)
+  con un resumen mínimo y honesto: cuánto bajaron hambre/sed, si hubo frío. Sin
+  puntaje ni "dormiste bien": el mismo tono seco que el resto del HUD.
+
+### Lo que NO pide este contrato
+
+- No pide una animación de dormir ni una cámara especial (fundido a negro y
+  vuelta, nada más).
+- No pide que el jugador pueda interrumpir el sueño a mitad de camino: es
+  atómico, como una hornada.
+- No pide tocar `fuegoCercano` ni `Jugador.actualizarSupervivencia`: se llaman
+  tal cual están.
+
+### Sub-fase 4b — CERRADA
+
+Implementado en `main.js`, junto a `fuegoCercano` (F1–F6 tal como se diseñaron
+arriba). Verificado jugando, con `construccion.abrigoEn`/`fundicion.cercano`
+simulados (sin construir de verdad en el mapa, que habría llevado muchas más
+acciones reales sin agregar certeza):
+
+- **Sin refugio ni fuego** (14 h de reloj, `dtPaso=5`): hambre 95,0 → 85,3, sed
+  95,0 → 79,7, temperatura −1,78 °C.
+- **Con refugio (0,55) y fuego ardiendo**, mismas 14 h: hambre y sed bajan
+  igual (el costo metabólico no cambia, como pide F2), pero la temperatura sólo
+  baja −0,95 °C — **la mitad** que desprotegido. Es el punto entero de la
+  mecánica, y se mide, no se supone.
+- El tope de seguridad de 14 h se respeta (dormir a mediodía no llega a las
+  7:00 del día siguiente de un tirón; corta a las 14 h y el jugador se
+  despierta antes del amanecer — comportamiento esperado, no un error).
+- El cartel de "E" sigue mostrando lo que ya mostraba cuando hay algo real que
+  hacer (probado con una piedra suelta al lado): dormir nunca le saca prioridad
+  a una acción real.
+
+Banco `banco-r9-fase4b.navegador.js`: 8/8. **Hueco declarado y no falso**: no
+se pudo automatizar la comprobación de que "sólo refugio sin fuego" o "sólo
+fuego sin refugio" NO alcanzan (habría necesitado teletransportar al jugador
+lejos de cualquier recurso del suelo, y el primer intento aterrizó en agua,
+mostrando "beber" en vez de revelar el defecto). Verificado en cambio LEYENDO
+el código: `puedeDormir()` devuelve `false` de entrada si no hay refugio, y
+sólo entonces mira el fuego — el mismo efecto que una Y. **Si alguien vuelve a
+tocar esa función, hay que releerla a mano**, porque este banco no puede cazar
+sola una Y que se vuelva O. `vite build` limpio.
+
 ### Sub-fase 4c · `hitos` — SIGUE
 
 Las preguntas 3, 4 y 5. El año de supervivencia **acompaña** al del cuaderno
