@@ -124,6 +124,20 @@ días. El detalle completo está en `r8-primer-anio.md`, al final.
 > revalidado 4/4 por el motivo correcto. El código de la fase 2 no cambió: ya estaba
 > verificado por el banco completo y a mano en el navegador.
 
+> **29/9/2026 — FASE 4d (`primer-año` / códice) CERRADA — LA FASE 4 ENTERA ESTÁ
+> COMPLETA (4a, 4b, 4c, 4d).** La ficha del objetivo no pedía ninguna de las
+> cinco preguntas del dueño en particular: se hizo con el criterio más chico
+> posible, una línea nueva en la cabecera del códice —el lugar donde el propio
+> archivo ya dice «no es un menú de ayuda: es el objetivo del juego»—, visible
+> los primeros 3 días de juego y después se apaga sola. No un evento de
+> `historia.json` inventado (esos llevan fuente real) ni una pantalla aparte.
+> Verificado jugando: aparece desde el día 0 integrado bajo el contador de
+> días, desaparece solo al día 5 sin dejar hueco en el layout. `vite build`
+> limpio. **Con las cuatro sub-fases cerradas, la ronda 9 completa su encargo
+> original** (iconos, desgaste, copa-b, primer-año); queda pendiente sólo lo
+> que el dueño mire jugando (la luna, el suelo naranja) y lo anotado sin fase
+> en la bandeja (azuela/pala/rastra, balanceSaber, efecto.herramienta).
+
 **Lo que NO es una fase todavía, y espera el ojo del dueño jugando** (regla
 `fusionar-recien-cuando-lo-vio`): el disco de la luna con brillo fijo (punto 4 de la
 bandeja) y el suelo naranja junto al fuego (punto 7). Ninguno se toca sin que el dueño

@@ -249,6 +249,7 @@ export class Codice {
           <div>
             <h2>Códice del Nahuel Huapi</h2>
             <p class="cx-sub" id="cx-dia">Guía de campo del Parque Nacional</p>
+            <p class="cx-sub cx-objetivo" id="cx-objetivo"></p>
           </div>
           <div class="cx-progreso">
             <div><span id="cx-esp">0</span><small>especies</small></div>
@@ -416,6 +417,19 @@ export class Codice {
     if (sub) {
       const t = this.relevamiento?.texto;
       sub.textContent = t ? `Guía de campo · ${t}` : 'Guía de campo del Parque Nacional';
+    }
+    // El objetivo del primer año (r8-primer-anio.md, propuesta del 18/9/2026,
+    // preguntas contestadas el 28/9): se dice UNA vez, en los primeros días —
+    // pasado ese margen ya se leyó, y repetirla en la cabecera todo el año
+    // sería ruido y no ayuda. `dias` no arranca en 0 hasta que `comenzar()`
+    // corre (primer cuadro jugado), así que esto se ve desde el principio de
+    // verdad y no un rato después.
+    const obj = this.el?.querySelector('#cx-objetivo');
+    if (obj) {
+      const dias = this.relevamiento?.dias ?? 0;
+      obj.textContent = (this.relevamiento && !this.relevamiento.cerrado && dias <= 3)
+        ? 'El objetivo: llegar al día 365 anotando lo que veas. El invierno es el desafío central — un refugio y fuego a tiempo son la diferencia.'
+        : '';
     }
 
     const lista = document.getElementById('cx-lista');
@@ -1115,6 +1129,9 @@ const CSS = `
 }
 .cx-marco h2 { font-size: 1.34rem; font-weight: 300; letter-spacing: .11em; color: #e8e4dc; }
 .cx-sub { font-size: .72rem; color: #8a9188; letter-spacing: .14em; text-transform: uppercase; margin-top: .18rem; }
+/* Una frase, no una etiqueta: mayúsculas y letras separadas la harían ilegible. */
+.cx-objetivo { text-transform: none; letter-spacing: normal; max-width: 34rem; line-height: 1.5; }
+.cx-objetivo:empty { display: none; }
 .cx-progreso { display: flex; gap: 1.5rem; text-align: right; }
 .cx-progreso span { font-size: 1.8rem; font-weight: 200; color: #6fae7c; line-height: 1; }
 .cx-progreso small { display: block; font-size: .6rem; color: #8a9188; letter-spacing: .1em; text-transform: uppercase; }

@@ -499,8 +499,23 @@ segundo reloj. Falta:
   con si se cumplió la racha y si se pasó el invierno, sin tocar el epílogo de
   Moreno que ya tiene.
 
-### Sub-fase 4d · `códice` — SIGUE
+### Sub-fase 4d · `códice` — CERRADA
 
 La ficha del objetivo en el códice (mencionada en `r8-primer-anio.md`, punto 7).
-Contenido, no mecánica: bajo riesgo, se hace al final con todo lo demás ya
-decidido.
+Contenido, no mecánica, y de las cinco preguntas del dueño no pedía ninguna en
+particular —es la propia frase de apertura de `Codice.js` la que ya dice «no es
+un menú de ayuda: es el objetivo del juego»—, así que se hizo con el criterio
+más chico posible: una línea nueva en la cabecera del códice (siempre visible,
+cualquiera sea la pestaña), que se dice **una vez, en los primeros tres días de
+juego**, y después desaparece sola. No es un `historia.json` inventado —esos
+eventos son hallazgos con fuente real, y "el objetivo del año" no es un hecho
+histórico— ni una pantalla aparte: es una frase en el lugar donde el propio
+archivo dice que vive el objetivo.
+
+Texto: *"El objetivo: llegar al día 365 anotando lo que veas. El invierno es el
+desafío central — un refugio y fuego a tiempo son la diferencia."* Verificado
+jugando: aparece integrado bajo "Guía de campo · Día 0 de 365" desde el primer
+segundo, y desaparece solo (confirmado saltando a día 5) sin dejar un hueco en
+el layout (`:empty { display: none }`). `vite build` limpio.
+
+**Con esto se cierra la fase 4 (`primer-año`) entera: 4a, 4b, 4c y 4d.**
