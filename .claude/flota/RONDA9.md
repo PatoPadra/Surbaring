@@ -614,3 +614,56 @@ decisión quedó apoyada en algo que no funciona.
 - `.claude/flota/banco-r9-fase5.falsar.mjs` — se escribe con el código del agente a
   la vista (las anclas de los defectos dependen de cómo lo escriba), sin tocar el
   banco.
+
+### Fase 5 — lo que hizo el agente y lo que midió el jefe
+
+**El agente** (dueño de `src/main.js`, sólo el bloque de dormir, y de
+`src/systems/Recoleccion.js`, sólo para exportar el umbral):
+
+- `Recoleccion.js` exporta `UMBRAL_SED = 92` y lo usa donde estaba el literal.
+- `main.js`: `esDeNoche()` con `posicionSolar` (no `cielo.alturaSol`, que queda
+  vieja fuera de `cuadro()`); `puedeDormir()` pide noche, refugio y fogata; el bucle
+  de `dormir()` corre `fundicion.actualizar(est)` antes de `fuegoCercano()` y sigue
+  mientras sea de noche, con tope de 16 h; se fue `proximoAmanecer`. El envoltorio
+  del cartel devuelve la base tal cual si no se puede dormir, y si se puede, dormir,
+  salvo `identificar` o `beber` con `sed < UMBRAL_SED`.
+- **Un agregado que no se pidió, revisado y aceptado:** cada vuelta cubre como mucho
+  6 min de mundo (`dt = min(5, 360 / velocidad)`). A 72× no cambia nada; con «T» al
+  máximo cada vuelta eran 10 h de mundo, el fuego se medía dos veces por noche y el
+  despertar podía caer 10 h después del sol. La relación entre el reloj del cuerpo y
+  el del mundo queda igual.
+- Señaló un caso que el contrato no previó: de noche, con sed, junto al agua y con
+  una carroña a mano, la base devuelve `carronia` (va antes que la sed) y el
+  envoltorio ofrece dormir. Carroña hay en el 1,5 % de los lugares y una noche de
+  septiembre cuesta ~10,6 de sed: no mata. Anotado, no se toca.
+
+**Lo que midió el jefe, no el agente:**
+
+- Leído línea por línea contra el contrato; el diff de `main.js` quedó registrado
+  (hash) antes de falsar y se comprobó idéntico después.
+- **Banco del navegador, código del agente: 34/34** — N1 8/8, N2 9/9, N3 4/4 (3 h →
+  34,85 °C y la fogata apagada; 15 h → 36,19 °C y ardiendo), N4 6/6 (despierta 7:42
+  el 22/9, a 0 min del sol, y 9:18 el 21/6, a 1 min, tras 14,30 h), N5 3/3, N6 2/2.
+  Durmió siempre por el cartel real, nunca por el camino forzado.
+- **El HUD, en el juego:** parado en el mismo lugar del campamento, de día dice
+  «E · Juntar piedra suelta (2 × piedra)» y de noche «E · Dormir · con refugio y
+  fuego».
+- **Costo:** el envoltorio ahora pregunta por el sol en cada cuadro. Medido
+  alternando 8 rondas contra la cadena de base: +5,0 µs de día y +4,3 de noche,
+  sobre 188 y 178 µs que ya cuesta la cadena. `posicionSolar` sola: 1,3 µs.
+- **Falsador, mitad navegador, 7/7 vistos y 2/2 controles limpios:**
+  `sin-fundicion` → cae N3 sola; `tambien-de-dia` → N1 0/8 y N4 (y N3 de rebote: la
+  noche se estira al tope); `solo-si-nada` → N2 0/9 y N6; `o-en-vez-de-y` → N5 sola;
+  `siete-fijas` → N4 sola; `sed-no-manda` → N6 sola; `tope-14` → N4 (junio, 9:00,
+  17 min antes del sol). Mitad Node: 2/2 vistos (M1, M2), 1/1 control limpio.
+- **Lo que tarda y lo que cuesta, medido después:** la noche de junio (14,30 h) se
+  duerme en 13 ms a 72×, 23 ms a 24× y 6 ms a 7200×: no congela. Pero el CUERPO paga
+  según la velocidad del reloj al acostarse —la regla de siempre: «T» adelanta el
+  mundo, no el cuerpo—: esa noche cuesta 9,9 de hambre y 15,6 de sed a 72×, 29,7 y
+  46,9 a 24×, y 0,1 y 0,2 con «T» al máximo. Con dormir alcanzable, acostarse con «T»
+  al máximo es una noche gratis. No es un defecto de esta fase (se conservó la regla a
+  propósito): es una **decisión de balance del dueño**.
+- **Lo que este banco no ve, dicho:** la excepción de `identificar` (con el panel
+  quieto la fauna no se siembra y no hay animal que poner al lado). Verificada
+  leyendo el código.
+

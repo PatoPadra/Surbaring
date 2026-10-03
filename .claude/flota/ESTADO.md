@@ -177,6 +177,18 @@ retoman si el dueño lo pide o cuando las cuatro fases de arriba estén cerradas
 > **Método, para que el dueño lo sepa:** la fase 2 la escribió el jefe anterior sin
 > agente (lo declaró), o sea que el código y el banco salieron de la misma mano. Se
 > re-midió en el juego y aguanta. Las fases 3 y 4 tampoco dicen que hubo agente.
+>
+> **3/10/2026 — FASE 5 (`dormir-b`) CERRADA.** Contrato y banco del jefe antes del
+> código; el arreglo lo escribió un agente (dueño de `main.js`, bloque de dormir, y
+> de `Recoleccion.js`, sólo para exportar `UMBRAL_SED`). Dormir sólo de noche (sol
+> debajo del horizonte), le gana de noche a todo lo que puede esperar salvo
+> identificar y beber con sed, la fundición se actualiza en cada vuelta, y se
+> despierta con el sol (tope 16 h). Medido en el juego con un parapeto y una fogata
+> reales: banco 34/34 (3 h de leña → 34,85 °C y fogata apagada; 15 h → 36,19 °C;
+> despierta 7:42 el 22/9 y 9:18 el 21/6, a 0 y 1 min del sol); el HUD dice «E ·
+> Dormir · con refugio y fuego» de noche y «E · Juntar piedra suelta» de día en el
+> mismo lugar; +4 a 5 µs por cuadro. Falsador 7/7 en el navegador y 2/2 en Node,
+> 3/3 controles limpios. El banco viejo de 4b quedó marcado como ciego.
 
 ---
 

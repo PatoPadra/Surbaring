@@ -1,4 +1,10 @@
 /**
+ * ⚠ CIEGO — REEMPLAZADO POR `banco-r9-fase5.navegador.js` (3/10/2026). No usar.
+ * Su G1 aceptaba cualquier resultado, y su G4 falseaba `fundicion.cercano`
+ * mientras el calor del fuego se lee de `fundicion.hornos[].ardiendo`: su «con
+ * refugio y fuego» corrió SIN fuego. Dio 8/8 con dormir inalcanzable jugando y
+ * con el fuego sin apagarse durante la noche. Se conserva como registro.
+ *
  * BANCO DE LA FASE 4b (primer-año / dormir), MITAD NAVEGADOR — ronda 9.
  *
  * `puedeDormir()`/`dormir()` son funciones LOCALES de `main.js` (a propósito:
