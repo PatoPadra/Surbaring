@@ -2,6 +2,14 @@
 
 ## Ronda 9 · ABIERTA el 28/9/2026 · rama `mejoras/ronda9-bandeja`
 
+> **3/10/2026 — LA RONDA 9 SE FUSIONA A MAIN Y SE SUBE, SIN HABERLA JUGADO.** Lo pidió
+> el dueño («fusiona y subilo»), igual que con la 8. **Excepción declarada a
+> `fusionar-recien-cuando-lo-vio`**: `main` tiene ahora dos rondas que nadie jugó. Lo
+> medido está en cada fase de `RONDA9.md`; lo que tiene que probar jugando y lo que
+> tiene que elegir está en `SEGUIR.md`, arriba de todo. Al fusionar seguía corriendo la
+> regresión de la piedra (`banco-r8-fase5.mjs`), que antes había dado rojo sólo en su
+> `vite build` mientras el agente compilaba a la vez; el resultado se anota abajo.
+
 Arranca sobre `main` (la ronda 8 se fusionó el 28/9 sin que el dueño la jugara — ver el
 aviso en la sección de la ronda 8, más abajo). El encargo es la bandeja de entrada que
 dejó la ronda 8, en `RONDA9-ARRANQUE.md`.
