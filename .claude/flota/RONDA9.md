@@ -667,3 +667,82 @@ decisión quedó apoyada en algo que no funciona.
   quieto la fauna no se siembra y no hay animal que poner al lado). Verificada
   leyendo el código.
 
+---
+
+## FASE 6 · `para-mirar` — la luna y el suelo naranja, listos para el ojo del dueño
+
+Puntos 4 y 7 de la bandeja. El dueño pidió **«dejámela preparada para mirar, no la
+decidas vos»**, y la sesión del 28-29/9 no los preparó: quedaron como «espera el ojo
+del dueño» sin nada para mirar. Esta fase **no cambia el juego**: deja instrumentos y
+capturas. Lo que se elija después es un cambio de una línea.
+
+### Cómo mirarlo jugando
+
+`.claude/flota/mirar.js` parchea en vivo, sólo en esa pestaña, el sombreador del cielo
+y la luz de los hornos. No mueve el reloj ni toca el guardado; al recargar vuelve todo.
+
+```js
+const m = await import('/.claude/flota/mirar.js');
+m.teclas();   // F8 alterna la luna A·B·C, F9 el fuego A·B·C; un cartel abajo dice cuál
+```
+
+### La luna (punto 4) — cuánto brilla la parte iluminada del disco
+
+- **A · hoy:** `iluminado * 2.6`, fijo, sea creciente o llena.
+- **B · la física:** el brillo por superficie de la ley de Allen (brillo ÷ fracción
+  iluminada). En cuarto, 0,16 del de la llena.
+- **C · a mitad de camino en la imagen:** B con exponente 0,8. En cuarto, 0,23.
+- La llena es igual en las tres (referencia del contrato A3 de la ronda 8).
+
+Capturado el 3/10 desde el lago (−41,060 / −71,390, a 2 m del agua), la creciente
+del 25/11/2025 a las 22:30 (28 % iluminada, a 31° de altura, semillas 19/46,
+nubosidad 0,26): `capturas/r9-f6-luna-ABC.png` (arriba el cuadro entero, abajo el
+disco ×8). Luminancia del disco, de 0 a 255: **máximo 246 · 203 · 232** y media de los
+píxeles brillantes 212 · 167 · 187 para A · B · C; el cielo de alrededor da 25,3 en
+las tres (control: sólo cambió el disco). **La raíz de B, que era la mitad de la
+cuenta, daba 243: casi igual que A**, porque la curva de tono satura. Por eso C es el
+exponente 0,8 y no la raíz.
+
+Si se elige B o C: en `Cielo.js` (FRAG), `iluminado * 2.6` pasa a
+`iluminado * 2.6 * pow(clamp(uBrilloLunar / max(uFaseLunar, 0.02), 1e-4, 1.0), E)` con
+E = 1 o 0,8.
+
+**Visto de paso, sin decidir nada:** la cara oscura del disco sale **más oscura que el
+cielo de alrededor**, un círculo apagado (se ve en el recorte ×8). El sombreador
+reemplaza, dentro del disco, el color del cielo por el fondo de la noche
+(`color = mix(color, mix(FONDO_NOCHE, colorDia, diurno), disco)`), y con eso se lleva
+también el resplandor del aire, que está delante de la luna. A tamaño real son ~9 px.
+
+### El suelo naranja junto al fuego (punto 7)
+
+- **A · hoy:** 14 m de alcance, intensidad 20 de noche (ya bajó 60 % a 5 m con la 3b).
+- **B · menos alcance:** 11 m.
+- **C · menos alcance y menos fuerza:** 11 m e intensidad 16.
+
+Capturado en el mismo lugar llano de las rondas 7 y 8 (6606, −587), 6 m al sur de la
+fogata, mirando al norte: `capturas/r9-f6-fuego-ABC.png`. Medido desde arriba (8 m;
+más alto el juego ya no asigna la luz del fuego a la cámara), pasto y árboles ocultos,
+restando la fogata apagada:
+
+| | 2 m | 3 m | 5 m | 8 m |
+|---|---|---|---|---|
+| A, lo que el fuego suma (de 255) | 4,4 | 26,3 | 10,3 | 1,5 |
+| B, respecto de A | 95 % | 94 % | 77 % | 35 % |
+| C, respecto de A | 77 % | 74 % | 59 % | 26 % |
+
+B deja igual el resplandor de cerca y lo apaga antes; C baja todo un cuarto y además
+lo apaga antes. **Una cosa que cambia además de la imagen:** el radio de la luz es
+también el de `radioDeLuzEn` (ver de noche), que pasa de 14 a 11 m con B o C.
+
+**Visto de paso:** en la vista a la altura del ojo, con A un tronco a unos 12 m del
+fuego se enciende rojo vivo mientras el suelo a esa distancia está oscuro; con 11 m
+desaparece. Es la misma luz llegando a una corteza que mira al fuego.
+
+Si se elige B o C: `BRASA_RADIO_M` (14 → 11) y, para C, `BRASA_NOCHE` (20 → 16) en
+`Hornos.js`.
+
+### Instrumentos
+
+- `.claude/flota/mirar.js` — el parche en vivo, F8/F9.
+- `.claude/flota/componer-mirar.mjs` — arma las hojas de comparación (tres cuadros y
+  el mismo recorte ampliado).

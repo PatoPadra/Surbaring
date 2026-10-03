@@ -189,6 +189,11 @@ retoman si el dueño lo pide o cuando las cuatro fases de arriba estén cerradas
 > Dormir · con refugio y fuego» de noche y «E · Juntar piedra suelta» de día en el
 > mismo lugar; +4 a 5 µs por cuadro. Falsador 7/7 en el navegador y 2/2 en Node,
 > 3/3 controles limpios. El banco viejo de 4b quedó marcado como ciego.
+>
+> **3/10/2026 — FASE 6 (`para-mirar`) PREPARADA, sin tocar el juego.** La luna y el
+> suelo naranja, con tres variantes cada uno, en `capturas/r9-f6-luna-ABC.png` y
+> `capturas/r9-f6-fuego-ABC.png`, y en vivo con `.claude/flota/mirar.js` (F8/F9).
+> Detalle y números en `RONDA9.md`, fase 6. **Decide el dueño.**
 
 ---
 
