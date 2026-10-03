@@ -519,3 +519,98 @@ segundo, y desaparece solo (confirmado saltando a día 5) sin dejar un hueco en
 el layout (`:empty { display: none }`). `vite build` limpio.
 
 **Con esto se cierra la fase 4 (`primer-año`) entera: 4a, 4b, 4c y 4d.**
+
+---
+
+## FASE 5 · `dormir-b` — dormir de verdad: que se pueda, y que el fuego se apague
+
+Abierta el 3/10/2026 por el jefe nuevo de la ronda 9, al re-medir en el juego lo que
+estaba dado por cerrado. **La fase 4b quedó cerrada con dos defectos y un banco
+ciego a los dos.**
+
+### El problema, medido antes de escribir el contrato (3/10/2026, en el juego)
+
+Con un parapeto levantado con `construccion.levantar` y una fogata armada con
+`fundicion.construir`, de verdad, en el punto de arranque (reserva):
+
+1. **Dormir no se alcanza jugando.** El envoltorio de `main.js` ofrece «Dormir» sólo
+   cuando `Recoleccion.quePuedoHacer()` devuelve `null`, y el propio
+   `Recoleccion.js` dice que con un coirón por metro cuadrado `mata` no es null
+   jamás. Medido: **0 de 40 lugares** al azar (hasta 3 km) dejan salir «Dormir»
+   (beber 19, mata 10, chatarra 5, planta 3, orilla 2, carroña 1), y **30 de 30**
+   apretadas de E en el campamento real ofrecieron «Juntar…». En el punto de
+   arranque sí salió una vez, apenas cargado: el sotobosque todavía no estaba
+   sembrado.
+2. **El fuego no se apaga durmiendo.** `fuegoCercano()` lee `h.ardiendo`, que sólo
+   refresca `fundicion.actualizar(est)` dentro de `cuadro()`; el bucle de `dormir()`
+   no la llama nunca. Una fogata con **3 h** de leña calienta las 9 h de la noche
+   igual que una de **15 h**: 35,905 °C las dos (con un evento activo) y 36,178 °C
+   las dos (sin eventos, condiciones del banco). Al despertar la fogata sigue
+   «ardiendo» con la leña agotada hace 6 h. **Causa confirmada** refrescando la
+   fundición en cada vuelta (envolviendo `eventos.aplicar`): 3 h → 34,818 °C y la
+   fogata apagada; 15 h → 36,178, sin cambio (control). La lluvia tampoco puede
+   ahogarla mientras se duerme, por la misma razón.
+3. **Despierta a las 7:00 fijas.** El sol sale en el parque entre las 6:20 (21/12) y
+   las 9:20 (21/6), medido con `posicionSolar`; la noche de junio dura 15,0 h y el
+   tope es 14. En junio despierta 2 h 20 min antes del sol.
+4. **El banco de 4b no podía ver nada de esto.** Su G1 aceptaba `null` o cualquier
+   objeto (no podía fallar); su G4 falseaba `fundicion.cercano` mientras el calor se
+   lee de `fundicion.hornos[].ardiendo`, así que su «con refugio y fuego» corrió
+   **sin fuego**: los 0,95 °C anotados en `ESTADO.md` eran sólo el refugio.
+
+La respuesta 1 del dueño (primavera, reloj igual, 84 h reales hasta el invierno) se
+aceptó **combinada con dormir** para acortar el camino: con dormir inalcanzable, esa
+decisión quedó apoyada en algo que no funciona.
+
+### Las decisiones de la flota, y por qué no son del dueño
+
+- **Dormir sólo de noche** (sol debajo del horizonte). La pregunta 2 que contestó el
+  dueño fue «¿se puede dormir con refugio y fuego para adelantar la noche?»: dormir
+  a las 13:00 y despertar a las 3:00 no es lo que se contestó.
+- **De noche, con refugio y fuego, dormir le gana a lo que puede esperar** (la mata,
+  la orilla, la chatarra, la planta, la trampa, la ficha). No le gana a identificar
+  un animal desconocido (se va) ni a beber con sed (la regla «la sed mata» de
+  `Recoleccion.js`). Sin esa prioridad, la respuesta 2 no existe jugando.
+- **Se despierta cuando sale el sol**, con un tope de seguridad de 16 h de mundo.
+
+### El contrato
+
+- **N1 — De día no cambia nada.** Con refugio y fuego y el sol arriba, el cartel es
+  exactamente el de la cadena de base y E no salta el reloj.
+- **N2 — De noche se puede.** Con el sol debajo del horizonte, refugio (`abrigoEn > 0`)
+  Y una fogata que arde a `RADIO_HORNO_M`, el cartel dice «dormir» aunque la cadena
+  de base ofrezca algo que puede esperar, y E duerme.
+- **N3 — El fuego vive durmiendo.** Cada vuelta del bucle de dormir actualiza la
+  fundición como lo hace `cuadro()` (la leña se acaba a su hora, la lluvia moja, las
+  hornadas avanzan), antes de medir el calor. Con 3 h de leña la noche termina
+  ≥ 1,0 °C más fría que con 15 h y la fogata amanece apagada; con 15 h, igual que la
+  base (36,178 ± 0,05 °C).
+- **N4 — Hasta que sale el sol.** Se despierta dentro de un paso del bucle (≤ 7 min
+  de mundo) después del amanecer real, el 22/9 y el 21/6; sin hora fija.
+- **N5 — Y, no O.** De noche, refugio sin fuego o fuego sin refugio no ofrecen dormir.
+- **N6 — La sed manda.** De noche junto al agua: con sed, beber; sin sed, dormir. El
+  umbral no se escribe dos veces (M1).
+- **N7 — Recién despierto no se vuelve a ofrecer** (el sol ya salió).
+- **M3/M4 — Sin regresión y `vite build` limpio.**
+
+### Lo que NO pide este contrato
+
+- No pide despertar al jugador si el fuego se apaga a mitad de la noche: eso es
+  diseño. Que el cuerpo lo sienta sí (N3), y el aviso de «pasaste frío» ya existe.
+- No pide `eventos.golpear` dentro del bucle (el daño directo de una avalancha o un
+  viento blanco que se sortee durante la noche). Queda anotado como residuo.
+- No pide tocar `Recoleccion.quePuedoHacer()` por dentro: la prioridad se resuelve en
+  el envoltorio de `main.js`. Lo único que puede cambiar en `Recoleccion.js` es
+  exportar el umbral de sed para no duplicarlo.
+
+### Instrumentos
+
+- `.claude/flota/banco-r9-fase5.navegador.js` — N1 a N7, en el juego real, sin
+  reemplazar ninguna dependencia de dormir. Validado contra la base el 3/10/2026:
+  N1 8/8 (premisa); N2 0/9, N3 2/4, N4 4/6, N5 2/3 (sólo cae el control «con los
+  dos, sí»), N6 1/2 — cada uno rojo por su motivo.
+- `.claude/flota/banco-r9-fase5.mjs` — M1 a M4 (Node). Contra la base: M1 y M3
+  verdes, M2 rojo (`setUTCHours(10` sigue ahí).
+- `.claude/flota/banco-r9-fase5.falsar.mjs` — se escribe con el código del agente a
+  la vista (las anclas de los defectos dependen de cómo lo escriba), sin tocar el
+  banco.

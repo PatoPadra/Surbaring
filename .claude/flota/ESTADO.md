@@ -148,6 +148,36 @@ los mire primero.
 de receta con más durabilidad (punto 9, es una idea sin sistema que la sostenga). Se
 retoman si el dueño lo pide o cuando las cuatro fases de arriba estén cerradas.
 
+> **3/10/2026 — RE-MEDIDA DE LA RONDA ENTERA, Y LA FASE 4b NO ESTABA CERRADA.** El
+> dueño volvió a mandar el arranque del 28/9 (sesión nueva, sin el contexto de la
+> anterior). Antes de encargar nada se re-midió lo dado por cerrado, en el código y en
+> el juego. Confirmado que las cinco respuestas fueron suyas (en la sesión del 28/9
+> contestó el cuestionario eligiendo la recomendación en las cinco).
+>
+> **Lo que aguanta:** fase 1, banco 6/6; fase 2, banco 8/8 y en el juego el percutor
+> baja 27 → 26 con cada lasca; 4a, partida nueva el 21/9/2025 13:20 UTC; 4c,
+> `jugador.alMorir` vivo llama a `relevamiento.registrarMuerte`; 4d, la línea del
+> objetivo aparece el día 0 y se va el día 5 sin hueco.
+>
+> **Lo que no:** la 4b tiene dos defectos y su banco era ciego a los dos. (1) Dormir
+> no se alcanza jugando: 0 de 40 lugares y 30 de 30 apretadas de E en un campamento
+> real ofrecen otra cosa, porque el cartel sólo dice «Dormir» cuando no hay nada más
+> y el sotobosque está en todos lados. (2) El fuego no se apaga durmiendo: una fogata
+> de 3 h calienta igual que una de 15 h (36,178 °C las dos), porque el bucle de
+> dormir no llama a `fundicion.actualizar`. Además despierta a las 7:00 fijas cuando
+> el sol sale entre las 6:20 y las 9:20. El banco de 4b falseaba `fundicion.cercano`
+> mientras el calor se lee de `fundicion.hornos`: **los «0,95 °C con refugio y
+> fuego» de arriba eran sólo el refugio**. Se abre la **fase 5 (`dormir-b`)**,
+> contrato en `RONDA9.md`.
+>
+> **Un hueco menor de 4c, anotado y no abierto:** la respuesta 4 aceptada decía que el
+> cierre muestra «noches sobrevividas, si hubo refugio, si pasó el invierno»; se
+> construyó sólo «llegaste sin morir». «Obras en pie» cubre a medias el refugio.
+>
+> **Método, para que el dueño lo sepa:** la fase 2 la escribió el jefe anterior sin
+> agente (lo declaró), o sea que el código y el banco salieron de la misma mano. Se
+> re-midió en el juego y aguanta. Las fases 3 y 4 tampoco dicen que hubo agente.
+
 ---
 
 ## Ronda 8 · ABIERTA el 18/9/2026 · rama `mejoras/ronda8-lo-que-vio`
