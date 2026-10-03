@@ -8,7 +8,10 @@
 > medido está en cada fase de `RONDA9.md`; lo que tiene que probar jugando y lo que
 > tiene que elegir está en `SEGUIR.md`, arriba de todo. Al fusionar seguía corriendo la
 > regresión de la piedra (`banco-r8-fase5.mjs`), que antes había dado rojo sólo en su
-> `vite build` mientras el agente compilaba a la vez; el resultado se anota abajo.
+> `vite build` mientras el agente compilaba a la vez. **Resultado, corrido solo después de
+> fusionar: verde, 7/7.** Y `banco-r9-fase3.mjs`, que el 3/10 había dado 5/6 con su
+> regresión de la copa en rojo mientras el jefe medía en el navegador, corrido solo:
+> **6/6**. Los dos rojos fueron del entorno, no del código.
 
 Arranca sobre `main` (la ronda 8 se fusionó el 28/9 sin que el dueño la jugara — ver el
 aviso en la sección de la ronda 8, más abajo). El encargo es la bandeja de entrada que
