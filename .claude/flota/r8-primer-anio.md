@@ -120,3 +120,26 @@ Nada de esto toca lo que hace esta ronda, y no se empezó.
    que haber un cierre con lo que se hizo?
 5. **¿Morir en el año reinicia la cuenta?** Hoy el cuaderno sobrevive a la muerte. Para
    un «primer año de supervivencia», ¿morir lo vuelve a empezar?
+
+---
+
+## Contestadas por el dueño el 28/9/2026 — las cinco, con la recomendación del jefe
+
+1. **Estación: primavera, reloj igual (opción A).** El invierno queda a 84 h reales.
+   Se combina con la 2 (dormir) para acortar el camino sin tocar la velocidad global.
+2. **Dormir: sí**, con refugio y fuego —las mismas dos condiciones que ya cortan el frío
+   en el modelo del cuerpo.
+3. **El año de supervivencia acompaña al del cuaderno, mismo contador.** Un solo
+   `Relevamiento.js` de 365 días, reinterpretado: hoy describe el parque, pasa a narrar
+   también la supervivencia. Cero estado nuevo.
+4. **Al cumplir el año: cierre breve y sigue jugando.** Un cartel con lo logrado
+   (noches sobrevividas, si hubo refugio, si pasó el invierno) y el juego continúa
+   abierto.
+5. **Morir: sólo el logro se reinicia, no el reloj.** El contador de días de
+   `Relevamiento.js` sigue sobreviviendo a la muerte, como ya está escrito. Pero el
+   HITO «primer año cumplido» (punto 6 de este documento) exige una racha sin morir:
+   es un dato nuevo y chico (una bandera de racha), no el contador viejo. Si no, se
+   podría morir 50 veces y «sobrevivir» el año igual, y el desafío pierde sentido.
+
+**Con esto se abre la fase del primer año.** Contrato en `RONDA9.md` cuando le toque
+el turno (ver el orden propuesto en `ESTADO.md`).

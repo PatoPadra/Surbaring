@@ -1,5 +1,210 @@
 # ESTADO DE LA FLOTA — leer esto primero
 
+## Ronda 9 · ABIERTA el 28/9/2026 · rama `mejoras/ronda9-bandeja`
+
+> **3/10/2026 — LA RONDA 9 SE FUSIONA A MAIN Y SE SUBE, SIN HABERLA JUGADO.** Lo pidió
+> el dueño («fusiona y subilo»), igual que con la 8. **Excepción declarada a
+> `fusionar-recien-cuando-lo-vio`**: `main` tiene ahora dos rondas que nadie jugó. Lo
+> medido está en cada fase de `RONDA9.md`; lo que tiene que probar jugando y lo que
+> tiene que elegir está en `SEGUIR.md`, arriba de todo. Al fusionar seguía corriendo la
+> regresión de la piedra (`banco-r8-fase5.mjs`), que antes había dado rojo sólo en su
+> `vite build` mientras el agente compilaba a la vez; el resultado se anota abajo.
+
+Arranca sobre `main` (la ronda 8 se fusionó el 28/9 sin que el dueño la jugara — ver el
+aviso en la sección de la ronda 8, más abajo). El encargo es la bandeja de entrada que
+dejó la ronda 8, en `RONDA9-ARRANQUE.md`.
+
+**Medido antes de encargar nada (28/9/2026):** los nueve puntos de la bandeja siguen
+como estaban anotados. Confirmado en el código: la hoja de iconos sigue en **137,8 de
+140 kB** (`node .claude/flota/banco-r6-fase3.mjs`, verde pero a 2,2 kB del techo);
+`Fabricacion.js` no llama a `desgastar()` en ningún lado —sólo lo hace
+`Caza._tiro()` sobre lo que hay en la ranura `mano`—, así que el percutor no se gasta
+picando piedra; `balanceSaber` en `herramientas.json` propone volver a pedirle
+`lasca_obsidiana` al hacha pulida, algo que la fase 5 sacó a propósito (hoy
+`hacha_pulida.requiere = []`), así que ese texto quedó contradiciendo una decisión ya
+tomada; y `efecto.herramienta`/`efecto.recetas` de `historia.json` no los lee ningún
+sistema (confirmado: cero resultados fuera del propio dataset).
+
+**Las cinco preguntas del primer año, contestadas por el dueño el 28/9/2026** (las
+cinco con la recomendación del jefe aceptada): primavera con el reloj igual, se puede
+dormir con refugio y fuego, el año de supervivencia acompaña al del cuaderno con el
+mismo contador de `Relevamiento.js`, al cumplirlo hay un cierre breve y se sigue
+jugando, y morir sólo reinicia el HITO (una bandera de racha nueva), no el contador de
+días. El detalle completo está en `r8-primer-anio.md`, al final.
+
+**Orden propuesto y por qué:**
+
+1. **`iconos`** — empaquetar la hoja para bajarla de 137,8 kB antes de que la toque
+   cualquier otra fase y el banco se ponga rojo por culpa ajena. Mecánico, autocontenido,
+   sin implicancia de balance. Se abre primero porque bloquea a todo lo demás que agregue
+   un ícono.
+2. **`desgaste`** — marca `gastaHerramienta` por receta en `Fabricacion` + balance del
+   percutor. De paso, en el mismo archivo (`herramientas.json`), se actualiza el texto de
+   `balanceSaber` para que deje de contradecir la fase 5. Autocontenido a
+   `Fabricacion.js` / `Equipo.js` / `herramientas.json`.
+3. **`copa-b`** — medir de verdad, restando en la imagen (como hizo la fase 4), si las
+   latifoliadas tienen ramas peladas fuera de la copa. La prueba geométrica de la ronda 8
+   dio un cero que no hay que creer. Se abre después de `desgaste` porque si el resultado
+   es «sí hay defecto», toca modelos de árbol y conviene no solaparlo con otra fase de
+   contenido.
+4. **`primer-año`** — con las cinco preguntas ya contestadas: la fecha de arranque
+   (`Tiempo.js:69`), dormir con refugio y fuego, los hitos y el cierre en
+   `Relevamiento.js`, y la bandera de racha para el HITO. Se abre después de las tres
+   anteriores porque es la más grande y no depende de ninguna: puede prepararse (contrato
+   y banco) mientras corre `copa-b`.
+
+> **28/9/2026 — FASE 1 (`iconos`) CERRADA.** La hoja pasa de 123 `data:image/svg+xml`
+> sueltos a un sprite: un solo `<svg>` con una celda por ícono, cada clase eligiendo la
+> suya con `background-position`. **137,78 → 130,01 kB** (banco 6/6), verificado de
+> forma independiente con `banco-r9-fase1.navegador.js`: **246/246 sin diferencia de
+> píxeles** contra la hoja vieja, a los dos tamaños reales de uso, y confirmado jugando
+> con el bolso abierto. El agente sumó por su cuenta un `clip-path` compartido
+> (2,71 kB) para blindar contra formas que se pasan de la celda de 64×64; medido y
+> razonable.
+>
+> **28/9/2026 — FASE 2 (`desgaste`) CERRADA.** La escribió el jefe directamente, sin
+> agente: quedó del todo especificada a nivel de línea al investigarla. `Equipo` suma
+> `desgastarId(id, cuanto)` —gasta la mejor instancia de un id esté donde esté, grilla
+> o puesta— y `Fabricacion.fabricar()` gasta la herramienta que la receta REALMENTE usó.
+> El huso queda exento sin escribir ninguna excepción a mano: nunca declaró
+> `durabilidad`, y esa es la misma señal que ya usaba `desgastar()` para «esto no se
+> rompe». Banco 8/8 (D1 a D8), falsador 4/4 con 2 controles limpios. De paso,
+> `balanceSaber.arreglo` en `herramientas.json` dejó de proponer que `hacha_pulida`
+> volviera a depender de la obsidiana —la fase 5 sacó esa dependencia a propósito— sin
+> inventar un total nuevo (el instrumento viejo, `r4-economia.mjs`, no está mantenido).
+> **Una corrida del banco dio 6/7 en la regresión de la piedra** (`banco-r8-fase5.mjs`)
+> y no se le creyó: coincidió con un lanzamiento de agente de más por error del jefe
+> (resuelto al toque). Confirmado limpio en 4 corridas más, una de ellas bajo carga
+> deliberada — no se reprodujo nunca más. Se cierra con el banco completo en 8/8.
+>
+> **Corrección del 29/9/2026, encontrada preparando la fase 4c:** el falsador de esta
+> fase (`banco-r9-fase2.falsar.mjs`) tenía un defecto propio. `sin-desgastarId` cortaba
+> el método buscando `'\n  }\n'`, pero **todo el repo usa fin de línea CRLF**: ese
+> `indexOf` daba −1 siempre, y en vez de sacar el método el «corte» duplicaba casi todo
+> el archivo —un error de sintaxis, no la aserción D1—. El «VISTO» que reportaba era el
+> error de importación tapando el hueco, no el banco cazando el defecto de verdad.
+> Corregido normalizando a LF antes de mutar y devolviendo a CRLF después; revalidado
+> **4/4 defectos, 2/2 controles, ahora por el motivo correcto** (confirmé a mano que el
+> archivo mutado queda sintácticamente válido y sin rastro de `desgastarId`). El código
+> de la fase 2 en sí no cambia: ya estaba verificado por el banco completo (D1-D8) y por
+> pruebas manuales en el navegador — esto corrige el INSTRUMENTO, no el juego.
+
+> **29/9/2026 — FASE 3 (`copa-b`) CERRADA.** El coihue tenía 6 de 7 ramas afuera de
+> todos los lóbulos de follaje —alguna hasta 15 m—, medido de verdad esta vez (una
+> copia instrumentada de `construirPlanta`, no la prueba geométrica de la ronda 8 que
+> daba un cero sospechoso). La causa: los lóbulos y las ramas salían de dos sorteos
+> de ángulo independientes, y los lóbulos arrancan todos por encima de la copa del
+> tronco mientras las ramas más bajas no llegaban ni ahí. Arreglo: los 5 lóbulos se
+> calculan primero, y cada una de las 7 ramas apunta derecho al centro de un lóbulo
+> asignado, frenando antes de llegar una fracción del radio MENOR de ese lóbulo (así
+> entra con margen sin importar el ángulo de llegada). Verificado con el mismo
+> instrumento (0 de 7 afuera, peor caso a 0,55× el radio) y **visualmente en el
+> navegador**, antes y después, con `Vegetacion.js` real: antes, ramas grises
+> cruzando el cielo; después, el tronco desaparece limpio en el follaje. `retorcido`
+> (ñire, lenga, maitén) no se tocó a propósito: medía mucho mejor (1-2 de 7, unos
+> centímetros a 1,4 m) y no era el defecto reportado. Banco 6/6 (con `vite build`
+> real y la regresión de `banco-r8-fase4.mjs`), falsador 3/3 con 2 controles limpios.
+> Un defecto propio, encontrado por el banco antes de cerrar: el margen usaba sólo
+> el radio horizontal del lóbulo, y una rama con trayecto casi vertical rozó el
+> borde (1,001× en vez de ≤1) — corregido usando el radio menor de los dos ejes.
+
+> **29/9/2026 — FASE 4a/4b/4c (`primer-año`) — reloj, dormir e hitos CERRADAS.**
+> **4a**: partidas nuevas arrancan el 21 de septiembre (primavera) en vez del 12 de
+> febrero; una partida guardada no se entera (restaura su propia fecha). **4b**: se
+> puede dormir con refugio y fuego —el cartel de "E" lo ofrece envolviendo
+> `Recoleccion.quePuedoHacer`/`actuar`, sin tocar esa clase ni sumar una tecla
+> nueva—, y el salto de reloj reusa la simulación real (`jugador.actualizarSupervivencia`
+> + `tiempo.avanzar`, en un bucle) en vez de una fórmula inventada: medido, sin
+> protección 14 h de mundo bajan la temperatura 1,78 °C, con refugio+fuego la mitad
+> (0,95 °C), mismo gasto de hambre/sed. **4c**: sólo el logro «primer año cumplido» se
+> reinicia al morir (`Relevamiento.murioEnElAnio`, nuevo), nunca el contador de días;
+> `Cierre.js` —que ya existía de una ronda anterior y ya resolvía gran parte de la
+> pregunta 4— suma un dato más a su grilla en vez de una pantalla aparte. Los "hitos
+> narrativos" intermedios de la sección 6 de `r8-primer-anio.md` quedan afuera a
+> propósito: eran una sugerencia del jefe anterior, no una de las cinco preguntas
+> contestadas. Bancos: 4a sin banco propio (verificado que nada depende del default);
+> 4b navegador 8/8; 4c Node 5/5 con falsador 4/4. Los tres con `vite build` limpio.
+>
+> **Corrección de instrumento, de paso:** preparando el falsador de 4c se encontró que
+> el de la fase 2 (`sin-desgastarId`) daba un "VISTO" por un error de sintaxis —cortaba
+> buscando `'\n  }\n'`, y TODO el repo usa CRLF, así que el corte caía mal y duplicaba
+> el archivo en vez de sacar el método—. Corregido normalizando a LF antes de mutar;
+> revalidado 4/4 por el motivo correcto. El código de la fase 2 no cambió: ya estaba
+> verificado por el banco completo y a mano en el navegador.
+
+> **29/9/2026 — FASE 4d (`primer-año` / códice) CERRADA — LA FASE 4 ENTERA ESTÁ
+> COMPLETA (4a, 4b, 4c, 4d).** La ficha del objetivo no pedía ninguna de las
+> cinco preguntas del dueño en particular: se hizo con el criterio más chico
+> posible, una línea nueva en la cabecera del códice —el lugar donde el propio
+> archivo ya dice «no es un menú de ayuda: es el objetivo del juego»—, visible
+> los primeros 3 días de juego y después se apaga sola. No un evento de
+> `historia.json` inventado (esos llevan fuente real) ni una pantalla aparte.
+> Verificado jugando: aparece desde el día 0 integrado bajo el contador de
+> días, desaparece solo al día 5 sin dejar hueco en el layout. `vite build`
+> limpio. **Con las cuatro sub-fases cerradas, la ronda 9 completa su encargo
+> original** (iconos, desgaste, copa-b, primer-año); queda pendiente sólo lo
+> que el dueño mire jugando (la luna, el suelo naranja) y lo anotado sin fase
+> en la bandeja (azuela/pala/rastra, balanceSaber, efecto.herramienta).
+
+**Lo que NO es una fase todavía, y espera el ojo del dueño jugando** (regla
+`fusionar-recien-cuando-lo-vio`): el disco de la luna con brillo fijo (punto 4 de la
+bandeja) y el suelo naranja junto al fuego (punto 7). Ninguno se toca sin que el dueño
+los mire primero.
+
+**Lo que queda anotado sin fase, por ahora:** la azuela/pala de omóplato/rastra
+(punto 5, pide medir el impacto en `conTodo` antes de abrir) y el tiento como variante
+de receta con más durabilidad (punto 9, es una idea sin sistema que la sostenga). Se
+retoman si el dueño lo pide o cuando las cuatro fases de arriba estén cerradas.
+
+> **3/10/2026 — RE-MEDIDA DE LA RONDA ENTERA, Y LA FASE 4b NO ESTABA CERRADA.** El
+> dueño volvió a mandar el arranque del 28/9 (sesión nueva, sin el contexto de la
+> anterior). Antes de encargar nada se re-midió lo dado por cerrado, en el código y en
+> el juego. Confirmado que las cinco respuestas fueron suyas (en la sesión del 28/9
+> contestó el cuestionario eligiendo la recomendación en las cinco).
+>
+> **Lo que aguanta:** fase 1, banco 6/6; fase 2, banco 8/8 y en el juego el percutor
+> baja 27 → 26 con cada lasca; 4a, partida nueva el 21/9/2025 13:20 UTC; 4c,
+> `jugador.alMorir` vivo llama a `relevamiento.registrarMuerte`; 4d, la línea del
+> objetivo aparece el día 0 y se va el día 5 sin hueco.
+>
+> **Lo que no:** la 4b tiene dos defectos y su banco era ciego a los dos. (1) Dormir
+> no se alcanza jugando: 0 de 40 lugares y 30 de 30 apretadas de E en un campamento
+> real ofrecen otra cosa, porque el cartel sólo dice «Dormir» cuando no hay nada más
+> y el sotobosque está en todos lados. (2) El fuego no se apaga durmiendo: una fogata
+> de 3 h calienta igual que una de 15 h (36,178 °C las dos), porque el bucle de
+> dormir no llama a `fundicion.actualizar`. Además despierta a las 7:00 fijas cuando
+> el sol sale entre las 6:20 y las 9:20. El banco de 4b falseaba `fundicion.cercano`
+> mientras el calor se lee de `fundicion.hornos`: **los «0,95 °C con refugio y
+> fuego» de arriba eran sólo el refugio**. Se abre la **fase 5 (`dormir-b`)**,
+> contrato en `RONDA9.md`.
+>
+> **Un hueco menor de 4c, anotado y no abierto:** la respuesta 4 aceptada decía que el
+> cierre muestra «noches sobrevividas, si hubo refugio, si pasó el invierno»; se
+> construyó sólo «llegaste sin morir». «Obras en pie» cubre a medias el refugio.
+>
+> **Método, para que el dueño lo sepa:** la fase 2 la escribió el jefe anterior sin
+> agente (lo declaró), o sea que el código y el banco salieron de la misma mano. Se
+> re-midió en el juego y aguanta. Las fases 3 y 4 tampoco dicen que hubo agente.
+>
+> **3/10/2026 — FASE 5 (`dormir-b`) CERRADA.** Contrato y banco del jefe antes del
+> código; el arreglo lo escribió un agente (dueño de `main.js`, bloque de dormir, y
+> de `Recoleccion.js`, sólo para exportar `UMBRAL_SED`). Dormir sólo de noche (sol
+> debajo del horizonte), le gana de noche a todo lo que puede esperar salvo
+> identificar y beber con sed, la fundición se actualiza en cada vuelta, y se
+> despierta con el sol (tope 16 h). Medido en el juego con un parapeto y una fogata
+> reales: banco 34/34 (3 h de leña → 34,85 °C y fogata apagada; 15 h → 36,19 °C;
+> despierta 7:42 el 22/9 y 9:18 el 21/6, a 0 y 1 min del sol); el HUD dice «E ·
+> Dormir · con refugio y fuego» de noche y «E · Juntar piedra suelta» de día en el
+> mismo lugar; +4 a 5 µs por cuadro. Falsador 7/7 en el navegador y 2/2 en Node,
+> 3/3 controles limpios. El banco viejo de 4b quedó marcado como ciego.
+>
+> **3/10/2026 — FASE 6 (`para-mirar`) PREPARADA, sin tocar el juego.** La luna y el
+> suelo naranja, con tres variantes cada uno, en `capturas/r9-f6-luna-ABC.png` y
+> `capturas/r9-f6-fuego-ABC.png`, y en vivo con `.claude/flota/mirar.js` (F8/F9).
+> Detalle y números en `RONDA9.md`, fase 6. **Decide el dueño.**
+
+---
+
 ## Ronda 8 · ABIERTA el 18/9/2026 · rama `mejoras/ronda8-lo-que-vio`
 
 > **28/9/2026 — LA RONDA 8 SE FUSIONA A MAIN, Y ESTA VEZ SIN HABERLA JUGADO.** Lo pidió

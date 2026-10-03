@@ -2820,10 +2820,10 @@
     ]
   },
   "balanceSaber": {
-    "medido": "El árbol entero pide 1480 puntos de saber y el juego reparte 469 identificando todo lo identificable. Faltan 1011.",
-    "yPeor": "herreria_colonial.requiere está vacío: el nivel 4 no exige el 3, ni el 2, ni el 1. Se llega al hacha de hierro sin fabricar una sola herramienta de piedra, por 20 puntos —el 4,3 % del pool—. La escalera que esta ronda vino a construir se esquiva con un requiere: [].",
-    "arreglo": "Encadenar las herramientas en historia.json: herreria_colonial.requiere = [canteria_litica], canteria_litica.requiere = [hacha_pulida], hacha_pulida.requiere = [lasca_obsidiana]. Y rebalancear los costos contra los 469 puntos reales, o hacer que los puntos escalen.",
-    "fuente": ".claude/flota/r4-economia.mjs — banco con 7 mutaciones plantadas, 7 detectadas, 0 ciegas."
+    "medido": "Medido en la ronda 4: el árbol entero pedía 1480 puntos de saber y el juego repartía 469 identificando todo lo identificable. Desactualizado desde la ronda 8: varios costos y requisitos de la cadena de la piedra cambiaron (ver notaRequisitos de hacha_pulida en historia.json) y el instrumento que daba estos números (r4-economia.mjs) no se mantuvo al día, así que ya no describen el árbol actual y no hay un total de reemplazo confiable todavía.",
+    "yPeor": "Resuelto en la ronda 8: herreria_colonial.requiere pasó de vacío a [canteria_litica], así que ya no se llega al hacha de hierro sin pasar por una herramienta de piedra.",
+    "arreglo": "De los tres encadenamientos que proponía esta nota, DOS ya están en historia.json: herreria_colonial.requiere = [canteria_litica] y canteria_litica.requiere = [hacha_pulida]. El tercero —que hacha_pulida volviera a depender de la talla de obsidiana— NO se aplicó, y no hay que aplicarlo: la fase 5 de la ronda 8 sacó esa dependencia a propósito, porque dejaba la primera herramienta de piedra detrás de 6,4 km y 700 m de desnivel. Rebalancear los costos contra el total real de hoy sigue pendiente, pero necesita un instrumento nuevo: r4-economia.mjs no está mantenido.",
+    "fuente": ".claude/flota/r4-economia.mjs — banco con 7 mutaciones plantadas, 7 detectadas, 0 ciegas. Desactualizado desde la ronda 8, fase 5: ver el campo «arreglo»."
   },
   "tecnologiasARetocar": [
     {

@@ -30,6 +30,19 @@ import { cosechaDe, cosechaPosibleDe, COSECHA_SOTOBOSQUE, nombreDe, RECURSOS } f
 const DESCANSO_S = 150;   // segundos de juego antes de volver a cosechar lo mismo
 
 /**
+ * La sed que manda: por debajo de esta hidratación, el agua a mano le gana la
+ * tecla a la trampa, a la orilla y a todo lo que se junta caminando (ver
+ * `quePuedoHacer()`), porque la sed mata.
+ *
+ * Se exporta desde la ronda 9, fase 5, y ése es todo el cambio: de noche, con
+ * refugio y fuego, dormir le gana al cartel en `main.js` salvo en dos casos, y
+ * beber con sed es uno. Para saber «con sed» `main.js` necesita este mismo
+ * número, y dos números iguales escritos en dos archivos son un número que algún
+ * día va a ser dos —lo mismo que pasó con `RADIO_HORNO_M`—.
+ */
+export const UMBRAL_SED = 92;
+
+/**
  * Cuánto vale levantar cada cosa del suelo, y por qué esto no es un detalle.
  *
  * `sotobosque.masCercano()` devuelve la instancia más próxima de cualquier tipo,
@@ -438,7 +451,7 @@ export class Recoleccion {
     // tronco que estaba pisando: la orilla del lago es justo donde se junta la
     // leña varada. Con sed, sigue primero — la sed mata.
     const aguaAMano = this.jugador.enAgua || this._aguaCerca();
-    if (aguaAMano && this.jugador.sed < 92) return this._beber();
+    if (aguaAMano && this.jugador.sed < UMBRAL_SED) return this._beber();
 
     // La trampa propia, a menos de 2,5 m: revisarla si cayó algo, levantarla si
     // está vacía. Va debajo de la sed —la sed mata, y una nasa se cala justo al

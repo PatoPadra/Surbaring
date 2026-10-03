@@ -1,3 +1,75 @@
+# CÓMO SEGUIR — al 3/10/2026
+
+**Las rondas 8 y 9 están en `main` y en GitHub, y nadie las jugó.** Esta es la lista
+de lo que hay que probar jugando y de lo que hay que elegir. Lo de más abajo (desde
+«al 7/9/2026») es historia de las rondas 2 y 3.
+
+```sh
+git checkout main
+npm run dev
+```
+
+**Ojo con la partida guardada:** la fecha nueva de arranque (primavera) es sólo para
+partidas nuevas. Para probar el primer año: Esc → Partida → Reiniciar.
+
+## A · Probar jugando — ronda 9
+
+1. **Arranca en primavera** (21/9). La primera noche es fría (~0 °C): ¿se pasa con lo
+   que el juego te da?
+2. **Dormir.** Parapeto (8 leña, 3 fibra) y fogata encendida (6 leña, 4 piedra); de
+   noche, a menos de 6 m del parapeto y 8 m del fuego, la E dice «Dormir». Te despierta
+   el sol. Con poca leña el fuego se apaga a mitad de la noche y amanecés con frío.
+3. **El códice**, los primeros tres días: debajo del contador dice el objetivo del año.
+4. **El percutor se gasta picando piedra** (30 usos). Cuando se rompe mientras fabricás
+   no hay aviso en ese momento (leído en el código, no probado jugando).
+5. **Al coihue ya no le asoman ramas peladas** de la copa.
+6. **Los íconos del bolso** tienen que verse igual que antes.
+
+## B · Probar jugando — ronda 8
+
+7. La brújula centrada, la flecha del mapa, el minimapa y el zoom del mapa.
+8. La trampa de lazo: ponerla, verla en el mapa, revisarla a la mañana.
+9. El suelo de cerca: la textura nueva, la piedra que ya no es verde, la sombra de los
+   árboles sobre el suelo.
+10. Las coníferas (ciprés, pino) con la copa llena.
+11. La cadena de la piedra desde cero: percutor → … → hacha, sin obsidiana ni cuero.
+12. Las noches de luna en cuarto, bastante más oscuras que antes.
+13. La pestaña Normativa del códice, con las licencias.
+
+## C · Elegir
+
+14. **La luna** — A, B o C. Mirala con F8 (ver abajo) o en `capturas/r9-f6-luna-ABC.png`.
+15. **El fuego** — A, B o C. F9, o `capturas/r9-f6-fuego-ABC.png`.
+16. **Las tres decisiones de balance de la ronda 8:** morir pierde todo (también las
+    cuatro ranuras y la llama), la lana del coirón en 1 de cada 4, el hacha en cinco
+    pasos con 3 de saber. ¿Se quedan?
+17. **Azuela, pala de omóplato y rastra:** ¿pasan por la preforma y el pulido (encima
+    del hacha de cinco pasos) o esperan a que decidas el punto 16?
+18. **Dormir con T al máximo es una noche gratis** (la noche de junio cuesta 47 de sed a
+    24×, 16 a 72× y 0,2 a 7200×). ¿Se deja así o dormir cobra siempre a la velocidad
+    normal?
+19. **Dos cosas vistas de paso:** la cara oscura de la luna sale más oscura que el
+    cielo (un círculo apagado), y con el alcance de hoy un tronco a ~12 m del fuego se
+    enciende rojo. ¿Se arreglan?
+20. **El cierre del año** dice «llegaste sin morir»; tu respuesta 4 pedía también
+    noches sobrevividas y si pasó el invierno. ¿Se suman?
+21. **Los hitos intermedios del primer año** (primera noche, semana, otoño, invierno):
+    propuestos, no construidos. ¿Se hacen?
+22. **Sin fase todavía:** el tiento como variante del hacha con más durabilidad, y el
+    total nuevo de `balanceSaber` (necesita un instrumento nuevo).
+
+Para mirar la luna y el fuego jugando, en la consola del navegador (no toca el reloj
+ni el guardado; al recargar vuelve todo):
+
+```js
+(await import('/.claude/flota/mirar.js')).teclas()
+```
+
+F8 alterna la luna y F9 el fuego; un cartel abajo a la izquierda dice cuál está puesta.
+El detalle y los números, en `RONDA9.md`, fase 6.
+
+---
+
 # CÓMO SEGUIR — al 7/9/2026
 
 Esto **no es un encargo**: es el inventario de lo que quedó abierto, para que el

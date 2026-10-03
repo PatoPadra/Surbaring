@@ -14,7 +14,7 @@ import { CSM } from 'three/addons/csm/CSM.js';
 
 import { Mundo } from './world/Mundo.js';
 import { Terreno } from './world/Terreno.js';
-import { Cielo } from './world/Cielo.js';
+import { Cielo, posicionSolar } from './world/Cielo.js';
 import { Agua } from './world/Agua.js';
 import { Vegetacion, cargarFollaje } from './world/Vegetacion.js';
 import { Sotobosque } from './world/Sotobosque.js';
@@ -33,11 +33,11 @@ import { Inventario } from './systems/Inventario.js';
 import { Saberes } from './systems/Saberes.js';
 import { Equipo } from './systems/Equipo.js';
 import { Fabricacion } from './systems/Fabricacion.js';
-import { Recoleccion } from './systems/Recoleccion.js';
+import { Recoleccion, UMBRAL_SED } from './systems/Recoleccion.js';
 import { Caza } from './systems/Caza.js';
 import { Limites } from './world/Limites.js';
 import { Mineria } from './systems/Mineria.js';
-import { Fundicion } from './systems/Fundicion.js';
+import { Fundicion, RADIO_HORNO_M } from './systems/Fundicion.js';
 import { Hornos, luzDeFuegoSegunSol } from './world/Hornos.js';
 import { Taller } from './ui/Taller.js';
 import { Construccion } from './systems/Construccion.js';
@@ -484,7 +484,14 @@ async function iniciar() {
     sotobosque.sembrarTodo(p);
     vegetacion.actualizar(p, tiempo.segundosTotales, tiempo.estado(), camara);
   };
-  jugador.alMorir = (m) => { partida.registrarMuerte(m); fin.mostrar(m); };
+  jugador.alMorir = (m) => {
+    partida.registrarMuerte(m);
+    // Sólo el logro del primer año se reinicia acá (pregunta 5,
+    // r8-primer-anio.md): `relevamiento.dias` no se toca, sigue sobreviviendo
+    // a la muerte como ya estaba escrito.
+    relevamiento.registrarMuerte();
+    fin.mostrar(m);
+  };
 
   const levantarOriginal = construccion.levantar.bind(construccion);
   construccion.levantar = (obra) => {
@@ -784,6 +791,145 @@ async function iniciar() {
     }
     return f;
   }
+
+  /**
+   * Dormir — el primer año, pregunta 2 (`r8-primer-anio.md`, contestada el
+   * 28/9/2026): con refugio y fuego se puede pasar la noche. La NOCHE: dormir a
+   * la una de la tarde y despertar a las tres de la mañana no es lo que se
+   * contestó, así que sólo se duerme con el sol debajo del horizonte, y hasta
+   * que sale (ronda 9, fase 5).
+   *
+   * No es un atajo que evite el costo de esperar: cada vuelta del bucle corre lo
+   * mismo que `cuadro()` le hace al cuerpo y al fuego —el `est` recalculado (el
+   * clima cambia con las horas), `fundicion.actualizar(est)`, `fuegoCercano()`,
+   * `jugador.actualizarSupervivencia()` y `tiempo.avanzar()`—. La fundición va
+   * ANTES de medir el fuego, y ésa fue la mitad de la fase 5: el bucle no la
+   * llamaba, `h.ardiendo` quedaba como estaba al acostarse, y una fogata con 3 h
+   * de leña calentaba las 9 h de la noche igual que una de 15 h —36,18 °C las
+   * dos, medido el 3/10/2026, y al amanecer «ardía» con la leña agotada hacía
+   * seis horas—. Con la fundición al día la leña se acaba a su hora, la lluvia la
+   * moja y la hornada avanza: la misma noche termina en 34,8 °C con 3 h, y en
+   * 36,18 con 15. Al jugador no se lo despierta cuando el fuego muere, y es a
+   * propósito: el cuerpo lo sufre en el mismo modelo térmico de siempre, y al
+   * despertar el aviso le dice que pasó frío.
+   *
+   * Lo único que dormir ahorra es la MOLESTIA de mirar la pantalla mientras
+   * tanto —igual que ya hace acelerar el reloj con «T» para una hornada larga—,
+   * no el costo metabólico: la relación entre horas de mundo y horas de cuerpo
+   * sigue siendo la que da `tiempo.velocidad` en ese momento, la misma que si el
+   * jugador se hubiera quedado despierto. Lo que el bucle NO corre es
+   * `eventos.golpear()`: el daño directo de una avalancha o de un viento blanco
+   * que se sortee durante la noche no le llega al que duerme. Queda anotado como
+   * residuo en `RONDA9.md`, fase 5.
+   */
+  const DT_PASO_DORMIR = 5; // "segundos equivalentes" por vuelta del bucle de dormir
+  /**
+   * …pero nunca más de 6 minutos de mundo por vuelta. El sol se mira entre vuelta
+   * y vuelta, así que se despierta, como mucho, una vuelta después del amanecer.
+   * A 72×, la velocidad por defecto, 5 s son justo 6 min y nada cambia; con «T»
+   * al máximo (7200×) serían 10 h de mundo por vuelta: una noche de junio en dos
+   * vueltas, el fuego medido dos veces y el despertar hasta 10 h después del sol.
+   * Achicar en la misma proporción el paso del cuerpo deja igual la relación
+   * entre los dos relojes.
+   */
+  const PASO_DORMIR_MUNDO_S = 6 * 60;
+  /**
+   * Tope de seguridad, en horas de mundo: sólo actúa si algo anda mal. La noche
+   * más larga del parque, la del 21/6, dura 14,97 h —el sol se pone a las 18:19
+   * y sale a las 9:17, con `posicionSolar()` en el centro del mapa—, y el tope
+   * viejo de 14 la cortaba antes del sol.
+   */
+  const TOPE_DORMIR_H = 16;
+
+  /**
+   * ¿El sol está debajo del horizonte, con el reloj del mundo de AHORA?
+   *
+   * Con `posicionSolar()` y no con `cielo.alturaSol`, que se refresca sólo
+   * dentro de `cuadro()`: al despertar, el reloj ya saltó a la mañana pero el
+   * cielo sigue con la altura de la noche hasta el cuadro siguiente, y un cartel
+   * que lo leyera volvería a ofrecer dormir con el sol arriba.
+   */
+  function esDeNoche() {
+    return posicionSolar(tiempo.fecha, tiempo.lat, tiempo.lon).altura < 0;
+  }
+
+  /**
+   * ¿Se puede dormir acá, ahora? De noche, con refugio (`abrigoEn > 0`) Y una
+   * fogata que arda a `RADIO_HORNO_M`. Y, no O: el refugio solo o el fuego solo
+   * no alcanzan para pasar una noche de la cordillera.
+   */
+  function puedeDormir() {
+    if (!jugador.vivo || !esDeNoche()) return false;
+    const p = jugador.posicion;
+    if (!(construccion.abrigoEn(p.x, p.z) > 0)) return false;
+    return !!fundicion.cercano(RADIO_HORNO_M, (h) => fundicion.usaFuego(h) && fundicion.arde(h));
+  }
+
+  function dormir() {
+    // De día no hay noche que pasar: sin esto, un llamado con el sol arriba no
+    // daría ninguna vuelta y avisaría «Amaneció» igual.
+    if (!jugador.vivo || !esDeNoche()) return;
+    const limiteMs = tiempo.fecha.getTime() + TOPE_DORMIR_H * 3600 * 1000;
+    const dt = Math.min(DT_PASO_DORMIR, PASO_DORMIR_MUNDO_S / tiempo.velocidad);
+    const hambreAntes = jugador.hambre, sedAntes = jugador.sed;
+    let huboFrio = false;
+    // La posición no cambia durmiendo; el abrigo del lugar tampoco.
+    jugador.abrigo = Math.min(1, construccion.abrigoEn(jugador.posicion.x, jugador.posicion.z)
+      + equipo.suma('abrigo'));
+    // Hasta que sale el sol, sin hora fija. En el parque amanece entre las 6:16
+    // (21/12) y las 9:17 (21/6); despertar a las 7:00 fijas era, en junio,
+    // levantarse dos horas y cuarto antes que el sol.
+    while (jugador.vivo && esDeNoche() && tiempo.fecha.getTime() < limiteMs) {
+      const est = eventos.aplicar(tiempo.estado());
+      // Primero la fundición: es la que apaga la fogata cuando se le acaba la
+      // leña o la ahoga la lluvia, y `fuegoCercano()` lee lo que ella deja en
+      // `h.ardiendo`.
+      fundicion.actualizar(est);
+      jugador.fuego = fuegoCercano(est);
+      if (jugador.temperatura < 35.5) huboFrio = true;
+      jugador.actualizarSupervivencia(dt, est, ESCALA_METABOLISMO);
+      tiempo.avanzar(dt);
+    }
+    // Si murió durmiendo, `alMorir` ya corrió dentro del bucle: nada que avisar acá.
+    if (!jugador.vivo) return;
+    const bajoHambre = Math.round(hambreAntes - jugador.hambre);
+    const bajoSed = Math.round(sedAntes - jugador.sed);
+    hud.aviso('Amaneció', `Dormiste: bajaste ${bajoHambre} de hambre y ${bajoSed} de sed.`
+      + (huboFrio ? ' Pasaste frío en algún momento de la noche.' : ''));
+  }
+
+  // El cartel de «E» es un solo sistema, `Recoleccion.quePuedoHacer()`, acoplado
+  // a esa clase. Envolverlo (el mismo patrón que ya usan `partida.reaparecer` y
+  // `construccion.levantar` más arriba) evita mezclar un concepto de reloj
+  // adentro de la clase de recolección.
+  //
+  // Mientras no se pueda dormir —de día, o sin refugio Y fuego— el cartel es el
+  // de la cadena de base, tal cual. Cuando se puede, dormir le gana a todo lo que
+  // puede esperar a la mañana (la mata, la orilla, la chatarra, la planta, la
+  // trampa, la ficha, el agua sin sed) y cede sólo ante dos: el animal sin
+  // identificar, que se va, y beber con sed, que mata —con el mismo umbral que
+  // usa la cadena, `UMBRAL_SED`—.
+  //
+  // Hasta la fase 5 dormir salía sólo si la cadena no ofrecía NADA, y con un
+  // coirón por metro cuadrado eso no pasa: medido el 3/10/2026, 0 de 40 lugares
+  // al azar dejaban salir «Dormir», y 30 de 30 apretadas de E en un campamento de
+  // verdad ofrecieron «Juntar…». La respuesta del dueño existía en el código y
+  // no jugando.
+  const quePuedoHacerOriginal = recoleccion.quePuedoHacer.bind(recoleccion);
+  recoleccion.quePuedoHacer = (ahora) => {
+    const accion = quePuedoHacerOriginal(ahora);
+    if (!puedeDormir()) return accion;
+    if (accion?.tipo === 'identificar') return accion;
+    if (accion?.tipo === 'beber' && jugador.sed < UMBRAL_SED) return accion;
+    return { tipo: 'dormir', etiqueta: 'Dormir · con refugio y fuego' };
+  };
+  // La tecla hace lo que dice el cartel: `actuar` no vuelve a decidir por su
+  // cuenta si se puede dormir, mira lo que `quePuedoHacer()` ofrece ahora.
+  const actuarOriginal = recoleccion.actuar.bind(recoleccion);
+  recoleccion.actuar = (ahora) => {
+    if (recoleccion.quePuedoHacer(ahora)?.tipo === 'dormir') { dormir(); return; }
+    return actuarOriginal(ahora);
+  };
 
   /**
    * Las luces del cuadro: lo que se lleva en la mano, los hornos que arden y el

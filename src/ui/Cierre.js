@@ -84,6 +84,11 @@ export class Cierre {
       dato(r.saber, 'puntos de saber'),
       dato(r.obras, r.obras === 1 ? 'obra en pie' : 'obras en pie'),
       dato(`${(r.explorado * 100).toFixed(1)} %`, 'del mapa recorrido'),
+      // El primer año de supervivencia (r8-primer-anio.md, preguntas 3 y 5):
+      // acompaña al cuaderno de relevamiento con el mismo contador, no lo
+      // reemplaza — por eso es UN dato más entre los del relevamiento, y no
+      // una pantalla aparte.
+      dato(r.sinMorir ? 'Sí' : 'No', 'llegaste sin morir en el camino'),
     ].join('');
 
     this.el.querySelector('#ci-epilogo').innerHTML =
